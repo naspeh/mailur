@@ -1,22 +1,32 @@
 #!/usr/bin/env python
 import email.header
-import imaplib
 
 import chardet
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psa
 from imapclient import IMAPClient
 
-engine = sa.create_engine('postgresql+psycopg2://test:test@/mail', echo=True)
+db = sa.create_engine(
+    'postgresql+psycopg2://test:test@/mail', strategy='threadlocal'
+)
 metadata = sa.MetaData()
 
-mails = sa.Table('mails', metadata, *(
+emails = sa.Table('emails', metadata, *(
     sa.Column('id', sa.Integer, primary_key=True),
+    sa.Column('updated_at', sa.DateTime, server_onupdate='NOW()'),
+    sa.Column('created_at', sa.DateTime, server_default='NOW()'),
 
-    sa.Column('uid', sa.Integer),
+    sa.Column('uid', sa.Integer, unique=True),
     sa.Column('flags', psa.ARRAY(sa.String)),
     sa.Column('internaldate', sa.DateTime),
-    sa.Column('size', sa.Integer)
+    sa.Column('size', sa.Integer, index=True),
+    sa.Column('body', sa.String),
+))
+
+parsed_emails = sa.Table('parsed_emails', metadata, *(
+    sa.Column('id', sa.ForeignKey('emails.id'), primary_key=True),
+    sa.Column('updated_at', sa.DateTime, server_onupdate='NOW()'),
+    sa.Column('created_at', sa.DateTime, server_default='NOW()'),
 
     sa.Column('date', sa.DateTime),
     sa.Column('subject', sa.String),
@@ -28,8 +38,11 @@ mails = sa.Table('mails', metadata, *(
     sa.Column('bcc', psa.ARRAY(sa.String)),
     sa.Column('in_reply_to', sa.String),
     sa.Column('message_id', sa.String),
+
+    sa.Column('text', sa.String),
+    sa.Column('html', sa.String),
 ))
-metadata.create_all(engine)
+metadata.create_all(db)
 
 
 def decode_header(data, default='utf-8'):
@@ -52,19 +65,13 @@ def decode_header(data, default='utf-8'):
 
 
 def decode_addresses(addresses):
-    print(addresses)
-    return addresses and [decode_header(str(a)) for a in addresses]
+    return addresses and [decode_header(a) for a in addresses]
 
 
 def sync_gmail():
     conf = __import__('conf')
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
     im.login(conf.username, conf.password)
-
-    #im = imaplib.IMAP4_SSL('imap.gmail.com')
-    #im.login(conf.username, conf.password)
-    #im.select(readonly=True)
-    #im.select('"[Gmail]/All Mail"')
 
     folders = im.list_folders()
     folder_all = [l for l in folders if '\\All' in l[0]][0]
@@ -76,22 +83,27 @@ def sync_gmail():
 
     for pair in pairs:
         uids = im.search('UID %d:%d' % pair)
-        data = im.fetch(uids, ['FAST'])
-        for uid, row in data.items():
-            envelope = row['ENVELOPE']
-            mails.insert().values(
-                id=uid,
-                date=envelope.date,
-                subject=decode_header(envelope.subject),
-                from_=decode_addresses(envelope.from_),
-                sender=decode_addresses(envelope.sender),
-                reply_to=decode_addresses(envelope.reply_to),
-                to=decode_addresses(envelope.to),
-                cc=decode_addresses(envelope.cc),
-                bcc=decode_addresses(envelope.bcc),
-                message_id=envelope.message_id,
-                in_reply_to=envelope.in_reply_to,
-            )
+        print('Start:', uids)
+        fields = (
+            'BODY[HEADER.FIELDS ('
+            '   DATE SUBJECT FROM SENDER REPLY-TO TO CC BCC'
+            '   IN-REPLY-TO MESSAGE-ID'
+            ')]'
+        )
+        body = 'BODY[TEXT]'
+
+        data = im.fetch(uids, ['FLAGS INTERNALDATE RFC822.SIZE RFC822'])
+        with db.begin() as c:
+            for uid, row in data.items():
+                c.execute(emails.insert().values(
+                    uid=uid,
+                    internaldate=row['INTERNALDATE'],
+                    flags=row['FLAGS'],
+                    size=row['RFC822.SIZE'],
+                    body=row['RFC822']
+                ))
+        print('Done.')
+
 
 if __name__ == '__main__':
     sync_gmail()
