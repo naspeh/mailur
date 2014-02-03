@@ -13,20 +13,15 @@ metadata = sa.MetaData()
 
 emails = sa.Table('emails', metadata, *(
     sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('updated_at', sa.DateTime, server_onupdate='NOW()'),
-    sa.Column('created_at', sa.DateTime, server_default='NOW()'),
+    sa.Column('created_at', sa.DateTime, default=sa.func.now()),
+    sa.Column('updated_at', sa.DateTime, onupdate=sa.func.now()),
 
     sa.Column('uid', sa.Integer, unique=True),
     sa.Column('flags', psa.ARRAY(sa.String)),
     sa.Column('internaldate', sa.DateTime),
     sa.Column('size', sa.Integer, index=True),
+    sa.Column('header', sa.String),
     sa.Column('body', sa.String),
-))
-
-parsed_emails = sa.Table('parsed_emails', metadata, *(
-    sa.Column('id', sa.ForeignKey('emails.id'), primary_key=True),
-    sa.Column('updated_at', sa.DateTime, server_onupdate='NOW()'),
-    sa.Column('created_at', sa.DateTime, server_default='NOW()'),
 
     sa.Column('date', sa.DateTime),
     sa.Column('subject', sa.String),
@@ -42,6 +37,7 @@ parsed_emails = sa.Table('parsed_emails', metadata, *(
     sa.Column('text', sa.String),
     sa.Column('html', sa.String),
 ))
+
 metadata.create_all(db)
 
 
@@ -77,31 +73,28 @@ def sync_gmail():
     folder_all = [l for l in folders if '\\All' in l[0]][0]
     resp = im.select_folder(folder_all[-1], readonly=True)
 
-    step = 1000
-    pairs = [(n, n + step - 1) for n in range(1, resp['UIDNEXT'], step)]
-    pairs[-1] = pairs[-1][0], resp['UIDNEXT']
+    # Fetch all uids
+    uids, step = [], 1000
+    for i in range(1, resp['UIDNEXT'], step):
+        uids += im.search('UID %d:%d' % (i, i + step - 1))
 
-    for pair in pairs:
-        uids = im.search('UID %d:%d' % pair)
-        print('Start:', uids)
-        fields = (
-            'BODY[HEADER.FIELDS ('
-            '   DATE SUBJECT FROM SENDER REPLY-TO TO CC BCC'
-            '   IN-REPLY-TO MESSAGE-ID'
-            ')]'
-        )
-        body = 'BODY[TEXT]'
+    step = 100
+    for i in range(0, len(uids), step):
+        uids_ = uids[i: i + step]
+        print('Start process:', uids_)
+        data = im.fetch(uids_, 'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE')
 
-        data = im.fetch(uids, ['FLAGS INTERNALDATE RFC822.SIZE RFC822'])
+        items = []
+        for uid, row in data.items():
+            items.append(dict(
+                uid=uid,
+                internaldate=row['INTERNALDATE'],
+                flags=row['FLAGS'],
+                size=row['RFC822.SIZE'],
+                header=row['BODY[HEADER]']
+            ))
         with db.begin() as c:
-            for uid, row in data.items():
-                c.execute(emails.insert().values(
-                    uid=uid,
-                    internaldate=row['INTERNALDATE'],
-                    flags=row['FLAGS'],
-                    size=row['RFC822.SIZE'],
-                    body=row['RFC822']
-                ))
+            c.execute(emails.insert().values(items))
         print('Done.')
 
 
