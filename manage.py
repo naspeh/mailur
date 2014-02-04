@@ -7,7 +7,10 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psa
 from imapclient import IMAPClient
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    format='%(filename)s|%(lineno)d %(asctime)s %(levelname)s # %(message)s',
+    level=logging.DEBUG
+)
 log = logging.getLogger(__name__)
 
 engine = sa.create_engine(
@@ -84,7 +87,7 @@ def sync_gmail():
     step = 100
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
-        log.info('Process: %s', uids_)
+        log.info('Process headers: %s', uids_)
         data = im.fetch(uids_, 'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE')
 
         items = []
@@ -99,24 +102,24 @@ def sync_gmail():
         db.execute(emails.insert().values(items))
 
     # Loads bodies
-    uids = db.execute(
+    stmt = (
         sa.select([emails.c.uid])
-          .where(emails.c.body == sa.null())
-          .order_by(emails.c.size)
-    ).fetchall()
-    uids = sum([[r.uid] for r in uids], [])
+        .where(emails.c.body == sa.null())
+        .order_by(emails.c.size)
+    )
+    uids = sum([[r.uid] for r in db.execute(stmt).fetchall()], [])
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
         log.info('Process bodies: %s', uids_)
         data = im.fetch(uids_, 'RFC822')
 
         items = [dict(_uid=u, _body=r['RFC822']) for u, r in data.items()]
-        db.execute(
+        stmt = (
             emails.update()
             .where(emails.c.uid == sa.bindparam('_uid'))
-            .values(body=sa.bindparam('_body')),
-            items
+            .values(body=sa.bindparam('_body'))
         )
+        db.execute(stmt, items)
 
 
 if __name__ == '__main__':
