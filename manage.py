@@ -6,7 +6,7 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psa
 from imapclient import IMAPClient
 
-db = sa.create_engine(
+engine = sa.create_engine(
     'postgresql+psycopg2://test:test@/mail', strategy='threadlocal'
 )
 metadata = sa.MetaData()
@@ -38,7 +38,8 @@ emails = sa.Table('emails', metadata, *(
     sa.Column('html', sa.String),
 ))
 
-metadata.create_all(db)
+metadata.create_all(engine)
+db = engine.connect()
 
 
 def decode_header(data, default='utf-8'):
@@ -60,10 +61,6 @@ def decode_header(data, default='utf-8'):
     return ''.join(parts)
 
 
-def decode_addresses(addresses):
-    return addresses and [decode_header(a) for a in addresses]
-
-
 def sync_gmail():
     conf = __import__('conf')
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
@@ -73,15 +70,17 @@ def sync_gmail():
     folder_all = [l for l in folders if '\\All' in l[0]][0]
     resp = im.select_folder(folder_all[-1], readonly=True)
 
+    last_uid = db.execute(sa.select([sa.func.max(emails.c.uid)])).scalar()
+
     # Fetch all uids
     uids, step = [], 1000
-    for i in range(1, resp['UIDNEXT'], step):
+    for i in range(last_uid + 1, resp['UIDNEXT'], step):
         uids += im.search('UID %d:%d' % (i, i + step - 1))
 
     step = 100
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
-        print('Start process:', uids_)
+        print('Process:', uids_)
         data = im.fetch(uids_, 'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE')
 
         items = []
@@ -93,9 +92,8 @@ def sync_gmail():
                 size=row['RFC822.SIZE'],
                 header=row['BODY[HEADER]']
             ))
-        with db.begin() as c:
-            c.execute(emails.insert().values(items))
-        print('Done.')
+        with db.begin():
+            db.execute(emails.insert().values(items))
 
 
 if __name__ == '__main__':
