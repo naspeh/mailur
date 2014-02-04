@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 import email.header
+import logging
 
 import chardet
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psa
 from imapclient import IMAPClient
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 engine = sa.create_engine(
     'postgresql+psycopg2://test:test@/mail', strategy='threadlocal'
@@ -70,7 +74,7 @@ def sync_gmail():
     folder_all = [l for l in folders if '\\All' in l[0]][0]
     resp = im.select_folder(folder_all[-1], readonly=True)
 
-    last_uid = db.execute(sa.select([sa.func.max(emails.c.uid)])).scalar()
+    last_uid = db.execute(sa.select([sa.func.max(emails.c.uid)])).scalar() or 0
 
     # Fetch all uids
     uids, step = [], 1000
@@ -80,7 +84,7 @@ def sync_gmail():
     step = 100
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
-        print('Process:', uids_)
+        log.info('Process: %s', uids_)
         data = im.fetch(uids_, 'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE')
 
         items = []
@@ -92,8 +96,27 @@ def sync_gmail():
                 size=row['RFC822.SIZE'],
                 header=row['BODY[HEADER]']
             ))
-        with db.begin():
-            db.execute(emails.insert().values(items))
+        db.execute(emails.insert().values(items))
+
+    # Loads bodies
+    uids = db.execute(
+        sa.select([emails.c.uid])
+          .where(emails.c.body == sa.null())
+          .order_by(emails.c.size)
+    ).fetchall()
+    uids = sum([[r.uid] for r in uids], [])
+    for i in range(0, len(uids), step):
+        uids_ = uids[i: i + step]
+        log.info('Process bodies: %s', uids_)
+        data = im.fetch(uids_, 'RFC822')
+
+        items = [dict(_uid=u, _body=r['RFC822']) for u, r in data.items()]
+        db.execute(
+            emails.update()
+            .where(emails.c.uid == sa.bindparam('_uid'))
+            .values(body=sa.bindparam('_body')),
+            items
+        )
 
 
 if __name__ == '__main__':
