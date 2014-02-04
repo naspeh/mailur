@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import email.header
 import logging
-from multiprocessing.dummy import Pool
 
 import chardet
 import sqlalchemy as sa
@@ -66,41 +65,27 @@ def decode_header(data, default='utf-8'):
     return ''.join(parts)
 
 
-def process_batch(items, step, func):
-    print(items)
-    if not items:
-        return
-    pairs = (items[i: i + step] for i in range(0, len(items), step))
-    pool = Pool(2)
-    result = pool.map(func, pairs)
-    pool.close()
-    pool.join()
-    return result
-
-
-def connect_imap():
+def sync_gmail():
     conf = __import__('conf')
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
     im.login(conf.username, conf.password)
 
     folders = im.list_folders()
     folder_all = [l for l in folders if '\\All' in l[0]][0]
-    return im, im.select_folder(folder_all[-1], readonly=True)
+    resp = im.select_folder(folder_all[-1], readonly=True)
 
-
-def sync_gmail():
-    im, folder = connect_imap()
     last_uid = db.execute(sa.select([sa.func.max(emails.c.uid)])).scalar() or 0
 
     # Fetch all uids
     uids, step = [], 1000
-    for i in range(last_uid + 1, folder['UIDNEXT'], step):
+    for i in range(last_uid + 1, resp['UIDNEXT'], step):
         uids += im.search('UID %d:%d' % (i, i + step - 1))
 
-    def fetch_headers(uids):
-        log.info('Process: %s', uids)
-        im, _ = connect_imap()
-        data = im.fetch(uids, 'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE')
+    step = 100
+    for i in range(0, len(uids), step):
+        uids_ = uids[i: i + step]
+        log.info('Process: %s', uids_)
+        data = im.fetch(uids_, 'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE')
 
         items = []
         for uid, row in data.items():
@@ -113,8 +98,6 @@ def sync_gmail():
             ))
         db.execute(emails.insert().values(items))
 
-    process_batch(uids, 100, fetch_headers)
-
     # Loads bodies
     uids = db.execute(
         sa.select([emails.c.uid])
@@ -122,11 +105,10 @@ def sync_gmail():
           .order_by(emails.c.size)
     ).fetchall()
     uids = sum([[r.uid] for r in uids], [])
-
-    def fetch_bodies(uids):
-        log.info('Process bodies: %s', uids)
-        im, _ = connect_imap()
-        data = im.fetch(uids, 'RFC822')
+    for i in range(0, len(uids), step):
+        uids_ = uids[i: i + step]
+        log.info('Process bodies: %s', uids_)
+        data = im.fetch(uids_, 'RFC822')
 
         items = [dict(_uid=u, _body=r['RFC822']) for u, r in data.items()]
         db.execute(
@@ -135,8 +117,6 @@ def sync_gmail():
             .values(body=sa.bindparam('_body')),
             items
         )
-
-    process_batch(uids, 100, fetch_bodies)
 
 
 if __name__ == '__main__':
