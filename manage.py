@@ -19,7 +19,7 @@ engine = sa.create_engine(
 )
 metadata = sa.MetaData()
 
-folders = sa.Table('folders', metadata, *(
+folders = sa.Table('labels', metadata, *(
     sa.Column('id', sa.Integer, primary_key=True),
     sa.Column('created_at', sa.DateTime, default=sa.func.now()),
     sa.Column('updated_at', sa.DateTime, onupdate=sa.func.now()),
@@ -27,8 +27,6 @@ folders = sa.Table('folders', metadata, *(
     sa.Column('attrs', psa.ARRAY(sa.String)),
     sa.Column('delim', sa.String),
     sa.Column('name', sa.String, unique=True),
-    sa.Column('uids', psa.ARRAY(sa.Integer)),
-    sa.Column('uid_next', sa.Integer)
 ))
 
 emails = sa.Table('emails', metadata, *(
@@ -36,13 +34,13 @@ emails = sa.Table('emails', metadata, *(
     sa.Column('created_at', sa.DateTime, default=sa.func.now()),
     sa.Column('updated_at', sa.DateTime, onupdate=sa.func.now()),
 
-    sa.Column('uid', sa.Integer, unique=True),
+    sa.Column('uid', sa.BigInteger, unique=True),
     sa.Column('flags', psa.ARRAY(sa.String)),
     sa.Column('internaldate', sa.DateTime),
     sa.Column('size', sa.Integer, index=True),
     sa.Column('header', sa.String),
     sa.Column('body', sa.String),
-    sa.Column('gm_labels', psa.ARRAY(sa.String)),
+    sa.Column('labels', psa.ARRAY(sa.Integer)),
 
     sa.Column('date', sa.DateTime),
     sa.Column('subject', sa.String),
@@ -83,62 +81,39 @@ def decode_header(data, default='utf-8'):
     return ''.join(parts)
 
 
-def sync_gmail():
-    conf = __import__('conf')
-    im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
-    im.login(conf.username, conf.password)
+def fetch_emails(im, uids):
+    stmt = sa.select([emails.c.uid]).where(emails.c.uid.in_(uids.keys()))
+    uids_ = sum([[r.uid] for r in sql(stmt).fetchall()], [])
+    uids_ = list(set(uids.keys()) - set(uids_))
+    if not uids_:
+        return
 
-    def fetch_uids(uid_next, last_uid=0):
-        # Fetch all uids
-        start = time.time()
-        uids, step = [], 5000
-        for i in range(last_uid + 1, uid_next, step):
-            uids += im.search('UID %d:%d' % (i, i + step - 1))
-        log.info('Fetched uids: %.2f', time.time() - start)
-        return uids
-
-    start = time.time()
-    folders_ = im.list_folders()
-    for attrs, delim, name in folders_:
-        if not sql(folders.select().where(folders.c.name == name)).first():
-            sql(folders.insert().values(attrs=attrs, delim=delim, name=name))
-        if '\\Noselect' not in attrs:
-            uid_next = im.select_folder(name, readonly=True)['UIDNEXT']
-            sql(
-                folders.update()
-                .where(folders.c.name == name)
-                .values(uids=fetch_uids(uid_next), uid_next=uid_next)
-            )
-    log.info('Fetched uids for all folders: %.2f', time.time() - start)
-
-    f_all = sql(folders.select().where(folders.c.attrs.any('\\All'))).first()
-    last_uid = sql(sa.select([sa.func.max(emails.c.uid)])).scalar()
-    uids = f_all.uids
-    if last_uid:
-        uids = f_all.uids[f_all.uids.index(last_uid) + 1:]
-    uid_next = im.select_folder(f_all.name, readonly=True)
+    uids = [uids[k] for k in uids_]
 
     # Fetch headers and email properties
     start = time.time()
-    step = 3000
+    step = 1000
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
         log.info('Process headers: %s', uids_)
         data = im.fetch(uids_, (
-            'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE X-GM-LABELS'
+            'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE X-GM-MSGID'
         ))
 
         items = []
-        for uid, row in data.items():
+        for row in data.values():
+            uid = row['X-GM-MSGID']
+            if sql(emails.select().where(emails.c.uid == uid)).first():
+                continue
             items.append(dict(
                 uid=uid,
                 internaldate=row['INTERNALDATE'],
                 flags=row['FLAGS'],
                 size=row['RFC822.SIZE'],
                 header=row['BODY[HEADER]'],
-                gm_labels=row['X-GM-LABELS']
             ))
-        sql(emails.insert().values(items))
+        if items:
+            sql(emails.insert().values(items))
     log.info('Fetched headers and properties: %.2f', time.time() - start)
 
     return
@@ -162,6 +137,51 @@ def sync_gmail():
             .values(body=sa.bindparam('_body'))
         )
         sql(stmt, items)
+
+
+def fetch_uids(im, folder):
+    stmt = (
+        sa.select([sa.func.max(emails.c.uid)])
+        .where(emails.c.labels.any(folder.id))
+    )
+    last_uid = sql(stmt).scalar() or 0
+    uid_next = im.select_folder(folder.name, readonly=True)['UIDNEXT']
+
+    start = time.time()
+    uids, step = [], 5000
+    for i in range(last_uid + 1, uid_next, step):
+        uids += im.search('UID %d:%d' % (i, i + step - 1))
+
+    msgids, step = [], 500
+    for i in range(0, len(uids), step):
+        uids_ = uids[i: i + step]
+        data = im.fetch(uids_, 'X-GM-MSGID')
+        msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
+
+    log.info(
+        'Fetched %d uids for %s - %.2f',
+        len(uids), folder.name, time.time() - start
+    )
+    return dict(msgids)
+
+
+def sync_gmail():
+    conf = __import__('conf')
+    im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
+    im.login(conf.username, conf.password)
+
+    folders_ = im.list_folders()
+    for attrs, delim, name in folders_:
+        try:
+            sql(folders.insert().values(attrs=attrs, delim=delim, name=name))
+        except sa.exc.IntegrityError:
+            pass
+        folder = sql(folders.select().where(folders.c.name == name)).first()
+        if '\\Noselect' in attrs:
+            continue
+        uids = fetch_uids(im, folder)
+        if uids:
+            fetch_emails(im, uids)
 
 
 if __name__ == '__main__':
