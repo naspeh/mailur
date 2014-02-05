@@ -27,6 +27,10 @@ folders = sa.Table('labels', metadata, *(
     sa.Column('attrs', psa.ARRAY(sa.String)),
     sa.Column('delim', sa.String),
     sa.Column('name', sa.String, unique=True),
+
+    sa.Column('uids', psa.ARRAY(sa.BigInteger)),
+    sa.Column('recent', sa.Integer),
+    sa.Column('exists', sa.Integer),
 ))
 
 emails = sa.Table('emails', metadata, *(
@@ -87,7 +91,8 @@ def fetch_emails(im, folder):
         .where(emails.c.labels.any(folder.id))
     )
     last_uid = sql(stmt).scalar() or 0
-    uid_next = im.select_folder(folder.name, readonly=True)['UIDNEXT']
+    res = im.select_folder(folder.name, readonly=True)
+    uid_next, recent, exists = res['UIDNEXT'], res['RECENT'], res['EXISTS']
 
     start = time.time()
     uids, step = [], 5000
@@ -99,7 +104,13 @@ def fetch_emails(im, folder):
         uids_ = uids[i: i + step]
         data = im.fetch(uids_, 'X-GM-MSGID')
         msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
+
     uids = dict(msgids)
+    sql(
+        folders.update()
+        .where(folders.c.id == folder.id)
+        .values(uids=uids.keys(), recent=recent, exists=exists)
+    )
 
     log.info('%s|%d uids|%.2f', folder.name, len(uids), time.time() - start)
     if uids:
