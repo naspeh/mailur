@@ -81,14 +81,35 @@ def decode_header(data, default='utf-8'):
     return ''.join(parts)
 
 
-def fetch_emails(im, uids):
-    stmt = sa.select([emails.c.uid]).where(emails.c.uid.in_(uids.keys()))
-    uids_ = sum([[r.uid] for r in sql(stmt).fetchall()], [])
-    uids_ = list(set(uids.keys()) - set(uids_))
-    if not uids_:
-        return
+def fetch_emails(im, folder):
+    stmt = (
+        sa.select([sa.func.max(emails.c.uid)])
+        .where(emails.c.labels.any(folder.id))
+    )
+    last_uid = sql(stmt).scalar() or 0
+    uid_next = im.select_folder(folder.name, readonly=True)['UIDNEXT']
 
-    uids = [uids[k] for k in uids_]
+    start = time.time()
+    uids, step = [], 5000
+    for i in range(last_uid + 1, uid_next, step):
+        uids += im.search('UID %d:%d' % (i, i + step - 1))
+
+    msgids, step = [], 500
+    for i in range(0, len(uids), step):
+        uids_ = uids[i: i + step]
+        data = im.fetch(uids_, 'X-GM-MSGID')
+        msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
+    uids = dict(msgids)
+
+    log.info('%s|%d uids|%.2f', folder.name, len(uids), time.time() - start)
+    if uids:
+        stmt = sa.select([emails.c.uid]).where(emails.c.uid.in_(uids.keys()))
+        uids_ = sum([[r.uid] for r in sql(stmt).fetchall()], [])
+        uids_ = list(set(uids.keys()) - set(uids_))
+        uids = [uids[k] for k in uids_]
+
+    if not uids:
+        return
 
     # Fetch headers and email properties
     start = time.time()
@@ -139,32 +160,6 @@ def fetch_emails(im, uids):
         sql(stmt, items)
 
 
-def fetch_uids(im, folder):
-    stmt = (
-        sa.select([sa.func.max(emails.c.uid)])
-        .where(emails.c.labels.any(folder.id))
-    )
-    last_uid = sql(stmt).scalar() or 0
-    uid_next = im.select_folder(folder.name, readonly=True)['UIDNEXT']
-
-    start = time.time()
-    uids, step = [], 5000
-    for i in range(last_uid + 1, uid_next, step):
-        uids += im.search('UID %d:%d' % (i, i + step - 1))
-
-    msgids, step = [], 500
-    for i in range(0, len(uids), step):
-        uids_ = uids[i: i + step]
-        data = im.fetch(uids_, 'X-GM-MSGID')
-        msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
-
-    log.info(
-        'Fetched %d uids for %s - %.2f',
-        len(uids), folder.name, time.time() - start
-    )
-    return dict(msgids)
-
-
 def sync_gmail():
     conf = __import__('conf')
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
@@ -179,9 +174,7 @@ def sync_gmail():
         folder = sql(folders.select().where(folders.c.name == name)).first()
         if '\\Noselect' in attrs:
             continue
-        uids = fetch_uids(im, folder)
-        if uids:
-            fetch_emails(im, uids)
+        fetch_emails(im, folder)
 
 
 if __name__ == '__main__':
