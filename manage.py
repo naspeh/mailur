@@ -19,7 +19,7 @@ engine = sa.create_engine(
 )
 metadata = sa.MetaData()
 
-folders = sa.Table('labels', metadata, *(
+labels = sa.Table('labels', metadata, *(
     sa.Column('id', sa.Integer, primary_key=True),
     sa.Column('created_at', sa.DateTime, default=sa.func.now()),
     sa.Column('updated_at', sa.DateTime, onupdate=sa.func.now()),
@@ -63,7 +63,7 @@ emails = sa.Table('emails', metadata, *(
 
 metadata.create_all(engine)
 db = engine.connect()
-sql = db.execute
+run_sql = db.execute
 
 
 def decode_header(data, default='utf-8'):
@@ -86,11 +86,11 @@ def decode_header(data, default='utf-8'):
 
 
 def fetch_emails(im, folder):
-    stmt = (
+    sql = (
         sa.select([sa.func.max(emails.c.uid)])
         .where(emails.c.labels.any(folder.id))
     )
-    last_uid = sql(stmt).scalar() or 0
+    last_uid = run_sql(sql).scalar() or 0
     res = im.select_folder(folder.name, readonly=True)
     uid_next, recent, exists = res['UIDNEXT'], res['RECENT'], res['EXISTS']
 
@@ -104,71 +104,71 @@ def fetch_emails(im, folder):
         uids_ = uids[i: i + step]
         data = im.fetch(uids_, 'X-GM-MSGID')
         msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
+    msgids = dict(msgids)
 
-    uids = dict(msgids)
-    sql(
-        folders.update()
-        .where(folders.c.id == folder.id)
-        .values(uids=uids.keys(), recent=recent, exists=exists)
+    run_sql(
+        labels.update()
+        .where(labels.c.id == folder.id)
+        .values(uids=msgids.keys(), recent=recent, exists=exists)
     )
 
-    log.info('%s|%d uids|%.2f', folder.name, len(uids), time.time() - start)
-    if uids:
-        stmt = sa.select([emails.c.uid]).where(emails.c.uid.in_(uids.keys()))
-        uids_ = sum([[r.uid] for r in sql(stmt).fetchall()], [])
-        uids_ = list(set(uids.keys()) - set(uids_))
-        uids = [uids[k] for k in uids_]
-
-    if not uids:
+    log.info('%s|%d uids|%.2f', folder.name, len(msgids), time.time() - start)
+    if not msgids:
         return
 
-    # Fetch headers and email properties
-    start = time.time()
-    step = 1000
-    for i in range(0, len(uids), step):
-        uids_ = uids[i: i + step]
-        log.info('Process headers: %s', uids_)
-        data = im.fetch(uids_, (
-            'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE X-GM-MSGID'
-        ))
+    # Fetch properties
+    sql = sa.select([emails.c.uid]).where(emails.c.uid.in_(msgids.keys()))
+    msgids_ = sum([[r.uid] for r in run_sql(sql).fetchall()], [])
+    msgids_ = list(set(msgids.keys()) - set(msgids_))
+    uids = [msgids[k] for k in msgids_]
+    if uids:
+        log.info('Fetch %d headers...', len(uids))
+        start = time.time()
+        step = 1000
+        for i in range(0, len(uids), step):
+            uids_ = uids[i: i + step]
+            query = {
+                'header': 'BODY[HEADER]',
+                'internaldate': 'INTERNALDATE',
+                'flags': 'FLAGS',
+                'size': 'RFC822.SIZE',
+                'uid': 'X-GM-MSGID'
+            }
+            data = im.fetch(uids_, query.values())
+            items = [
+                {k: row[v] for k, v in query.items()}
+                for row in data.values()
+            ]
+            run_sql(emails.insert(), items)
+            log.info('* %d headers for %.2fs', len(uids_), time.time() - start)
 
-        items = []
-        for row in data.values():
-            uid = row['X-GM-MSGID']
-            if sql(emails.select().where(emails.c.uid == uid)).first():
-                continue
-            items.append(dict(
-                uid=uid,
-                internaldate=row['INTERNALDATE'],
-                flags=row['FLAGS'],
-                size=row['RFC822.SIZE'],
-                header=row['BODY[HEADER]'],
-            ))
-        if items:
-            sql(emails.insert().values(items))
-    log.info('Fetched headers and properties: %.2f', time.time() - start)
-
-    return
-    # Loads bodies
-    stmt = (
+    # Fetch bodies
+    sql = (
         sa.select([emails.c.uid])
         .where(emails.c.body == sa.null())
+        .where(emails.c.uid.in_(msgids.keys()))
         .order_by(emails.c.size)
     )
-    uids = sum([[r.uid] for r in sql(stmt).fetchall()], [])
-    step = 500
-    for i in range(0, len(uids), step):
-        uids_ = uids[i: i + step]
-        log.info('Process bodies: %s', uids_)
-        data = im.fetch(uids_, 'RFC822')
-
-        items = [dict(_uid=u, _body=r['RFC822']) for u, r in data.items()]
-        stmt = (
-            emails.update()
-            .where(emails.c.uid == sa.bindparam('_uid'))
-            .values(body=sa.bindparam('_body'))
-        )
-        sql(stmt, items)
+    uids = [msgids[r.uid] for r in run_sql(sql).fetchall()]
+    uids_map = {v: k for k, v in msgids.items()}
+    if uids:
+        log.info('Fetch %d bodies...', len(uids))
+        start = time.time()
+        step = 500
+        for i in range(0, len(uids), step):
+            uids_ = uids[i: i + step]
+            data = im.fetch(uids_, 'RFC822')
+            items = [
+                dict(_uid=uids_map[u], _body=r['RFC822'])
+                for u, r in data.items()
+            ]
+            run_sql(
+                emails.update()
+                .where(emails.c.uid == sa.bindparam('_uid'))
+                .values(body=sa.bindparam('_body')),
+                items
+            )
+            log.info('* %d bodies for %.2fs', len(uids_), time.time() - start)
 
 
 def sync_gmail():
@@ -179,10 +179,10 @@ def sync_gmail():
     folders_ = im.list_folders()
     for attrs, delim, name in folders_:
         try:
-            sql(folders.insert().values(attrs=attrs, delim=delim, name=name))
+            run_sql(labels.insert(), attrs=attrs, delim=delim, name=name)
         except sa.exc.IntegrityError:
             pass
-        folder = sql(folders.select().where(folders.c.name == name)).first()
+        folder = run_sql(labels.select().where(labels.c.name == name)).first()
         if '\\Noselect' in attrs:
             continue
         fetch_emails(im, folder)
