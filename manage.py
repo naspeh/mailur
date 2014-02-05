@@ -44,7 +44,6 @@ emails = sa.Table('emails', metadata, *(
     sa.Column('size', sa.Integer, index=True),
     sa.Column('header', sa.String),
     sa.Column('body', sa.String),
-    sa.Column('labels', psa.ARRAY(sa.Integer)),
 
     sa.Column('date', sa.DateTime),
     sa.Column('subject', sa.String),
