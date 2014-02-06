@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import argparse
 import email.header
 import logging
 import time
@@ -14,9 +15,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-engine = sa.create_engine(
-    'postgresql+psycopg2://test:test@/mail', strategy='threadlocal'
-)
+engine = sa.create_engine('postgresql+psycopg2://test:test@/mail')
 metadata = sa.MetaData()
 
 labels = sa.Table('labels', metadata, *(
@@ -61,8 +60,8 @@ emails = sa.Table('emails', metadata, *(
 ))
 
 metadata.create_all(engine)
-db = engine.connect()
-run_sql = db.execute
+conn = engine.connect()
+run_sql = conn.execute
 
 
 def decode_header(data, default='utf-8'):
@@ -84,18 +83,13 @@ def decode_header(data, default='utf-8'):
     return ''.join(parts)
 
 
-def fetch_emails(im, folder):
-    sql = (
-        sa.select([sa.func.max(emails.c.uid)])
-        .where(emails.c.labels.any(folder.id))
-    )
-    last_uid = run_sql(sql).scalar() or 0
-    res = im.select_folder(folder.name, readonly=True)
+def fetch_emails(im, label, with_bodies=True):
+    res = im.select_folder(label.name, readonly=True)
     uid_next, recent, exists = res['UIDNEXT'], res['RECENT'], res['EXISTS']
 
     start = time.time()
     uids, step = [], 5000
-    for i in range(last_uid + 1, uid_next, step):
+    for i in range(1, uid_next, step):
         uids += im.search('UID %d:%d' % (i, i + step - 1))
 
     msgids, step = [], 500
@@ -107,11 +101,11 @@ def fetch_emails(im, folder):
 
     run_sql(
         labels.update()
-        .where(labels.c.id == folder.id)
+        .where(labels.c.id == label.id)
         .values(uids=msgids.keys(), recent=recent, exists=exists)
     )
 
-    log.info('%s|%d uids|%.2f', folder.name, len(msgids), time.time() - start)
+    log.info('%s|%d uids|%.2f', label.name, len(msgids), time.time() - start)
     if not msgids:
         return
 
@@ -139,7 +133,11 @@ def fetch_emails(im, folder):
                 for row in data.values()
             ]
             run_sql(emails.insert(), items)
-            log.info('* %d headers for %.2fs', len(uids_), time.time() - start)
+            count = step * i + len(uids_)
+            log.info('* %d headers for %.2fs', count, time.time() - start)
+
+    if not with_bodies:
+        return
 
     # Fetch bodies
     sql = (
@@ -167,10 +165,11 @@ def fetch_emails(im, folder):
                 .values(body=sa.bindparam('_body')),
                 items
             )
-            log.info('* %d bodies for %.2fs', len(uids_), time.time() - start)
+            count = step * i + len(uids_)
+            log.info('* %d bodies for %.2fs', count, time.time() - start)
 
 
-def sync_gmail():
+def sync_gmail(with_bodies=True):
     conf = __import__('conf')
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
     im.login(conf.username, conf.password)
@@ -181,11 +180,37 @@ def sync_gmail():
             run_sql(labels.insert(), attrs=attrs, delim=delim, name=name)
         except sa.exc.IntegrityError:
             pass
-        folder = run_sql(labels.select().where(labels.c.name == name)).first()
+        label = run_sql(labels.select().where(labels.c.name == name)).first()
         if '\\Noselect' in attrs:
             continue
-        fetch_emails(im, folder)
+        fetch_emails(im, label, with_bodies)
 
+
+def parse_args():
+    parser = argparse.ArgumentParser('mail')
+    cmds = parser.add_subparsers(help='commands')
+
+    def cmd(name, **kw):
+        p = cmds.add_parser(name, **kw)
+        p.set_defaults(cmd=name)
+        p.arg = lambda *a, **kw: p.add_argument(*a, **kw) and p
+        p.exe = lambda f: p.set_defaults(exe=f) and p
+        return p
+
+    cmd('sync')\
+        .arg('-b', '--with-bodies', action='store_true')\
+        .exe(lambda a: sync_gmail(a.with_bodies))
+
+    cmd('db-clear').exe(lambda a: metadata.drop_all(engine))
+
+    args = parser.parse_args()
+    if not hasattr(args, 'exe'):
+        parser.print_usage()
+    else:
+        args.exe(args)
 
 if __name__ == '__main__':
-    sync_gmail()
+    try:
+        parse_args()
+    except KeyboardInterrupt:
+        raise SystemExit(1)
