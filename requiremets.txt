@@ -1,5 +1,8 @@
 https://bitbucket.org/mjs0/imapclient/get/1773af082ece.zip
 
+Jinja2==2.7.2
+MarkupSafe==0.18
 SQLAlchemy==0.9.2
+Werkzeug==0.9.4
 chardet==2.2.1
 psycopg2==2.5.2

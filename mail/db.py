@@ -1,52 +1,58 @@
 import sqlalchemy as sa
-import sqlalchemy.dialects.postgresql as psa
+from sqlalchemy.dialects import postgresql as psa
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 engine = sa.create_engine('postgresql+psycopg2://test:test@/mail')
-metadata = sa.MetaData()
+Base = declarative_base()
+drop_all = lambda: Base.metadata.drop_all(engine)
 
-labels = sa.Table('labels', metadata, *(
-    sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('created_at', sa.DateTime, default=sa.func.now()),
-    sa.Column('updated_at', sa.DateTime, onupdate=sa.func.now()),
 
-    sa.Column('attrs', psa.ARRAY(sa.String)),
-    sa.Column('delim', sa.String),
-    sa.Column('name', sa.String, unique=True),
+class Label(Base):
+    __tablename__ = 'labels'
 
-    sa.Column('uids', psa.ARRAY(sa.BigInteger)),
-    sa.Column('recent', sa.Integer),
-    sa.Column('exists', sa.Integer),
-))
+    id = sa.Column(sa.Integer, primary_key=True)
+    created_at = sa.Column(sa.DateTime, default=sa.func.now())
+    updated_at = sa.Column(sa.DateTime, onupdate=sa.func.now())
 
-emails = sa.Table('emails', metadata, *(
-    sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('created_at', sa.DateTime, default=sa.func.now()),
-    sa.Column('updated_at', sa.DateTime, onupdate=sa.func.now()),
+    attrs = sa.Column(psa.ARRAY(sa.String))
+    delim = sa.Column(sa.String)
+    name = sa.Column(sa.String, unique=True)
 
-    sa.Column('uid', sa.BigInteger, unique=True),
-    sa.Column('flags', psa.ARRAY(sa.String)),
-    sa.Column('internaldate', sa.DateTime),
-    sa.Column('size', sa.Integer, index=True),
-    sa.Column('header', sa.String),
-    sa.Column('body', sa.String),
+    uids = sa.Column(psa.ARRAY(sa.BigInteger))
+    recent = sa.Column(sa.Integer)
+    exists = sa.Column(sa.Integer)
 
-    sa.Column('date', sa.DateTime),
-    sa.Column('subject', sa.String),
-    sa.Column('from', psa.ARRAY(sa.String), key='from_'),
-    sa.Column('sender', psa.ARRAY(sa.String)),
-    sa.Column('reply_to', psa.ARRAY(sa.String)),
-    sa.Column('to', psa.ARRAY(sa.String)),
-    sa.Column('cc', psa.ARRAY(sa.String)),
-    sa.Column('bcc', psa.ARRAY(sa.String)),
-    sa.Column('in_reply_to', sa.String),
-    sa.Column('message_id', sa.String),
 
-    sa.Column('text', sa.String),
-    sa.Column('html', sa.String),
-))
+class Email(Base):
+    __tablename__ = 'emails'
 
-metadata.create_all(engine)
-conn = engine.connect()
+    id = sa.Column(sa.Integer, primary_key=True)
+    created_at = sa.Column(sa.DateTime, default=sa.func.now())
+    updated_at = sa.Column(sa.DateTime, onupdate=sa.func.now())
 
-run_sql = conn.execute
-drop_all = lambda: metadata.drop_all(engine)
+    uid = sa.Column(sa.BigInteger, unique=True)
+    flags = sa.Column(psa.ARRAY(sa.String))
+    internaldate = sa.Column(sa.DateTime)
+    size = sa.Column(sa.Integer, index=True)
+    header = sa.Column(sa.String)
+    body = sa.Column(sa.String)
+
+    date = sa.Column(sa.DateTime)
+    subject = sa.Column(sa.String)
+    from_ = sa.Column(psa.ARRAY(sa.String), name='from')
+    sender = sa.Column(psa.ARRAY(sa.String))
+    reply_to = sa.Column(psa.ARRAY(sa.String))
+    to = sa.Column(psa.ARRAY(sa.String))
+    cc = sa.Column(psa.ARRAY(sa.String))
+    bcc = sa.Column(psa.ARRAY(sa.String))
+    in_reply_to = sa.Column(sa.String)
+    message_id = sa.Column(sa.String)
+
+    text = sa.Column(sa.String)
+    text = sa.Column(sa.String)
+
+
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine, autocommit=True)
+session = Session()

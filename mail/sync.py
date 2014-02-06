@@ -3,7 +3,7 @@ import time
 
 from imapclient import IMAPClient
 
-from .db import labels, emails, run_sql, sa
+from .db import Email, Label, session, sa
 
 log = logging.getLogger(__name__)
 
@@ -16,10 +16,11 @@ def sync_gmail(with_bodies=True):
     folders_ = im.list_folders()
     for attrs, delim, name in folders_:
         try:
-            run_sql(labels.insert(), attrs=attrs, delim=delim, name=name)
+            session.add(Label(attrs=attrs, delim=delim, name=name))
+            session.flush()
         except sa.exc.IntegrityError:
             pass
-        label = run_sql(labels.select().where(labels.c.name == name)).first()
+        label = session.query(Label).filter_by(name=name).first()
         if '\\Noselect' in attrs:
             continue
         fetch_emails(im, label, with_bodies)
@@ -41,19 +42,16 @@ def fetch_emails(im, label, with_bodies=True):
         msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
     msgids = dict(msgids)
 
-    run_sql(
-        labels.update()
-        .where(labels.c.id == label.id)
-        .values(uids=msgids.keys(), recent=recent, exists=exists)
-    )
+    session.query(Label).filter_by(id=label.id)\
+        .update({'uids': msgids.keys(), 'recent': recent, 'exists': exists})
 
     log.info('%s|%d uids|%.2f', label.name, len(msgids), time.time() - start)
     if not msgids:
         return
 
     # Fetch properties
-    sql = sa.select([emails.c.uid]).where(emails.c.uid.in_(msgids.keys()))
-    msgids_ = sum([[r.uid] for r in run_sql(sql).fetchall()], [])
+    emails = session.query(Email.uid).filter(Email.uid.in_(msgids.keys()))
+    msgids_ = sum([[r.uid] for r in emails.all()], [])
     msgids_ = list(set(msgids.keys()) - set(msgids_))
     uids = [msgids[k] for k in msgids_]
     if uids:
@@ -70,25 +68,24 @@ def fetch_emails(im, label, with_bodies=True):
                 'uid': 'X-GM-MSGID'
             }
             data = im.fetch(uids_, query.values())
-            items = [
-                {k: row[v] for k, v in query.items()}
+            session.add_all([
+                Email(**{k: row[v] for k, v in query.items()})
                 for row in data.values()
-            ]
-            run_sql(emails.insert(), items)
-            count = step * i + len(uids_)
+            ])
+            count = i + len(uids_)
             log.info('* %d headers for %.2fs', count, time.time() - start)
 
     if not with_bodies:
         return
 
     # Fetch bodies
-    sql = (
-        sa.select([emails.c.uid])
-        .where(emails.c.body == sa.null())
-        .where(emails.c.uid.in_(msgids.keys()))
-        .order_by(emails.c.size)
+    emails = (
+        session.query(Email.uid)
+        .filter_by(body=None)
+        .filter(Email.uid.in_(msgids.keys()))
+        .order_by(Email.size)
     )
-    uids = [msgids[r.uid] for r in run_sql(sql).fetchall()]
+    uids = [msgids[r.uid] for r in emails.all()]
     uids_map = {v: k for k, v in msgids.items()}
     if uids:
         log.info('Fetch %d bodies...', len(uids))
@@ -97,15 +94,12 @@ def fetch_emails(im, label, with_bodies=True):
         for i in range(0, len(uids), step):
             uids_ = uids[i: i + step]
             data = im.fetch(uids_, 'RFC822')
-            items = [
-                dict(_uid=uids_map[u], _body=r['RFC822'])
-                for u, r in data.items()
-            ]
-            run_sql(
-                emails.update()
-                .where(emails.c.uid == sa.bindparam('_uid'))
-                .values(body=sa.bindparam('_body')),
-                items
-            )
+
+            with session.begin():
+                for uid, row in data.items():
+                    session.query(Email)\
+                        .filter_by(uid=uids_map[uid])\
+                        .update(body=row['RFC822'])
+
             count = step * i + len(uids_)
             log.info('* %d bodies for %.2fs', count, time.time() - start)

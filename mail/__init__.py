@@ -1,6 +1,6 @@
 import argparse
 
-from . import db, sync
+from . import db, app, sync
 
 
 def parse_args():
@@ -19,6 +19,8 @@ def parse_args():
         .exe(lambda a: sync.sync_gmail(a.with_bodies))
 
     cmd('db-clear').exe(lambda a: db.drop_all())
+
+    cmd('run').exe(lambda a: app.run())
 
     args = parser.parse_args()
     if not hasattr(args, 'exe'):
