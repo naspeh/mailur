@@ -19,7 +19,7 @@ def decode_header(text, default='utf-8'):
                 part = text.decode(charset)
             except UnicodeDecodeError:
                 log.warn('%s -- (%s)', text, charset)
-                part = text.decode(charset, 'replace')
+                part = text.decode(charset, 'ignore')
         parts += [part]
     return ''.join(parts)
 
