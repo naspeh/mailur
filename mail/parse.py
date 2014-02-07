@@ -1,7 +1,6 @@
 import datetime as dt
 import email
 
-import chardet
 import pytz
 
 
@@ -15,11 +14,7 @@ def decode_header(data, default='utf-8'):
         if isinstance(text, str):
             part = text
         else:
-            try:
-                part = text.decode(charset or default)
-            except (LookupError, UnicodeDecodeError):
-                charset = chardet.detect(text)['encoding']
-                part = text.decode(charset or default, 'replace')
+            part = text.decode(charset or default, 'replace')
         parts += [part]
     return ''.join(parts)
 
