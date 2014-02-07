@@ -1,33 +1,25 @@
-import argparse
+import logging
+import time
 
-from . import db, app, sync
+log = logging.getLogger(__name__)
 
 
-def parse_args():
-    conf = __import__('conf')
+class Timer:
+    __slots__ = ('start', 'finish')
 
-    parser = argparse.ArgumentParser('mail')
-    cmds = parser.add_subparsers(help='commands')
+    def __init__(self):
+        self.reset()
 
-    def cmd(name, **kw):
-        p = cmds.add_parser(name, **kw)
-        p.set_defaults(cmd=name)
-        p.arg = lambda *a, **kw: p.add_argument(*a, **kw) and p
-        p.exe = lambda f: p.set_defaults(exe=f) and p
-        return p
+    def reset(self):
+        self.start = time.time()
 
-    cmd('sync')\
-        .arg('-b', '--with-bodies', action='store_true')\
-        .exe(lambda a: (
-            sync.sync_gmail(conf.username, conf.password, a.with_bodies)
-        ))
+    @property
+    def duration(self):
+        self.finish = time.time()
+        return self.finish - self.start
 
-    cmd('db-clear').exe(lambda a: db.drop_all())
-
-    cmd('run').exe(lambda a: app.run())
-
-    args = parser.parse_args()
-    if not hasattr(args, 'exe'):
-        parser.print_usage()
-    else:
-        args.exe(args)
+    def time(self, reset=True):
+        duration = self.duration
+        if reset:
+            self.reset()
+        return duration

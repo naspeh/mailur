@@ -1,12 +1,7 @@
-import logging
-import time
-
 from imapclient import IMAPClient
 
+from . import log, Timer, parser
 from .db import Email, Label, session, sa
-from .parse import parse_header
-
-log = logging.getLogger(__name__)
 
 
 def sync_gmail(username, password, with_bodies=True):
@@ -30,7 +25,7 @@ def fetch_emails(im, label, with_bodies=True):
     res = im.select_folder(label.name, readonly=True)
     uid_next, recent, exists = res['UIDNEXT'], res['RECENT'], res['EXISTS']
 
-    start = time.time()
+    timer = Timer()
     uids, step = [], 5000
     for i in range(1, uid_next, step):
         uids += im.search('UID %d:%d' % (i, i + step - 1))
@@ -45,7 +40,7 @@ def fetch_emails(im, label, with_bodies=True):
     session.query(Label).filter_by(id=label.id)\
         .update({'uids': msgids.keys(), 'recent': recent, 'exists': exists})
 
-    log.info('%s|%d uids|%.2f', label.name, len(msgids), time.time() - start)
+    log.info('%s|%d uids|%.2f', label.name, len(msgids), timer.time())
     if not msgids:
         return
 
@@ -63,19 +58,17 @@ def fetch_emails(im, label, with_bodies=True):
             'size': 'RFC822.SIZE',
             'uid': 'X-GM-MSGID'
         }
-        step = 1000
+        timer, step = Timer(), 1000
         for i in range(0, len(uids), step):
-            start = time.time()
             uids_ = uids[i: i + step]
             data = im.fetch(uids_, query.values())
             with session.begin():
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
-                    fields.update(parse_header(fields['header']))
+                    fields.update(parser.parse_header(fields['header']))
                     session.add(Email(**fields))
 
-            count = i + len(uids_)
-            log.info('* %d headers for %.2fs', count, time.time() - start)
+            log.info('* %d headers for %.2fs', i + len(uids_), timer.time())
 
     if not with_bodies:
         return
@@ -91,9 +84,8 @@ def fetch_emails(im, label, with_bodies=True):
     uids_map = {v: k for k, v in msgids.items()}
     if uids:
         log.info('Fetch %d bodies...', len(uids))
-        step = 500
+        timer, step = Timer(), 500
         for i in range(0, len(uids), step):
-            start = time.time()
             uids_ = uids[i: i + step]
             data = im.fetch(uids_, 'RFC822')
 
@@ -103,5 +95,4 @@ def fetch_emails(im, label, with_bodies=True):
                         .filter_by(uid=uids_map[uid])\
                         .update(body=row['RFC822'])
 
-            count = step * i + len(uids_)
-            log.info('* %d bodies for %.2fs', count, time.time() - start)
+            log.info('* %d bodies for %.2fs', i + len(uids_), timer.time())

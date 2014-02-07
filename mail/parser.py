@@ -1,6 +1,8 @@
 import datetime as dt
 import email
 
+from . import log
+
 
 def decode_header(text, default='utf-8'):
     if not text:
@@ -12,7 +14,12 @@ def decode_header(text, default='utf-8'):
         if isinstance(text, str):
             part = text
         else:
-            part = text.decode(charset or default, 'replace')
+            charset = charset or default
+            try:
+                part = text.decode(charset)
+            except UnicodeDecodeError:
+                log.warn('%s -- (%s)', text, charset)
+                part = text.decode(charset, 'replace')
         parts += [part]
     return ''.join(parts)
 
