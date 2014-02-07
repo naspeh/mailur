@@ -4,11 +4,11 @@ import email
 import pytz
 
 
-def decode_header(data, default='utf-8'):
-    if not data:
+def decode_header(text, default='utf-8'):
+    if not text:
         return None
 
-    parts_ = email.header.decode_header(data)
+    parts_ = email.header.decode_header(text)
     parts = []
     for text, charset in parts_:
         if isinstance(text, str):
@@ -19,9 +19,9 @@ def decode_header(data, default='utf-8'):
     return ''.join(parts)
 
 
-def decode_addresses(value):
+def decode_addresses(text):
     res = []
-    for name, addr in email.utils.getaddresses([value]):
+    for name, addr in email.utils.getaddresses([text]):
         res += ['"%s" <%s>' % (decode_header(name), addr) if name else addr]
     return res
 
@@ -34,16 +34,16 @@ def decode_date(text):
 
 
 key_map = {
-    'Date': ('date', decode_date),
-    'Subject': ('subject', decode_header),
-    'From': ('from_', decode_addresses),
-    'Sender': ('sender', decode_addresses),
-    'Reply-To': ('reply_to', decode_addresses),
-    'To': ('to', decode_addresses),
-    'CC': ('cc', decode_addresses),
-    'BCC': ('bcc', decode_addresses),
-    'In-Reply-To': ('in_reply_to', str),
-    'Message-ID': ('message_id', str)
+    'date': ('date', decode_date),
+    'subject': ('subject', decode_header),
+    'from': ('from_', decode_addresses),
+    'sender': ('sender', decode_addresses),
+    'reply-to': ('reply_to', decode_addresses),
+    'to': ('to', decode_addresses),
+    'cc': ('cc', decode_addresses),
+    'bcc': ('bcc', decode_addresses),
+    'in-reply-to': ('in_reply_to', str),
+    'message-id': ('message_id', str)
 }
 
 
