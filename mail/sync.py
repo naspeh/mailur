@@ -9,10 +9,9 @@ from .parse import parse_header
 log = logging.getLogger(__name__)
 
 
-def sync_gmail(with_bodies=True):
-    conf = __import__('conf')
+def sync_gmail(username, password, with_bodies=True):
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
-    im.login(conf.username, conf.password)
+    im.login(username, password)
 
     folders_ = im.list_folders()
     for attrs, delim, name in folders_:

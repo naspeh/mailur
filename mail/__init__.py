@@ -1,9 +1,11 @@
 import argparse
 
-from . import db, app, sync, parse
+from . import db, app, sync
 
 
 def parse_args():
+    conf = __import__('conf')
+
     parser = argparse.ArgumentParser('mail')
     cmds = parser.add_subparsers(help='commands')
 
@@ -16,7 +18,9 @@ def parse_args():
 
     cmd('sync')\
         .arg('-b', '--with-bodies', action='store_true')\
-        .exe(lambda a: sync.sync_gmail(a.with_bodies))
+        .exe(lambda a: (
+            sync.sync_gmail(conf.username, conf.password, a.with_bodies)
+        ))
 
     cmd('db-clear').exe(lambda a: db.drop_all())
 
