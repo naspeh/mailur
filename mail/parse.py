@@ -1,6 +1,8 @@
+import datetime as dt
 import email
 
 import chardet
+import pytz
 
 
 def decode_header(data, default='utf-8'):
@@ -23,16 +25,21 @@ def decode_header(data, default='utf-8'):
 
 
 def decode_addresses(value):
-    addrs = []
+    res = []
     for name, addr in email.utils.getaddresses([value]):
-        addrs.append(
-            '"%s" <%s>' % (decode_header(name), addr) if name else addr
-        )
-    return addrs
+        res += ['"%s" <%s>' % (decode_header(name), addr) if name else addr]
+    return res
+
+
+def decode_date(text):
+    tm_array = email.utils.parsedate_tz(text)
+    tm = dt.datetime(*tm_array[:6]) - dt.timedelta(seconds=tm_array[-1])
+    tm = pytz.utc.localize(tm)
+    return tm
 
 
 key_map = {
-    #'Date': ('date', str),
+    'Date': ('date', decode_date),
     'Subject': ('subject', decode_header),
     'From': ('from_', decode_addresses),
     'Sender': ('sender', decode_addresses),
@@ -40,8 +47,8 @@ key_map = {
     'To': ('to', decode_addresses),
     'CC': ('cc', decode_addresses),
     'BCC': ('bcc', decode_addresses),
-    #'In-Reply-To': ('in_reply_to', str),
-    #'Message-ID': ('message_id', str)
+    'In-Reply-To': ('in_reply_to', str),
+    'Message-ID': ('message_id', str)
 }
 
 
