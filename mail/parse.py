@@ -1,8 +1,6 @@
 import datetime as dt
 import email
 
-import pytz
-
 
 def decode_header(text, default='utf-8'):
     if not text:
@@ -29,7 +27,6 @@ def decode_addresses(text):
 def decode_date(text):
     tm_array = email.utils.parsedate_tz(text)
     tm = dt.datetime(*tm_array[:6]) - dt.timedelta(seconds=tm_array[-1])
-    tm = pytz.utc.localize(tm)
     return tm
 
 
