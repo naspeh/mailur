@@ -1,6 +1,6 @@
 import argparse
 
-from . import db, app, sync
+from . import db, app, sync, parse
 
 
 def parse_args():

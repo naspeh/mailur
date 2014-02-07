@@ -4,6 +4,7 @@ import time
 from imapclient import IMAPClient
 
 from .db import Email, Label, session, sa
+from .parse import parse_header
 
 log = logging.getLogger(__name__)
 
@@ -56,22 +57,30 @@ def fetch_emails(im, label, with_bodies=True):
     uids = [msgids[k] for k in msgids_]
     if uids:
         log.info('Fetch %d headers...', len(uids))
-        start = time.time()
         step = 1000
         for i in range(0, len(uids), step):
+            start = time.time()
             uids_ = uids[i: i + step]
-            query = {
-                'header': 'BODY[HEADER]',
-                'internaldate': 'INTERNALDATE',
-                'flags': 'FLAGS',
-                'size': 'RFC822.SIZE',
-                'uid': 'X-GM-MSGID'
-            }
-            data = im.fetch(uids_, query.values())
-            session.add_all([
-                Email(**{k: row[v] for k, v in query.items()})
-                for row in data.values()
-            ])
+            data = im.fetch(uids_, (
+                'BODY[HEADER] INTERNALDATE FLAGS RFC822.SIZE '
+                'X-GM-MSGID ENVELOPE'
+            ))
+            with session.begin():
+                for row in data.values():
+                    envelope = row['ENVELOPE']
+                    fields = {
+                        'header': row['BODY[HEADER]'],
+                        'internaldate': row['INTERNALDATE'],
+                        'flags': row['FLAGS'],
+                        'size': row['RFC822.SIZE'],
+                        'uid': row['X-GM-MSGID'],
+                        'date': envelope.date,
+                        'message_id': envelope.message_id,
+                        'in_reply_to': envelope.in_reply_to
+                    }
+                    fields.update(parse_header(fields['header']))
+                    session.add(Email(**fields))
+
             count = i + len(uids_)
             log.info('* %d headers for %.2fs', count, time.time() - start)
 
@@ -89,9 +98,9 @@ def fetch_emails(im, label, with_bodies=True):
     uids_map = {v: k for k, v in msgids.items()}
     if uids:
         log.info('Fetch %d bodies...', len(uids))
-        start = time.time()
         step = 500
         for i in range(0, len(uids), step):
+            start = time.time()
             uids_ = uids[i: i + step]
             data = im.fetch(uids_, 'RFC822')
 
