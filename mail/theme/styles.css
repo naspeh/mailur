@@ -31,6 +31,6 @@ h2 {
 .labels li a {
     display: block;
     padding: 0 5px;
-    border-radius: 5px 5px 0 0;
+    border-radius: 5px;
     border: 1px solid #ccc;
 }

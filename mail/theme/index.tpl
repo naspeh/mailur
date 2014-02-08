@@ -8,7 +8,7 @@
 <body>
 <ul class="labels">
 {% for label in labels %}
-    <li><a href="#/label/{{ label.id }}/">
+    <li><a href="#{{ url_for('label', id=label.id) }}">
         {{ label.striped_name }} <b>{{ label.recent }}</b>/{{ label.exists }}
     </a></li>
 {% endfor %}
@@ -17,6 +17,13 @@
 </div>
 <script src="https://code.jquery.com/jquery.js"></script>
 <script>
+$('.labels a').click(function() {
+    var url = $(this).attr('href').slice(1);
+    $.get(url, function(content) {
+        $('.panel-one').html(content);
+    });
+    return false;
+});
 </script>
 </body>
 </html>

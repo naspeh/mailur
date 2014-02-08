@@ -87,13 +87,13 @@ def fetch_emails(im, label, with_bodies=True):
         return
 
     # Fetch bodies
-    emails = (
+    uids = (
         session.query(Email.uid)
         .filter_by(body=None)
         .filter(Email.uid.in_(msgids.keys()))
         .order_by(Email.size)
+        .scalar()
     )
-    uids = [msgids[r.uid] for r in emails.all()]
     uids_map = {v: k for k, v in msgids.items()}
     if uids:
         log.info('Fetch %d bodies...', len(uids))

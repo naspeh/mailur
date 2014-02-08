@@ -2,7 +2,6 @@ import os
 
 from jinja2 import Environment, FileSystemLoader
 from werkzeug.exceptions import HTTPException
-from werkzeug.routing import Map, Rule
 from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import SharedDataMiddleware
@@ -14,13 +13,9 @@ theme_dir = os.path.join(app_dir, 'theme')
 
 
 def create_app():
-    url_map = Map([
-        Rule('/', endpoint='on_index'),
-    ])
-
     @Request.application
     def app(request):
-        env = Env(url_map, request)
+        env = Env(request)
         try:
             return env.run()
         except HTTPException as e:
@@ -29,10 +24,10 @@ def create_app():
 
 
 class Env:
-    def __init__(self, url_map, request):
-        self.url_map = url_map
+    def __init__(self, request):
+        self.url_map = views.url_map
         self.request = request
-        self.adapter = url_map.bind_to_environ(request.environ)
+        self.adapter = self.url_map.bind_to_environ(request.environ)
 
         self.jinja = jinja = Environment(loader=FileSystemLoader(theme_dir))
         jinja.globals.update(url_for=self.url_for)
