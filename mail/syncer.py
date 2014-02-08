@@ -8,10 +8,23 @@ def sync_gmail(username, password, with_bodies=True):
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
     im.login(username, password)
 
+    weights = {
+        'INBOX': 100,
+        '\\Flagged': 95,
+        '\\Sent': 90,
+        '\\Drafts': 85,
+        '\\All': 80,
+        '\\Junk': 75,
+        '\\Trash': 70
+    }
     folders_ = im.list_folders()
     for attrs, delim, name in folders_:
+        lookup = list(attrs) + [name]
+        weight = [v for k, v in weights.items() if k in lookup]
+        weight = weight[0] if weight else 0
+        label = Label(attrs=attrs, delim=delim, name=name, weight=weight)
         try:
-            session.add(Label(attrs=attrs, delim=delim, name=name))
+            session.add(label)
             session.flush()
         except sa.exc.IntegrityError:
             pass

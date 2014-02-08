@@ -14,6 +14,7 @@ class Label(Base):
     id = sa.Column(sa.Integer, primary_key=True)
     created_at = sa.Column(sa.DateTime, default=sa.func.now())
     updated_at = sa.Column(sa.DateTime, onupdate=sa.func.now())
+    weight = sa.Column(sa.SmallInteger, default=0)
 
     attrs = sa.Column(psa.ARRAY(sa.String))
     delim = sa.Column(sa.String)
@@ -22,6 +23,10 @@ class Label(Base):
     uids = sa.Column(psa.ARRAY(sa.BigInteger))
     recent = sa.Column(sa.Integer)
     exists = sa.Column(sa.Integer)
+
+    @property
+    def striped_name(self):
+        return self.name.replace('[Gmail]/', '')
 
 
 class Email(Base):

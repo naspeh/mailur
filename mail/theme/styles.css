@@ -1,0 +1,36 @@
+@import url(http://fonts.googleapis.com/css?family=PT+Sans:400,700,400italic,700italic|Philosopher:700,700italic|Anonymous+Pro:400,700,400italic,700italic&subset=latin,cyrillic);
+@import url(./reset.css);
+
+body {
+    font: 1em/1.4 "PT Sans", sans-serif;
+    font-weight: 400;
+}
+a {
+    color: #008000;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+a:hover, a:focus, a:active {
+    color: #f63;
+    border-bottom-color: #f63;
+}
+h1, h2, h3, h4, h5, h6 {
+    font: 1.1em "Philosopher", sans-serif;
+    font-weight: 700;
+    margin-bottom: 0.3em;
+}
+h1 {
+    font-size: 1.3em;
+}
+h2 {
+    font-size: 1.2em;
+}
+.labels li {
+    display: inline-block;
+}
+.labels li a {
+    display: block;
+    padding: 0 5px;
+    border-radius: 5px 5px 0 0;
+    border: 1px solid #ccc;
+}
