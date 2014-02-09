@@ -65,7 +65,7 @@ def fetch_emails(im, label, with_bodies=True):
     if uids:
         log.info('Fetch %d headers...', len(uids))
         query = {
-            'header': 'BODY[HEADER]',
+            'header': 'RFC822.HEADER',
             'internaldate': 'INTERNALDATE',
             'flags': 'FLAGS',
             'size': 'RFC822.SIZE',

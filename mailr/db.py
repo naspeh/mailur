@@ -76,9 +76,9 @@ class Email(Base):
         ]
 
     @property
-    def human_date(self):
+    def local_date(self):
         import arrow
-        return arrow.get(self.date).to('Europe/Kiev').humanize()
+        return arrow.get(self.date).to('Europe/Kiev')
 
 
 Base.metadata.create_all(engine)

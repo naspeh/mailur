@@ -35,25 +35,35 @@ h2 {
     border: 1px solid #ccc;
 }
 .email {
+    position: relative;
     background-color: #eee;
     border-top: 1px solid #fff;
-    padding: 0 5px;
     line-height: 1.4;
     white-space: nowrap;
+    overflow: hidden;
 }
 .email-pics img {
     vertical-align: middle;
 }
 .email-from {
-    display: inline-block;
-    width: 100px;
+    position: absolute;
+    left: 0;
+    width: 90px;
+    padding-left: 5px;
     overflow: hidden;
-    vertical-align: bottom;
+    background-color: #eee;
 }
 .email-subject {
     font-weight: bold;
+    margin: 0 120px 0 100px;
+    overflow: hidden;
 }
 .email-date {
-    float: right;
-    vertical-align: bottom;
+    position: absolute;
+    right: 0;
+    width: 110px;
+    padding: 0 5px;
+    text-align: right;
+    overflow: hidden;
+    background-color: #eee;
 }
