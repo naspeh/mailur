@@ -22,7 +22,6 @@ $('.labels a').click(function() {
     $.get(url, function(content) {
         $('.panel-one').html(content);
     });
-    return false;
 });
 </script>
 </body>

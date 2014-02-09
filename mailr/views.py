@@ -1,6 +1,6 @@
 from werkzeug.routing import Map, Rule
 
-from .db import Email, Label, session
+from .db import Email, Label, session, sa
 
 url_map = Map([
     Rule('/', endpoint='index'),
@@ -17,5 +17,6 @@ def index(env):
 def label(env, id):
     uids = session.query(Label.uids).filter_by(id=id).scalar()
     emails = session.query(Email)\
-        .filter(Email.uid.in_(uids))
+        .filter(Email.uid.in_(uids), Email.in_reply_to == sa.null())\
+        .order_by(Email.date.desc())
     return env.render('list.tpl', emails=emails)

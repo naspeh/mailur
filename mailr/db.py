@@ -55,7 +55,17 @@ class Email(Base):
     message_id = sa.Column(sa.String)
 
     text = sa.Column(sa.String)
-    text = sa.Column(sa.String)
+    html = sa.Column(sa.String)
+
+    @property
+    def names_from(self):
+        from email.utils import getaddresses
+        return [e.split('@')[0] for n, e in getaddresses(self.from_)]
+
+    @property
+    def human_date(self):
+        import arrow
+        return arrow.get(self.date).to('Europe/Kiev').humanize()
 
 
 Base.metadata.create_all(engine)
