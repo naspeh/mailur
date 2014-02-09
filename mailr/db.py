@@ -1,3 +1,5 @@
+from email.utils import getaddresses
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as psa
 from sqlalchemy.ext.declarative import declarative_base
@@ -59,8 +61,19 @@ class Email(Base):
 
     @property
     def names_from(self):
-        from email.utils import getaddresses
         return [e.split('@')[0] for n, e in getaddresses(self.from_)]
+
+    @property
+    def gravatars_from(self):
+        from hashlib import md5
+
+        gen_hash = lambda e: md5(e.strip().lower().encode()).hexdigest()
+        gen_url = lambda h: '//www.gravatar.com/avatar/%s' % h if h else None
+
+        return [
+            (f, gen_url(gen_hash(e[1])))
+            for f, e in zip(self.from_, getaddresses(self.from_))
+        ]
 
     @property
     def human_date(self):

@@ -39,6 +39,10 @@ h2 {
     border-top: 1px solid #fff;
     padding: 0 5px;
     line-height: 1.4;
+    white-space: nowrap;
+}
+.email-pics img {
+    vertical-align: middle;
 }
 .email-from {
     display: inline-block;
