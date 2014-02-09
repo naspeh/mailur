@@ -2,7 +2,7 @@
 import argparse
 import logging
 
-from mail import db, app, syncer
+from mailr import db, app, syncer
 
 logging.basicConfig(
     format='%(levelname)s %(asctime)s  %(message)s',
