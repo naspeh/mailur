@@ -44,71 +44,76 @@ def fetch_emails(im, label, with_bodies=True):
     for i in range(1, uid_next, step):
         uids += im.search('UID %d:%d' % (i, i + step - 1))
 
-    msgids, step = [], 500
-    for i in range(0, len(uids), step):
-        uids_ = uids[i: i + step]
-        data = im.fetch(uids_, 'X-GM-MSGID')
-        msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
-    msgids = dict(msgids)
-
     session.query(Label).filter_by(id=label.id)\
-        .update({'uids': msgids.keys(), 'recent': recent, 'exists': exists})
+        .update({'uids': uids, 'recent': recent, 'exists': exists})
 
-    log.info('%s|%d uids|%.2f', label.name, len(msgids), timer.time())
-    if not msgids:
+    log.info('%s|%d uids|%.2f', label.name, len(uids), timer.time())
+    if not uids:
         return
 
     # Fetch properties
-    emails = session.query(Email.uid).filter(Email.uid.in_(msgids.keys()))
-    msgids_ = sum([[r.uid] for r in emails.all()], [])
-    msgids_ = list(set(msgids.keys()) - set(msgids_))
-    uids = [msgids[k] for k in msgids_]
-    if uids:
-        log.info('Fetch %d headers...', len(uids))
+    emails = session.query(Email.uids).filter(Email.uids.overlap(uids))
+    uids_ = sum([r.uids for r in emails.all()], [])
+    new_uids = list(set(uids) - set(uids_))
+    if new_uids:
+        log.info('Fetch %d headers...', len(new_uids))
         query = {
             'header': 'RFC822.HEADER',
             'internaldate': 'INTERNALDATE',
             'flags': 'FLAGS',
             'size': 'RFC822.SIZE',
-            'uid': 'X-GM-MSGID',
             'gm_msgid': 'X-GM-MSGID',
             'gm_thrid': 'X-GM-THRID'
         }
         timer, step = Timer(), 1000
-        for i in range(0, len(uids), step):
+        for i in range(0, len(new_uids), step):
             uids_ = uids[i: i + step]
+            updated, created = 0, 0
             data = im.fetch(uids_, query.values())
             with session.begin():
-                for row in data.values():
+                for uid, row in data.items():
                     fields = {k: row[v] for k, v in query.items()}
-                    fields.update(parser.parse_header(fields['header']))
-                    session.add(Email(**fields))
-
+                    email = (
+                        session.query(Email)
+                        .filter(Email.gm_msgid == fields['gm_msgid'])
+                        .first()
+                    )
+                    if email:
+                        email.uids = set((email.uids or []) + [uid])
+                        session.merge(email)
+                        updated += 1
+                    else:
+                        fields.update(parser.parse_header(fields['header']))
+                        fields.update(uids=[uid])
+                        session.add(Email(**fields))
+                        created += 1
             log.info('* %d headers for %.2fs', i + len(uids_), timer.time())
+            log.info('- %d created and %d updated entries', created, updated)
 
     if not with_bodies:
         return
 
     # Fetch bodies
-    uids = (
-        session.query(Email.uid)
-        .filter_by(body=None)
-        .filter(Email.uid.in_(msgids.keys()))
-        .order_by(Email.size)
-        .scalar()
+    emails = (
+        session.query(Email.uids)
+        .filter(Email.body.__eq__(None))
+        .filter(Email.uids.overlap(uids))
     )
-    uids_map = {v: k for k, v in msgids.items()}
-    if uids:
-        log.info('Fetch %d bodies...', len(uids))
+    uids_ = sum([r.uids for r in emails.all()], [])
+    empty_uids = list(set(uids) & set(uids_))
+    if empty_uids:
+        log.info('Fetch %d bodies...', len(empty_uids))
         timer, step = Timer(), 500
-        for i in range(0, len(uids), step):
-            uids_ = uids[i: i + step]
+        for i in range(0, len(empty_uids), step):
+            uids_ = empty_uids[i: i + step]
             data = im.fetch(uids_, 'RFC822')
 
             with session.begin():
                 for uid, row in data.items():
-                    session.query(Email)\
-                        .filter_by(uid=uids_map[uid])\
-                        .update(body=row['RFC822'])
+                    email = session.query(Email).filter(Email.uids.any(uid))
+                    print(email.first().body)
+                    email.update(
+                        {'body': row['RFC822']}, synchronize_session=False
+                    )
 
             log.info('* %d bodies for %.2fs', i + len(uids_), timer.time())
