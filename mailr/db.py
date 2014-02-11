@@ -24,7 +24,7 @@ class Label(Base):
     delim = Column(String)
     name = Column(String, unique=True)
 
-    uids = Column(ARRAY(Integer))
+    uids = Column(ARRAY(BigInteger))
     recent = Column(Integer)
     exists = Column(Integer)
 
@@ -40,7 +40,7 @@ class Email(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 
-    uids = Column(ARRAY(Integer))
+    uid = Column(BigInteger, unique=True)
     gm_msgid = Column(BigInteger, unique=True)
     gm_thrid = Column(BigInteger)
 
