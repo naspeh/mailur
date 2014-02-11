@@ -25,14 +25,17 @@ h1 {
 h2 {
     font-size: 1.2em;
 }
-.labels li {
+.label {
     display: inline-block;
 }
-.labels li a {
+.label a {
     display: block;
     padding: 0 5px;
     border-radius: 5px;
     border: 1px solid #ccc;
+}
+.label-active {
+    background-color: #eee;
 }
 .email {
     position: relative;
