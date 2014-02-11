@@ -1,7 +1,8 @@
 from imapclient import IMAPClient
+from sqlalchemy.exc import IntegrityError
 
 from . import log, Timer, parser
-from .db import Email, Label, session, sa
+from .db import Email, Label, session
 
 
 def sync_gmail(username, password, with_bodies=True):
@@ -26,7 +27,7 @@ def sync_gmail(username, password, with_bodies=True):
         try:
             session.add(label)
             session.flush()
-        except sa.exc.IntegrityError:
+        except IntegrityError:
             pass
         label = session.query(Label).filter_by(name=name).first()
         if '\\Noselect' in attrs:

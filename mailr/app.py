@@ -6,7 +6,7 @@ from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import SharedDataMiddleware
 
-from . import views
+from . import views, filters
 
 app_dir = os.path.abspath(os.path.dirname(__file__))
 theme_dir = os.path.join(app_dir, 'theme')
@@ -31,6 +31,7 @@ class Env:
 
         self.jinja = jinja = Environment(loader=FileSystemLoader(theme_dir))
         jinja.globals.update(url_for=self.url_for)
+        jinja.filters.update(**filters.get_all())
 
     def run(self):
         endpoint, values = self.adapter.match()

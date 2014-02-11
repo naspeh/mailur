@@ -2,20 +2,20 @@
 {% for email in emails %}
     <li class="email">
         <span class="email-from" title="{{ ', '.join(email.from_)|e }}">
-            {{ ', '.join(email.names_from)|e }}
+            {{ email.from_|map('get_addr_name')|join(', ') }}
         </span>
         {#
         <span class="email-pics">
-        {% for addr, url in email.gravatars_from %}
-            <img src="{{ url }}?s=20"  alt="{{ addr|e }}" />
+        {% for addr in email.from_ %}
+            <img src="{{ addr|get_gravatar }}?s=20"  alt="{{ addr|e }}" />
         {% endfor %}
         </span>
         #}
         <span class="email-subject">
             {{ email.subject }}
         </span>
-        <span class="email-date" title="{{ email.local_date.strftime('%a, %d %b, %Y at %H:%M') }}">
-            {{ email.local_date.humanize() }}
+        <span class="email-date" title="{{ email.date|format_dt }}">
+            {{ email.date|humanize_dt }}
         </span>
     </li>
 {% endfor %}
