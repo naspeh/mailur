@@ -17,6 +17,6 @@ def index(env):
 def label(env, id):
     uids = session.query(Label.uids).filter_by(id=id).scalar()
     emails = session.query(Email)\
-        .filter(Email.uid.in_(uids), Email.in_reply_to == None)\
+        .filter(Email.uid.in_(uids), Email.in_reply_to.__eq__(None))\
         .order_by(Email.date.desc())
     return env.render('list.tpl', emails=emails)

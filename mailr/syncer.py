@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from imapclient import IMAPClient
 from sqlalchemy.exc import IntegrityError
 
@@ -44,17 +46,20 @@ def fetch_emails(im, label, with_bodies=True):
     for i in range(1, uid_next, step):
         uids += im.search('UID %d:%d' % (i, i + step - 1))
 
-    msgids, step = [], 500
+    msgids, flags, step = [], [], 500
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
-        data = im.fetch(uids_, 'X-GM-MSGID')
+        data = im.fetch(uids_, 'X-GM-MSGID FLAGS')
         msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
-    msgids = dict(msgids)
+        flags += [(k, v['FLAGS']) for k, v in data.items()]
+    msgids = OrderedDict(msgids)
+    uids_map = {v: k for k, v in msgids.items()}
+    flags = {uids_map[k]: v for k, v in flags}
 
     session.query(Label).filter_by(id=label.id)\
         .update({'uids': msgids.keys(), 'recent': recent, 'exists': exists})
 
-    log.info('%s|%d uids|%.2f', label.name, len(msgids), timer.time())
+    log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())
     if not msgids:
         return
 
@@ -62,7 +67,7 @@ def fetch_emails(im, label, with_bodies=True):
     emails = session.query(Email.uid).filter(Email.uid.in_(msgids.keys()))
     msgids_ = sum([[r.uid] for r in emails.all()], [])
     msgids_ = list(set(msgids.keys()) - set(msgids_))
-    uids = [msgids[k] for k in msgids_]
+    uids = [v for k, v in msgids.items() if k in msgids_]
     if uids:
         log.info('Fetch %d headers...', len(uids))
         query = {
@@ -86,18 +91,32 @@ def fetch_emails(im, label, with_bodies=True):
 
             log.info('* %d headers for %.2fs', i + len(uids_), timer.time())
 
+    # Update flags
+    uids = [k for k, v in msgids.items() if k not in msgids_]
+    if uids:
+        log.info('Update flags for %d emails...', len(uids))
+        timer, updated = Timer(), 0
+        emails = session.query(Email).filter(Email.uid.in_(uids))
+        with session.begin():
+            for email in emails.all():
+                if email.flags != list(flags[email.uid]):
+                    email.flags = flags[email.uid]
+                    session.merge(email)
+                    updated += 1
+
+        log.info('* %d updated for %.2fs', updated, timer.time())
+
     if not with_bodies:
         return
 
     # Fetch bodies
-    uids = (
+    emails = (
         session.query(Email.uid)
-        .filter_by(body=None)
+        .filter(Email.body.__eq__(None))
         .filter(Email.uid.in_(msgids.keys()))
         .order_by(Email.size)
-        .scalar()
     )
-    uids_map = {v: k for k, v in msgids.items()}
+    uids = [msgids[r.uid] for r in emails.all()]
     if uids:
         log.info('Fetch %d bodies...', len(uids))
         timer, step = Timer(), 500
@@ -109,6 +128,6 @@ def fetch_emails(im, label, with_bodies=True):
                 for uid, row in data.items():
                     session.query(Email)\
                         .filter_by(uid=uids_map[uid])\
-                        .update(body=row['RFC822'])
+                        .update({'body': row['RFC822']})
 
             log.info('* %d bodies for %.2fs', i + len(uids_), timer.time())
