@@ -27,7 +27,7 @@ class Label(Base):
     exists = sa.Column(sa.Integer)
 
     @property
-    def striped_name(self):
+    def human_name(self):
         return self.name.replace('[Gmail]/', '')
 
 
@@ -39,6 +39,9 @@ class Email(Base):
     updated_at = sa.Column(sa.DateTime, onupdate=sa.func.now())
 
     uid = sa.Column(sa.BigInteger, unique=True)
+    gm_msgid = sa.Column(sa.BigInteger, unique=True)
+    gm_thrid = sa.Column(sa.BigInteger)
+
     flags = sa.Column(psa.ARRAY(sa.String))
     internaldate = sa.Column(sa.DateTime)
     size = sa.Column(sa.Integer, index=True)

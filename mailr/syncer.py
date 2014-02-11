@@ -69,7 +69,9 @@ def fetch_emails(im, label, with_bodies=True):
             'internaldate': 'INTERNALDATE',
             'flags': 'FLAGS',
             'size': 'RFC822.SIZE',
-            'uid': 'X-GM-MSGID'
+            'uid': 'X-GM-MSGID',
+            'gm_msgid': 'X-GM-MSGID',
+            'gm_thrid': 'X-GM-THRID'
         }
         timer, step = Timer(), 1000
         for i in range(0, len(uids), step):
