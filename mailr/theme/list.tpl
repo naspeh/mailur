@@ -1,6 +1,6 @@
 <ul class="emails">
 {% for email in emails %}
-    <li class="email">
+    <li class="email{% if email.unread %} email-unread{% endif %}">
         <span class="email-from" title="{{ ', '.join(email.from_)|e }}">
             {{ email.from_|map('get_addr_name')|join(', ') }}
         </span>

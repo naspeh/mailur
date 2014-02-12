@@ -39,7 +39,6 @@ def sync_gmail(username, password, with_bodies=True):
 
 def fetch_emails(im, label, with_bodies=True):
     res = im.select_folder(label.name, readonly=True)
-    uid_next, recent, exists = res['UIDNEXT'], res['RECENT'], res['EXISTS']
 
     timer = Timer()
     uids, step = [], 5000
@@ -69,7 +68,7 @@ def fetch_emails(im, label, with_bodies=True):
     msgids_ = list(set(msgids.keys()) - set(msgids_))
     uids = [v for k, v in msgids.items() if k in msgids_]
     if uids:
-        log.info('Fetch %d headers...', len(uids))
+        log.info('  * Fetch %d headers...', len(uids))
         query = {
             'header': 'RFC822.HEADER',
             'internaldate': 'INTERNALDATE',
@@ -89,12 +88,12 @@ def fetch_emails(im, label, with_bodies=True):
                     fields.update(parser.parse_header(fields['header']))
                     session.add(Email(**fields))
 
-            log.info('* %d headers for %.2fs', i + len(uids_), timer.time())
+            log.info('  - %d headers for %.2fs', i + len(uids_), timer.time())
 
     # Update flags
     uids = [k for k, v in msgids.items() if k not in msgids_]
     if uids:
-        log.info('Update flags for %d emails...', len(uids))
+        log.info('  * Update flags for %d emails...', len(uids))
         timer, updated = Timer(), 0
         emails = session.query(Email).filter(Email.uid.in_(uids))
         with session.begin():
@@ -104,7 +103,7 @@ def fetch_emails(im, label, with_bodies=True):
                     session.merge(email)
                     updated += 1
 
-        log.info('* %d updated for %.2fs', updated, timer.time())
+        log.info('  - %d updated for %.2fs', updated, timer.time())
 
     if not with_bodies:
         return
@@ -118,7 +117,7 @@ def fetch_emails(im, label, with_bodies=True):
     )
     uids = [msgids[r.uid] for r in emails.all()]
     if uids:
-        log.info('Fetch %d bodies...', len(uids))
+        log.info('  * Fetch %d bodies...', len(uids))
         timer, step = Timer(), 500
         for i in range(0, len(uids), step):
             uids_ = uids[i: i + step]
@@ -130,4 +129,4 @@ def fetch_emails(im, label, with_bodies=True):
                         .filter_by(uid=uids_map[uid])\
                         .update({'body': row['RFC822']})
 
-            log.info('* %d bodies for %.2fs', i + len(uids_), timer.time())
+            log.info('  - %d bodies for %.2fs', i + len(uids_), timer.time())

@@ -25,12 +25,24 @@ class Label(Base):
     name = Column(String, unique=True)
 
     uids = Column(ARRAY(BigInteger))
-    recent = Column(Integer)
-    exists = Column(Integer)
 
     @property
     def human_name(self):
         return self.name.replace('[Gmail]/', '')
+
+    @property
+    def unread(self):
+        count = (
+            session.query(func.count(Email.id))
+            .filter(Email.uid.in_(self.uids))
+            .filter(~Email.flags.any('\\Seen'))
+            .scalar()
+        )
+        return count
+
+    @property
+    def exists(self):
+        return len(self.uids)
 
 
 class Email(Base):
@@ -63,6 +75,10 @@ class Email(Base):
 
     text = Column(String)
     html = Column(String)
+
+    @property
+    def unread(self):
+        return '\\Seen' not in self.flags
 
 
 Base.metadata.create_all(engine)

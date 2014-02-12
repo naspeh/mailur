@@ -45,6 +45,9 @@ h2 {
     white-space: nowrap;
     overflow: hidden;
 }
+.email-unread .email-subject {
+    font-weight: bold;
+}
 .email-pics img {
     vertical-align: middle;
 }
@@ -57,7 +60,6 @@ h2 {
     background-color: #eee;
 }
 .email-subject {
-    font-weight: bold;
     margin: 0 120px 0 100px;
     overflow: hidden;
 }

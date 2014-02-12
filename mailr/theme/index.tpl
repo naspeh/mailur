@@ -9,7 +9,7 @@
 <ul class="labels">
 {% for label in labels %}
     <li class="label"><a href="#{{ url_for('label', id=label.id) }}">
-        {{ label.human_name }} <b>{{ label.recent }}</b>/{{ label.exists }}
+        {{ label.human_name }} <b>{{ label.unread }}</b>/{{ label.exists }}
     </a></li>
 {% endfor %}
 </ul>
