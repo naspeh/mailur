@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from imapclient import IMAPClient
 from sqlalchemy.exc import IntegrityError
@@ -38,25 +38,25 @@ def sync_gmail(username, password, with_bodies=True):
 
 
 def fetch_emails(im, label, with_bodies=True):
-    res = im.select_folder(label.name, readonly=True)
+    uid_next = im.select_folder(label.name, readonly=True)['UIDNEXT']
 
     timer = Timer()
     uids, step = [], 5000
     for i in range(1, uid_next, step):
         uids += im.search('UID %d:%d' % (i, i + step - 1))
 
-    msgids, flags, step = [], [], 500
+    flags = defaultdict(list)
+    msgids, step = OrderedDict(), 500
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
         data = im.fetch(uids_, 'X-GM-MSGID FLAGS')
-        msgids += [(v['X-GM-MSGID'], k) for k, v in data.items()]
-        flags += [(k, v['FLAGS']) for k, v in data.items()]
-    msgids = OrderedDict(msgids)
+        for k, v in data.items():
+            msgid = v['X-GM-MSGID']
+            msgids[msgid] = k
+            for f in v['FLAGS']:
+                flags[f].append(msgid)
     uids_map = {v: k for k, v in msgids.items()}
-    flags = {uids_map[k]: v for k, v in flags}
-
-    session.query(Label).filter_by(id=label.id)\
-        .update({'uids': msgids.keys(), 'recent': recent, 'exists': exists})
+    session.query(Label).filter_by(id=label.id).update({'uids': msgids.keys()})
 
     log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())
     if not msgids:
@@ -85,10 +85,35 @@ def fetch_emails(im, label, with_bodies=True):
             with session.begin():
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
+                    fields['flags'] = dict((k, "") for k in fields['flags'])
+                    fields['labels'] = {str(label.id): ""}
                     fields.update(parser.parse_header(fields['header']))
                     session.add(Email(**fields))
 
             log.info('  - %d headers for %.2fs', i + len(uids_), timer.time())
+
+    # Update labels
+    uids = [k for k, v in msgids.items() if k not in msgids_]
+    log.info('  * Update labels for %d emails...', len(uids))
+    timer, updated = Timer(), 0
+    emails = session.query(Email)
+    updated += (
+        emails.filter(~Email.uid.in_(msgids.keys()))
+        .filter(Email.labels.has_key(str(label.id)))
+        .update(
+            {Email.labels: Email.labels.delete(str(label.id))},
+            synchronize_session=False
+        )
+    )
+    updated += (
+        emails.filter(Email.uid.in_(msgids.keys()))
+        .filter(~Email.labels.has_key(str(label.id)))
+        .update(
+            {Email.labels: Email.labels + {str(label.id): ""}},
+            synchronize_session=False
+        )
+    )
+    log.info('  - %d updated for %.2fs', updated, timer.time())
 
     # Update flags
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -96,13 +121,23 @@ def fetch_emails(im, label, with_bodies=True):
         log.info('  * Update flags for %d emails...', len(uids))
         timer, updated = Timer(), 0
         emails = session.query(Email).filter(Email.uid.in_(uids))
-        with session.begin():
-            for email in emails.all():
-                if email.flags != list(flags[email.uid]):
-                    email.flags = flags[email.uid]
-                    session.merge(email)
-                    updated += 1
-
+        for flag, uids_ in flags.items():
+            updated += (
+                emails.filter(~Email.uid.in_(uids_))
+                .filter(Email.flags.has_key(flag))
+                .update(
+                    {Email.flags: Email.flags.delete(flag)},
+                    synchronize_session=False
+                )
+            )
+            updated += (
+                emails.filter(Email.uid.in_(uids_))
+                .filter(~Email.flags.has_key(flag))
+                .update(
+                    {Email.flags: Email.flags + {flag: ""}},
+                    synchronize_session=False
+                )
+            )
         log.info('  - %d updated for %.2fs', updated, timer.time())
 
     if not with_bodies:
