@@ -41,10 +41,12 @@ class Email(Base):
 
     uid = Column(BigInteger, unique=True)
     labels = Column(ARRAY(Integer))
+    t_labels = Column(ARRAY(Integer))
     gm_msgid = Column(BigInteger, unique=True)
     gm_thrid = Column(BigInteger)
 
     flags = Column(ARRAY(String))
+    t_flags = Column(ARRAY(String))
     internaldate = Column(DateTime)
     size = Column(Integer, index=True)
     header = Column(String)

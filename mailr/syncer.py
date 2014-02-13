@@ -1,17 +1,20 @@
 from collections import OrderedDict, defaultdict
 
 from imapclient import IMAPClient
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import array
 
 from . import log, Timer, parser
-from .db import Email, Label, session, array_del
+from .db import Email, Label, session
 
 
 def sync_gmail(username, password, with_bodies=True):
     im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
     im.login(username, password)
+
+    # Cleaunp t_flags and t_labels
+    session.query(Email).update({Email.t_flags: [], Email.t_labels: []})
 
     weights = {
         'INBOX': 100,
@@ -38,6 +41,20 @@ def sync_gmail(username, password, with_bodies=True):
             continue
         fetch_emails(im, label, with_bodies)
 
+    # Update flags and labels
+    timer = Timer()
+    updated = (
+        session.query(Email)
+        .filter(or_(Email.flags.__eq__(None), Email.flags != Email.t_flags))
+        .update({Email.flags: Email.t_flags})
+    )
+    updated += (
+        session.query(Email)
+        .filter(or_(Email.labels.__eq__(None), Email.labels != Email.t_labels))
+        .update({Email.labels: Email.t_labels})
+    )
+    log.info(' %d updated labels or flags for %.2f', updated, timer.time())
+
 
 def fetch_emails(im, label, with_bodies=True):
     uid_next = im.select_folder(label.name, readonly=True)['UIDNEXT']
@@ -58,10 +75,11 @@ def fetch_emails(im, label, with_bodies=True):
             for f in v['FLAGS']:
                 flags[f].append(msgid)
     uids_map = {v: k for k, v in msgids.items()}
+    flags = dict(flags)
 
     session.query(Label).filter_by(id=label.id).update({
         'exists': len(msgids.keys()),
-        'unread': len(msgids.keys()) - len(dict(flags).get(Email.SEEN, []))
+        'unread': len(msgids.keys()) - len(flags.get(Email.SEEN, []))
     })
 
     log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())
@@ -78,7 +96,7 @@ def fetch_emails(im, label, with_bodies=True):
         query = {
             'header': 'RFC822.HEADER',
             'internaldate': 'INTERNALDATE',
-            'flags': 'FLAGS',
+            't_flags': 'FLAGS',
             'size': 'RFC822.SIZE',
             'uid': 'X-GM-MSGID',
             'gm_msgid': 'X-GM-MSGID',
@@ -91,7 +109,7 @@ def fetch_emails(im, label, with_bodies=True):
             with session.begin():
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
-                    fields['labels'] = [label.id]
+                    fields['t_labels'] = [label.id]
                     fields.update(parser.parse_header(fields['header']))
                     session.add(Email(**fields))
 
@@ -103,18 +121,10 @@ def fetch_emails(im, label, with_bodies=True):
     timer, updated = Timer(), 0
     emails = session.query(Email)
     updated += (
-        emails.filter(~Email.uid.in_(msgids.keys()))
-        .filter(Email.labels.any(label.id))
-        .update(
-            {Email.labels: array_del(Email.labels, label.id)},
-            synchronize_session=False
-        )
-    )
-    updated += (
         emails.filter(Email.uid.in_(msgids.keys()))
-        .filter(~Email.labels.any(label.id))
+        .filter(~Email.t_labels.any(label.id))
         .update(
-            {Email.labels: Email.labels + array([label.id])},
+            {Email.t_labels: Email.t_labels + array([label.id])},
             synchronize_session=False
         )
     )
@@ -125,21 +135,13 @@ def fetch_emails(im, label, with_bodies=True):
     if uids:
         log.info('  * Update flags for %d emails...', len(uids))
         timer, updated = Timer(), 0
-        emails = session.query(Email).filter(Email.uid.in_(uids))
+        emails = session.query(Email)
         for flag, uids_ in flags.items():
             updated += (
-                emails.filter(~Email.uid.in_(uids_))
-                .filter(Email.flags.any(flag))
-                .update(
-                    {Email.flags: array_del(Email.flags, flag)},
-                    synchronize_session=False
-                )
-            )
-            updated += (
                 emails.filter(Email.uid.in_(uids_))
-                .filter(~Email.flags.any(flag))
+                .filter(~Email.t_flags.any(flag))
                 .update(
-                    {Email.flags: func.array_append(Email.flags, flag)},
+                    {Email.t_flags: func.array_append(Email.t_flags, flag)},
                     synchronize_session=False
                 )
             )
