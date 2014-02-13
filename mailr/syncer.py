@@ -1,7 +1,7 @@
 from collections import OrderedDict, defaultdict
 
 from imapclient import IMAPClient
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import array
 
@@ -45,12 +45,12 @@ def sync_gmail(username, password, with_bodies=True):
     timer = Timer()
     updated = (
         session.query(Email)
-        .filter(or_(Email.flags.__eq__(None), Email.flags != Email.t_flags))
+        .filter(Email.flags != Email.t_flags)
         .update({Email.flags: Email.t_flags})
     )
     updated += (
         session.query(Email)
-        .filter(or_(Email.labels.__eq__(None), Email.labels != Email.t_labels))
+        .filter(Email.labels != Email.t_labels)
         .update({Email.labels: Email.t_labels})
     )
     log.info(' %d updated labels or flags for %.2f', updated, timer.time())
@@ -75,7 +75,7 @@ def fetch_emails(im, label, with_bodies=True):
             for f in v['FLAGS']:
                 flags[f].append(msgid)
     uids_map = {v: k for k, v in msgids.items()}
-    flags = dict(flags)
+    flags = OrderedDict(sorted(flags.items()))
 
     session.query(Label).filter_by(id=label.id).update({
         'exists': len(msgids.keys()),

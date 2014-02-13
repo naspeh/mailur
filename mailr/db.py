@@ -40,12 +40,12 @@ class Email(Base):
     updated_at = Column(DateTime, onupdate=func.now())
 
     uid = Column(BigInteger, unique=True)
-    labels = Column(ARRAY(Integer))
+    labels = Column(ARRAY(Integer), default=[])
     t_labels = Column(ARRAY(Integer))
     gm_msgid = Column(BigInteger, unique=True)
     gm_thrid = Column(BigInteger)
 
-    flags = Column(ARRAY(String))
+    flags = Column(ARRAY(String), default=[])
     t_flags = Column(ARRAY(String))
     internaldate = Column(DateTime)
     size = Column(Integer, index=True)
