@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    create_engine, Column, func, text,
+    create_engine, Column, func, select, bindparam,
     DateTime, String, Integer, BigInteger, SmallInteger
 )
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -70,13 +70,11 @@ class Email(Base):
 
 
 def array_del(field, value):
-    table = field.parent.tables[0]
-    return (
-        text(
-            'ARRAY(SELECT unnest("%s") FROM "%s" EXCEPT SELECT :id)'
-            % (field.name, table.name)
+    return func.array(
+        select([func.unnest(field)])
+        .except_(
+            select([bindparam('id')]).params(id=value)
         )
-        .bindparams(id=value)
     )
 
 
