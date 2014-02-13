@@ -1,3 +1,4 @@
+from werkzeug.exceptions import abort
 from werkzeug.routing import Map, Rule
 
 from .db import Email, Label, session
@@ -15,8 +16,14 @@ def index(env):
 
 
 def label(env, id):
-    uids = session.query(Label.uids).filter_by(id=id).scalar()
-    emails = session.query(Email)\
-        .filter(Email.uid.in_(uids), Email.in_reply_to.__eq__(None))\
+    label = session.query(Label).filter_by(id=id).first()
+    if not label:
+        abort(404)
+
+    emails = (
+        session.query(Email)
+        .filter(Email.labels.any(label.id))
+        #.filter(Email.in_reply_to.__eq__(None))
         .order_by(Email.date.desc())
+    )
     return env.render('list.tpl', emails=emails)
