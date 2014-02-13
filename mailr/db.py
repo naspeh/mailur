@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    create_engine, Column, func, select, bindparam,
+    create_engine, Column, func,
     DateTime, String, Integer, BigInteger, SmallInteger, Boolean
 )
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -89,15 +89,6 @@ class Email(Base):
     @property
     def starred(self):
         return self.STARRED in self.flags
-
-
-def array_del(field, value):
-    return func.array(
-        select([func.unnest(field)])
-        .except_(
-            select([bindparam('id')]).params(id=value)
-        )
-    )
 
 
 Base.metadata.create_all(engine)
