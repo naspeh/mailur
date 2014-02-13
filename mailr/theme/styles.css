@@ -52,23 +52,28 @@ h2 {
     vertical-align: middle;
 }
 .email-from {
-    position: absolute;
-    left: 0;
+    display: inline-block;
     width: 90px;
-    padding-left: 5px;
+    padding: 0 5px;
     overflow: hidden;
     background-color: #eee;
 }
+.email-star {
+    display: inline-block;
+    color: red;
+}
+.email-labels {
+    color: blue;
+}
 .email-subject {
-    margin: 0 120px 0 100px;
+    margin-right: 120px;
     overflow: hidden;
 }
 .email-date {
     position: absolute;
     right: 0;
-    width: 110px;
-    padding: 0 5px;
+    height: 100%;
     text-align: right;
-    overflow: hidden;
+    padding: 0 5px;
     background-color: #eee;
 }

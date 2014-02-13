@@ -23,20 +23,26 @@ def sync_gmail(username, password, with_bodies=True):
         '\\Drafts': 85,
         '\\All': 80,
         '\\Junk': 75,
-        '\\Trash': 70
+        '\\Trash': 70,
+        '\\Important': 0
     }
     folders_ = im.list_folders()
     for attrs, delim, name in folders_:
         lookup = list(attrs) + [name]
-        weight = [v for k, v in weights.items() if k in lookup]
-        weight = weight[0] if weight else 0
-        label = Label(attrs=attrs, delim=delim, name=name, weight=weight)
+        folder = [v for k, v in weights.items() if k in lookup]
+        weight = folder[0] if folder else 0
+        label = Label(attrs=attrs, delim=delim, name=name)
         try:
             session.add(label)
             session.flush()
         except IntegrityError:
             pass
-        label = session.query(Label).filter_by(name=name).first()
+
+        label = session.query(Label).filter(Label.name == name).one()
+        label.is_folder = bool(folder)
+        label.weight = weight
+        session.merge(label)
+
         if '\\Noselect' in attrs:
             continue
         fetch_emails(im, label, with_bodies)
@@ -78,8 +84,8 @@ def fetch_emails(im, label, with_bodies=True):
     flags = OrderedDict(sorted(flags.items()))
 
     session.query(Label).filter_by(id=label.id).update({
+        'unread': len(msgids.keys()) - len(flags.get(Email.SEEN, [])),
         'exists': len(msgids.keys()),
-        'unread': len(msgids.keys()) - len(flags.get(Email.SEEN, []))
     })
 
     log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())

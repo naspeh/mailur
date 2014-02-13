@@ -11,6 +11,14 @@
         {% endfor %}
         </span>
         #}
+        {% if email.starred %}
+        <span class="email-star">*</span>
+        {% endif %}
+        <span class="email-labels">
+        {% for label in email.full_labels if not label.is_folder %}
+            {{ label.name }}
+        {% endfor %}
+        </span>
         <span class="email-subject">
             {{ email.subject }}
         </span>

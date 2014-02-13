@@ -1,6 +1,6 @@
 from sqlalchemy import (
     create_engine, Column, func, select, bindparam,
-    DateTime, String, Integer, BigInteger, SmallInteger
+    DateTime, String, Integer, BigInteger, SmallInteger, Boolean
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,6 +22,7 @@ class Label(Base):
     delim = Column(String)
     name = Column(String, unique=True)
 
+    is_folder = Column(Boolean, default=False)
     weight = Column(SmallInteger, default=0)
     unread = Column(SmallInteger, default=0)
     exists = Column(SmallInteger, default=0)
@@ -33,7 +34,9 @@ class Label(Base):
 
 class Email(Base):
     __tablename__ = 'emails'
+    _labels = None
     SEEN = '\\Seen'
+    STARRED = '\\Flagged'
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
@@ -67,8 +70,21 @@ class Email(Base):
     html = Column(String)
 
     @property
+    def full_labels(self):
+        if self._labels is None:
+            self._labels = dict((l.id, l) for l in (
+                session.query(Label)
+                .order_by(Label.weight.desc())
+            ))
+        return [self._labels[l] for l in self.labels if l in self._labels]
+
+    @property
     def unread(self):
         return self.SEEN not in self.flags
+
+    @property
+    def starred(self):
+        return self.STARRED in self.flags
 
 
 def array_del(field, value):
