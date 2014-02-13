@@ -58,9 +58,10 @@ def fetch_emails(im, label, with_bodies=True):
             for f in v['FLAGS']:
                 flags[f].append(msgid)
     uids_map = {v: k for k, v in msgids.items()}
+
     session.query(Label).filter_by(id=label.id).update({
         'exists': len(msgids.keys()),
-        'unread': len(msgids.keys()) - len(dict(flags).get('\\Seen', []))
+        'unread': len(msgids.keys()) - len(dict(flags).get(Email.SEEN, []))
     })
 
     log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())

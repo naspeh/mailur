@@ -14,7 +14,6 @@ drop_all = lambda: Base.metadata.drop_all(engine)
 
 class Label(Base):
     __tablename__ = 'labels'
-
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
@@ -34,6 +33,7 @@ class Label(Base):
 
 class Email(Base):
     __tablename__ = 'emails'
+    SEEN = '\\Seen'
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
@@ -66,7 +66,7 @@ class Email(Base):
 
     @property
     def unread(self):
-        return '\\Seen' not in self.flags
+        return self.SEEN not in self.flags
 
 
 def array_del(field, value):
