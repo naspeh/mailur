@@ -1,15 +1,12 @@
-from psycopg2.extras import register_hstore
 from sqlalchemy import (
-    create_engine, Column, func,
+    create_engine, Column, func, text,
     DateTime, String, Integer, BigInteger, SmallInteger
 )
-from sqlalchemy.dialects.postgresql import ARRAY, HSTORE
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import sessionmaker
 
 engine = create_engine('postgresql+psycopg2://test:test@/mail')
-register_hstore(engine.raw_connection(), True)
 
 Base = declarative_base()
 drop_all = lambda: Base.metadata.drop_all(engine)
@@ -56,11 +53,11 @@ class Email(Base):
     updated_at = Column(DateTime, onupdate=func.now())
 
     uid = Column(BigInteger, unique=True)
-    labels = Column(MutableDict.as_mutable(HSTORE))
+    labels = Column(ARRAY(Integer))
     gm_msgid = Column(BigInteger, unique=True)
     gm_thrid = Column(BigInteger)
 
-    flags = Column(MutableDict.as_mutable(HSTORE))
+    flags = Column(ARRAY(String))
     internaldate = Column(DateTime)
     size = Column(Integer, index=True)
     header = Column(String)
@@ -83,6 +80,17 @@ class Email(Base):
     @property
     def unread(self):
         return '\\Seen' not in self.flags
+
+
+def array_del(field, value):
+    table = field.parent.tables[0]
+    return (
+        text(
+            'ARRAY(SELECT unnest("%s") FROM "%s" EXCEPT SELECT :id)'
+            % (field.name, table.name)
+        )
+        .bindparams(id=value)
+    )
 
 
 Base.metadata.create_all(engine)

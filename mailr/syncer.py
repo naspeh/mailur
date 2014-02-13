@@ -1,10 +1,12 @@
 from collections import OrderedDict, defaultdict
 
 from imapclient import IMAPClient
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import array
 
 from . import log, Timer, parser
-from .db import Email, Label, session
+from .db import Email, Label, session, array_del
 
 
 def sync_gmail(username, password, with_bodies=True):
@@ -85,8 +87,7 @@ def fetch_emails(im, label, with_bodies=True):
             with session.begin():
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
-                    fields['flags'] = dict((k, "") for k in fields['flags'])
-                    fields['labels'] = {str(label.id): ""}
+                    fields['labels'] = [label.id]
                     fields.update(parser.parse_header(fields['header']))
                     session.add(Email(**fields))
 
@@ -99,17 +100,17 @@ def fetch_emails(im, label, with_bodies=True):
     emails = session.query(Email)
     updated += (
         emails.filter(~Email.uid.in_(msgids.keys()))
-        .filter(Email.labels.has_key(str(label.id)))
+        .filter(Email.labels.any(label.id))
         .update(
-            {Email.labels: Email.labels.delete(str(label.id))},
+            {Email.labels: array_del(Email.labels, label.id)},
             synchronize_session=False
         )
     )
     updated += (
         emails.filter(Email.uid.in_(msgids.keys()))
-        .filter(~Email.labels.has_key(str(label.id)))
+        .filter(~Email.labels.any(label.id))
         .update(
-            {Email.labels: Email.labels + {str(label.id): ""}},
+            {Email.labels: Email.labels + array([label.id])},
             synchronize_session=False
         )
     )
@@ -124,17 +125,17 @@ def fetch_emails(im, label, with_bodies=True):
         for flag, uids_ in flags.items():
             updated += (
                 emails.filter(~Email.uid.in_(uids_))
-                .filter(Email.flags.has_key(flag))
+                .filter(Email.flags.any(flag))
                 .update(
-                    {Email.flags: Email.flags.delete(flag)},
+                    {Email.flags: array_del(Email.flags, flag)},
                     synchronize_session=False
                 )
             )
             updated += (
                 emails.filter(Email.uid.in_(uids_))
-                .filter(~Email.flags.has_key(flag))
+                .filter(~Email.flags.any(flag))
                 .update(
-                    {Email.flags: Email.flags + {flag: ""}},
+                    {Email.flags: func.array_append(Email.flags, flag)},
                     synchronize_session=False
                 )
             )
