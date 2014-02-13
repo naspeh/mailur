@@ -13,7 +13,9 @@ drop_all = lambda: Base.metadata.drop_all(engine)
 
 
 class Label(Base):
+    __slots__ = ()
     __tablename__ = 'labels'
+
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
@@ -33,10 +35,12 @@ class Label(Base):
 
 
 class Email(Base):
+    __slots__ = ()
     __tablename__ = 'emails'
-    _labels = None
+
     SEEN = '\\Seen'
     STARRED = '\\Flagged'
+    _labels = None
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
