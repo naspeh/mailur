@@ -18,31 +18,18 @@ class Label(Base):
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
-    weight = Column(SmallInteger, default=0)
 
     attrs = Column(ARRAY(String))
     delim = Column(String)
     name = Column(String, unique=True)
 
-    uids = Column(ARRAY(BigInteger))
+    weight = Column(SmallInteger, default=0)
+    unread = Column(SmallInteger, default=0)
+    exists = Column(SmallInteger, default=0)
 
     @property
     def human_name(self):
         return self.name.replace('[Gmail]/', '')
-
-    @property
-    def unread(self):
-        count = (
-            session.query(func.count(Email.id))
-            .filter(Email.uid.in_(self.uids))
-            .filter(~Email.flags.any('\\Seen'))
-            .scalar()
-        )
-        return count
-
-    @property
-    def exists(self):
-        return len(self.uids)
 
 
 class Email(Base):
