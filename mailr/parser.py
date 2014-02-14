@@ -1,5 +1,6 @@
 import datetime as dt
-import email
+import email.header
+import email.utils
 
 from . import log
 

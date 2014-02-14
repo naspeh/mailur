@@ -20,7 +20,9 @@
         {% endfor %}
         </span>
         <span class="email-subject">
-            {{ email.subject }}
+            <a href="{{ url_for('raw', id=email.id) }}" target="_blank">
+                {{ email.subject }}
+            </a>
         </span>
         <span class="email-date" title="{{ email.date|format_dt }}">
             {{ email.date|humanize_dt }}

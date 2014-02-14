@@ -1,0 +1,26 @@
+MIME-Version: 1.0
+Sender: naspeh@gmail.com
+Received: by 10.194.172.98 with HTTP; Wed, 25 Dec 2013 11:12:09 -0800 (PST)
+Date: Wed, 25 Dec 2013 21:12:09 +0200
+Delivered-To: naspeh@gmail.com
+X-Google-Sender-Auth: rPdKqdY765QsSx6vfB2EMs9C8rA
+Message-ID: <CAPoAYQVJCZ9=eJqsWV9f8QkshWRkWRi7cb1i=HNN=mLJ+i2Zyg@mail.gmail.com>
+Subject: =?KOI8-R?B?6M/e1SDVxMHMydTYIMHLy8HVztQ=?=
+From: =?KOI8-R?B?59LJ28E=?= <naspeh@ya.ru>
+To: ru-cont@nic.ru
+Content-Type: multipart/alternative; boundary=089e0102fc443549df04ee60a35d
+
+--089e0102fc443549df04ee60a35d
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: base64
+
+5M/C0tnKIMTFztguDQoNCvEgyM/Uxcwgwtkg1cTBzMnU2CDT18/KIMHLy8HVztQgySDOxSDQz8zV
+3sHU2CDXwdvJINDJ09jNwSwgz9Qgy8/Uz9LZyA0KzsXM2NrRIM/U0MnTwdTY09EuDQo=
+--089e0102fc443549df04ee60a35d
+Content-Type: text/html; charset=KOI8-R
+Content-Transfer-Encoding: base64
+
+PGRpdiBkaXI9Imx0ciI+5M/C0tnKIMTFztguPGRpdj48YnI+PC9kaXY+PGRpdj7xIMjP1MXMIMLZ
+INXEwczJ1Ngg09fPyiDBy8vB1c7UIMkgzsUg0M/M1d7B1Ngg18HbySDQydPYzcEsIM/UIMvP1M/S
+2cggzsXM2NrRIM/U0MnTwdTY09EuPC9kaXY+PC9kaXY+DQo=
+--089e0102fc443549df04ee60a35d--
