@@ -1,6 +1,7 @@
 import contextlib
 import json
 import os
+import pickle
 
 root_dir = os.path.join(os.path.dirname(__file__))
 
@@ -15,6 +16,12 @@ def open_file(*names, mode='br'):
 def read_file(*names, decode=True):
     with open_file(*names) as f:
         result = f.read()
-    if decode and names[-1].endswith('.json'):
-        result = json.loads(result.decode())
+    if decode:
+        ftype = names[-1].rsplit('.', 1)[-1]
+        filters = {
+            'json': lambda r: json.loads(r.decode()),
+            'pickle': pickle.loads
+        }
+        if ftype in filters:
+            result = filters[ftype](result)
     return result
