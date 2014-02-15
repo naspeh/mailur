@@ -15,14 +15,14 @@ def gen_response(filename, query):
     im.select('&BEIENQRBBEI-')
 
     ids = im.uid('search', None, 'all')[1][0].decode().split()
-    res = im.uid('fetch', ','.join(ids), query)
+    res = im.uid('fetch', ','.join(ids), '(%s)' % query)
     with open_file(filename, mode='bw') as f:
         f.write(pickle.dumps((ids, res)))
 
 
 def test_fetch_header_and_other():
     filename = 'files_imap/fetch-header-and-other.pickle'
-    query = '(UID X-GM-MSGID FLAGS X-GM-LABELS RFC822.HEADER RFC822.HEADER)'
+    query = 'UID X-GM-MSGID FLAGS X-GM-LABELS RFC822.HEADER RFC822.HEADER'
     #gen_response(filename, query)
 
     ids, data = read_file(filename)
@@ -32,8 +32,8 @@ def test_fetch_header_and_other():
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
     for id in ids:
-        for key in query[1:-1].split():
-            value = rows[int(id)]
+        value = rows[id]
+        for key in query.split():
             assert key in value
             if key == 'X-GM-LABELS':
                 labels = value['X-GM-LABELS']
@@ -43,7 +43,7 @@ def test_fetch_header_and_other():
 
 def test_fetch_body():
     filename = 'files_imap/fetch-header.pickle'
-    query = '(RFC822.HEADER)'
+    query = 'RFC822.HEADER INTERNALDATE'
     #gen_response(filename, query)
 
     ids, data = read_file(filename)
@@ -75,7 +75,7 @@ def test_list():
         b'(\\HasNoChildren) "/" "&BEIENQRBBEI-"'
     ]
 
-    im = namedtuple('_', 'list')(lambda *a, **kw: data)
+    im = namedtuple('_', 'list')(lambda *a, **kw: ('OK', data))
     rows = imap.list_(im)
     assert rows[0] == (('\\HasNoChildren',), '/', '-job proposals')
     assert rows[3] == (('\\HasNoChildren',), '/', 'INBOX')

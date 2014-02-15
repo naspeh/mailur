@@ -10,5 +10,5 @@ def test_subjects():
 
     for path, expect in emails.items():
         raw = read_file('files_parser', path)
-        result = parser.parse_header(raw.decode())
+        result = parser.parse_header(raw)
         yield check, expect['subject'], result['subject']

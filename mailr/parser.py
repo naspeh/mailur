@@ -1,6 +1,8 @@
 import datetime as dt
 import email
 
+import chardet
+
 from . import log
 
 
@@ -17,6 +19,9 @@ def decode_header(text, default='utf-8'):
             charset = charset or default
             try:
                 part = text.decode(charset)
+            except LookupError:
+                charset_ = chardet.detect(text)['encoding']
+                part = text.decode(charset_, 'ignore')
             except UnicodeDecodeError:
                 log.warn('%s -- (%s)', text, charset)
                 part = text.decode(charset, 'ignore')
@@ -25,6 +30,8 @@ def decode_header(text, default='utf-8'):
 
 
 def decode_addresses(text):
+    if not isinstance(text, str):
+        text = str(text)
     res = []
     for name, addr in email.utils.getaddresses([text]):
         res += ['"%s" <%s>' % (decode_header(name), addr) if name else addr]
@@ -52,7 +59,7 @@ key_map = {
 
 
 def parse_header(header):
-    msg = email.message_from_string(header)
+    msg = email.message_from_bytes(header)
     data = {}
     for key in key_map:
         field, decode = key_map[key]

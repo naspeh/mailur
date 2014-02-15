@@ -1,12 +1,11 @@
 import imaplib
 from collections import OrderedDict, defaultdict
 
-from imapclient import IMAPClient
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import array
 
-from . import log, Timer, parser
+from . import log, Timer, parser, imap
 from .db import Email, Label, session
 
 
@@ -27,7 +26,7 @@ def sync_gmail(username, password, with_bodies=True):
         '\\Trash': 70,
         '\\Important': 0
     }
-    folders_ = im.list()
+    folders_ = imap.list_(im)
     for attrs, delim, name in folders_:
         lookup = list(attrs) + [name]
         folder = [v for k, v in weights.items() if k in lookup]
@@ -64,18 +63,13 @@ def sync_gmail(username, password, with_bodies=True):
 
 
 def fetch_emails(im, label, with_bodies=True):
-    uid_next = im.select_folder(label.name, readonly=True)['UIDNEXT']
-
     timer = Timer()
-    uids, step = [], 5000
-    for i in range(1, uid_next, step):
-        uids += im.search('UID %d:%d' % (i, i + step - 1))
-
+    uids = imap.search(im, label.name)
     flags = defaultdict(list)
     msgids, step = OrderedDict(), 500
     for i in range(0, len(uids), step):
         uids_ = uids[i: i + step]
-        data = im.fetch(uids_, 'X-GM-MSGID FLAGS')
+        data = imap.fetch(im, uids_, 'X-GM-MSGID FLAGS')
         for k, v in data.items():
             msgid = v['X-GM-MSGID']
             msgids[msgid] = k
@@ -112,7 +106,7 @@ def fetch_emails(im, label, with_bodies=True):
         timer, step = Timer(), 1000
         for i in range(0, len(uids), step):
             uids_ = uids[i: i + step]
-            data = im.fetch(uids_, query.values())
+            data = imap.fetch(im, uids_, query.values())
             with session.begin():
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
