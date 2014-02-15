@@ -20,7 +20,7 @@ def gen_response(filename, query):
         f.write(pickle.dumps((ids, res)))
 
 
-def test_fetch():
+def test_fetch_header_and_other():
     filename = 'files_imap/fetch-header-and-other.pickle'
     query = '(UID X-GM-MSGID FLAGS X-GM-LABELS RFC822.HEADER RFC822.HEADER)'
     #gen_response(filename, query)
@@ -29,9 +29,13 @@ def test_fetch():
 
     im = namedtuple('_', 'uid')(lambda *a, **kw: data)
     rows = imap.fetch(im, ids, query)
-    import pprint as _; _.pprint(rows)
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
     for id in ids:
         for key in query[1:-1].split():
-            assert key in rows[int(id)]
+            value = rows[int(id)]
+            assert key in value
+            if key == 'X-GM-LABELS':
+                labels = value['X-GM-LABELS']
+                assert 'UID' in labels
+                assert 'FLAGS ")\\' in labels

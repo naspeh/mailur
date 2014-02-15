@@ -5,13 +5,13 @@ from collections import OrderedDict
 def fetch(im, ids, query):
     status, data = im.uid('fetch', ','.join(ids), query)
 
-    idata = iter(data)
+    data = iter(data)
     keys = query[1:-1].split()
 
     re_keys = r'|'.join([re.escape(k) for k in keys])
     re_noesc = r'[^\\](?:\\\\)*'
     re_list = r'("(.+?%s)"|[^ ]+)' % re_noesc
-    re_full = r'(%s) ((\d+)|({\d+})|(\(%s\)))' % (re_keys, re_list)
+    re_full = r'(%s) ((\d+)|({\d+})|([(].*%s[)]))' % (re_keys, re_noesc)
     lexer_list = re.compile(re_list)
     lexer_full = re.compile(re_full)
 
@@ -29,16 +29,17 @@ def fetch(im, ids, query):
                     row[key] = int(value)
                 elif match[3]:
                     row[key] = item[1]
-                    row = parse(next(idata), row)
+                    row = parse(next(data), row)
                 elif match[4]:
+                    unesc = lambda v: re.sub(r'\\(.)', r'\1', v)
                     value_ = value[1:-1]
                     value_ = lexer_list.findall(value_)
-                    value_ = [v[1] if v[1] else v[0] for v in value_]
+                    value_ = [unesc(v[1]) if v[1] else v[0] for v in value_]
                     row[key] = value_
         return row
 
     rows = OrderedDict()
     for id in ids:
-        row = parse(next(idata), {})
+        row = parse(next(data), {})
         rows[row['UID']] = row
     return rows
