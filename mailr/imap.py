@@ -1,6 +1,22 @@
 import re
 from collections import OrderedDict
 
+re_noesc = r'[^\\](?:\\\\)*'
+
+
+def list_(im):
+    data = im.list()
+
+    re_line = r'^[(]([^)]+)[)] "([^"]+)" "(.*%s)"$' % re_noesc
+    lexer_line = re.compile(re_line)
+    rows = []
+    for line in data:
+        matches = lexer_line.match(line.decode())
+        row = matches.groups()
+        row = tuple(row[0].split()), row[1], row[2]
+        rows.append(row)
+    return rows
+
 
 def fetch(im, ids, query):
     status, data = im.uid('fetch', ','.join(ids), query)
@@ -11,11 +27,10 @@ def fetch(im, ids, query):
         keys.append('UID')
 
     re_keys = r'|'.join([re.escape(k) for k in keys])
-    re_noesc = r'[^\\](?:\\\\)*'
     re_list = r'("(.+?%s)"|[^ ]+)' % re_noesc
-    re_full = r'(%s) ((\d+)|({\d+})|([(].*%s[)]))' % (re_keys, re_noesc)
+    re_line = r'(%s) ((\d+)|({\d+})|([(].*%s[)]))' % (re_keys, re_noesc)
     lexer_list = re.compile(re_list)
-    lexer_full = re.compile(re_full)
+    lexer_line = re.compile(re_line)
 
     def parse(item, row):
         if isinstance(item, tuple):
@@ -23,7 +38,7 @@ def fetch(im, ids, query):
         else:
             line = item
 
-        matches = lexer_full.findall(line.decode())
+        matches = lexer_line.findall(line.decode())
         if matches:
             for match in matches:
                 key, value = match[0:2]

@@ -1,3 +1,4 @@
+import imaplib
 from collections import OrderedDict, defaultdict
 
 from imapclient import IMAPClient
@@ -10,7 +11,7 @@ from .db import Email, Label, session
 
 
 def sync_gmail(username, password, with_bodies=True):
-    im = IMAPClient('imap.gmail.com', use_uid=True, ssl=True)
+    im = imaplib.IMAP4_SSL('imap.gmail.com')
     im.login(username, password)
 
     # Cleaunp t_flags and t_labels
@@ -26,7 +27,7 @@ def sync_gmail(username, password, with_bodies=True):
         '\\Trash': 70,
         '\\Important': 0
     }
-    folders_ = im.list_folders()
+    folders_ = im.list()
     for attrs, delim, name in folders_:
         lookup = list(attrs) + [name]
         folder = [v for k, v in weights.items() if k in lookup]

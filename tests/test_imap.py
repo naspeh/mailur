@@ -52,3 +52,32 @@ def test_fetch_body():
     rows = imap.fetch(im, ids, query)
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
+
+
+def test_list():
+    data = [
+        b'(\\HasNoChildren) "/" "-job proposals"',
+        b'(\\HasNoChildren) "/" "-social"',
+        b'(\\HasNoChildren) "/" "FLAGS \\")\\\\"',
+        b'(\\HasNoChildren) "/" "INBOX"',
+        b'(\\HasNoChildren) "/" "UID"',
+        b'(\\Noselect \\HasChildren) "/" "[Gmail]"',
+        b'(\\HasNoChildren \\All) "/" "[Gmail]/All Mail"',
+        b'(\\HasNoChildren \\Drafts) "/" "[Gmail]/Drafts"',
+        b'(\\HasNoChildren \\Important) "/" "[Gmail]/Important"',
+        b'(\\HasNoChildren \\Sent) "/" "[Gmail]/Sent Mail"',
+        b'(\\HasNoChildren \\Junk) "/" "[Gmail]/Spam"',
+        b'(\\HasNoChildren \\Flagged) "/" "[Gmail]/Starred"',
+        b'(\\HasNoChildren \\Trash) "/" "[Gmail]/Trash"',
+        b'(\\HasNoChildren) "/" "work: 42cc"',
+        b'(\\HasNoChildren) "/" "work: odesk"',
+        b'(\\HasNoChildren) "/" "work: odeskps"',
+        b'(\\HasNoChildren) "/" "&BEIENQRBBEI-"'
+    ]
+
+    im = namedtuple('_', 'list')(lambda *a, **kw: data)
+    rows = imap.list_(im)
+    assert rows[0] == (('\\HasNoChildren',), '/', '-job proposals')
+    assert rows[3] == (('\\HasNoChildren',), '/', 'INBOX')
+    assert rows[5] == (('\\Noselect', '\\HasChildren'), '/', '[Gmail]')
+    assert rows[-1] == (('\\HasNoChildren',), '/', '&BEIENQRBBEI-')
