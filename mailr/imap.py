@@ -7,6 +7,8 @@ def fetch(im, ids, query):
 
     data = iter(data)
     keys = query[1:-1].split()
+    if 'UID' not in keys:
+        keys.append('UID')
 
     re_keys = r'|'.join([re.escape(k) for k in keys])
     re_noesc = r'[^\\](?:\\\\)*'

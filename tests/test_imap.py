@@ -39,3 +39,16 @@ def test_fetch_header_and_other():
                 labels = value['X-GM-LABELS']
                 assert 'UID' in labels
                 assert 'FLAGS ")\\' in labels
+
+
+def test_fetch_body():
+    filename = 'files_imap/fetch-header.pickle'
+    query = '(RFC822.HEADER)'
+    #gen_response(filename, query)
+
+    ids, data = read_file(filename)
+
+    im = namedtuple('_', 'uid')(lambda *a, **kw: data)
+    rows = imap.fetch(im, ids, query)
+    assert len(ids) == len(rows)
+    assert ids == list(str(k) for k in rows.keys())
