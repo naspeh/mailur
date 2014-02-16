@@ -1,6 +1,8 @@
 import re
 from collections import OrderedDict
 
+from . import Timer, log
+
 re_noesc = r'[^\\](?:\\\\)*'
 
 
@@ -45,7 +47,17 @@ def search(im, name):
     return uids
 
 
-def fetch(im, ids, query):
+def fetch(im, uids, query, batch_size=500, quiet=False):
+    timer, data = Timer(), OrderedDict()
+    for i in range(0, len(uids), batch_size):
+        uids_ = uids[i: i + batch_size]
+        data.update(_fetch(im, uids_, query))
+        if not quiet:
+            log.info('  - %d ones for %.2fs', i + len(uids_), timer.time())
+    return data
+
+
+def _fetch(im, ids, query):
     if not isinstance(query, str):
         query = ' '.join(query)
     status, data = im.uid('fetch', ','.join(ids), '(%s)' % query)

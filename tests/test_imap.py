@@ -36,9 +36,10 @@ def test_fetch_header_and_other():
         for key in query.split():
             assert key in value
             if key == 'X-GM-LABELS':
-                labels = value['X-GM-LABELS']
-                assert 'UID' in labels
-                assert 'FLAGS ")\\' in labels
+                continue
+            labels = value['X-GM-LABELS']
+            assert 'UID' in labels
+            assert 'FLAGS ")\\' in labels
 
 
 def test_fetch_body():

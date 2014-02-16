@@ -64,17 +64,14 @@ def sync_gmail(username, password, with_bodies=True):
 
 def fetch_emails(im, label, with_bodies=True):
     timer = Timer()
+    msgids, flags = OrderedDict(), defaultdict(list)
     uids = imap.search(im, label.name)
-    flags = defaultdict(list)
-    msgids, step = OrderedDict(), 500
-    for i in range(0, len(uids), step):
-        uids_ = uids[i: i + step]
-        data = imap.fetch(im, uids_, 'X-GM-MSGID FLAGS')
-        for k, v in data.items():
-            msgid = v['X-GM-MSGID']
-            msgids[msgid] = k
-            for f in v['FLAGS']:
-                flags[f].append(msgid)
+    data = imap.fetch(im, uids, 'X-GM-MSGID FLAGS', 1000, quiet=True)
+    for k, v in data.items():
+        msgid = v['X-GM-MSGID']
+        msgids[msgid] = k
+        for f in v['FLAGS']:
+            flags[f].append(msgid)
     uids_map = {v: k for k, v in msgids.items()}
     flags = OrderedDict(sorted(flags.items()))
 
@@ -103,18 +100,13 @@ def fetch_emails(im, label, with_bodies=True):
             'gm_msgid': 'X-GM-MSGID',
             'gm_thrid': 'X-GM-THRID'
         }
-        timer, step = Timer(), 1000
-        for i in range(0, len(uids), step):
-            uids_ = uids[i: i + step]
-            data = imap.fetch(im, uids_, query.values())
-            with session.begin():
-                for row in data.values():
-                    fields = {k: row[v] for k, v in query.items()}
-                    fields['t_labels'] = [label.id]
-                    fields.update(parser.parse_header(fields['header']))
-                    session.add(Email(**fields))
-
-            log.info('  - %d headers for %.2fs', i + len(uids_), timer.time())
+        data = imap.fetch(im, uids, query.values(), 1000)
+        with session.begin():
+            for row in data.values():
+                fields = {k: row[v] for k, v in query.items()}
+                fields['t_labels'] = [label.id]
+                fields.update(parser.parse_header(fields['header']))
+                session.add(Email(**fields))
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -129,7 +121,7 @@ def fetch_emails(im, label, with_bodies=True):
             synchronize_session=False
         )
     )
-    log.info('  - %d updated for %.2fs', updated, timer.time())
+    log.info('  - %d ones for %.2fs', updated, timer.time())
 
     # Update flags
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -146,7 +138,7 @@ def fetch_emails(im, label, with_bodies=True):
                     synchronize_session=False
                 )
             )
-        log.info('  - %d updated for %.2fs', updated, timer.time())
+        log.info('  - %d ones for %.2fs', updated, timer.time())
 
     if not with_bodies:
         return
@@ -161,15 +153,10 @@ def fetch_emails(im, label, with_bodies=True):
     uids = [msgids[r.uid] for r in emails.all()]
     if uids:
         log.info('  * Fetch %d bodies...', len(uids))
-        timer, step = Timer(), 500
-        for i in range(0, len(uids), step):
-            uids_ = uids[i: i + step]
-            data = im.fetch(uids_, 'RFC822')
+        data = imap.fetch(im, uids, 'RFC822', 500)
 
-            with session.begin():
-                for uid, row in data.items():
-                    session.query(Email)\
-                        .filter_by(uid=uids_map[uid])\
-                        .update({'body': row['RFC822']})
-
-            log.info('  - %d bodies for %.2fs', i + len(uids_), timer.time())
+        with session.begin():
+            for uid, row in data.items():
+                session.query(Email)\
+                    .filter_by(uid=uids_map[uid])\
+                    .update({'body': row['RFC822']})
