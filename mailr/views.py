@@ -40,10 +40,10 @@ def raw(env, id):
     if not email:
         abort(404)
 
+    body = email.body if email.body else email.header
     desc = env.request.args.get('desc')
     if desc:
         name = '%s--%s.txt' % (email.uid, desc)
-        body = email.body if email.body else email.header
         with open_file('emails', name, mode='bw') as f:
             f.write(body.encode())
-    return env.make_response(email.body, content_type='text/plain')
+    return env.make_response(body, content_type='text/plain')

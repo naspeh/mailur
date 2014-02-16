@@ -1,6 +1,7 @@
 import imaplib
 from collections import OrderedDict, defaultdict
 
+import chardet
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import array
@@ -100,13 +101,22 @@ def fetch_emails(im, label, with_bodies=True):
             'gm_msgid': 'X-GM-MSGID',
             'gm_thrid': 'X-GM-THRID'
         }
-        data = imap.fetch(im, uids, query.values(), 1000)
-        with session.begin():
-            for row in data.values():
-                fields = {k: row[v] for k, v in query.items()}
-                fields['t_labels'] = [label.id]
-                fields.update(parser.parse_header(fields['header']))
-                session.add(Email(**fields))
+
+        def add_emails(data):
+            with session.begin():
+                for row in data.values():
+                    fields = {k: row[v] for k, v in query.items()}
+                    fields['t_labels'] = [label.id]
+
+                    header = fields['header']
+                    charset = chardet.detect(header)['encoding']
+                    header = header.decode(charset, 'ignore')
+                    fields['header'] = header
+                    fields.update(parser.parse_header(header))
+
+                    session.add(Email(**fields))
+
+        imap.fetch(im, uids, query.values(), 1000, callback=add_emails)
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -153,10 +163,12 @@ def fetch_emails(im, label, with_bodies=True):
     uids = [msgids[r.uid] for r in emails.all()]
     if uids:
         log.info('  * Fetch %d bodies...', len(uids))
-        data = imap.fetch(im, uids, 'RFC822', 500)
 
-        with session.begin():
-            for uid, row in data.items():
-                session.query(Email)\
-                    .filter_by(uid=uids_map[uid])\
-                    .update({'body': row['RFC822']})
+        def update_bodies(data):
+            with session.begin():
+                for uid, row in data.items():
+                    session.query(Email)\
+                        .filter_by(uid=uids_map[uid])\
+                        .update({'body': row['RFC822']})
+
+        imap.fetch(im, uids, 'RFC822', 500, callback=update_bodies)

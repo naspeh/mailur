@@ -59,7 +59,7 @@ key_map = {
 
 
 def parse_header(header):
-    msg = email.message_from_bytes(header)
+    msg = email.message_from_string(header)
     data = {}
     for key in key_map:
         field, decode = key_map[key]

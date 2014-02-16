@@ -47,19 +47,29 @@ def search(im, name):
     return uids
 
 
-def fetch(im, uids, query, batch_size=500, quiet=False):
+def fetch(im, uids, query, batch_size=500, callback=None, quiet=False):
+    if not isinstance(query, str):
+        query = ' '.join(query)
+
+    log_ = (lambda *a, **kw: None) if quiet else log.info
+    log_('  * Fetch "%s" for %d ones...', query, len(uids))
+
     timer, data = Timer(), OrderedDict()
-    for i in range(0, len(uids), batch_size):
-        uids_ = uids[i: i + batch_size]
-        data.update(_fetch(im, uids_, query))
-        if not quiet:
-            log.info('  - %d ones for %.2fs', i + len(uids_), timer.time())
+    for i in range(len(uids)):
+        uids_ = uids[i * batch_size: (i + 1) * batch_size]
+        if not uids_:
+            continue
+
+        data_ = _fetch(im, uids_, query)
+        data.update(data_)
+        log_('  - (%d) %d ones for %.2fs', i, len(uids_), timer.time())
+        if callback:
+            callback(data_)
+            log_('  - %s for %.2fs', callback.__name__, timer.time())
     return data
 
 
 def _fetch(im, ids, query):
-    if not isinstance(query, str):
-        query = ' '.join(query)
     status, data = im.uid('fetch', ','.join(ids), '(%s)' % query)
 
     data = iter(data)
