@@ -47,7 +47,7 @@ def decode_date(text):
 key_map = {
     'date': ('date', decode_date),
     'subject': ('subject', decode_header),
-    'from': ('from_', decode_addresses),
+    'from': ('from', decode_addresses),
     'sender': ('sender', decode_addresses),
     'reply-to': ('reply_to', decode_addresses),
     'to': ('to', decode_addresses),
@@ -59,7 +59,7 @@ key_map = {
 
 
 def parse_header(header):
-    msg = email.message_from_string(header)
+    msg = email.message_from_bytes(header)
     data = {}
     for key in key_map:
         field, decode = key_map[key]

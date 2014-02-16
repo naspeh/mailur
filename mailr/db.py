@@ -1,6 +1,6 @@
 from sqlalchemy import (
     create_engine, Column, func,
-    DateTime, String, Integer, BigInteger, SmallInteger, Boolean
+    DateTime, String, Integer, BigInteger, SmallInteger, Boolean, LargeBinary
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.declarative import declarative_base
@@ -56,8 +56,7 @@ class Email(Base):
     t_flags = Column(ARRAY(String))
     internaldate = Column(DateTime)
     size = Column(Integer, index=True)
-    header = Column(String)
-    body = Column(String)
+    body = Column(LargeBinary)
 
     date = Column(DateTime)
     subject = Column(String)

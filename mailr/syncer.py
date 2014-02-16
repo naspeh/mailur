@@ -1,7 +1,6 @@
 import imaplib
 from collections import OrderedDict, defaultdict
 
-import chardet
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import array
@@ -93,7 +92,6 @@ def fetch_emails(im, label, with_bodies=True):
     if uids:
         log.info('  * Fetch %d headers...', len(uids))
         query = {
-            'header': 'RFC822.HEADER',
             'internaldate': 'INTERNALDATE',
             't_flags': 'FLAGS',
             'size': 'RFC822.SIZE',
@@ -107,12 +105,6 @@ def fetch_emails(im, label, with_bodies=True):
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
                     fields['t_labels'] = [label.id]
-
-                    header = fields['header']
-                    charset = chardet.detect(header)['encoding']
-                    header = header.decode(charset, 'ignore')
-                    fields['header'] = header
-                    fields.update(parser.parse_header(header))
 
                     session.add(Email(**fields))
 
@@ -167,8 +159,10 @@ def fetch_emails(im, label, with_bodies=True):
         def update_bodies(data):
             with session.begin():
                 for uid, row in data.items():
+                    fields = {'body': row['RFC822']}
+                    fields.update(parser.parse_header(fields['body']))
                     session.query(Email)\
                         .filter_by(uid=uids_map[uid])\
-                        .update({'body': row['RFC822']})
+                        .update(fields)
 
         imap.fetch(im, uids, 'RFC822', 500, callback=update_bodies)

@@ -33,17 +33,12 @@ def status(im, name, readonly=True):
 
 
 def search(im, name):
-    lexer_uid = re.compile(r'\d+ [(]UID (\d+)[)]')
-
     uid_next = status(im, name)
     uids, step = [], 5000
     for i in range(1, uid_next, step):
-        _, data = im.search(None, '(UID %d:%d)' % (i, i + step - 1))
-        ids = data[0].decode().replace(' ', ',')
-        if not ids:
-            continue
-        _, data = im.fetch(ids, '(UID)')
-        uids += [lexer_uid.match(line.decode()).groups()[0] for line in data]
+        _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
+        if data[0]:
+            uids += data[0].decode().split(' ')
     return uids
 
 
@@ -51,18 +46,18 @@ def fetch(im, uids, query, batch_size=500, callback=None, quiet=False):
     if not isinstance(query, str):
         query = ' '.join(query)
 
+    steps = range(0, len(uids), batch_size)
     log_ = (lambda *a, **kw: None) if quiet else log.info
-    log_('  * Fetch "%s" for %d ones...', query, len(uids))
+    log_('  * Fetch "%s" for (%d) %d ones...', query, len(steps),  len(uids))
 
     timer, data = Timer(), OrderedDict()
-    for i in range(len(uids)):
-        uids_ = uids[i * batch_size: (i + 1) * batch_size]
+    for num, i in enumerate(steps, 1):
+        uids_ = uids[i: i + batch_size]
         if not uids_:
             continue
-
         data_ = _fetch(im, uids_, query)
         data.update(data_)
-        log_('  - (%d) %d ones for %.2fs', i, len(uids_), timer.time())
+        log_('  - (%d) %d ones for %.2fs', num, len(uids_), timer.time())
         if callback:
             callback(data_)
             log_('  - %s for %.2fs', callback.__name__, timer.time())
@@ -110,8 +105,7 @@ def _fetch(im, ids, query):
         return row
 
     rows = OrderedDict()
-    for id in ids:
+    for i in range(len(ids)):
         row = parse(next(data), {})
-        assert int(id) == row.get('UID'), '%r != %r' % (id, row)
-        rows[id] = row
+        rows[str(row['UID'])] = row
     return rows
