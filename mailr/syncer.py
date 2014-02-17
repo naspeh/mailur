@@ -75,7 +75,7 @@ def fetch_emails(im, label, with_bodies=True):
     uids_map = {v: k for k, v in msgids.items()}
     flags = OrderedDict(sorted(flags.items()))
 
-    session.query(Label).filter_by(id=label.id).update({
+    session.query(Label).filter(Label.id == label.id).update({
         'unread': len(msgids.keys()) - len(flags.get(Email.SEEN, [])),
         'exists': len(msgids.keys()),
     })
@@ -101,12 +101,10 @@ def fetch_emails(im, label, with_bodies=True):
         }
 
         def add_emails(data):
-            with session.begin():
-                for row in data.values():
-                    fields = {k: row[v] for k, v in query.items()}
-                    fields['t_labels'] = [label.id]
-
-                    session.add(Email(**fields))
+            for row in data.values():
+                fields = {k: row[v] for k, v in query.items()}
+                fields['t_labels'] = [label.id]
+                session.add(Email(**fields))
 
         imap.fetch(im, uids, query.values(), 1000, callback=add_emails)
 
@@ -157,12 +155,11 @@ def fetch_emails(im, label, with_bodies=True):
         log.info('  * Fetch %d bodies...', len(uids))
 
         def update_bodies(data):
-            with session.begin():
-                for uid, row in data.items():
-                    fields = {'body': row['RFC822']}
-                    fields.update(parser.parse_header(fields['body']))
-                    session.query(Email)\
-                        .filter_by(uid=uids_map[uid])\
-                        .update(fields)
+            for uid, row in data.items():
+                fields = {'body': row['RFC822']}
+                fields.update(parser.parse_header(fields['body']))
+                session.query(Email)\
+                    .filter(Email.uid == uids_map[uid])\
+                    .update(fields)
 
         imap.fetch(im, uids, 'RFC822', 500, callback=update_bodies)

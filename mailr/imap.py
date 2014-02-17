@@ -2,6 +2,7 @@ import re
 from collections import OrderedDict
 
 from . import Timer, log
+from .db import session
 
 re_noesc = r'[^\\](?:\\\\)*'
 
@@ -59,7 +60,8 @@ def fetch(im, uids, query, batch_size=500, callback=None, quiet=False):
         data.update(data_)
         log_('  - (%d) %d ones for %.2fs', num, len(uids_), timer.time())
         if callback:
-            callback(data_)
+            with session.begin():
+                callback(data_)
             log_('  - %s for %.2fs', callback.__name__, timer.time())
     return data
 
