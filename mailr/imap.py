@@ -2,7 +2,6 @@ import re
 from collections import OrderedDict
 
 from . import Timer, log
-from .db import session
 
 re_noesc = r'[^\\](?:\\\\)*'
 
@@ -43,7 +42,7 @@ def search(im, name):
     return uids
 
 
-def fetch(im, uids, query, batch_size=500, callback=None, quiet=False):
+def fetch(im, uids, query, batch_size=500, label='some updates', quiet=False):
     if not isinstance(query, str):
         query = ' '.join(query)
 
@@ -51,18 +50,22 @@ def fetch(im, uids, query, batch_size=500, callback=None, quiet=False):
     log_ = (lambda *a, **kw: None) if quiet else log.info
     log_('  * Fetch "%s" for (%d) %d ones...', query, len(steps),  len(uids))
 
-    timer, data = Timer(), OrderedDict()
+    timer = Timer()
     for num, i in enumerate(steps, 1):
         uids_ = uids[i: i + batch_size]
         if not uids_:
             continue
         data_ = _fetch(im, uids_, query)
-        data.update(data_)
         log_('  - (%d) %d ones for %.2fs', num, len(uids_), timer.time())
-        if callback:
-            with session.begin():
-                callback(data_)
-            log_('  - %s for %.2fs', callback.__name__, timer.time())
+        yield data_
+        log_('  - %s for %.2fs', label, timer.time())
+
+
+def fetch_all(*args, **kwargs):
+    data = OrderedDict()
+    for data_ in fetch(*args, **kwargs):
+        data.update(data_)
+
     return data
 
 

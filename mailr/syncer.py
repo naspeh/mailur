@@ -66,7 +66,7 @@ def fetch_emails(im, label, with_bodies=True):
     timer = Timer()
     msgids, flags = OrderedDict(), defaultdict(list)
     uids = imap.search(im, label.name)
-    data = imap.fetch(im, uids, 'X-GM-MSGID FLAGS', 1000, quiet=True)
+    data = imap.fetch_all(im, uids, 'X-GM-MSGID FLAGS', 1000, quiet=True)
     for k, v in data.items():
         msgid = v['X-GM-MSGID']
         msgids[msgid] = k
@@ -100,13 +100,11 @@ def fetch_emails(im, label, with_bodies=True):
             'gm_thrid': 'X-GM-THRID'
         }
 
-        def add_emails(data):
+        for data in imap.fetch(im, uids, query.values(), 1000, 'add emails'):
             for row in data.values():
                 fields = {k: row[v] for k, v in query.items()}
                 fields['t_labels'] = [label.id]
                 session.add(Email(**fields))
-
-        imap.fetch(im, uids, query.values(), 1000, callback=add_emails)
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -154,12 +152,10 @@ def fetch_emails(im, label, with_bodies=True):
     if uids:
         log.info('  * Fetch %d bodies...', len(uids))
 
-        def update_bodies(data):
+        for data in imap.fetch(im, uids, 'RFC822', 500, 'update bodies'):
             for uid, row in data.items():
                 fields = {'body': row['RFC822']}
                 fields.update(parser.parse_header(fields['body']))
                 session.query(Email)\
                     .filter(Email.uid == uids_map[uid])\
                     .update(fields)
-
-        imap.fetch(im, uids, 'RFC822', 500, callback=update_bodies)
