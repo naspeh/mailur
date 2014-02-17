@@ -101,10 +101,11 @@ def fetch_emails(im, label, with_bodies=True):
         }
 
         for data in imap.fetch(im, uids, query.values(), 1000, 'add emails'):
-            for row in data.values():
-                fields = {k: row[v] for k, v in query.items()}
-                fields['t_labels'] = [label.id]
-                session.add(Email(**fields))
+            with session.begin():
+                for row in data.values():
+                    fields = {k: row[v] for k, v in query.items()}
+                    fields['t_labels'] = [label.id]
+                    session.add(Email(**fields))
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -153,9 +154,10 @@ def fetch_emails(im, label, with_bodies=True):
         log.info('  * Fetch %d bodies...', len(uids))
 
         for data in imap.fetch(im, uids, 'RFC822', 500, 'update bodies'):
-            for uid, row in data.items():
-                fields = {'body': row['RFC822']}
-                fields.update(parser.parse_header(fields['body']))
-                session.query(Email)\
-                    .filter(Email.uid == uids_map[uid])\
-                    .update(fields)
+            with session.begin():
+                for uid, row in data.items():
+                    fields = {'body': row['RFC822']}
+                    fields.update(parser.parse_header(fields['body']))
+                    session.query(Email)\
+                        .filter(Email.uid == uids_map[uid])\
+                        .update(fields)
