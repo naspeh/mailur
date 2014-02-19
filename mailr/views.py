@@ -13,7 +13,7 @@ url_map = Map([
 def index(env):
     labels = (
         session.query(Label)
-        #.filter(Label.weight > 0)
+        .filter(Label.weight > 0)
         .order_by(Label.weight.desc())
     )
     return env.render('index.tpl', labels=labels)

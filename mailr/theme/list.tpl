@@ -16,7 +16,7 @@
         {% endif %}
         <span class="email-labels">
         {% for label in email.full_labels if not label.is_folder %}
-            {{ label.name }}
+            <a href="#{{ url_for('label', id=label.id) }}">{{ label.name }}</a>
         {% endfor %}
         </span>
         <span class="email-subject">

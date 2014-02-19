@@ -17,12 +17,11 @@
 </div>
 <script src="https://code.jquery.com/jquery.js"></script>
 <script>
-$('.labels a').click(function() {
-    var $this = $(this);
-    var url = $this.attr('href').slice(1);
+$(window).bind('hashchange', function() {
+    var url = location.hash.slice(1);
     $.get(url, function(content) {
         $('.label-active').removeClass('label-active');
-        $this.addClass('label-active');
+        $('.labels a[href="#' + url + '"]').addClass('label-active');
 
         $('.panel-one').html(content);
     });
