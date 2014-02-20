@@ -20,7 +20,7 @@
         {% endfor %}
         </span>
         <span class="email-subject">
-            <a href="{{ url_for('raw', id=email.id) }}" target="_blank">
+            <a href="#{{ url_for('thread', id=email.gm_thrid) }}">
                 {{ email.subject }}
             </a>
         </span>

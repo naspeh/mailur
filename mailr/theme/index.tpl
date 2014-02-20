@@ -26,6 +26,9 @@ $(window).bind('hashchange', function() {
         $('.panel-one').html(content);
     });
 });
+if (window.location.hash) {
+    $(window).trigger('hashchange');
+}
 </script>
 </body>
 </html>

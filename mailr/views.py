@@ -6,6 +6,7 @@ from .db import Email, Label, session
 url_map = Map([
     Rule('/', endpoint='index'),
     Rule('/label/<int:id>/', endpoint='label'),
+    Rule('/thread/<int:id>/', endpoint='thread'),
     Rule('/raw/<int:id>/', endpoint='raw')
 ])
 
@@ -26,9 +27,19 @@ def label(env, id):
 
     emails = (
         session.query(Email)
+        .distinct(Email.gm_thrid)
         .filter(Email.labels.any(label.id))
         #.filter(Email.in_reply_to.__eq__(None))
-        .order_by(Email.date.desc())
+        .order_by(Email.gm_thrid, Email.date.desc())
+    )
+    return env.render('list.tpl', emails=emails)
+
+
+def thread(env, id):
+    emails = (
+        session.query(Email)
+        .filter(Email.gm_thrid == id)
+        .order_by(Email.date)
     )
     return env.render('list.tpl', emails=emails)
 
