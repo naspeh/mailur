@@ -29,7 +29,10 @@ class Env:
         self.request = request
         self.adapter = self.url_map.bind_to_environ(request.environ)
 
-        self.jinja = jinja = Environment(loader=FileSystemLoader(theme_dir))
+        self.jinja = jinja = Environment(
+            loader=FileSystemLoader(theme_dir),
+            lstrip_blocks=True, trim_blocks=True
+        )
         jinja.globals.update(url_for=self.url_for)
         jinja.filters.update(**filters.get_all())
 
