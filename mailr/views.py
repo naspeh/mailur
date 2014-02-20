@@ -29,7 +29,6 @@ def label(env, id):
         session.query(Email)
         .distinct(Email.gm_thrid)
         .filter(Email.labels.any(label.id))
-        #.filter(Email.in_reply_to.__eq__(None))
         .order_by(Email.gm_thrid, Email.date.desc())
     )
     return env.render('list.tpl', emails=emails)
@@ -51,10 +50,9 @@ def raw(env, id):
     if not email:
         abort(404)
 
-    body = email.body if email.body else email.header
     desc = env.request.args.get('desc')
     if desc:
         name = '%s--%s.txt' % (email.uid, desc)
         with open_file('emails', name, mode='bw') as f:
-            f.write(body.encode())
-    return env.make_response(body, content_type='text/plain')
+            f.write(email.body.encode())
+    return env.make_response(email.body, content_type='text/plain')

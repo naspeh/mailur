@@ -20,9 +20,11 @@
         {% endfor %}
         </span>
         <span class="email-subject">
-            <a href="#{{ url_for('thread', id=email.gm_thrid) }}">
-                {{ email.subject }}
-            </a>
+        {% if 'thread' in request.path %}
+            <a href="{{ url_for('raw', id=email.id) }}" target="_blank">{{ email.subject }}</a>
+        {% else %}
+            <a href="#{{ url_for('thread', id=email.gm_thrid) }}">{{ email.subject }}</a>
+        {% endif %}
         </span>
         <span class="email-date" title="{{ email.date|format_dt }}">
             {{ email.date|humanize_dt }}

@@ -42,6 +42,7 @@ class Env:
 
     def render(self, template_name, **context):
         t = self.jinja.get_template(template_name)
+        context.setdefault('request', self.request)
         return t.render(context)
 
     def make_response(self, response, **kw):
