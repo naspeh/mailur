@@ -28,7 +28,7 @@ def test_fetch_header_and_other():
     ids, data = read_file(filename)
 
     im = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = imap.fetch(im, ids, query)
+    rows = imap.fetch_all(im, ids, query)
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
     for id in ids:
@@ -50,7 +50,7 @@ def test_fetch_body():
     ids, data = read_file(filename)
 
     im = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = imap.fetch(im, ids, query)
+    rows = imap.fetch_all(im, ids, query)
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
 

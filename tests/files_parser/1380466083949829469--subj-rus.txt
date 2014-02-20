@@ -1,0 +1,23 @@
+MIME-Version: 1.0
+Received: by 10.216.133.222 with HTTP; Tue, 20 Sep 2011 03:37:28 -0700 (PDT)
+Date: Tue, 20 Sep 2011 13:37:28 +0300
+Delivered-To: naspeh@gmail.com
+Message-ID: <CAPoAYQVvkTx=Zd0DKXpq44tV8X9uU9rxxkWtJ9BZxv14a3RAZg@mail.gmail.com>
+Subject: =?KOI8-R?B?6M/e1SDVxMHMydTYIMHLy8HVztQ=?=
+From: naspeh <naspeh@gmail.com>
+To: support@shopium.ua
+Content-Type: multipart/alternative; boundary=0016e6dedd8cd41c3604ad5d0bf2
+
+--0016e6dedd8cd41c3604ad5d0bf2
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: base64
+
+5M/C0tnKIMTFztguCgr3IMnO1MXSxsXK08UgzsUgzsHbxcwgy8HLINXEwczJ1NgsINLFx8nT1NLJ
+0s/XwczT0SDe1M/CINDP083P1NLF1NguCg==
+--0016e6dedd8cd41c3604ad5d0bf2
+Content-Type: text/html; charset=KOI8-R
+Content-Transfer-Encoding: base64
+
+5M/C0tnKIMTFztguPGJyPjxicj73IMnO1MXSxsXK08UgzsUgzsHbxcwgy8HLINXEwczJ1NgsINLF
+x8nT1NLJ0s/XwczT0SDe1M/CINDP083P1NLF1NguPGJyPgo=
+--0016e6dedd8cd41c3604ad5d0bf2--

@@ -53,6 +53,6 @@ def raw(env, id):
     desc = env.request.args.get('desc')
     if desc:
         name = '%s--%s.txt' % (email.uid, desc)
-        with open_file('emails', name, mode='bw') as f:
-            f.write(email.body.encode())
+        with open_file('files_parser', name, mode='bw') as f:
+            f.write(email.body)
     return env.make_response(email.body, content_type='text/plain')
