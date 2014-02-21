@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from . import read_file
+from . import read_file, ok
 from mailr import imap
 
 
@@ -40,6 +40,7 @@ def test_fetch_header_and_other():
             labels = value['X-GM-LABELS']
             assert 'UID' in labels
             assert 'FLAGS ")\\' in labels
+            assert '\\Seen' in value['FLAGS']
 
 
 def test_fetch_body():
@@ -53,6 +54,36 @@ def test_fetch_body():
     rows = imap.fetch_all(im, ids, query)
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
+
+
+def test_lexer():
+    data = [
+        ('FLAGS', [b'UID 1 FLAGS (\\Seen)'], {
+            '1': {'FLAGS': ['\\Seen'], 'UID': 1}
+        }),
+        ('FLAGS', [b'UID 1 FLAGS (\\Seen))'], {
+            '1': {'FLAGS': ['\\Seen'], 'UID': 1}
+        }),
+        ('FLAGS', [b'UID 1 FLAGS (\\FLAGS FLAGS))'], {
+            '1': {'FLAGS': ['\\FLAGS', 'FLAGS'], 'UID': 1}
+        }),
+        ('FLAGS', [b'1 (FLAGS ("ABC\\"" UID) UID 1'], {
+            '1': {'FLAGS': ['ABC"', 'UID'], 'UID': 1}
+        }),
+        ('FLAGS', [b'1 (FLAGS ("ABC \\\\\\"" UID) UID 1'], {
+            '1': {'FLAGS': ['ABC \\"', 'UID'], 'UID': 1}
+        }),
+        ('FLAGS', [b'1 (FLAGS ("ABC \\")\\\\" UID) UID 1'], {
+            '1': {'FLAGS': ['ABC ")\\', 'UID'], 'UID': 1}
+        }),
+        ('FLAGS', [b'1 (FLAGS (")ABC)\\"" UID) UID 1'], {
+            '1': {'FLAGS': [')ABC)"', 'UID'], 'UID': 1}
+        }),
+    ]
+    for query, line, expect in data:
+        im = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
+        rows = imap.fetch_all(im, '1', query)
+        yield ok, rows, expect
 
 
 def test_list():

@@ -25,3 +25,7 @@ def read_file(*names, decode=True):
         if ftype in filters:
             result = filters[ftype](result)
     return result
+
+
+def ok(a, b):
+    assert a == b
