@@ -34,6 +34,18 @@ class Label(Base):
         return self.name.replace('[Gmail]/', '')
 
 
+class Thread(Base):
+    __slots__ = ()
+    __tablename__ = 'threads'
+
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+
+    uids = Column(ARRAY(BigInteger), default=[])
+    unread = Column(SmallInteger, default=0)
+
+
 class Email(Base):
     __slots__ = ()
     __tablename__ = 'emails'

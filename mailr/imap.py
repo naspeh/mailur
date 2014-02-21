@@ -43,12 +43,9 @@ def search(im, name):
 
 
 def fetch(im, uids, query, batch_size=500, label='some updates', quiet=False):
-    if not isinstance(query, str):
-        query = ' '.join(query)
-
     steps = range(0, len(uids), batch_size)
     log_ = (lambda *a, **kw: None) if quiet else log.info
-    log_('  * Fetch "%s" for (%d) %d ones...', query, len(steps),  len(uids))
+    log_('  * Fetch "%s" for (%d) %d ones...', query, len(steps), len(uids))
 
     timer = Timer()
     for num, i in enumerate(steps, 1):
@@ -65,15 +62,19 @@ def fetch_all(*args, **kwargs):
     data = OrderedDict()
     for data_ in fetch(*args, **kwargs):
         data.update(data_)
-
     return data
 
 
 def _fetch(im, ids, query):
-    status, data = im.uid('fetch', ','.join(ids), '(%s)' % query)
+    if not isinstance(query, str):
+        keys = list(query)
+        query = ' '.join(query)
+    else:
+        keys = query.split()
 
-    data = iter(data)
-    keys = query.split()
+    status, data_ = im.uid('fetch', ','.join(ids), '(%s)' % query)
+
+    data = iter(data_)
     if 'UID' not in keys:
         keys.append('UID')
 
@@ -81,7 +82,7 @@ def _fetch(im, ids, query):
     re_list = r'("(.+?%s)"|[^ ]+)' % re_noesc
     lexer_list = re.compile(re_list)
     lexer_line = re.compile(
-        r'(%s) ((\d+)|({\d+})|"([^"]+)"|([(].*%s[)]))' % (re_keys, re_noesc)
+        r'(%s) ((\d+)|({\d+})|"([^"]+)"|([(].*?%s[)]))' % (re_keys, re_noesc)
     )
 
     def parse(item, row):
@@ -89,7 +90,6 @@ def _fetch(im, ids, query):
             line = item[0]
         else:
             line = item
-
         matches = lexer_line.findall(line.decode())
         if matches:
             for match in matches:

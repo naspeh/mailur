@@ -5,8 +5,9 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import array
 
-from . import log, Timer, parser, imap
-from .db import Email, Label, session
+from . import log, Timer, imap
+from .parser import parse_header
+from .db import Email, Label, Thread, session
 
 
 def sync_gmail(username, password, with_bodies=True):
@@ -97,15 +98,34 @@ def fetch_emails(im, label, with_bodies=True):
             'size': 'RFC822.SIZE',
             'uid': 'X-GM-MSGID',
             'gm_msgid': 'X-GM-MSGID',
-            'gm_thrid': 'X-GM-THRID'
+            'gm_thrid': 'X-GM-THRID',
+            'message_id': 'BODY[HEADER.FIELDS (MESSAGE-ID)]',
+            'in_reply_to': 'BODY[HEADER.FIELDS (IN-REPLY-TO)]',
         }
-
+        threads_ = (
+            session.query(func.unnest(Thread.uids), Thread)
+            .filter(Thread.uids.contains(msgids_))
+        )
+        threads = dict(threads_)
         for data in imap.fetch(im, uids, query.values(), 1000, 'add emails'):
             with session.begin():
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
                     fields['t_labels'] = [label.id]
+                    fields.update({
+                        k: parse_header(fields[k])[k]
+                        for k in ['message_id', 'in_reply_to']
+                    })
                     session.add(Email(**fields))
+                    msgid = fields['gm_msgid']
+                    if msgid not in threads:
+                        thread = Thread(uids=[msgid])
+                        threads[msgid] = thread
+                        session.add(thread)
+                    else:
+                        thread = threads[msgid]
+                        thread.uids.append(msgid)
+                        session.merge(thread)
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -152,12 +172,11 @@ def fetch_emails(im, label, with_bodies=True):
     uids = [msgids[r.uid] for r in emails.all()]
     if uids:
         log.info('  * Fetch %d bodies...', len(uids))
-
         for data in imap.fetch(im, uids, 'RFC822', 500, 'update bodies'):
             with session.begin():
                 for uid, row in data.items():
                     fields = {'body': row['RFC822']}
-                    fields.update(parser.parse_header(fields['body']))
+                    fields.update(parse_header(fields['body']))
                     session.query(Email)\
                         .filter(Email.uid == uids_map[uid])\
                         .update(fields)
