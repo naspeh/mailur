@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-engine = create_engine('postgresql+psycopg2://test:test@/mail')
+engine = create_engine('postgresql+psycopg2://test:test@/mail', echo=False)
 
 Base = declarative_base()
 drop_all = lambda: Base.metadata.drop_all(engine)
@@ -78,8 +78,8 @@ class Email(Base):
     to = Column(ARRAY(String))
     cc = Column(ARRAY(String))
     bcc = Column(ARRAY(String))
-    in_reply_to = Column(String)
-    message_id = Column(String)
+    in_reply_to = Column(String, index=True)
+    message_id = Column(String, index=True)
 
     text = Column(String)
     html = Column(String)

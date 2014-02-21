@@ -102,11 +102,6 @@ def fetch_emails(im, label, with_bodies=True):
             'message_id': 'BODY[HEADER.FIELDS (MESSAGE-ID)]',
             'in_reply_to': 'BODY[HEADER.FIELDS (IN-REPLY-TO)]',
         }
-        threads_ = (
-            session.query(func.unnest(Thread.uids), Thread)
-            .filter(Thread.uids.contains(msgids_))
-        )
-        threads = dict(threads_)
         for data in imap.fetch(im, uids, query.values(), 1000, 'add emails'):
             with session.begin():
                 for row in data.values():
@@ -116,16 +111,9 @@ def fetch_emails(im, label, with_bodies=True):
                         k: parse_header(fields[k])[k]
                         for k in ['message_id', 'in_reply_to']
                     })
-                    session.add(Email(**fields))
-                    msgid = fields['gm_msgid']
-                    if msgid not in threads:
-                        thread = Thread(uids=[msgid])
-                        threads[msgid] = thread
-                        session.add(thread)
-                    else:
-                        thread = threads[msgid]
-                        thread.uids.append(msgid)
-                        session.merge(thread)
+                    email = Email(**fields)
+                    session.add(email)
+                    fill_thread(email)
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
@@ -180,3 +168,20 @@ def fetch_emails(im, label, with_bodies=True):
                     session.query(Email)\
                         .filter(Email.uid == uids_map[uid])\
                         .update(fields)
+
+
+def fill_thread(email):
+    thread = (
+        session.query(Thread).join(Email, Thread.uids.any(Email.uid))
+        .filter(Email.message_id == email.in_reply_to)
+        .first()
+    )
+    if thread:
+        session.query(Thread)\
+            .filter(Thread.id == thread.id)\
+            .update(
+                {Thread.uids: func.array_append(Thread.uids, email.uid)},
+                synchronize_session=False
+            )
+    else:
+        session.add(Thread(uids=[email.uid]))
