@@ -45,7 +45,7 @@ def search(im, name):
 def fetch(im, uids, query, batch_size=500, label='some updates', quiet=False):
     steps = range(0, len(uids), batch_size)
     log_ = (lambda *a, **kw: None) if quiet else log.info
-    log_('  * Fetch "%s" for (%d) %d ones...', query, len(steps), len(uids))
+    log_('  * Fetch (%d) %d ones with %s...', len(steps), len(uids), query)
 
     timer = Timer()
     for num, i in enumerate(steps, 1):

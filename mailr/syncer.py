@@ -91,25 +91,35 @@ def fetch_emails(im, label, with_bodies=True):
     msgids_ = list(set(msgids.keys()) - set(msgids_))
     uids = [v for k, v in msgids.items() if k in msgids_]
     if uids:
-        log.info('  * Fetch %d headers...', len(uids))
-        query = {
-            'internaldate': 'INTERNALDATE',
-            't_flags': 'FLAGS',
-            'size': 'RFC822.SIZE',
-            'uid': 'X-GM-MSGID',
-            'gm_msgid': 'X-GM-MSGID',
-            'gm_thrid': 'X-GM-THRID',
-            'message_id': 'BODY[HEADER.FIELDS (MESSAGE-ID)]',
-            'in_reply_to': 'BODY[HEADER.FIELDS (IN-REPLY-TO)]',
-        }
-        for data in imap.fetch(im, uids, query.values(), 1000, 'add emails'):
+        query = OrderedDict([
+            ('internaldate', 'INTERNALDATE'),
+            ('t_flags', 'FLAGS'),
+            ('size', 'RFC822.SIZE'),
+            ('uid', 'X-GM-MSGID'),
+            ('gm_msgid', 'X-GM-MSGID'),
+            ('gm_thrid', 'X-GM-THRID'),
+            ('message_id', 'BODY[HEADER.FIELDS (MESSAGE-ID)]'),
+            ('in_reply_to', 'BODY[HEADER.FIELDS (IN-REPLY-TO)]'),
+            ('subject', 'BODY[HEADER.FIELDS (SUBJECT)]'),
+            ('from_', 'BODY[HEADER.FIELDS (FROM)]'),
+            ('to', 'BODY[HEADER.FIELDS (TO)]'),
+        ])
+        body_fields = [
+            ('message_id', None),
+            ('in_reply_to', None),
+            ('subject', None),
+            ('from_', 'from'),
+            ('to', None)
+        ]
+        q = list(query.values())
+        for data in imap.fetch(im, uids, q, 1000, 'add emails'):
             with session.begin():
                 for row in data.values():
                     fields = {k: row[v] for k, v in query.items()}
                     fields['t_labels'] = [label.id]
                     fields.update({
-                        k: parse_header(fields[k])[k]
-                        for k in ['message_id', 'in_reply_to']
+                        k: parse_header(fields[k])[rk if rk else k]
+                        for k, rk in body_fields
                     })
                     email = Email(**fields)
                     session.add(email)
@@ -159,7 +169,6 @@ def fetch_emails(im, label, with_bodies=True):
     )
     uids = [msgids[r.uid] for r in emails.all()]
     if uids:
-        log.info('  * Fetch %d bodies...', len(uids))
         for data in imap.fetch(im, uids, 'RFC822', 500, 'update bodies'):
             with session.begin():
                 for uid, row in data.items():
