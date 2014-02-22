@@ -89,6 +89,12 @@ def test_lexer():
         yield ok, rows, expect
 
 
+def test_imap_utf7():
+    orig, expect = '&BEIENQRBBEI-', 'тест'
+    assert imap_utf7.decode(orig) == expect
+    assert imap_utf7.encode(expect) == orig
+
+
 def test_list():
     data = [
         b'(\\HasNoChildren) "/" "-job proposals"',
@@ -116,10 +122,3 @@ def test_list():
     assert rows[3] == (('\\HasNoChildren',), '/', 'INBOX')
     assert rows[5] == (('\\Noselect', '\\HasChildren'), '/', '[Gmail]')
     assert rows[-1] == (('\\HasNoChildren',), '/', '&BEIENQRBBEI-')
-
-
-def test_imap_utf7():
-    orig = '&BEIENQRBBEI-'
-    expect = 'тест'
-    assert imap_utf7.decode(orig) == expect
-    assert imap_utf7.encode(expect) == orig
