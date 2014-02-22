@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from . import read_file, ok
-from mailr import imap
+from mailr import imap, imap_utf7
 
 
 def gen_response(filename, query):
@@ -116,3 +116,10 @@ def test_list():
     assert rows[3] == (('\\HasNoChildren',), '/', 'INBOX')
     assert rows[5] == (('\\Noselect', '\\HasChildren'), '/', '[Gmail]')
     assert rows[-1] == (('\\HasNoChildren',), '/', '&BEIENQRBBEI-')
+
+
+def test_imap_utf7():
+    orig = '&BEIENQRBBEI-'
+    expect = 'тест'
+    assert imap_utf7.decode(orig) == expect
+    assert imap_utf7.encode(expect) == orig
