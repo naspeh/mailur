@@ -35,12 +35,6 @@ def test_fetch_header_and_other():
         value = rows[id]
         for key in query.split():
             assert key in value
-            if key == 'X-GM-LABELS':
-                continue
-            labels = value['X-GM-LABELS']
-            assert 'UID' in labels
-            assert 'FLAGS ")\\' in labels
-            assert '\\Seen' in value['FLAGS']
 
 
 def test_fetch_body():
