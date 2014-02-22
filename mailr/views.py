@@ -9,7 +9,7 @@ url_map = Map([
     Rule('/', endpoint='index'),
     Rule('/label/<int:id>/', endpoint='label'),
     Rule('/thread/<int:id>/', endpoint='thread'),
-    Rule('/thread-gm/<int:id>/', endpoint='gm_thread'),
+    Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<int:id>/', endpoint='raw')
 ])
 

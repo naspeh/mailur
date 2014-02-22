@@ -18,7 +18,7 @@
         {% if email.labels %}
         <span class="email-labels">
         {% for label in email.full_labels if not label.is_folder %}
-            <a href="#{{ url_for('label', id=label.id) }}">{{ label.name }}</a>
+            <a href="#{{ url_for('label', id=label.id) }}">{{ label.human_name }}</a>
         {% endfor %}
         </span>
         {% endif %}

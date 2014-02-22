@@ -62,8 +62,13 @@ h2 {
     display: inline-block;
     color: red;
 }
-.email-labels {
-    color: blue;
+.email-labels a {
+    color: #777;
+    border: 1px solid #ccc;
+    padding: 0 2px;
+}
+.email-labels a:hover {
+    color: #f63;
 }
 .email-subject {
     margin-right: 120px;

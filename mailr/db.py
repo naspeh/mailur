@@ -31,7 +31,10 @@ class Label(Base):
 
     @property
     def human_name(self):
-        return self.name.replace('[Gmail]/', '')
+        from .imap_utf7 import decode
+
+        name = self.name.replace('[Gmail]/', '')
+        return decode(name)
 
 
 class Thread(Base):
