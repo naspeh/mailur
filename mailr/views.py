@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from werkzeug.exceptions import abort
 from werkzeug.routing import Map, Rule
 
@@ -28,10 +30,10 @@ def label(env, id):
 
     emails = (
         session.query(Email)
-        .distinct(Email.gm_thrid)
         .filter(Email.labels.any(label.id))
-        .order_by(Email.gm_thrid, Email.date.desc())
+        .order_by(Email.date.desc())
     )
+    emails = OrderedDict((email.gm_thrid, email) for email in emails).values()
     return env.render('list.tpl', emails=emails)
 
 

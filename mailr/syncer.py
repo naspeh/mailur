@@ -101,6 +101,7 @@ def fetch_emails(im, label, with_bodies=True):
             ('message_id', 'BODY[HEADER.FIELDS (MESSAGE-ID)]'),
             ('in_reply_to', 'BODY[HEADER.FIELDS (IN-REPLY-TO)]'),
             ('subject', 'BODY[HEADER.FIELDS (SUBJECT)]'),
+            ('date', 'BODY[HEADER.FIELDS (DATE)]'),
             ('from_', 'BODY[HEADER.FIELDS (FROM)]'),
             ('to', 'BODY[HEADER.FIELDS (TO)]'),
         ])
@@ -109,7 +110,8 @@ def fetch_emails(im, label, with_bodies=True):
             ('in_reply_to', None),
             ('subject', None),
             ('from_', 'from'),
-            ('to', None)
+            ('to', None),
+            ('date', None),
         ]
         q = list(query.values())
         for data in imap.fetch(im, uids, q, 1000, 'add emails'):
@@ -123,7 +125,7 @@ def fetch_emails(im, label, with_bodies=True):
                     })
                     email = Email(**fields)
                     session.add(email)
-                    fill_thread(email)
+                    #fill_thread(email)
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
