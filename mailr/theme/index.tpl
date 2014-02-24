@@ -3,7 +3,7 @@
 <head>
     <title>Mail Client</title>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="/theme/styles.css">
+    <link rel="stylesheet" href="/theme/all.css">
 </head>
 <body>
 <ul class="labels">

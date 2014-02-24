@@ -1,7 +1,7 @@
 <ul class="emails">
 {% for email in emails %}
     <li class="email{% if email.unread %} email-unread{% endif %}">
-        <span class="email-from" title="{{ ', '.join(email.from_)|e }}">
+        <span class="email-from" title="{{ email.from_|join(', ')|e }}">
             {{ email.from_|map('get_addr_name')|join(', ') }}
         </span>
         {#
@@ -12,7 +12,7 @@
         </span>
         #}
         {% if email.starred %}
-        <span class="email-star">*</span>
+        <span class="icon-star-empty"></span>
         {% endif %}
 
         {% if email.labels %}
