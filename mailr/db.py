@@ -13,7 +13,6 @@ drop_all = lambda: Base.metadata.drop_all(engine)
 
 
 class Label(Base):
-    __slots__ = ()
     __tablename__ = 'labels'
 
     id = Column(Integer, primary_key=True)
@@ -38,7 +37,6 @@ class Label(Base):
 
 
 class Thread(Base):
-    __slots__ = ()
     __tablename__ = 'threads'
 
     id = Column(Integer, primary_key=True)
@@ -50,7 +48,6 @@ class Thread(Base):
 
 
 class Email(Base):
-    __slots__ = ()
     __tablename__ = 'emails'
 
     SEEN = '\\Seen'
