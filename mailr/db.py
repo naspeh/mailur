@@ -14,6 +14,7 @@ drop_all = lambda: Base.metadata.drop_all(engine)
 
 class Label(Base):
     __tablename__ = 'labels'
+    NOSELECT = '\\Noselect'
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
@@ -24,6 +25,7 @@ class Label(Base):
     name = Column(String, unique=True)
 
     is_folder = Column(Boolean, default=False)
+    index = Column(SmallInteger, default=0)
     weight = Column(SmallInteger, default=0)
     unread = Column(SmallInteger, default=0)
     exists = Column(SmallInteger, default=0)

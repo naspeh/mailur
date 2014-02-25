@@ -16,8 +16,8 @@ url_map = Map([
 def index(env):
     labels = (
         session.query(Label)
-        .filter(Label.weight > 0)
-        .order_by(Label.weight.desc())
+        .filter(~Label.attrs.any(Label.NOSELECT))
+        .order_by(Label.is_folder.desc(), Label.weight.desc(), Label.index)
     )
     return env.render('index.tpl', labels=labels)
 

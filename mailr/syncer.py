@@ -28,11 +28,12 @@ def sync_gmail(username, password, with_bodies=True):
         '\\Important': 0
     }
     folders_ = imap.list_(im)
-    for attrs, delim, name in folders_:
+    for index, value in enumerate(folders_):
+        attrs, delim, name = value
         lookup = list(attrs) + [name]
         folder = [v for k, v in weights.items() if k in lookup]
         weight = folder[0] if folder else 0
-        label = Label(attrs=attrs, delim=delim, name=name)
+        label = Label(attrs=attrs, delim=delim, name=name, index=index)
         try:
             session.add(label)
             session.flush()
