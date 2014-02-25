@@ -36,17 +36,6 @@ class Label(Base):
         return decode(name)
 
 
-class Thread(Base):
-    __tablename__ = 'threads'
-
-    id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
-
-    uids = Column(ARRAY(BigInteger), default=[])
-    unread = Column(SmallInteger, default=0)
-
-
 class Email(Base):
     __tablename__ = 'emails'
 

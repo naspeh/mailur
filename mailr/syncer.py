@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import array
 
 from . import log, Timer, imap
 from .parser import parse_header
-from .db import Email, Label, Thread, session
+from .db import Email, Label, session
 
 
 def sync_gmail(username, password, with_bodies=True):
@@ -163,20 +163,3 @@ def fetch_emails(im, label, with_bodies=True):
                     session.query(Email)\
                         .filter(Email.uid == uids_map[uid])\
                         .update(fields)
-
-
-def fill_thread(email):
-    thread = (
-        session.query(Thread).join(Email, Thread.uids.any(Email.uid))
-        .filter(Email.message_id == email.in_reply_to)
-        .first()
-    )
-    if thread:
-        session.query(Thread)\
-            .filter(Thread.id == thread.id)\
-            .update(
-                {Thread.uids: func.array_append(Thread.uids, email.uid)},
-                synchronize_session=False
-            )
-    else:
-        session.add(Thread(uids=[email.uid]))

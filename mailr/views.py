@@ -3,12 +3,11 @@ from collections import OrderedDict
 from werkzeug.exceptions import abort
 from werkzeug.routing import Map, Rule
 
-from .db import Email, Label, Thread, session
+from .db import Email, Label, session
 
 url_map = Map([
     Rule('/', endpoint='index'),
     Rule('/label/<int:id>/', endpoint='label'),
-    Rule('/thread/<int:id>/', endpoint='thread'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<int:id>/', endpoint='raw')
 ])
@@ -42,15 +41,6 @@ def gm_thread(env, id):
         session.query(Email)
         .filter(Email.gm_thrid == id)
         .order_by(Email.date)
-    )
-    return env.render('list.tpl', emails=emails)
-
-
-def thread(env, id):
-    emails = (
-        session.query(Email)
-        .join(Thread, Thread.uids.any(Email.uid))
-        .filter(Thread.uids.any(id))
     )
     return env.render('list.tpl', emails=emails)
 
