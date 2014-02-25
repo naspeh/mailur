@@ -3,6 +3,3 @@
 @import url(./styles.css);
 
 @import url(./font/fontello.css);
-[class^="icon-"] {
-    color: #f63;
-}

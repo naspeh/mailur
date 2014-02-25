@@ -22,25 +22,25 @@ h1 {
 h2 {
     font-size: 1.2em;
 }
-.label {
-    display: inline-block;
+.panel-one {
 }
-.label a {
-    display: block;
-    padding: 0 5px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-}
-.label-active {
-    background-color: #eee;
+.labels {
+    font-size: 14px;
 }
 .email {
     position: relative;
     background-color: #eee;
     border-top: 1px solid #fff;
-    line-height: 1.4;
     white-space: nowrap;
     overflow: hidden;
+    font-size: 14px;
+    height: 14px;
+    line-height: 14px;
+    padding: 3px 0;
+}
+.email span {
+    display: inline-block;
+    vertical-align: top;
 }
 .email-unread .email-subject {
     font-weight: bold;
@@ -49,23 +49,27 @@ h2 {
     vertical-align: middle;
 }
 .email-from {
-    display: inline-block;
     width: 90px;
     padding: 0 5px;
     overflow: hidden;
     background-color: #eee;
 }
 .email-star {
-    display: inline-block;
-    color: red;
+    color: #f63;
 }
 .email-labels a {
+    display: inline-block;
+    vertical-align: top;
     color: #777;
     border: 1px solid #ccc;
     padding: 0 2px;
+    height: 12px;
+    line-height: 12px;
+    font-size: 12px;
 }
 .email-labels a:hover {
     color: #f63;
+    border: 1px solid #f63;
 }
 .email-subject {
     margin-right: 120px;

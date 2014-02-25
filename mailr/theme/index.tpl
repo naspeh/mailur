@@ -16,7 +16,7 @@
     </select>
     <div class="panel-body"
 </div>
-<script src="https://code.jquery.com/jquery.js"></script>
+<script src="//code.jquery.com/jquery.js"></script>
 <script>
 $(window).bind('hashchange', function() {
     var url = location.hash.slice(1);
@@ -28,16 +28,16 @@ $(window).bind('hashchange', function() {
         $('.panel-one .panel-body').html(content);
     });
 });
-$('select.labels').bind('change', function() {
-    if (window.location.hash == $(this).val()) {
-        $(window).trigger('hashchange');
-    }
-    window.location.hash = $(this).val();
-});
+$('select.labels')
+    .bind('change', function() {
+        if (window.location.hash == $(this).val()) {
+            $(window).trigger('hashchange');
+        }
+        window.location.hash = $(this).val();
+    });
 if (window.location.hash) {
     $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
     $('select.labels').trigger('change');
-
 }
 </script>
 </body>

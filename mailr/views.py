@@ -33,7 +33,7 @@ def label(env, id):
         .order_by(Email.date.desc())
     )
     emails = OrderedDict((email.gm_thrid, email) for email in emails).values()
-    return env.render('list.tpl', emails=emails)
+    return env.render('list.tpl', emails=list(emails))
 
 
 def gm_thread(env, id):
