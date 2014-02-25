@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import logging
+import subprocess
 
 from mailr import db, app, syncer
 
@@ -8,6 +9,7 @@ logging.basicConfig(
     format='%(levelname)s %(asctime)s  %(message)s',
     datefmt='%H:%M:%S', level=logging.DEBUG
 )
+sh = lambda cmd: subprocess.call(cmd, shell=True)
 
 
 def parse_args():
@@ -32,6 +34,10 @@ def parse_args():
     cmd('db-clear').exe(lambda a: db.drop_all())
 
     cmd('run').exe(lambda a: app.run())
+
+    cmd('lessc').exe(
+        lambda a: sh('lessc mailr/theme/all.less mailr/theme/all.css')
+    )
 
     args = parser.parse_args()
     if not hasattr(args, 'exe'):

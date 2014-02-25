@@ -1,8 +1,8 @@
 import os
 
 from jinja2 import Environment, FileSystemLoader
+from livereload import Server
 from werkzeug.exceptions import HTTPException
-from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import SharedDataMiddleware
 
@@ -58,4 +58,8 @@ class Env:
 
 def run():
     app = create_app()
-    run_simple('0.0.0.0', 5000, app, use_debugger=True, use_reloader=True)
+    server = Server(app)
+    server.watch('mailr/*.py')
+    server.watch('mailr/theme/*.css', '.manage.py lessc')
+    server.watch('mailr/theme/*.less', '.manage.py lessc')
+    server.serve(port=5000)
