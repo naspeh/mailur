@@ -98,34 +98,18 @@ def fetch_emails(im, label, with_bodies=True):
             ('uid', 'X-GM-MSGID'),
             ('gm_msgid', 'X-GM-MSGID'),
             ('gm_thrid', 'X-GM-THRID'),
-            ('message_id', 'BODY[HEADER.FIELDS (MESSAGE-ID)]'),
-            ('in_reply_to', 'BODY[HEADER.FIELDS (IN-REPLY-TO)]'),
-            ('subject', 'BODY[HEADER.FIELDS (SUBJECT)]'),
-            ('date', 'BODY[HEADER.FIELDS (DATE)]'),
-            ('from_', 'BODY[HEADER.FIELDS (FROM)]'),
-            ('to', 'BODY[HEADER.FIELDS (TO)]'),
+            ('header', 'BODY[HEADER]'),
         ])
-        body_fields = [
-            ('message_id', None),
-            ('in_reply_to', None),
-            ('subject', None),
-            ('from_', 'from'),
-            ('to', None),
-            ('date', None),
-        ]
         q = list(query.values())
         for data in imap.fetch(im, uids, q, 1000, 'add emails'):
-            with session.begin():
-                for row in data.values():
-                    fields = {k: row[v] for k, v in query.items()}
-                    fields['t_labels'] = [label.id]
-                    fields.update({
-                        k: parse_header(fields[k])[rk if rk else k]
-                        for k, rk in body_fields
-                    })
-                    email = Email(**fields)
-                    session.add(email)
-                    #fill_thread(email)
+            emails = []
+            for row in data.values():
+                header = row.pop(query['header'])
+                fields = {k: row[v] for k, v in query.items() if v in row}
+                fields['t_labels'] = [label.id]
+                fields.update(parse_header(header))
+                emails.append(fields)
+            session.execute(Email.__table__.insert(), emails)
 
     # Update labels
     uids = [k for k, v in msgids.items() if k not in msgids_]
