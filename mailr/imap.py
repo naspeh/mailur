@@ -3,13 +3,13 @@ from collections import OrderedDict
 
 from . import Timer, log
 
-re_noesc = r'[^\\](?:\\\\)*'
+re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
 
 
 def list_(im):
     _, data = im.list()
 
-    re_line = r'^[(]([^)]+)[)] "([^"]+)" "(.*%s)"$' % re_noesc
+    re_line = r'^[(]([^)]+)[)] "([^"]+)" "(%s)"$' % re_noesc
     lexer_line = re.compile(re_line)
     rows = []
     for line in data:
@@ -79,10 +79,11 @@ def _fetch(im, ids, query):
         keys.append('UID')
 
     re_keys = r'|'.join([re.escape(k) for k in keys])
-    re_list = r'("(.+?%s)"|[^ ]+)' % re_noesc
+    re_list = r'("(%s)"|[^ )"]+)' % re_noesc
     lexer_list = re.compile(re_list)
     lexer_line = re.compile(
-        r'(%s) ((\d+)|({\d+})|"([^"]+)"|([(].*?%s[)]))' % (re_keys, re_noesc)
+        r'(%s) ((\d+)|({\d+})|"([^"]+)"|([(]( ?%s ?)*[)]))'
+        % (re_keys, re_list)
     )
 
     def parse(item, row):
