@@ -12,7 +12,7 @@
         </span>
         #}
         {% if email.starred %}
-        <span class="email-star icon-star-empty"></span>
+        <span class="email-star"></span>
         {% endif %}
 
         {% if email.labels %}
