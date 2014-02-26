@@ -29,9 +29,13 @@ $(window).bind('hashchange', function() {
 
         $('.email-star').bind('click', function() {
             var $this = $(this);
-            var id = $this.parents('.email').attr('id');
-            $.post('/change-label/', {'labels': [11], 'ids': [id]})
-                .done(function() {
+            var data = {
+                ids: [$this.parents('.email').attr('id')],
+                unset: $this.hasClass('email-starred') && 1 || ''
+            }
+            $this.toggleClass('email-starred');
+            $.post('/change-label/', data)
+                .fail(function() {
                     $this.toggleClass('email-starred');
                 });
         });

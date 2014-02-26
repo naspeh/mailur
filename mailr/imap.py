@@ -1,9 +1,26 @@
+import imaplib
 import re
 from collections import OrderedDict
 
 from . import Timer, log
 
 re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
+
+
+def client():
+    conf = __import__('conf')
+    im = imaplib.IMAP4_SSL('imap.gmail.com')
+    im.login(conf.username, conf.password)
+    return im
+
+
+def store(im, uids, label, rm=True):
+    for uid in uids:
+        _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+        uids = data[0].decode().split(' ')
+        key = '%sX-GM-LABELS' % ('-' if rm else '+')
+        res = im.uid('STORE', uids[0], key, label)
+    return
 
 
 def list_(im):

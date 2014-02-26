@@ -1,6 +1,6 @@
 <ul class="emails">
 {% for email in emails %}
-    <li id="{{ email.id }}" class="email{% if email.unread %} email-unread{% endif %}">
+    <li id="{{ email.uid }}" class="email{% if email.unread %} email-unread{% endif %}">
         {#<span><input type="checkbox"></span>#}
         <span class="email-star{% if email.starred %} email-starred{% endif %}"></span>
 

@@ -3,6 +3,7 @@ from collections import OrderedDict
 from werkzeug.exceptions import abort
 from werkzeug.routing import Map, Rule
 
+from . import imap
 from .db import Email, Label, session
 
 url_map = Map([
@@ -47,10 +48,11 @@ def gm_thread(env, id):
 
 
 def change_label(env):
-    ids = env.request.form.getlist('ids[]', type=int)
-    labels = env.request.form.getlist('labels[]', type=int)
-    unset = env.request.form.get('unset', False)
-    print(ids, labels, unset)
+    ids = env.request.form.getlist('ids[]')
+    unset = env.request.form.get('unset', False, type=bool)
+    im = imap.client()
+    im.select('"[Gmail]/All Mail"', readonly=False)
+    imap.store(im, ids, '\\Starred', unset)
     return 'OK'
 
 
