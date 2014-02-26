@@ -2,18 +2,24 @@
 @import (inline) url(./reset.css);
 @import url(./font/fontello.less);
 
+@color-link: #008000;
+@color-rich: #f63;
+@color-poor: #777;
+@color-bg: #fff;
+@color-bg-poor: #eee;
+
 body {
     font: 1em/1.4 "PT Sans", sans-serif;
     font-weight: 400;
 }
 a {
-    color: #008000;
+    color: @color-link;
     text-decoration: none;
     border-bottom: 1px solid transparent;
 }
 a:hover, a:focus, a:active {
-    color: #f63;
-    border-bottom-color: #f63;
+    color: @color-rich;
+    border-bottom-color: @color-rich;
 }
 h1, h2, h3, h4, h5, h6 {
     font: 1.1em "Philosopher", sans-serif;
@@ -26,15 +32,13 @@ h1 {
 h2 {
     font-size: 1.2em;
 }
-.panel-one {
-}
 .labels {
     font-size: 14px;
 }
 .email {
     position: relative;
-    background-color: #eee;
-    border-top: 1px solid #fff;
+    background-color: @color-bg-poor;
+    border-top: 1px solid @color-bg;
     white-space: nowrap;
     overflow: hidden;
     font-size: 14px;
@@ -56,25 +60,33 @@ h2 {
     width: 90px;
     padding: 0 5px;
     overflow: hidden;
-    background-color: #eee;
+    background-color: @color-bg-poor;
 }
 .email-star {
-    color: #f63;
     .icon-star-empty;
+    color: @color-poor;
+    &:hover {
+        margin-top: 1px;
+        cursor: pointer;
+    }
+}
+.email-star-exists {
+    .email-star;
+    color: @color-rich;
 }
 .email-labels a {
     display: inline-block;
     vertical-align: top;
-    color: #777;
-    border: 1px solid #ccc;
+    color: @color-poor;
+    border: 1px solid @color-poor * 1.5;
     padding: 0 2px;
     height: 14px;
     line-height: 14px;
     font-size: 12px;
 }
 .email-labels a:hover {
-    color: #f63;
-    border: 1px solid #f63;
+    color: @color-rich;
+    border: 1px solid @color-rich;
 }
 .email-subject {
     margin-right: 120px;
@@ -86,5 +98,5 @@ h2 {
     height: 100%;
     text-align: right;
     padding: 0 5px;
-    background-color: #eee;
+    background-color: @color-bg-poor;
 }

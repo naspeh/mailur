@@ -11,9 +11,7 @@
         {% endfor %}
         </span>
         #}
-        {% if email.starred %}
-        <span class="email-star"></span>
-        {% endif %}
+        <span class="email-star{% if email.starred %}-exists{% endif %}"></span>
 
         {% if email.labels %}
         <span class="email-labels">

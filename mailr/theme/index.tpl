@@ -28,6 +28,9 @@ $(window).bind('hashchange', function() {
         $('.panel-one .panel-body').html(content);
     });
 });
+if (window.location.hash) {
+    $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
+}
 $('select.labels')
     .bind('change', function() {
         if (window.location.hash == $(this).val()) {
@@ -36,10 +39,6 @@ $('select.labels')
         window.location.hash = $(this).val();
     })
     .trigger('change');
-if (window.location.hash) {
-    $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
-    $('select.labels').trigger('change');
-}
 </script>
 </body>
 </html>
