@@ -1,8 +1,8 @@
 <ul class="emails">
 {% for email in emails %}
-    <li class="email{% if email.unread %} email-unread{% endif %}">
+    <li id="{{ email.id }}" class="email{% if email.unread %} email-unread{% endif %}">
         {#<span><input type="checkbox"></span>#}
-        <span class="email-star{% if email.starred %}-exists{% endif %}"></span>
+        <span class="email-star{% if email.starred %} email-starred{% endif %}"></span>
 
         <span class="email-from" title="{{ email.from_|join(', ')|e }}">
             {{ email.from_|map('get_addr_name')|join(', ') }}

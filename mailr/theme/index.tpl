@@ -26,6 +26,15 @@ $(window).bind('hashchange', function() {
         $('.labels a[href="#' + url + '"]').addClass('label-active');
 
         $('.panel-one .panel-body').html(content);
+
+        $('.email-star').bind('click', function() {
+            var $this = $(this);
+            var id = $this.parents('.email').attr('id');
+            $.post('/change-label/', {'labels': [11], 'ids': [id]})
+                .done(function() {
+                    $this.toggleClass('email-starred');
+                });
+        });
     });
 });
 if (window.location.hash) {
@@ -39,6 +48,7 @@ $('select.labels')
         window.location.hash = $(this).val();
     })
     .trigger('change');
+
 </script>
 </body>
 </html>

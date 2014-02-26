@@ -9,7 +9,8 @@ url_map = Map([
     Rule('/', endpoint='index'),
     Rule('/label/<int:id>/', endpoint='label'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
-    Rule('/raw/<int:id>/', endpoint='raw')
+    Rule('/raw/<int:id>/', endpoint='raw'),
+    Rule('/change-label/', methods=['POST'], endpoint='change_label'),
 ])
 
 
@@ -43,6 +44,14 @@ def gm_thread(env, id):
         .order_by(Email.date)
     )
     return env.render('list.tpl', emails=emails)
+
+
+def change_label(env):
+    ids = env.request.form.getlist('ids[]', type=int)
+    labels = env.request.form.getlist('labels[]', type=int)
+    unset = env.request.form.get('unset', False)
+    print(ids, labels, unset)
+    return 'OK'
 
 
 def raw(env, id):
