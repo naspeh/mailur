@@ -34,7 +34,8 @@ $('select.labels')
             $(window).trigger('hashchange');
         }
         window.location.hash = $(this).val();
-    });
+    })
+    .trigger('change');
 if (window.location.hash) {
     $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
     $('select.labels').trigger('change');
