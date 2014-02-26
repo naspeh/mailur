@@ -60,6 +60,7 @@ def run():
     app = create_app()
     server = Server(app)
     server.watch('mailr/*.py')
+    server.watch('mailr/theme/*.tpl')
     #server.watch('mailr/theme/*.css', './manage.py lessc')
     server.watch('mailr/theme/*.less', './manage.py lessc')
     server.serve(port=5000)
