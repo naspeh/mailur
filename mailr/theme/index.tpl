@@ -30,14 +30,14 @@ $(window).bind('hashchange', function() {
         $('.email-star').bind('click', function() {
             var $this = $(this)
                 items = $($this.parents('.email'));
-            change_label('X-GM-LABELS', '\\Starred', items, $this.hasClass('email-starred'));
+            imap_store('X-GM-LABELS', '\\Starred', items, $this.hasClass('email-starred'));
         });
 
         $('input[name="store"]').click(function() {
             var $this = $(this);
             var items = $this.parents('form')
                 .find('input[name="ids"]:checked').parents('.email');
-            change_label($this.data('key'), $this.data('value'), items, $this.data('unset'));
+            imap_store($this.data('key'), $this.data('value'), items, $this.data('unset'));
             return false;
         });
         $('input[name="sync"]').click(function() {
@@ -46,12 +46,12 @@ $(window).bind('hashchange', function() {
             });
         });
     });
-    function change_label(key, value, items, unset) {
+    function imap_store(key, value, items, unset) {
         var ids = [];
         items.each(function() {
             ids.push($(this).data('id'));
         });
-        $.post('/change-label/', {ids: ids, key: key, value: value, unset: unset && 1 || ''})
+        $.post('/imap-store/', {ids: ids, key: key, value: value, unset: unset && 1 || ''})
             .done(function() {
                 $.get('/sync/').done(function () {
                     $(window).trigger('hashchange');

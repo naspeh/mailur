@@ -11,7 +11,7 @@ url_map = Map([
     Rule('/label/<int:id>/', endpoint='label'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<int:id>/', endpoint='raw'),
-    Rule('/change-label/', methods=['POST'], endpoint='change_label'),
+    Rule('/imap-store/', methods=['POST'], endpoint='imap_store'),
     Rule('/sync/', endpoint='sync'),
 ])
 
@@ -48,7 +48,7 @@ def gm_thread(env, id):
     return env.render('list.tpl', emails=emails)
 
 
-def change_label(env):
+def imap_store(env):
     ids = env.request.form.getlist('ids[]')
     key = env.request.form.get('key')
     value = env.request.form.get('value')
