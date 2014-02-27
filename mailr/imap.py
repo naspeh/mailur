@@ -19,7 +19,7 @@ def store(im, uids, label, rm=True):
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uids = data[0].decode().split(' ')
         key = '%sX-GM-LABELS' % ('-' if rm else '+')
-        res = im.uid('STORE', uids[0], key, label)
+        im.uid('STORE', uids[0], key, label)
     return
 
 
