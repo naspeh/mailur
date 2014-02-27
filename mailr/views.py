@@ -3,7 +3,7 @@ from collections import OrderedDict
 from werkzeug.exceptions import abort
 from werkzeug.routing import Map, Rule
 
-from . import imap, syncer
+from . import log, imap, syncer
 from .db import Email, Label, session
 
 url_map = Map([
@@ -12,6 +12,7 @@ url_map = Map([
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<int:id>/', endpoint='raw'),
     Rule('/imap-store/', methods=['POST'], endpoint='imap_store'),
+    Rule('/archive/<int:label>/', methods=['POST'], endpoint='archive'),
     Rule('/sync/', endpoint='sync'),
 ])
 
@@ -56,6 +57,21 @@ def imap_store(env):
     im = imap.client()
     im.select('"[Gmail]/All Mail"', readonly=False)
     imap.store(im, ids, key, value, unset)
+    return 'OK'
+
+
+def archive(env, label):
+    label = session.query(Label).filter(Label.id == label).first()
+    uids = env.request.form.getlist('ids[]')
+    im = imap.client()
+    im.select('"%s"' % label.name, readonly=False)
+    for uid in uids:
+        _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+        uid_ = data[0].decode().split(' ')[0]
+        res = im.uid('COPY', uid_, '"[Gmail]/All Mail"')
+        log.info('Archive(%s): %s', uid_, res)
+        res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
+        log.info('Delete(%s): %s', uid_, res)
     return 'OK'
 
 

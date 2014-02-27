@@ -7,6 +7,7 @@
     data-key="FLAGS" data-value="\Seen">
 <input type="button" name="store" value="Unread"
     data-key="FLAGS" data-value="\Seen" data-unset="1">
+<input type="button" name="archive" value="Archive">
 <input type="button" name="sync" value="Sync">
 <ul class="emails">
 {% for email in emails %}

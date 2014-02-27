@@ -9,7 +9,7 @@
 <div class="panel-one">
     <select class="labels">
     {% for label in labels %}
-        <option value="#{{ url_for('label', id=label.id) }}">
+        <option value="#{{ url_for('label', id=label.id) }}" data-id="{{ label.id }}">
             {{ label.human_name }} <b>{{ label.unread }}</b>/{{ label.exists }}
         </option>
     {% endfor %}
@@ -28,16 +28,23 @@ $(window).bind('hashchange', function() {
         $('.panel-one .panel-body').html(content);
 
         $('.email-star').bind('click', function() {
-            var $this = $(this)
-                items = $($this.parents('.email'));
-            imap_store('X-GM-LABELS', '\\Starred', items, $this.hasClass('email-starred'));
+            var $this = $(this);
+            imap_store({
+                key: 'X-GM-LABELS',
+                value: '\\Starred',
+                ids: [$this.parents('.email').data('id')],
+                unset: $this.hasClass('email-starred')
+            });
         });
 
         $('input[name="store"]').click(function() {
             var $this = $(this);
-            var items = $this.parents('form')
-                .find('input[name="ids"]:checked').parents('.email');
-            imap_store($this.data('key'), $this.data('value'), items, $this.data('unset'));
+            imap_store({
+                key: $this.data('key'),
+                value: $this.data('value'),
+                ids: get_ids($this),
+                unset: $this.data('unset')
+            });
             return false;
         });
         $('input[name="sync"]').click(function() {
@@ -45,13 +52,25 @@ $(window).bind('hashchange', function() {
                 $(window).trigger('hashchange');
             });
         });
+        $('input[name="archive"]').click(function() {
+            var label = $('select.labels :checked').data('id');
+            $.post('/archive/' + label + '/', {ids: get_ids($(this))})
+                .done(function () {
+                    $(window).trigger('hashchange');
+                });
+        });
     });
-    function imap_store(key, value, items, unset) {
+    function get_ids(el) {
+        var items = el.parents('form').find('input[name="ids"]:checked').parents('.email');
         var ids = [];
         items.each(function() {
             ids.push($(this).data('id'));
         });
-        $.post('/imap-store/', {ids: ids, key: key, value: value, unset: unset && 1 || ''})
+        return ids;
+    }
+    function imap_store(data) {
+        data.unset = data.unset && 1 || '';
+        $.post('/imap-store/', data)
             .done(function() {
                 $.get('/sync/').done(function () {
                     $(window).trigger('hashchange');
