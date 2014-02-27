@@ -1,7 +1,10 @@
+<form name="emails-form" method="POST">
+<input type="submit" name="add-star" value="Add Star">
+<input type="submit" name="rm-star" value="Remove Star">
 <ul class="emails">
 {% for email in emails %}
-    <li id="{{ email.uid }}" class="email{% if email.unread %} email-unread{% endif %}">
-        {#<span><input type="checkbox"></span>#}
+    <li data-id="{{ email.uid }}" class="email{% if email.unread %} email-unread{% endif %}">
+        <span><input type="checkbox" name="ids" value="{{ email.uid }}"></span>
         <span class="email-star{% if email.starred %} email-starred{% endif %}"></span>
 
         <span class="email-from" title="{{ email.from_|join(', ')|e }}">
@@ -39,3 +42,4 @@
     </li>
 {% endfor %}
 </ul>
+</form>

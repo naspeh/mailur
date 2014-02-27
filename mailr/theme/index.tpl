@@ -29,17 +29,30 @@ $(window).bind('hashchange', function() {
 
         $('.email-star').bind('click', function() {
             var $this = $(this);
-            var data = {
-                ids: [$this.parents('.email').attr('id')],
-                unset: $this.hasClass('email-starred') && 1 || ''
-            }
-            $this.toggleClass('email-starred');
-            $.post('/change-label/', data)
-                .fail(function() {
-                    $this.toggleClass('email-starred');
-                });
+            do_star($($this.parents('.email')), $this.hasClass('email-starred'));
+        });
+
+        $('form[name="emails-form"] input[type="submit"]').click(function() {
+            var $this = $(this);
+            var items = $this.parents('form')
+                .find('input[name="ids"]:checked').parents('.email');
+            do_star(items, $this.attr('name') == 'rm-star');
+            return false;
         });
     });
+    function do_star(items, unset) {
+        var ids = [];
+        items.each(function() {
+            ids.push($(this).data('id'));
+        });
+        var data = {ids: ids, unset: unset && 1 || ''};
+        var stars = items.find('.email-star')
+        stars.toggleClass('email-starred');
+        $.post('/change-label/', data)
+            .fail(function() {
+                stars.toggleClass('email-starred');
+            });
+    }
 });
 if (window.location.hash) {
     $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
