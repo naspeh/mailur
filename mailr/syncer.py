@@ -1,4 +1,3 @@
-import imaplib
 from collections import OrderedDict, defaultdict
 
 from sqlalchemy import func
@@ -10,9 +9,8 @@ from .parser import parse_header
 from .db import Email, Label, session
 
 
-def sync_gmail(username, password, with_bodies=True):
-    im = imaplib.IMAP4_SSL('imap.gmail.com')
-    im.login(username, password)
+def sync_gmail(with_bodies=True):
+    im = imap.client()
 
     # Cleaunp t_flags and t_labels
     session.query(Email).update({Email.t_flags: [], Email.t_labels: []})

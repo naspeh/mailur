@@ -1,6 +1,13 @@
 <form name="emails-form" method="POST">
-<input type="submit" name="add-star" value="Add Star">
-<input type="submit" name="rm-star" value="Remove Star">
+<input type="button" name="store" value="Add Star"
+    data-key="X-GM-LABELS" data-value="\Starred">
+<input type="button" name="store" value="Remove Star"
+    data-key="X-GM-LABELS" data-value="\Starred" data-unset="1">
+<input type="button" name="store" value="Read"
+    data-key="FLAGS" data-value="\Seen">
+<input type="button" name="store" value="Unread"
+    data-key="FLAGS" data-value="\Seen" data-unset="1">
+<input type="button" name="sync" value="Sync">
 <ul class="emails">
 {% for email in emails %}
     <li data-id="{{ email.uid }}" class="email{% if email.unread %} email-unread{% endif %}">

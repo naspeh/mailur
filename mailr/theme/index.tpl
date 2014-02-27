@@ -28,29 +28,34 @@ $(window).bind('hashchange', function() {
         $('.panel-one .panel-body').html(content);
 
         $('.email-star').bind('click', function() {
-            var $this = $(this);
-            do_star($($this.parents('.email')), $this.hasClass('email-starred'));
+            var $this = $(this)
+                items = $($this.parents('.email'));
+            change_label('X-GM-LABELS', '\\Starred', items, $this.hasClass('email-starred'));
         });
 
-        $('form[name="emails-form"] input[type="submit"]').click(function() {
+        $('input[name="store"]').click(function() {
             var $this = $(this);
             var items = $this.parents('form')
                 .find('input[name="ids"]:checked').parents('.email');
-            do_star(items, $this.attr('name') == 'rm-star');
+            change_label($this.data('key'), $this.data('value'), items, $this.data('unset'));
             return false;
         });
+        $('input[name="sync"]').click(function() {
+            $.get('/sync/').done(function () {
+                $(window).trigger('hashchange');
+            });
+        });
     });
-    function do_star(items, unset) {
+    function change_label(key, value, items, unset) {
         var ids = [];
         items.each(function() {
             ids.push($(this).data('id'));
         });
-        var data = {ids: ids, unset: unset && 1 || ''};
-        var stars = items.find('.email-star')
-        stars.toggleClass('email-starred');
-        $.post('/change-label/', data)
-            .fail(function() {
-                stars.toggleClass('email-starred');
+        $.post('/change-label/', {ids: ids, key: key, value: value, unset: unset && 1 || ''})
+            .done(function() {
+                $.get('/sync/').done(function () {
+                    $(window).trigger('hashchange');
+                });
             });
     }
 });

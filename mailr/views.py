@@ -3,7 +3,7 @@ from collections import OrderedDict
 from werkzeug.exceptions import abort
 from werkzeug.routing import Map, Rule
 
-from . import imap
+from . import imap, syncer
 from .db import Email, Label, session
 
 url_map = Map([
@@ -12,6 +12,7 @@ url_map = Map([
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<int:id>/', endpoint='raw'),
     Rule('/change-label/', methods=['POST'], endpoint='change_label'),
+    Rule('/sync/', endpoint='sync'),
 ])
 
 
@@ -49,10 +50,17 @@ def gm_thread(env, id):
 
 def change_label(env):
     ids = env.request.form.getlist('ids[]')
+    key = env.request.form.get('key')
+    value = env.request.form.get('value')
     unset = env.request.form.get('unset', False, type=bool)
     im = imap.client()
     im.select('"[Gmail]/All Mail"', readonly=False)
-    imap.store(im, ids, '\\Starred', unset)
+    imap.store(im, ids, key, value, unset)
+    return 'OK'
+
+
+def sync(env):
+    syncer.sync_gmail(False)
     return 'OK'
 
 
