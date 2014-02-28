@@ -9,7 +9,7 @@
 <div class="panel-one">
     <select class="labels">
     {% for label in labels %}
-        <option value="#{{ url_for('label', id=label.id) }}" data-id="{{ label.id }}">
+        <option value="#{{ url_for('label', label=label.id) }}" data-id="{{ label.id }}">
             {{ label.human_name }} <b>{{ label.unread }}</b>/{{ label.exists }}
         </option>
     {% endfor %}
@@ -48,11 +48,13 @@ $(window).bind('hashchange', function() {
             return false;
         });
         $('input[name="archive"]').click(function() {
-            var label = $('select.labels :checked').data('id');
-            $.post('/archive/' + label + '/', {ids: get_ids($(this))}).done(sync);
+            $.post('/archive/' + get_label() + '/', {ids: get_ids($(this))}).done(sync);
         });
         $('input[name="sync"]').click(sync);
     });
+    function get_label() {
+        return $('select.labels :checked').data('id');
+    }
     function get_ids(el) {
         var ids = [];
         el.parents('form').find('input[name="ids"]:checked').parents('.email')
@@ -63,7 +65,7 @@ $(window).bind('hashchange', function() {
     }
     function imap_store(data) {
         data.unset = data.unset && 1 || '';
-        $.post('/imap-store/', data).done(sync);
+        $.post('/store/' + get_label() + '/', data).done(sync);
     }
     function sync() {
         $.get('/sync/').done(function () {

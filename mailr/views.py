@@ -1,20 +1,38 @@
 from collections import OrderedDict
 
-from werkzeug.exceptions import abort
-from werkzeug.routing import Map, Rule
+from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, imap, syncer
 from .db import Email, Label, session
 
-url_map = Map([
+rules = [
     Rule('/', endpoint='index'),
-    Rule('/label/<int:id>/', endpoint='label'),
+    Rule('/label/<label:label>/', endpoint='label'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
-    Rule('/raw/<int:id>/', endpoint='raw'),
-    Rule('/imap-store/', methods=['POST'], endpoint='imap_store'),
-    Rule('/archive/<int:label>/', methods=['POST'], endpoint='archive'),
+    Rule('/raw/<email:email>/', endpoint='raw'),
+    Rule('/store/<label:label>/', methods=['POST'], endpoint='store'),
+    Rule('/archive/<label:label>/', methods=['POST'], endpoint='archive'),
     Rule('/sync/', endpoint='sync'),
-])
+]
+
+
+def model_converter(model):
+    class Converter(BaseConverter):
+        def to_python(self, value):
+            row = session.query(model).filter(model.id == value).first()
+            if not row:
+                raise ValidationError
+            return row
+
+        def to_url(self, value):
+            return str(value)
+    return Converter
+
+converters = {
+    'label': model_converter(Label),
+    'email': model_converter(Email)
+}
+url_map = Map(rules, converters=converters)
 
 
 def index(env):
@@ -26,11 +44,7 @@ def index(env):
     return env.render('index.tpl', labels=labels)
 
 
-def label(env, id):
-    label = session.query(Label).filter(Label.id == id).first()
-    if not label:
-        abort(404)
-
+def label(env, label):
     emails = (
         session.query(Email)
         .filter(Email.labels.any(label.id))
@@ -49,7 +63,7 @@ def gm_thread(env, id):
     return env.render('list.tpl', emails=emails)
 
 
-def imap_store(env):
+def store(env, label):
     ids = env.request.form.getlist('ids[]')
     key = env.request.form.get('key')
     value = env.request.form.get('value')
@@ -61,7 +75,6 @@ def imap_store(env):
 
 
 def archive(env, label):
-    label = session.query(Label).filter(Label.id == label).first()
     uids = env.request.form.getlist('ids[]')
     im = imap.client()
     im.select('"%s"' % label.name, readonly=False)
@@ -72,6 +85,7 @@ def archive(env, label):
         log.info('Archive(%s): %s', uid_, res)
         res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
         log.info('Delete(%s): %s', uid_, res)
+    syncer.fetch_emails(im, label)
     return 'OK'
 
 
@@ -80,12 +94,8 @@ def sync(env):
     return 'OK'
 
 
-def raw(env, id):
+def raw(env, email):
     from tests import open_file
-
-    email = session.query(Email).filter(Email.id == id).first()
-    if not email:
-        abort(404)
 
     desc = env.request.args.get('desc')
     if desc:

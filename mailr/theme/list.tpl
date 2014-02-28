@@ -29,16 +29,14 @@
         {% if email.labels %}
         <span class="email-labels">
         {% for label in email.full_labels if not label.is_folder %}
-            <a href="#{{ url_for('label', id=label.id) }}">{{ label.human_name }}</a>
+            <a href="#{{ url_for('label', label=label.id) }}">{{ label.human_name }}</a>
         {% endfor %}
         </span>
         {% endif %}
 
         <span class="email-subject">
         {% if 'thread' in request.path %}
-            <a href="{{ url_for('raw', id=email.id) }}" target="_blank">{{ email.subject }}</a>
-        {% elif request.args.get('own') %}
-            <a href="#{{ url_for('thread', id=email.uid) }}">{{ email.subject }}</a>
+            <a href="{{ url_for('raw', email=email.id) }}" target="_blank">{{ email.subject }}</a>
         {% else %}
             <a href="#{{ url_for('gm_thread', id=email.gm_thrid) }}">{{ email.subject }}</a>
         {% endif %}
