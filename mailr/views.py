@@ -4,7 +4,7 @@ from sqlalchemy import func
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, imap, syncer
-from .db import Email, Label, session, array_del
+from .db import Email, Label, session
 
 rules = [
     Rule('/', endpoint='index'),
@@ -90,12 +90,6 @@ def archive(env, label):
         log.info('Archive(%s): %s', uid, res)
         res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
         log.info('Delete(%s): %s', uid, res)
-
-    session.query(Email).filter(Email.uid.in_(uids))\
-        .update(
-            {Email.labels: array_del(Email.labels, label.id)},
-            synchronize_session=False
-        )
 
     syncer.fetch_emails(im, label, with_bodies=False)
     return 'OK'
