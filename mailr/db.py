@@ -40,11 +40,23 @@ class Label(Base):
     @classmethod
     def get_all(cls):
         if not hasattr(cls, '_labels'):
-            cls._labels = dict((l.id, l) for l in (
+            cls._labels = list(
                 session.query(Label)
                 .order_by(Label.weight.desc())
-            ))
+            )
         return cls._labels
+
+    @classmethod
+    def get(cls, func_or_id=None):
+        if isinstance(func_or_id, int):
+            func = lambda l: l.id == func_or_id
+        else:
+            func = func_or_id
+
+        label = [l for l in cls.get_all() if func(l)]
+        if label:
+            return label[0]
+        return None
 
 
 class Email(Base):
@@ -83,8 +95,7 @@ class Email(Base):
 
     @property
     def full_labels(self):
-        labels = Label.get_all()
-        return [labels[l] for l in self.labels if l in labels]
+        return [Label.get(l) for l in self.labels]
 
     @property
     def unread(self):

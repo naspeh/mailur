@@ -1,13 +1,14 @@
 <form name="emails-form" method="POST">
-<input type="button" name="store" value="Add Star"
+<input type="button" name="store" value="Add star"
     data-key="X-GM-LABELS" data-value="\Starred">
-<input type="button" name="store" value="Remove Star"
+<input type="button" name="store" value="Remove star"
     data-key="X-GM-LABELS" data-value="\Starred" data-unset="1">
 <input type="button" name="store" value="Read"
     data-key="FLAGS" data-value="\Seen">
 <input type="button" name="store" value="Unread"
     data-key="FLAGS" data-value="\Seen" data-unset="1">
 <input type="button" name="archive" value="Archive">
+<input type="button" name="copy_to_inbox" value="Copy to Inbox">
 <input type="button" name="sync" value="Sync">
 <ul class="emails">
 {% for email in emails %}

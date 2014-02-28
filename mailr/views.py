@@ -12,6 +12,7 @@ rules = [
     Rule('/raw/<email:email>/', endpoint='raw'),
     Rule('/store/<label:label>/', methods=['POST'], endpoint='store'),
     Rule('/archive/<label:label>/', methods=['POST'], endpoint='archive'),
+    Rule('/copy/<label:label>/<label:to>/', methods=['POST'], endpoint='copy'),
     Rule('/sync/', endpoint='sync'),
 ]
 
@@ -71,22 +72,37 @@ def store(env, label):
     im = imap.client()
     im.select('"%s"' % label.name, readonly=False)
     imap.store(im, ids, key, value, unset)
-    syncer.fetch_emails(im, label)
+    syncer.fetch_emails(im, label, with_bodies=False)
     return 'OK'
 
 
 def archive(env, label):
+    label_all = Label.get(lambda l: '\\All' in l.attrs)
     uids = env.request.form.getlist('ids[]')
     im = imap.client()
     im.select('"%s"' % label.name, readonly=False)
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uid_ = data[0].decode().split(' ')[0]
-        res = im.uid('COPY', uid_, '"[Gmail]/All Mail"')
+        res = im.uid('COPY', uid_, '"%s"' % label_all.name)
         log.info('Archive(%s): %s', uid_, res)
         res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
         log.info('Delete(%s): %s', uid_, res)
-    syncer.fetch_emails(im, label)
+    syncer.fetch_emails(im, label, with_bodies=False)
+    return 'OK'
+
+
+def copy(env, label, to):
+    uids = env.request.form.getlist('ids[]')
+    im = imap.client()
+    im.select('"%s"' % label.name, readonly=False)
+    for uid in uids:
+        _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+        uid_ = data[0].decode().split(' ')[0]
+        res = im.uid('COPY', uid_, '"%s"' % to.name)
+        log.info('Copy(%s from %s to %s): %s', uid_, label.name, to.name, res)
+    syncer.fetch_emails(im, label, with_bodies=False)
+    syncer.fetch_emails(im, to, with_bodies=False)
     return 'OK'
 
 

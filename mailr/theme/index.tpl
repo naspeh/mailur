@@ -51,6 +51,10 @@ $(window).bind('hashchange', function() {
             $.post('/archive/' + get_label() + '/', {ids: get_ids($(this))})
                 .done(refresh);
         });
+        $('input[name="copy_to_inbox"]').click(function() {
+            $.post('/copy/' + get_label() + '/' + 4 + '/', {ids: get_ids($(this))})
+                .done(refresh);
+        });
         $('input[name="sync"]').click(function() {
             $.get('/sync/').done(refresh);
         });
