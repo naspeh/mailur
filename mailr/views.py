@@ -1,9 +1,10 @@
 from collections import OrderedDict
 
+from sqlalchemy import func
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, imap, syncer
-from .db import Email, Label, session
+from .db import Email, Label, session, array_del
 
 rules = [
     Rule('/', endpoint='index'),
@@ -65,7 +66,7 @@ def gm_thread(env, id):
 
 
 def store(env, label):
-    ids = env.request.form.getlist('ids[]')
+    ids = env.request.form.getlist('ids[]', type=int)
     key = env.request.form.get('key')
     value = env.request.form.get('value')
     unset = env.request.form.get('unset', False, type=bool)
@@ -77,30 +78,45 @@ def store(env, label):
 
 
 def archive(env, label):
+    uids = env.request.form.getlist('ids[]', type=int)
     label_all = Label.get(lambda l: '\\All' in l.attrs)
-    uids = env.request.form.getlist('ids[]')
+
     im = imap.client()
     im.select('"%s"' % label.name, readonly=False)
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uid_ = data[0].decode().split(' ')[0]
         res = im.uid('COPY', uid_, '"%s"' % label_all.name)
-        log.info('Archive(%s): %s', uid_, res)
+        log.info('Archive(%s): %s', uid, res)
         res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
-        log.info('Delete(%s): %s', uid_, res)
+        log.info('Delete(%s): %s', uid, res)
+
+    session.query(Email).filter(Email.uid.in_(uids))\
+        .update(
+            {Email.labels: array_del(Email.labels, label.id)},
+            synchronize_session=False
+        )
+
     syncer.fetch_emails(im, label, with_bodies=False)
     return 'OK'
 
 
 def copy(env, label, to):
-    uids = env.request.form.getlist('ids[]')
+    uids = env.request.form.getlist('ids[]', type=int)
     im = imap.client()
     im.select('"%s"' % label.name, readonly=False)
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uid_ = data[0].decode().split(' ')[0]
         res = im.uid('COPY', uid_, '"%s"' % to.name)
-        log.info('Copy(%s from %s to %s): %s', uid_, label.name, to.name, res)
+        log.info('Copy(%s from %s to %s): %s', uid, label.name, to.name, res)
+
+    session.query(Email).filter(Email.uid.in_(uids))\
+        .update(
+            {Email.labels: func.array_append(Email.labels, to.id)},
+            synchronize_session=False
+        )
+
     syncer.fetch_emails(im, label, with_bodies=False)
     syncer.fetch_emails(im, to, with_bodies=False)
     return 'OK'
