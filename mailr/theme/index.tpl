@@ -49,23 +49,21 @@ $(window).bind('hashchange', function() {
         });
         $('input[name="archive"]').click(function() {
             var label = $('select.labels :checked').data('id');
-            $.post('/archive/' + label + '/', {ids: get_ids($(this))})
-                .done(sync);
+            $.post('/archive/' + label + '/', {ids: get_ids($(this))}).done(sync);
         });
         $('input[name="sync"]').click(sync);
     });
     function get_ids(el) {
-        var items = el.parents('form').find('input[name="ids"]:checked').parents('.email');
         var ids = [];
-        items.each(function() {
-            ids.push($(this).data('id'));
-        });
+        el.parents('form').find('input[name="ids"]:checked').parents('.email')
+            .each(function() {
+                ids.push($(this).data('id'));
+            });
         return ids;
     }
     function imap_store(data) {
         data.unset = data.unset && 1 || '';
-        $.post('/imap-store/', data)
-            .done(sync);
+        $.post('/imap-store/', data).done(sync);
     }
     function sync() {
         $.get('/sync/').done(function () {
