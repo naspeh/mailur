@@ -7,14 +7,8 @@
 </head>
 <body>
 <div class="panel-one">
-    <select class="labels">
-    {% for label in labels %}
-        <option value="#{{ url_for('label', label=label.id) }}" data-id="{{ label.id }}">
-            {{ label.human_name }} <b>{{ label.unread }}</b>/{{ label.exists }}
-        </option>
-    {% endfor %}
-    </select>
-    <div class="panel-body"
+    <div class="panel-head"></div>
+    <div class="panel-body"></div>
 </div>
 <script src="//code.jquery.com/jquery.js"></script>
 <script>
@@ -74,20 +68,24 @@ $(window).bind('hashchange', function() {
         data.unset = data.unset && 1 || '';
         $.post('/store/' + get_label() + '/', data).done(refresh);
     }
-    function refresh() {
-        $(window).trigger('hashchange');
-    }
 });
-$('select.labels')
-    .bind('change', function() {
-        window.location.hash = $(this).val();
-    });
-if (window.location.hash) {
-    $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
-    $(window).trigger('hashchange');
-} else {
-    $('select.labels').trigger('change');
+function refresh() {
+    $.get('/labels/', function(content) {
+        $('.panel-head').html(content)
+
+        $('select.labels')
+            .bind('change', function() {
+                window.location.hash = $(this).val();
+            });
+        if (window.location.hash) {
+            $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
+            $(window).trigger('hashchange');
+        } else {
+            $('select.labels').trigger('change');
+        }
+    })
 }
+refresh()
 </script>
 </body>
 </html>

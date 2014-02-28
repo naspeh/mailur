@@ -7,6 +7,7 @@ from .db import Email, Label, session
 
 rules = [
     Rule('/', endpoint='index'),
+    Rule('/labels/', endpoint='labels'),
     Rule('/label/<label:label>/', endpoint='label'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<email:email>/', endpoint='raw'),
@@ -37,12 +38,16 @@ url_map = Map(rules, converters=converters)
 
 
 def index(env):
+    return env.render('index.tpl')
+
+
+def labels(env):
     labels = (
         session.query(Label)
         .filter(~Label.attrs.any(Label.NOSELECT))
         .order_by(Label.is_folder.desc(), Label.weight.desc(), Label.index)
     )
-    return env.render('index.tpl', labels=labels)
+    return env.render('labels.tpl', labels=labels)
 
 
 def label(env, label):
