@@ -52,7 +52,7 @@ $(window).bind('hashchange', function() {
                 .done(refresh);
         });
         $('input[name="copy_to_inbox"]').click(function() {
-            $.post('/copy/' + get_label() + '/' + 4 + '/', {ids: get_ids($(this))})
+            $.post('/copy/' + get_label() + '/' + 6 + '/', {ids: get_ids($(this))})
                 .done(refresh);
         });
         $('input[name="sync"]').click(function() {

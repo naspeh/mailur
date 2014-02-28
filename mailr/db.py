@@ -1,12 +1,15 @@
+from psycopg2.extras import register_hstore
 from sqlalchemy import (
     create_engine, Column, func,
     DateTime, String, Integer, BigInteger, SmallInteger, Boolean, LargeBinary
 )
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, HSTORE
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import sessionmaker
 
 engine = create_engine('postgresql+psycopg2://test:test@/mail', echo=False)
+register_hstore(engine.raw_connection(), True)
 
 Base = declarative_base()
 drop_all = lambda: Base.metadata.drop_all(engine)
@@ -48,8 +51,8 @@ class Label(Base):
 
     @classmethod
     def get(cls, func_or_id=None):
-        if isinstance(func_or_id, int):
-            func = lambda l: l.id == func_or_id
+        if isinstance(func_or_id, (int, str)):
+            func = lambda l: l.id == int(func_or_id)
         else:
             func = func_or_id
 
@@ -69,8 +72,7 @@ class Email(Base):
     updated_at = Column(DateTime, onupdate=func.now())
 
     uid = Column(BigInteger, unique=True)
-    labels = Column(ARRAY(Integer), default=[])
-    t_labels = Column(ARRAY(Integer))
+    labels = Column(MutableDict.as_mutable(HSTORE))
     gm_msgid = Column(BigInteger, unique=True)
     gm_thrid = Column(BigInteger)
 

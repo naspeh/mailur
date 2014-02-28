@@ -1,6 +1,5 @@
 from collections import OrderedDict
 
-from sqlalchemy import func
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, imap, syncer
@@ -49,7 +48,7 @@ def index(env):
 def label(env, label):
     emails = (
         session.query(Email)
-        .filter(Email.labels.any(label.id))
+        .filter(Email.labels.has_key(str(label.id)))
         .order_by(Email.date.desc())
     )
     emails = OrderedDict((email.gm_thrid, email) for email in emails).values()
@@ -104,12 +103,6 @@ def copy(env, label, to):
         uid_ = data[0].decode().split(' ')[0]
         res = im.uid('COPY', uid_, '"%s"' % to.name)
         log.info('Copy(%s from %s to %s): %s', uid, label.name, to.name, res)
-
-    session.query(Email).filter(Email.uid.in_(uids))\
-        .update(
-            {Email.labels: func.array_append(Email.labels, to.id)},
-            synchronize_session=False
-        )
 
     syncer.fetch_emails(im, label, with_bodies=False)
     syncer.fetch_emails(im, to, with_bodies=False)

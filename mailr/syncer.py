@@ -2,7 +2,6 @@ from collections import OrderedDict, defaultdict
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.dialects.postgresql import array
 
 from . import log, Timer, imap
 from .parser import parse_header
@@ -11,9 +10,6 @@ from .db import Email, Label, session
 
 def sync_gmail(with_bodies=True):
     im = imap.client()
-
-    # Cleaunp t_labels
-    session.query(Email).update({Email.t_labels: []})
 
     weights = {
         'INBOX': 100,
@@ -46,15 +42,6 @@ def sync_gmail(with_bodies=True):
         if '\\Noselect' in attrs:
             continue
         fetch_emails(im, label, with_bodies)
-
-    # Update labels
-    timer = Timer()
-    updated = (
-        session.query(Email)
-        .filter(Email.labels != Email.t_labels)
-        .update({Email.labels: Email.t_labels})
-    )
-    log.info(' %d updated labels or flags for %.2f', updated, timer.time())
 
 
 def fetch_emails(im, label, with_bodies=True):
@@ -103,7 +90,7 @@ def fetch_emails(im, label, with_bodies=True):
             for row in data.values():
                 header = row.pop(query['header'])
                 fields = {k: row[v] for k, v in query.items() if v in row}
-                fields['t_labels'] = [label.id]
+                fields['labels'] = {str(label.id): ''}
                 fields.update(parse_header(header))
                 emails.append(fields)
             session.execute(Email.__table__.insert(), emails)
@@ -115,9 +102,17 @@ def fetch_emails(im, label, with_bodies=True):
     emails = session.query(Email)
     updated += (
         emails.filter(Email.uid.in_(msgids.keys()))
-        .filter(~Email.t_labels.any(label.id))
+        .filter(~Email.labels.has_key(str(label.id)))
         .update(
-            {Email.t_labels: Email.t_labels + array([label.id])},
+            {Email.labels: Email.labels + {str(label.id): ''}},
+            synchronize_session=False
+        )
+    )
+    updated += (
+        emails.filter(~Email.uid.in_(msgids.keys()))
+        .filter(Email.labels.has_key(str(label.id)))
+        .update(
+            {Email.labels: Email.labels.delete(str(label.id))},
             synchronize_session=False
         )
     )
