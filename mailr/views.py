@@ -79,16 +79,19 @@ def store(env, label):
 def archive(env, label):
     uids = env.request.form.getlist('ids[]', type=int)
     label_all = Label.get(lambda l: '\\All' in l.attrs)
+    label_trash = Label.get(lambda l: '\\Trash' in l.attrs)
 
     im = imap.client()
     im.select('"%s"' % label.name, readonly=False)
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uid_ = data[0].decode().split(' ')[0]
-        res = im.uid('COPY', uid_, '"%s"' % label_all.name)
-        log.info('Archive(%s): %s', uid, res)
-        res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
-        log.info('Delete(%s): %s', uid, res)
+        if label_trash == label:
+            res = im.uid('COPY', uid_, '"%s"' % label_all.name)
+            log.info('Archive(%s): %s', uid, res)
+        else:
+            res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
+            log.info('Delete(%s): %s', uid, res)
 
     syncer.fetch_emails(im, label, with_bodies=False)
     return 'OK'
