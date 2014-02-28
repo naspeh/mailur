@@ -69,8 +69,9 @@ def store(env, label):
     value = env.request.form.get('value')
     unset = env.request.form.get('unset', False, type=bool)
     im = imap.client()
-    im.select('"[Gmail]/All Mail"', readonly=False)
+    im.select('"%s"' % label.name, readonly=False)
     imap.store(im, ids, key, value, unset)
+    syncer.fetch_emails(im, label)
     return 'OK'
 
 

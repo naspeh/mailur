@@ -48,9 +48,12 @@ $(window).bind('hashchange', function() {
             return false;
         });
         $('input[name="archive"]').click(function() {
-            $.post('/archive/' + get_label() + '/', {ids: get_ids($(this))}).done(sync);
+            $.post('/archive/' + get_label() + '/', {ids: get_ids($(this))})
+                .done(refresh);
         });
-        $('input[name="sync"]').click(sync);
+        $('input[name="sync"]').click(function() {
+            $.get('/sync/').done(refresh);
+        });
     });
     function get_label() {
         return $('select.labels :checked').data('id');
@@ -65,12 +68,10 @@ $(window).bind('hashchange', function() {
     }
     function imap_store(data) {
         data.unset = data.unset && 1 || '';
-        $.post('/store/' + get_label() + '/', data).done(sync);
+        $.post('/store/' + get_label() + '/', data).done(refresh);
     }
-    function sync() {
-        $.get('/sync/').done(function () {
-            $(window).trigger('hashchange');
-        });
+    function refresh() {
+        $(window).trigger('hashchange');
     }
 });
 $('select.labels')

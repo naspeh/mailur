@@ -37,13 +37,20 @@ class Label(Base):
         name = self.name.replace('[Gmail]/', '')
         return decode(name)
 
+    @classmethod
+    def get_all(cls):
+        if not hasattr(cls, '_labels'):
+            cls._labels = dict((l.id, l) for l in (
+                session.query(Label)
+                .order_by(Label.weight.desc())
+            ))
+        return cls._labels
+
 
 class Email(Base):
     __tablename__ = 'emails'
-
     SEEN = '\\Seen'
     STARRED = '\\Flagged'
-    _labels = None
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
@@ -56,7 +63,6 @@ class Email(Base):
     gm_thrid = Column(BigInteger)
 
     flags = Column(ARRAY(String), default=[])
-    t_flags = Column(ARRAY(String))
     internaldate = Column(DateTime)
     size = Column(Integer, index=True)
     body = Column(LargeBinary)
@@ -77,12 +83,8 @@ class Email(Base):
 
     @property
     def full_labels(self):
-        if self._labels is None:
-            self._labels = dict((l.id, l) for l in (
-                session.query(Label)
-                .order_by(Label.weight.desc())
-            ))
-        return [self._labels[l] for l in self.labels if l in self._labels]
+        labels = Label.get_all()
+        return [labels[l] for l in self.labels if l in labels]
 
     @property
     def unread(self):

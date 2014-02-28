@@ -12,8 +12,8 @@ from .db import Email, Label, session
 def sync_gmail(with_bodies=True):
     im = imap.client()
 
-    # Cleaunp t_flags and t_labels
-    session.query(Email).update({Email.t_flags: [], Email.t_labels: []})
+    # Cleaunp t_labels
+    session.query(Email).update({Email.t_labels: []})
 
     weights = {
         'INBOX': 100,
@@ -47,14 +47,9 @@ def sync_gmail(with_bodies=True):
             continue
         fetch_emails(im, label, with_bodies)
 
-    # Update flags and labels
+    # Update labels
     timer = Timer()
     updated = (
-        session.query(Email)
-        .filter(Email.flags != Email.t_flags)
-        .update({Email.flags: Email.t_flags})
-    )
-    updated += (
         session.query(Email)
         .filter(Email.labels != Email.t_labels)
         .update({Email.labels: Email.t_labels})
@@ -79,20 +74,23 @@ def fetch_emails(im, label, with_bodies=True):
         'unread': len(msgids.keys()) - len(flags.get(Email.SEEN, [])),
         'exists': len(msgids.keys()),
     })
-
     log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())
     if not msgids:
         return
 
     # Fetch properties
     emails = session.query(Email.uid).filter(Email.uid.in_(msgids.keys()))
+
+    # Cleanup flags
+    emails.update({Email.flags: []}, synchronize_session=False)
+
     msgids_ = sum([[r.uid] for r in emails.all()], [])
     msgids_ = list(set(msgids.keys()) - set(msgids_))
     uids = [v for k, v in msgids.items() if k in msgids_]
     if uids:
         query = OrderedDict([
             ('internaldate', 'INTERNALDATE'),
-            ('t_flags', 'FLAGS'),
+            ('flags', 'FLAGS'),
             ('size', 'RFC822.SIZE'),
             ('uid', 'X-GM-MSGID'),
             ('gm_msgid', 'X-GM-MSGID'),
@@ -134,9 +132,8 @@ def fetch_emails(im, label, with_bodies=True):
         for flag, uids_ in flags.items():
             updated += (
                 emails.filter(Email.uid.in_(uids_))
-                .filter(~Email.t_flags.any(flag))
                 .update(
-                    {Email.t_flags: func.array_append(Email.t_flags, flag)},
+                    {Email.flags: func.array_append(Email.flags, flag)},
                     synchronize_session=False
                 )
             )
