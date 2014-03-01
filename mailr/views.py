@@ -38,9 +38,13 @@ converters = {
 url_map = Map(rules, converters=converters)
 
 
+def render(env, layout=None, **context):
+    return env.render('index.tpl', layout=layout, **context)
+
+
 def index(env):
     inbox = Label.get(lambda l: l.name == 'INBOX')
-    return env.render('index.tpl', inbox=inbox)
+    return render(env, inbox=inbox)
 
 
 def labels(env):
@@ -49,7 +53,7 @@ def labels(env):
         .filter(~Label.attrs.any(Label.NOSELECT))
         .order_by(Label.is_folder.desc(), Label.weight.desc(), Label.index)
     )
-    return env.render('labels.tpl', labels=labels)
+    return render(env, 'labels.tpl', labels=labels)
 
 
 def label(env, label):
@@ -60,7 +64,7 @@ def label(env, label):
     )
     emails = OrderedDict((email.gm_thrid, email) for email in emails).values()
     emails = sorted(emails, key=lambda v: v.date, reverse=True)
-    return env.render('list.tpl', emails=list(emails))
+    return render(env, 'emails.tpl', emails=emails)
 
 
 def gm_thread(env, id):
@@ -69,7 +73,7 @@ def gm_thread(env, id):
         .filter(Email.gm_thrid == id)
         .order_by(Email.date)
     )
-    return env.render('list.tpl', emails=emails)
+    return render(env, 'emails.tpl', emails=emails)
 
 
 def store(env, label):

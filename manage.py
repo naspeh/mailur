@@ -32,8 +32,8 @@ def parse_args():
     cmd('run').exe(lambda a: app.run())
 
     cmd('lessc').exe(lambda a: sh(
-        'lessc {0}styles.less {0}all.css && '
-        'csso {0}all.css {0}all.css'.format('mailr/theme/')
+        'lessc {0}styles.less {0}styles.css && '
+        'csso {0}styles.css {0}styles.css'.format('mailr/theme/')
     ))
 
     args = parser.parse_args()
