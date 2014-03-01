@@ -1,7 +1,7 @@
 from email.utils import getaddresses
 from hashlib import md5
 
-import arrow
+import times
 
 __all__ = [
     'get_all', 'get_addr_name', 'get_gravatar',
@@ -24,11 +24,19 @@ def get_gravatar(addr):
 
 
 def localize_dt(value):
-    return arrow.get(value).to('Europe/Kiev')
+    return times.to_local(value, 'Europe/Kiev')
 
 
-def humanize_dt(value):
-    return localize_dt(value).humanize()
+def humanize_dt(val):
+    val = localize_dt(val)
+    now = localize_dt(times.now())
+    if (now - val).total_seconds() < 24 * 60 * 60 and val.day == now.day:
+        fmt = '%H:%M'
+    elif now.year == val.year:
+        fmt = '%b %d'
+    else:
+        fmt = '%b %d, %Y'
+    return val.strftime(fmt)
 
 
 def format_dt(value, fmt='%a, %d %b, %Y at %H:%M'):

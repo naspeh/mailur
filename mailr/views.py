@@ -54,9 +54,10 @@ def label(env, label):
     emails = (
         session.query(Email)
         .filter(Email.labels.has_key(str(label.id)))
-        .order_by(Email.date.desc())
+        .order_by(Email.date)
     )
     emails = OrderedDict((email.gm_thrid, email) for email in emails).values()
+    emails = sorted(emails, key=lambda v: v.date, reverse=True)
     return env.render('list.tpl', emails=list(emails))
 
 

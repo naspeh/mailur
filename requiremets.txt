@@ -2,7 +2,7 @@ Jinja2==2.7.2
 MarkupSafe==0.18
 SQLAlchemy==0.9.2
 Werkzeug==0.9.4
-arrow==0.4.2
+chardet==2.2.1
 psycopg2==2.5.2
-python-dateutil==2.2
-six==1.5.2
+pytz==2013.9
+times==0.6.2
