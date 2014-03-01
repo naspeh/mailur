@@ -14,7 +14,8 @@ rules = [
     Rule('/store/<label:label>/', methods=['POST'], endpoint='store'),
     Rule('/archive/<label:label>/', methods=['POST'], endpoint='archive'),
     Rule('/copy/<label:label>/<label:to>/', methods=['POST'], endpoint='copy'),
-    Rule('/sync/', endpoint='sync'),
+    Rule('/sync/', defaults={'label': None}, endpoint='sync'),
+    Rule('/sync/<label:label>/', endpoint='sync'),
 ]
 
 
@@ -118,8 +119,13 @@ def copy(env, label, to):
     return 'OK'
 
 
-def sync(env):
-    syncer.sync_gmail(False)
+def sync(env, label=None):
+    if label:
+        im = imap.client()
+        im.select('"%s"' % label.name, readonly=False)
+        syncer.fetch_emails(im, label, with_bodies=False)
+    else:
+        syncer.sync_gmail(False)
     return 'OK'
 
 

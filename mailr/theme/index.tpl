@@ -50,6 +50,9 @@ $(window).bind('hashchange', function() {
                 .done(refresh);
         });
         $('input[name="sync"]').click(function() {
+            $.get('/sync/' + get_label() + '/').done(refresh);
+        });
+        $('input[name="sync_all"]').click(function() {
             $.get('/sync/').done(refresh);
         });
     });

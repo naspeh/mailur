@@ -10,6 +10,7 @@
 <input type="button" name="archive" value="Archive">
 <input type="button" name="copy_to_inbox" value="Copy to Inbox">
 <input type="button" name="sync" value="Sync">
+<input type="button" name="sync_all" value="Sync all">
 <ul class="emails">
 {% for email in emails %}
     <li data-id="{{ email.uid }}" class="email{% if email.unread %} email-unread{% endif %}">
