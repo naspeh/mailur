@@ -12,6 +12,10 @@
 </div>
 <script src="//code.jquery.com/jquery.js"></script>
 <script>
+    var CONF = CONF || {}
+    CONF.inbox_id = {{ inbox.id }};
+</script>
+<script>
 $(window).bind('hashchange', function() {
     var url = location.hash.slice(1);
     $('select.labels [value="#' + url + '"]').attr('selected', true);
@@ -46,8 +50,8 @@ $(window).bind('hashchange', function() {
                 .done(refresh);
         });
         $('input[name="copy_to_inbox"]').click(function() {
-            $.post('/copy/' + get_label() + '/' + 6 + '/', {ids: get_ids($(this))})
-                .done(refresh);
+            var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
+            $.post(url, {ids: get_ids($(this))}).done(refresh);
         });
         $('input[name="sync"]').click(function() {
             $.get('/sync/' + get_label() + '/').done(refresh);
