@@ -18,45 +18,48 @@
   }
 }
 */
-.icon-before {
-  font-family: "fontello";
-  font-style: normal;
-  font-weight: normal;
-  speak: none;
+.icon-before(@symbol) {
+  &:before {
+    content: @symbol;
+    font-family: "fontello";
+    font-style: normal;
+    font-weight: normal;
+    speak: none;
 
-  display: inline-block;
-  text-decoration: inherit;
-  width: 1em;
-  margin-right: .2em;
-  text-align: center;
-  /* opacity: .8; */
+    display: inline-block;
+    text-decoration: inherit;
+    width: 1em;
+    margin-right: .2em;
+    text-align: center;
+    /* opacity: .8; */
 
-  /* For safety - reset parent styles, that can break glyph codes*/
-  font-variant: normal;
-  text-transform: none;
+    /* For safety - reset parent styles, that can break glyph codes*/
+    font-variant: normal;
+    text-transform: none;
 
-  /* fix buttons height, for twitter bootstrap */
-  line-height: 1em;
+    /* fix buttons height, for twitter bootstrap */
+    line-height: 1em;
 
-  /* Animation center compensation - margins should be symmetric */
-  /* remove if not needed */
-  margin-left: .2em;
+    /* Animation center compensation - margins should be symmetric */
+    /* remove if not needed */
+    margin-left: .2em;
 
-  /* you can be more comfortable with increased icons size */
-  /* font-size: 120%; */
+    /* you can be more comfortable with increased icons size */
+    /* font-size: 120%; */
 
-  /* Uncomment for 3D effect */
-  /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+    /* Uncomment for 3D effect */
+    /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+  }
 }
 
-.icon-star-empty {&:before {.icon-before; content: '\e800';}}
-.icon-mail {&:before {.icon-before; content: '\e807';}}
-.icon-sent {&:before {.icon-before; content: '\e80d'; }}
-.icon-reply {&:before {.icon-before; content: '\e809'; }}
-.icon-reply-all {&:before {.icon-before; content: '\e808'; }}
-.icon-star {&:before {.icon-before; content: '\e806'; }}
-.icon-trash {&:before {.icon-before; content: '\e80f'; }}
-.icon-archive {&:before {.icon-before; content: '\e80b'; }}
-.icon-box {&:before {.icon-before; content: '\e80c'; }}
-.icon-loader {&:before {.icon-before; content: '\e80e'; }}
-.icon-forward {&:before {.icon-before; content: '\e80a'; }}
+.icon-star-empty {.icon-before('\e800');}
+.icon-mail {.icon-before('\e807');}
+.icon-sent {.icon-before('\e80d');}
+.icon-reply {.icon-before('\e809');}
+.icon-reply-all {.icon-before('\e808');}
+.icon-star {.icon-before('\e806');}
+.icon-trash {.icon-before('\e80f');}
+.icon-archive {.icon-before('\e80b');}
+.icon-box {.icon-before('\e80c');}
+.icon-loader {.icon-before('\e80e');}
+.icon-forward {.icon-before('\e80a');}

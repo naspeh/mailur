@@ -1,7 +1,10 @@
+import glob
 import os
+import subprocess
 
 from jinja2 import Environment, FileSystemLoader
 from werkzeug.exceptions import HTTPException
+from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import SharedDataMiddleware
 
@@ -56,11 +59,19 @@ class Env:
 
 
 def run():
-    from livereload import Server
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        subprocess.call('./manage.py lessc', shell=True)
+
+    extra_files = [
+        glob.glob(os.path.join(theme_dir, fmask)) +
+        glob.glob(os.path.join(theme_dir, '*', fmask))
+        for fmask in ['*.less', '*.css', '*.js']
+    ]
+    extra_files = sum(extra_files, [])
 
     app = create_app()
-    server = Server(app)
-    server.watch('mailr/*.py')
-    server.watch('mailr/theme/*.tpl')
-    server.watch('mailr/theme/*.less', './manage.py lessc')
-    server.serve(port=5000)
+    run_simple(
+        '0.0.0.0', 5000, app,
+        use_debugger=True, use_reloader=True,
+        extra_files=extra_files
+    )
