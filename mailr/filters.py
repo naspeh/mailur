@@ -30,7 +30,7 @@ def localize_dt(value):
 def humanize_dt(val):
     val = localize_dt(val)
     now = localize_dt(times.now())
-    if (now - val).total_seconds() < 24 * 60 * 60 and val.day == now.day:
+    if (now - val).total_seconds() < 12 * 60 * 60:
         fmt = '%H:%M'
     elif now.year == val.year:
         fmt = '%b %d'
