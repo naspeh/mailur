@@ -18,6 +18,14 @@ drop_all = lambda: Base.metadata.drop_all(engine)
 class Label(Base):
     __tablename__ = 'labels'
     NOSELECT = '\\Noselect'
+    A_INBOX = 'inbox'
+    A_STARRED = 'starred'
+    A_SENT = 'sent'
+    A_DRAFTS = 'drafts'
+    A_ALL = 'all'
+    A_SPAM = 'spam'
+    A_TRASH = 'trash'
+    A_IMPORTANT = 'important'
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())
@@ -27,7 +35,8 @@ class Label(Base):
     delim = Column(String)
     name = Column(String, unique=True)
 
-    is_folder = Column(Boolean, default=False)
+    alias = Column(String, unique=True)
+    hidden = Column(Boolean, default=False)
     index = Column(SmallInteger, default=0)
     weight = Column(SmallInteger, default=0)
     unread = Column(SmallInteger, default=0)
@@ -58,6 +67,8 @@ class Label(Base):
 
         label = [l for l in cls.get_all() if func(l)]
         if label:
+            if len(label) > 1:
+                raise ValueError('Must be one row, but %r' % label)
             return label[0]
         return None
 

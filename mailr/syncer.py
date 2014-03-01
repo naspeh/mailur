@@ -11,23 +11,25 @@ from .db import Email, Label, session
 def sync_gmail(with_bodies=True):
     im = imap.client()
 
-    weights = {
-        'INBOX': 100,
-        '\\Flagged': 95,
-        '\\Sent': 90,
-        '\\Drafts': 85,
-        '\\All': 80,
-        '\\Junk': 75,
-        '\\Trash': 70,
-        '\\Important': 0
+    opts = {
+        'INBOX': (-100, False, Label.A_INBOX),
+        '\\Flagged': (-90, True, Label.A_STARRED),
+        '\\Sent': (-80, True, Label.A_SENT),
+        '\\Drafts': (-70, True, Label.A_DRAFTS),
+        '\\All': (-60, True, Label.A_ALL),
+        '\\Junk': (-50, True, Label.A_SPAM),
+        '\\Trash': (-40, True, Label.A_TRASH),
+        '\\Important': (-30, True, Label.A_IMPORTANT)
     }
     folders_ = imap.list_(im)
     for index, value in enumerate(folders_):
         attrs, delim, name = value
-        lookup = list(attrs) + [name]
-        folder = [v for k, v in weights.items() if k in lookup]
-        weight = folder[0] if folder else 0
-        label = Label(attrs=attrs, delim=delim, name=name, index=index)
+        lookup = lambda k: name == k if k == 'INBOX' else k in attrs
+        folder = [v for k, v in opts.items() if lookup(k)]
+        weight, hidden, alias = (
+            folder[0] if folder else (0, Label.NOSELECT in attrs, None)
+        )
+        label = Label(attrs=attrs, delim=delim, name=name)
         try:
             session.add(label)
             session.flush()
@@ -35,11 +37,13 @@ def sync_gmail(with_bodies=True):
             pass
 
         label = session.query(Label).filter(Label.name == name).one()
-        label.is_folder = bool(folder)
+        label.hidden = hidden
+        label.index = index
         label.weight = weight
+        label.alias = alias
         session.merge(label)
 
-        if '\\Noselect' in attrs:
+        if Label.NOSELECT in attrs:
             continue
         fetch_emails(im, label, with_bodies)
 

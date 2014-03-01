@@ -54,7 +54,7 @@
 
                 {% if email.labels %}
                 <span class="email-labels">
-                {% for label in email.full_labels if not label.is_folder %}
+                {% for label in email.full_labels if not label.hidden %}
                     <a href="#{{ url_for('label', label=label.id) }}">{{ label.human_name }}</a>
                 {% endfor %}
                 </span>

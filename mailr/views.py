@@ -43,7 +43,7 @@ def render(env, layout=None, **context):
 
 
 def index(env):
-    inbox = Label.get(lambda l: l.name == 'INBOX')
+    inbox = Label.get(lambda l: l.alias == Label.A_INBOX)
     return render(env, inbox=inbox)
 
 
@@ -51,7 +51,7 @@ def labels(env):
     labels = (
         session.query(Label)
         .filter(~Label.attrs.any(Label.NOSELECT))
-        .order_by(Label.is_folder.desc(), Label.weight.desc(), Label.index)
+        .order_by(Label.weight, Label.index)
     )
     return render(env, 'labels.tpl', labels=labels)
 
