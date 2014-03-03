@@ -27,5 +27,10 @@
         "subject": "Re: тема измененная",
         "text/plain": "2 png",
         "attachments": [["image/png", "49.png"], ["image/png", "50.png"]]
+    },
+    "1325207632929727148--text-calendar.txt": {
+        "subject": "Invitation: hush#weektalk @ Tue 19 Jan 13:00 - 14:00 (naspeh@pusto.org)",
+        "text/html": "hush#weektalk",
+        "attachments": [["application/ics", "invite.ics"]]
     }
 }

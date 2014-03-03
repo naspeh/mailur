@@ -3,8 +3,7 @@ from collections import OrderedDict, defaultdict
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from . import log, Timer, imap
-from .parser import parse_header
+from . import log, Timer, imap, parser
 from .db import Email, Label, session
 
 
@@ -95,7 +94,7 @@ def fetch_emails(im, label, with_bodies=True):
                 header = row.pop(query['header'])
                 fields = {k: row[v] for k, v in query.items() if v in row}
                 fields['labels'] = {str(label.id): ''}
-                fields.update(parse_header(header))
+                fields.update(parser.parse(header))
                 emails.append(fields)
             session.execute(Email.__table__.insert(), emails)
 
@@ -153,8 +152,25 @@ def fetch_emails(im, label, with_bodies=True):
         for data in imap.fetch(im, uids, 'RFC822', 500, 'update bodies'):
             with session.begin():
                 for uid, row in data.items():
-                    fields = {'body': row['RFC822']}
-                    fields.update(parse_header(fields['body']))
-                    session.query(Email)\
-                        .filter(Email.uid == uids_map[uid])\
-                        .update(fields)
+                    update_email(uids_map[uid], row['RFC822'])
+
+
+def update_email(uid, raw):
+    fields = parser.parse(raw)
+    fields['body'] = raw
+    fields['text'] = fields.pop('text/plain', None)
+    fields['html'] = fields.pop('text/html', None)
+    fields.pop('attachments', None)
+    session.query(Email).filter(Email.uid == uid)\
+        .update(fields, synchronize_session=False)
+
+
+def parse_emails():
+    emails = (
+        session.query(Email)
+        .filter(Email.text.__eq__(None))
+        .filter(Email.html.__eq__(None))
+    )
+    for email in emails:
+        log.info('%s %s -- %s', email.uid, email.subject, email.size)
+        update_email(email.uid, email.body)

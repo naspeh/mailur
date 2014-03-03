@@ -1,0 +1,210 @@
+Delivered-To: naspeh@gmail.com
+Received: by 10.216.4.11 with SMTP id 11cs376635wei;
+        Mon, 18 Jan 2010 04:08:05 -0800 (PST)
+Received: by 10.213.1.132 with SMTP id 4mr882370ebf.11.1263816484784;
+        Mon, 18 Jan 2010 04:08:04 -0800 (PST)
+Return-Path: <3DE9USwYJBvoiqvu0miockn.eqopcurgjrwuvq.qti@calendar-server.bounces.google.com>
+Received: from rly.bz8.ru (rly.bz8.ru [80.93.50.218])
+        by mx.google.com with ESMTP id 4si28347133ewy.68.2010.01.18.04.08.03;
+        Mon, 18 Jan 2010 04:08:03 -0800 (PST)
+Received-SPF: neutral (google.com: 80.93.50.218 is neither permitted nor denied by domain of 3DE9USwYJBvoiqvu0miockn.eqopcurgjrwuvq.qti@calendar-server.bounces.google.com) client-ip=80.93.50.218;
+Authentication-Results: mx.google.com; spf=neutral (google.com: 80.93.50.218 is neither permitted nor denied by domain of 3DE9USwYJBvoiqvu0miockn.eqopcurgjrwuvq.qti@calendar-server.bounces.google.com) smtp.mail=3DE9USwYJBvoiqvu0miockn.eqopcurgjrwuvq.qti@calendar-server.bounces.google.com; dkim=pass (test mode) header.i=@google.com
+Received: from ns1.bz8.ru ([80.93.48.162] helo=mx.bz8.ru)
+	by rly.bz8.ru with esmtp (Exim 4.69 (FreeBSD))
+	(envelope-from <3DE9USwYJBvoiqvu0miockn.eqopcurgjrwuvq.qti@calendar-server.bounces.google.com>)
+	id 1NWqOp-000AZ1-9a; Mon, 18 Jan 2010 15:08:03 +0300
+Received: from mail-gx0-f233.google.com ([209.85.217.233])
+	by mx.bz8.ru with esmtp (Exim 4.69 (FreeBSD))
+	(envelope-from <3DE9USwYJBvoiqvu0miockn.eqopcurgjrwuvq.qti@calendar-server.bounces.google.com>)
+	id 1NWqOn-000AXI-KA
+	for naspeh@pusto.org; Mon, 18 Jan 2010 15:08:03 +0300
+Received: by gxk13 with SMTP id 13so760530gxk.1
+        for <naspeh@pusto.org>; Mon, 18 Jan 2010 04:07:40 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=beta;
+        h=domainkey-signature:mime-version:reply-to:sender:auto-submitted
+         :received:message-id:date:subject:from:to:content-type;
+        bh=r1zR9DrYXQ5Mjpe6/vwmSY9urSLtDGCWSv2VxcBL8fg=;
+        b=qGj2XVTT3i/KcbUxQmUuIHHgzoKomIHY6ttcyLOgzCn9hNjkde5EjpCqux39KHFJ0E
+         P5NEGu0egkqqCKmpiqQg==
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:reply-to:sender:auto-submitted:message-id:date:subject
+         :from:to:content-type;
+        b=NbOAC7PoTIOZdCR1xXqd4gIS6YWn0310eN6gb4qK9wSHbJxPasO78CtpfqiVECvG5B
+         xDvXDtIvqg12W5AsC/nw==
+MIME-Version: 1.0
+Reply-To: Volodymyr Hotsyk <gotsyk@gmail.com>
+Sender: Google Calendar <calendar-notification@google.com>
+Auto-Submitted: auto-generated
+Received: by 10.90.6.10 with SMTP id 10mr7932919agf.8.1263816460220; Mon, 18 
+	Jan 2010 04:07:40 -0800 (PST)
+Message-ID: <00163616467b2c3cd6047d6f336e@google.com>
+Date: Mon, 18 Jan 2010 12:07:40 +0000
+Subject: Invitation: hush#weektalk @ Tue 19 Jan 13:00 - 14:00 
+	(naspeh@pusto.org)
+From: Volodymyr Hotsyk <gotsyk@gmail.com>
+To: "naspeh@pusto.org" <naspeh@pusto.org>
+Content-Type: multipart/mixed; boundary=00163616467b2c3cc2047d6f336d
+X-Spam-Score: 3.4 (+++)
+X-Spam-Report: Content analysis details: (3.4 points, 5.0 required)
+	3.4 FH_DATE_PAST_20XX      The date is grossly in the future.
+X-Spam-Flag: No
+X-Spam-Flag: Size
+
+--00163616467b2c3cc2047d6f336d
+Content-Type: multipart/alternative; boundary=00163616467b2c3cbc047d6f336b
+
+--00163616467b2c3cbc047d6f336b
+Content-Type: text/plain; charset=windows-1252; format=flowed; delsp=yes
+Content-Transfer-Encoding: base64
+
+WW91IGhhdmUgYmVlbiBpbnZpdGVkIHRvIHRoZSBmb2xsb3dpbmcgZXZlbnQuDQoNClRpdGxlOiBo
+dXNoI3dlZWt0YWxrDQpXaGVuOiBUdWUgMTkgSmFuIDEzOjAwIJYgMTQ6MDAgS2lldg0KQ2FsZW5k
+YXI6IG5hc3BlaEBwdXN0by5vcmcNCldobzoNCiAgICAgKiBnb3RzeWtAZ21haWwuY29tLSBjcmVh
+dG9yDQogICAgICogbmFzcGVoQHB1c3RvLm9yZw0KDQpFdmVudCBkZXRhaWxzOiAgDQpodHRwczov
+L3d3dy5nb29nbGUuY29tL2NhbGVuZGFyL2hvc3RlZC9wdXN0by5vcmcvZXZlbnQ/YWN0aW9uPVZJ
+RVcmZWlkPWEzWXphVzB4TlhWaE1HUjFZVEU0WkhGcVlUQXdibkJoWlRBZ2JtRnpjR1ZvUUhCMWMz
+UnZMbTl5WncmdG9rPU5USWpZemRpY25aMmJURmxPV2sxWVRFM2JIRnBhR3gyYmpCek9XOUFaM0p2
+ZFhBdVkyRnNaVzVrWVhJdVoyOXZaMnhsTG1OdmJUQmpZemhpT1RsbU4yWXdZalF6WW1Gak9UYzFO
+VFl3TURJM016QXhZVGcyTXpsbU5qRXhOemsmY3R6PUV1cm9wZSUyRktpZXYmaGw9ZW5fR0INCg0K
+SW52aXRhdGlvbiBmcm9tIEdvb2dsZSBDYWxlbmRhcjogIA0KaHR0cHM6Ly93d3cuZ29vZ2xlLmNv
+bS9jYWxlbmRhci9ob3N0ZWQvcHVzdG8ub3JnLw0KDQpZb3UgYXJlIHJlY2VpdmluZyB0aGlzIGNv
+dXJ0ZXN5IGVtYWlsIGF0IHRoZSBhY2NvdW50IG5hc3BlaEBwdXN0by5vcmcgIA0KYmVjYXVzZSB5
+b3UgYXJlIGFuIGF0dGVuZGVlIG9mIHRoaXMgZXZlbnQuDQoNClRvIHN0b3AgcmVjZWl2aW5nIGZ1
+dHVyZSBub3RpZmljYXRpb25zIGZvciB0aGlzIGV2ZW50LCBkZWNsaW5lIHRoaXMgZXZlbnQuICAN
+CkFsdGVybmF0aXZlbHksIHlvdSBjYW4gc2lnbiB1cCBmb3IgYSBHb29nbGUgYWNjb3VudCBhdCAg
+DQpodHRwczovL3d3dy5nb29nbGUuY29tL2NhbGVuZGFyL2hvc3RlZC9wdXN0by5vcmcvIGFuZCBj
+b250cm9sIHlvdXIgIA0Kbm90aWZpY2F0aW9uIHNldHRpbmdzIGZvciB5b3VyIGVudGlyZSBjYWxl
+bmRhci4NCg==
+--00163616467b2c3cbc047d6f336b
+Content-Type: text/html; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
+
+<div style=3D""><table cellspacing=3D"0" cellpadding=3D"8" border=3D"0" sum=
+mary=3D"" style=3D"width:100%;font-family:Arial,Sans-serif;border:1px Solid=
+ #ccc;border-width:1px 2px 2px 1px;background-color:#fff;"><tr><td><div sty=
+le=3D"padding:2px"><div style=3D"float:right;font-weight:bold;font-size:13p=
+x"> <a href=3D"https://www.google.com/calendar/hosted/pusto.org/event?actio=
+n=3DVIEW&amp;eid=3Da3YzaW0xNXVhMGR1YTE4ZHFqYTAwbnBhZTAgbmFzcGVoQHB1c3RvLm9y=
+Zw&amp;tok=3DNTIjYzdicnZ2bTFlOWk1YTE3bHFpaGx2bjBzOW9AZ3JvdXAuY2FsZW5kYXIuZ2=
+9vZ2xlLmNvbTBjYzhiOTlmN2YwYjQzYmFjOTc1NTYwMDI3MzAxYTg2MzlmNjExNzk&amp;ctz=
+=3DEurope%2FKiev&amp;hl=3Den_GB" style=3D"color:#20c;white-space:nowrap">mo=
+re details &raquo;</a><br></div><h3 style=3D"padding:0 0 6px 0;margin:0;fon=
+t-family:Arial,Sans-serif;font-size:16px;font-weight:bold;color:#222">hush#=
+weektalk</h3><table cellpadding=3D"0" cellspacing=3D"0" border=3D"0" summar=
+y=3D"Event details"><tr><td style=3D"padding:0 1em 10px 0;font-family:Arial=
+,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign=3D"top"><d=
+iv><i style=3D"font-style:normal">When</i></div></td><td style=3D"padding-b=
+ottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign=
+=3D"top">Tue 19 Jan 13:00 =96 14:00 <span style=3D"color:#888">Kiev</span><=
+/td></tr><tr><td style=3D"padding:0 1em 10px 0;font-family:Arial,Sans-serif=
+;font-size:13px;color:#888;white-space:nowrap" valign=3D"top"><div><i style=
+=3D"font-style:normal">Calendar</i></div></td><td style=3D"padding-bottom:1=
+0px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign=3D"top">=
+naspeh@pusto.org</td></tr><tr><td style=3D"padding:0 1em 10px 0;font-family=
+:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign=3D"t=
+op"><div><i style=3D"font-style:normal">Who</i></div></td><td style=3D"padd=
+ing-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" val=
+ign=3D"top"><table cellspacing=3D"0" cellpadding=3D"0"><tr><td style=3D"pad=
+ding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222"><sp=
+an style=3D"font-family:Courier New,monospace">&#x2022;</span></td><td styl=
+e=3D"padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#=
+222"><div><div style=3D"margin:0 0 0.3em 0">gotsyk@gmail.com<span style=3D"=
+font-size:11px;color:#888">- creator</span></div></div></td></tr><tr><td st=
+yle=3D"padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color=
+:#222"><span style=3D"font-family:Courier New,monospace">&#x2022;</span></t=
+d><td style=3D"padding-right:10px;font-family:Arial,Sans-serif;font-size:13=
+px;color:#222"><div><div style=3D"margin:0 0 0.3em 0">naspeh@pusto.org</div=
+></div></td></tr></table></td></tr></table></div><p style=3D"color:#222;fon=
+t-size:13px;margin:0"><span style=3D"color:#888">Going?&nbsp;&nbsp;&nbsp;</=
+span><wbr><strong><a href=3D"https://www.google.com/calendar/hosted/pusto.o=
+rg/event?action=3DRESPOND&amp;eid=3Da3YzaW0xNXVhMGR1YTE4ZHFqYTAwbnBhZTAgbmF=
+zcGVoQHB1c3RvLm9yZw&amp;rst=3D1&amp;tok=3DNTIjYzdicnZ2bTFlOWk1YTE3bHFpaGx2b=
+jBzOW9AZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbTBjYzhiOTlmN2YwYjQzYmFjOTc1NTYwMDI3=
+MzAxYTg2MzlmNjExNzk&amp;ctz=3DEurope%2FKiev&amp;hl=3Den_GB" style=3D"color:=
+#20c;white-space:nowrap">Yes</a><span style=3D"margin:0 0.4em;font-weight:n=
+ormal"> - </span><a href=3D"https://www.google.com/calendar/hosted/pusto.or=
+g/event?action=3DRESPOND&amp;eid=3Da3YzaW0xNXVhMGR1YTE4ZHFqYTAwbnBhZTAgbmFz=
+cGVoQHB1c3RvLm9yZw&amp;rst=3D3&amp;tok=3DNTIjYzdicnZ2bTFlOWk1YTE3bHFpaGx2bj=
+BzOW9AZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbTBjYzhiOTlmN2YwYjQzYmFjOTc1NTYwMDI3M=
+zAxYTg2MzlmNjExNzk&amp;ctz=3DEurope%2FKiev&amp;hl=3Den_GB" style=3D"color:#=
+20c;white-space:nowrap">Maybe</a><span style=3D"margin:0 0.4em;font-weight:=
+normal"> - </span><a href=3D"https://www.google.com/calendar/hosted/pusto.o=
+rg/event?action=3DRESPOND&amp;eid=3Da3YzaW0xNXVhMGR1YTE4ZHFqYTAwbnBhZTAgbmF=
+zcGVoQHB1c3RvLm9yZw&amp;rst=3D2&amp;tok=3DNTIjYzdicnZ2bTFlOWk1YTE3bHFpaGx2b=
+jBzOW9AZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbTBjYzhiOTlmN2YwYjQzYmFjOTc1NTYwMDI3=
+MzAxYTg2MzlmNjExNzk&amp;ctz=3DEurope%2FKiev&amp;hl=3Den_GB" style=3D"color:=
+#20c;white-space:nowrap">No</a></strong>&nbsp;&nbsp;&nbsp;&nbsp;<wbr><a hre=
+f=3D"https://www.google.com/calendar/hosted/pusto.org/event?action=3DVIEW&a=
+mp;eid=3Da3YzaW0xNXVhMGR1YTE4ZHFqYTAwbnBhZTAgbmFzcGVoQHB1c3RvLm9yZw&amp;tok=
+=3DNTIjYzdicnZ2bTFlOWk1YTE3bHFpaGx2bjBzOW9AZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNv=
+bTBjYzhiOTlmN2YwYjQzYmFjOTc1NTYwMDI3MzAxYTg2MzlmNjExNzk&amp;ctz=3DEurope%2F=
+Kiev&amp;hl=3Den_GB" style=3D"color:#20c;white-space:nowrap">more options &=
+raquo;</a></p></td></tr><tr><td style=3D"background-color:#f6f6f6;color:#88=
+8;border-top:1px Solid #ccc;font-family:Arial,Sans-serif;font-size:11px"><p=
+>Invitation from <a href=3D"https://www.google.com/calendar/hosted/pusto.or=
+g/" target=3D"_blank" style=3D"">Google Calendar</a></p><p>You are receivin=
+g this courtesy email at the account naspeh@pusto.org because you are an at=
+tendee of this event.</p><p>To stop receiving future notifications for this=
+ event, decline this event. Alternatively, you can sign up for a Google acc=
+ount at https://www.google.com/calendar/hosted/pusto.org/ and control your =
+notification settings for your entire calendar.</p></td></tr></table></div>
+--00163616467b2c3cbc047d6f336b
+Content-Type: text/calendar; charset=UTF-8; method=REQUEST
+Content-Transfer-Encoding: 7bit
+
+BEGIN:VCALENDAR
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+DTSTART:20100119T110000Z
+DTEND:20100119T120000Z
+DTSTAMP:20100118T120740Z
+ORGANIZER;CN=42 coffee cups/Meetings and other events:mailto:c7brvvm1e9i5a1
+ 7lqihlvn0s9o@group.calendar.google.com
+UID:kv3im15ua0dua18dqja00npae0@google.com
+ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=
+ TRUE;CN=naspeh@pusto.org;X-NUM-GUESTS=0:mailto:naspeh@pusto.org
+CREATED:20100118T120648Z
+DESCRIPTION:View your event at http://www.google.com/calendar/hosted/pusto.
+ org/event?action=VIEW&eid=a3YzaW0xNXVhMGR1YTE4ZHFqYTAwbnBhZTAgbmFzcGVoQHB1c
+ 3RvLm9yZw&tok=NTIjYzdicnZ2bTFlOWk1YTE3bHFpaGx2bjBzOW9AZ3JvdXAuY2FsZW5kYXIuZ
+ 29vZ2xlLmNvbTBjYzhiOTlmN2YwYjQzYmFjOTc1NTYwMDI3MzAxYTg2MzlmNjExNzk&ctz=Euro
+ pe%2FKiev&hl=en_GB.
+LAST-MODIFIED:20100118T120739Z
+LOCATION:
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:hush#weektalk
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR
+
+--00163616467b2c3cbc047d6f336b--
+--00163616467b2c3cc2047d6f336d
+Content-Type: application/ics; name="invite.ics"
+Content-Disposition: attachment; filename="invite.ics"
+Content-Transfer-Encoding: base64
+
+QkVHSU46VkNBTEVOREFSDQpQUk9ESUQ6LS8vR29vZ2xlIEluYy8vR29vZ2xlIENhbGVuZGFyIDcw
+LjkwNTQvL0VODQpWRVJTSU9OOjIuMA0KQ0FMU0NBTEU6R1JFR09SSUFODQpNRVRIT0Q6UkVRVUVT
+VA0KQkVHSU46VkVWRU5UDQpEVFNUQVJUOjIwMTAwMTE5VDExMDAwMFoNCkRURU5EOjIwMTAwMTE5
+VDEyMDAwMFoNCkRUU1RBTVA6MjAxMDAxMThUMTIwNzQwWg0KT1JHQU5JWkVSO0NOPTQyIGNvZmZl
+ZSBjdXBzL01lZXRpbmdzIGFuZCBvdGhlciBldmVudHM6bWFpbHRvOmM3YnJ2dm0xZTlpNWExDQog
+N2xxaWhsdm4wczlvQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20NClVJRDprdjNpbTE1dWEwZHVh
+MThkcWphMDBucGFlMEBnb29nbGUuY29tDQpBVFRFTkRFRTtDVVRZUEU9SU5ESVZJRFVBTDtST0xF
+PVJFUS1QQVJUSUNJUEFOVDtQQVJUU1RBVD1ORUVEUy1BQ1RJT047UlNWUD0NCiBUUlVFO0NOPW5h
+c3BlaEBwdXN0by5vcmc7WC1OVU0tR1VFU1RTPTA6bWFpbHRvOm5hc3BlaEBwdXN0by5vcmcNCkNS
+RUFURUQ6MjAxMDAxMThUMTIwNjQ4Wg0KREVTQ1JJUFRJT046VmlldyB5b3VyIGV2ZW50IGF0IGh0
+dHA6Ly93d3cuZ29vZ2xlLmNvbS9jYWxlbmRhci9ob3N0ZWQvcHVzdG8uDQogb3JnL2V2ZW50P2Fj
+dGlvbj1WSUVXJmVpZD1hM1l6YVcweE5YVmhNR1IxWVRFNFpIRnFZVEF3Ym5CaFpUQWdibUZ6Y0dW
+b1FIQjFjDQogM1J2TG05eVp3JnRvaz1OVElqWXpkaWNuWjJiVEZsT1drMVlURTNiSEZwYUd4MmJq
+QnpPVzlBWjNKdmRYQXVZMkZzWlc1a1lYSXVaDQogMjl2WjJ4bExtTnZiVEJqWXpoaU9UbG1OMll3
+WWpRelltRmpPVGMxTlRZd01ESTNNekF4WVRnMk16bG1OakV4TnprJmN0ej1FdXJvDQogcGUlMkZL
+aWV2JmhsPWVuX0dCLg0KTEFTVC1NT0RJRklFRDoyMDEwMDExOFQxMjA3MzlaDQpMT0NBVElPTjoN
+ClNFUVVFTkNFOjANClNUQVRVUzpDT05GSVJNRUQNClNVTU1BUlk6aHVzaCN3ZWVrdGFsaw0KVFJB
+TlNQOk9QQVFVRQ0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg0K
+--00163616467b2c3cc2047d6f336d--

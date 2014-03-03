@@ -1,10 +1,23 @@
 import datetime as dt
 import email
+import re
 from collections import OrderedDict
 
 import chardet
 
 from . import log
+
+
+def decode_str(text, charset):
+    try:
+        part = text.decode(charset)
+    except LookupError:
+        charset_ = chardet.detect(text)['encoding']
+        part = text.decode(charset_, 'ignore')
+    except UnicodeDecodeError:
+        log.warn('%s -- (%s)', text, charset)
+        part = text.decode(charset, 'ignore')
+    return part
 
 
 def decode_header(text, default='utf-8'):
@@ -17,17 +30,12 @@ def decode_header(text, default='utf-8'):
         if isinstance(text, str):
             part = text
         else:
-            charset = charset or default
-            try:
-                part = text.decode(charset)
-            except LookupError:
-                charset_ = chardet.detect(text)['encoding']
-                part = text.decode(charset_, 'ignore')
-            except UnicodeDecodeError:
-                log.warn('%s -- (%s)', text, charset)
-                part = text.decode(charset, 'ignore')
+            part = decode_str(text, charset or default)
         parts += [part]
-    return ''.join(parts)
+
+    header = ''.join(parts)
+    header = re.sub('\s+', ' ', header)
+    return header
 
 
 def decode_addresses(text):
@@ -59,28 +67,13 @@ key_map = {
 }
 
 
-def parse_header(header):
-    msg = email.message_from_bytes(header)
-    data = {}
-    for key in key_map:
-        field, decode = key_map[key]
-        value = msg.get(key)
-        data[field] = decode(value) if value else None
-    return data
-
-
-def get_payload(part, default='utf-8'):
-    charset = part.get_content_charset() or default
-    text = part.get_payload(decode=True).decode(charset)
-    return text
-
-
-def parse_part(parts):
+def parse_part(parts, msg_id=None):
     content = OrderedDict()
     for part in parts:
-        mtype = part.get_content_maintype()
-        if mtype == 'text':
-            content[part.get_content_type()] = get_payload(part)
+        if part.get_content_type() in ['text/html', 'text/plain']:
+            text = part.get_payload(decode=True)
+            text = decode_str(text, part.get_content_charset() or 'utf-8')
+            content[part.get_content_type()] = text
         elif part.get_filename():
             content.setdefault('attachments', [])
             content['attachments'] += [{
@@ -88,11 +81,19 @@ def parse_part(parts):
                 'filename': part.get_filename(),
                 'payload': part.get_payload(decode=True)
             }]
+        elif not part.is_multipart():
+            log.warn('%s -- %s', msg_id, part.get_content_type())
     return content
 
 
 def parse(text):
     msg = email.message_from_bytes(text)
 
-    parts = parse_part(msg.walk())
-    return parts
+    data = {}
+    for key in key_map:
+        field, decode = key_map[key]
+        value = msg.get(key)
+        data[field] = decode(value) if value else None
+
+    data.update(parse_part(msg.walk(), data['message_id']))
+    return data
