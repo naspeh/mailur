@@ -9,7 +9,8 @@
 <body>
 <div class="panel">
     <div class="panel-head">
-    {% block labels %}{% if labels %}
+    {% block labels %}
+        {% if labels %}
         <select class="labels">
         {% for label in labels %}
             <option value="#{{ url_for('label', label=label.id) }}" data-id="{{ label.id }}">
@@ -17,7 +18,9 @@
             </option>
         {% endfor %}
         </select>
-    {% endif %}{% endblock %}
+        {% endif %}
+        <span class="loader">Loading..</span>
+    {% endblock %}
     </div>
 
     <div class="panel-body">

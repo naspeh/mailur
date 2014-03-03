@@ -33,6 +33,7 @@ def parse_args():
 
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
+        'autoprefixer {0}styles.css {0}styles.css && '
         'csso {0}styles.css {0}styles.css'.format('mailr/theme/')
     ))
 

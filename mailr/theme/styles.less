@@ -32,6 +32,16 @@ h1 {
 h2 {
     font-size: 1.2em;
 }
+@keyframes spin  {
+    from {transform: rotate(0deg);}
+    to {transform: rotate(360deg);}
+}
+.loader {
+    .icon-spin;
+    &:before {
+        animation: spin 2s infinite linear;
+    }
+}
 .labels {
     font-size: 14px;
 }

@@ -1,5 +1,12 @@
 (function() {
 
+$(window).ajaxStart(function() {
+    $('.loader').show();
+    $('input[type="button"]').attr('disabled', true);
+});
+$(window).ajaxStop(function() {
+    $('.loader').hide();
+});
 $(window).bind('hashchange', function() {
     var url = location.hash.slice(1);
     $('select.labels [value="#' + url + '"]').attr('selected', true);
