@@ -86,7 +86,7 @@ def test_lexer():
     for query, line, expect in data:
         im = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
         rows = imap.fetch_all(im, '1', query)
-        yield ok, rows, expect
+        yield ok, 'a == b', dict(a=rows, b=expect)
 
 
 def test_imap_utf7():

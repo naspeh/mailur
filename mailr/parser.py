@@ -66,3 +66,23 @@ def parse_header(header):
         value = msg.get(key)
         data[field] = decode(value) if value else None
     return data
+
+
+def get_payload(msg, part, default='utf-8'):
+    charset = part.get_content_charset() or msg.get_content_charset()
+    text = part.get_payload(decode=True).decode(charset or default)
+    return text
+
+
+def parse(text):
+    msg = email.message_from_bytes(text)
+    body = html = None
+    if msg.get_content_maintype() == "multipart":
+            for part in msg.walk():
+                if part.get_content_type() == "text/plain":
+                    body = get_payload(msg, part)
+                elif part.get_content_type() == "text/html":
+                    html = get_payload(msg, part)
+    elif msg.get_content_maintype() == "text":
+        body = get_payload(msg, msg)
+    return {'body': body, 'html': html}

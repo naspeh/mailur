@@ -27,5 +27,9 @@ def read_file(*names, decode=True):
     return result
 
 
-def ok(a, b):
-    assert a == b
+def ok(expr, context):
+    '''For test generators
+
+    >>> yield ok, 'a == b', dict(a=1, b=2)
+    '''
+    assert eval(expr, {}, context)
