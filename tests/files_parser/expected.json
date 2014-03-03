@@ -1,14 +1,31 @@
 {
     "1222101215352830187--subj-default-win1251.txt" : {
         "subject": "Новое личное сообщение",
-        "body": "Здравствуйте, SUFFiY!"
+        "text/plain": "Здравствуйте, SUFFiY!"
     },
     "1433643360976812343--subj-default-koi8-r.txt": {
         "subject": "Информация о домене DZU.SU изменена",
-        "body": "Здравствуйте!"
+        "text/plain": "Здравствуйте!"
     },
     "1380466083949829469--subj-rus.txt": {
         "subject": "Хочу удалить аккаунт",
-        "body": "Добрый день."
+        "text/plain": "Добрый день.",
+        "text/html": "Добрый день.<br>"
+    },
+    "1461571298337395296--gmail-two-attachments.txt": {
+        "subject": "Re: тема измененная",
+        "text/html": "ответ на тело<div class=\"gmail_extra\">",
+        "text/plain": "ответ на тело",
+        "attachments": [["image/png", "08.png"], ["image/png", "09.png"]]
+    },
+    "1461571485229500030--gmail-one-attachment.txt": {
+        "subject": "Re: тема измененная",
+        "text/plain": "On Mon, Mar 3, 2014 at 6:12 PM",
+        "attachments": [["image/png", "20.png"]]
+    },
+    "1461576357741341396--ya-two-attachments.txt": {
+        "subject": "Re: тема измененная",
+        "text/plain": "2 png",
+        "attachments": [["image/png", "49.png"], ["image/png", "50.png"]]
     }
 }

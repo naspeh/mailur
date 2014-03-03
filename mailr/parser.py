@@ -1,5 +1,6 @@
 import datetime as dt
 import email
+from collections import OrderedDict
 
 import chardet
 
@@ -68,21 +69,30 @@ def parse_header(header):
     return data
 
 
-def get_payload(msg, part, default='utf-8'):
-    charset = part.get_content_charset() or msg.get_content_charset()
-    text = part.get_payload(decode=True).decode(charset or default)
+def get_payload(part, default='utf-8'):
+    charset = part.get_content_charset() or default
+    text = part.get_payload(decode=True).decode(charset)
     return text
+
+
+def parse_part(parts):
+    content = OrderedDict()
+    for part in parts:
+        mtype = part.get_content_maintype()
+        if mtype == 'text':
+            content[part.get_content_type()] = get_payload(part)
+        elif part.get_filename():
+            content.setdefault('attachments', [])
+            content['attachments'] += [{
+                'content_type': part.get_content_type(),
+                'filename': part.get_filename(),
+                'payload': part.get_payload(decode=True)
+            }]
+    return content
 
 
 def parse(text):
     msg = email.message_from_bytes(text)
-    body = html = None
-    if msg.get_content_maintype() == "multipart":
-            for part in msg.walk():
-                if part.get_content_type() == "text/plain":
-                    body = get_payload(msg, part)
-                elif part.get_content_type() == "text/html":
-                    html = get_payload(msg, part)
-    elif msg.get_content_maintype() == "text":
-        body = get_payload(msg, msg)
-    return {'body': body, 'html': html}
+
+    parts = parse_part(msg.walk())
+    return parts

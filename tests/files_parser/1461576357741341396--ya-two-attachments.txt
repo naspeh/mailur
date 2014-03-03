@@ -1,0 +1,89 @@
+Delivered-To: naspeh@gmail.com
+Received: by 10.194.172.98 with SMTP id bb2csp58656wjc;
+        Mon, 3 Mar 2014 09:30:33 -0800 (PST)
+X-Received: by 10.112.201.164 with SMTP id kb4mr22361787lbc.32.1393867833407;
+        Mon, 03 Mar 2014 09:30:33 -0800 (PST)
+Return-Path: <naspeh@yandex.ru>
+Received: from forward12.mail.yandex.net (forward12.mail.yandex.net. [2a02:6b8:0:801::2])
+        by mx.google.com with ESMTPS id z2si22466644lal.1.2014.03.03.09.30.33
+        for <multiple recipients>
+        (version=TLSv1 cipher=RC4-SHA bits=128/128);
+        Mon, 03 Mar 2014 09:30:33 -0800 (PST)
+Received-SPF: pass (google.com: domain of naspeh@yandex.ru designates 2a02:6b8:0:801::2 as permitted sender) client-ip=2a02:6b8:0:801::2;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of naspeh@yandex.ru designates 2a02:6b8:0:801::2 as permitted sender) smtp.mail=naspeh@yandex.ru;
+       dmarc=fail (p=NONE dis=NONE) header.from=gmail.com
+Received: from web27j.yandex.ru (web27j.yandex.ru [5.45.198.68])
+	by forward12.mail.yandex.net (Yandex) with ESMTP id 79924C20CEC;
+	Mon,  3 Mar 2014 21:30:32 +0400 (MSK)
+Received: from 127.0.0.1 (localhost [127.0.0.1])
+	by web27j.yandex.ru (Yandex) with ESMTP id 1DF8BDC110F;
+	Mon,  3 Mar 2014 21:30:32 +0400 (MSK)
+Received: from [109.206.32.110] ([109.206.32.110]) by web27j.yandex.ru with HTTP;
+	Mon, 03 Mar 2014 21:30:31 +0400
+From: naspeh <naspeh@gmail.com>
+Envelope-From: naspeh@yandex.ru
+To: Ne Greh <negreh@gmail.com>,
+	naspeh@gmail.com
+In-Reply-To: <261151393863456@web4h.yandex.ru>
+References: <CAPoAYQUQ_iR0d847kdudWMnY8xEyeyistMSXHGHot-jGm7Ai0w@mail.gmail.com> <CANS-B12K_hnB7p3czYaN5h0LW8hAZcHNOk1So+ei5mASPjBHww@mail.gmail.com> <261151393863456@web4h.yandex.ru>
+Subject: =?koi8-r?B?UmU6INTFzcEgydrNxc7Fzs7B0Q==?=
+MIME-Version: 1.0
+Message-Id: <118161393867831@web27j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Mon, 03 Mar 2014 19:30:31 +0200
+Content-Type: multipart/mixed;
+	boundary="----==--bound.11817.web27j.yandex.ru"
+
+
+------==--bound.11817.web27j.yandex.ru
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
+
+2 png
+
+03.03.2014, 18:17, "naspeh" <naspeh@gmail.com>:
+> ответ с м.я.ру
+>
+> 03.03.2014, 18:11, "Ne Greh" <negreh@gmail.com>:
+>
+>>  тема таже
+>>
+>>  On Mon, Mar 3, 2014 at 6:10 PM, Grisha K. <naspeh@gmail.com> wrote:
+>>>   ответ на тело
+>>>
+>>>   2014-03-03 18:09 GMT+02:00 Ne Greh <negreh@gmail.com>:
+>>>>   тело
+------==--bound.11817.web27j.yandex.ru
+Content-Disposition: attachment;
+	filename="49.png"
+Content-Transfer-Encoding: base64
+Content-Type: image/png;
+	name="49.png"
+
+iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJ
+bWFnZVJlYWR5ccllPAAAAYRJREFUeNpcUruKwlAQPUkURFSChSAogqCINisWgtjYiYWVyoJ+hVYK
+Qj5Af8AvsLQSttrORrFdsLDx1ZmgoiDi3TsDNws7cJhJMnPPyZmrGYbxYZrmdygUMj0eDwi6rruZ
+8H6/cT6fnf1+XzHC4fAPALNYLMJxHDweDwghGBSapvFQIBDwyfpTi0aj/OV4PHKDPAWz2QzT6RT3
++91leT6fnA05YBHlcrnE6XRCLBZDrVZDtVrFer2GbdvcTKDQle5SqYTVaoVWq4Vutwv5T5hMJkgm
+k+7A6/UCcrmcSKVSQsXhcBC9Xk+0221xvV7FbrcT+XxexONx7nMZyuUyLMti2tFohEgkgsFgwBLr
+9brLoisLM5kMN3c6HTaAZM3nczah0Wj8SSoUCkxJ9BTD4VD0+32um82mGI/HXAeDQUGO6mpBm80G
+l8sFi8WCQZFOp7HdbrnOZrNss5ZIJGyp11Qa/4NkKPj9fse43W5ftEGv1+uT18TdLGV6lu/VNXFk
+b+VXgAEApYriRnmIEQUAAAAASUVORK5CYII=
+------==--bound.11817.web27j.yandex.ru
+Content-Disposition: attachment;
+	filename="50.png"
+Content-Transfer-Encoding: base64
+Content-Type: image/png;
+	name="50.png"
+
+iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJ
+bWFnZVJlYWR5ccllPAAAAWpJREFUeNpcUrGKwkAQfS5BRESCZbCysL7Cys42VargF1ilEj9ALKzE
+yk8Qi2DlD9iIVQgpgoiFiIiFzQURCxH3Zgayx93A252FmXlvZrbwfr+/sixb3+93m3wwPp+PuRlK
+KdRqtaxer3cUBwOwkyTB6/VCqVRCsVgUWJYlwZx0u93s6/W6LtChKQGO4/AFqgLP89DtdlEulw0L
+FxC2x+Mh9IvFAkEQoFKpYDabwfd97Pd7E2wYc93b7RatVgthGGI6nYJ6Qq/Xw/F4/JOANE314XBg
+WQKSpieTiZ7P55rYNEnUcRzr8/kscYZhs9lgOBxKH4PBgJvEeDzG5XLBarUyLCofIetlo8oyAJbl
+uq4MYblc/kqKokgomZ4ljUYjTZXFp350v98Xn3rSPFGVL6jZbKJaraLdbgvYSDMajYb4u91Oxlw4
+nU7fvJRc43+wjBzP5zOzZN1Kma/Bli+L37xpDqbkjGR3fgQYAOmc6514TJKvAAAAAElFTkSuQmCC
+
+------==--bound.11817.web27j.yandex.ru--
