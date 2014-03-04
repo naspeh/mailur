@@ -165,12 +165,11 @@ def update_email(uid, raw):
         .update(fields, synchronize_session=False)
 
 
-def parse_emails():
-    emails = (
-        session.query(Email)
-        .filter(Email.text.__eq__(None))
-        .filter(Email.html.__eq__(None))
-    )
+def parse_emails(new=True):
+    emails = session.query(Email)
+    if new:
+        emails = emails.filter(Email.text == None).filter(Email.html == None)
+
     for email in emails:
         log.info('%s %s -- %s', email.uid, email.subject, email.size)
         update_email(email.uid, email.body)

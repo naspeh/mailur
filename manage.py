@@ -25,11 +25,11 @@ def parse_args():
 
     cmd('sync')\
         .arg('-b', '--with-bodies', action='store_true')\
-        .arg('-p', '--only-parsing', action='store_true')\
-        .exe(lambda a: (
-            syncer.parse_emails() if a.only_parsing else
-            syncer.sync_gmail(a.with_bodies)
-        ))
+        .exe(lambda a: (syncer.sync_gmail(a.with_bodies)))
+
+    cmd('parse')\
+        .arg('-n', '--new', action='store_true')\
+        .exe(lambda a: syncer.parse_emails(a.new))
 
     cmd('db-clear').exe(lambda a: db.drop_all())
 
