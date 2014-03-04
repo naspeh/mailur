@@ -125,11 +125,10 @@ def copy(env, label, to):
 
 
 def sync(env, label=None):
-    with_bodies = env.request.args.get('full')
     if label:
         im = imap.client()
         im.select('"%s"' % label.name, readonly=False)
-        syncer.fetch_emails(im, label, with_bodies=with_bodies)
+        syncer.fetch_emails(im, label, with_bodies=True)
     else:
         syncer.sync_gmail(False)
     return 'OK'
