@@ -126,7 +126,7 @@ def sync(env, label=None):
         im.select('"%s"' % label.name, readonly=False)
         syncer.fetch_emails(im, label, with_bodies=True)
     else:
-        syncer.sync_gmail(False)
+        syncer.sync_gmail(True)
     return 'OK'
 
 

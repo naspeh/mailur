@@ -143,7 +143,7 @@ def fetch_emails(im, label, with_bodies=True):
     # Fetch bodies
     emails = (
         session.query(Email.uid)
-        .filter(Email.body.__eq__(None))
+        .filter(Email.body == None)
         .filter(Email.uid.in_(msgids.keys()))
         .order_by(Email.size)
     )

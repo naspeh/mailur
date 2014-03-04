@@ -1,3 +1,5 @@
+import re
+
 from psycopg2.extras import register_hstore
 from sqlalchemy import (
     create_engine, Column, func,
@@ -118,6 +120,14 @@ class Email(Base):
     def starred(self):
         return self.STARRED in self.flags
 
+    @property
+    def text_line(self):
+        text = self.text or re.sub('<[^>]*?>', '', self.html or '')
+        return text[:200]
+
+    @property
+    def striped_subject(self):
+        return re.sub('Re.*:', '', self.subject)
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine, autocommit=True)
