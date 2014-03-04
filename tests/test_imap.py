@@ -1,6 +1,8 @@
 from collections import namedtuple
 
-from . import read_file, ok
+from pytest import mark
+
+from . import read_file
 from mailr import imap, imap_utf7
 
 
@@ -50,43 +52,38 @@ def test_fetch_body():
     assert ids == list(str(k) for k in rows.keys())
 
 
-def test_lexer():
-    data = [
-        ('FLAGS', [b'UID 1 FLAGS (\\Seen)'], {
-            '1': {'FLAGS': ['\\Seen'], 'UID': 1}
-        }),
-        ('FLAGS', [b'UID 1 FLAGS (\\Seen))'], {
-            '1': {'FLAGS': ['\\Seen'], 'UID': 1}
-        }),
-        ('FLAGS', [b'UID 1 FLAGS (\\FLAGS FLAGS))'], {
-            '1': {'FLAGS': ['\\FLAGS', 'FLAGS'], 'UID': 1}
-        }),
-        ('FLAGS', [b'1 (FLAGS ("ABC\\"" UID) UID 1'], {
-            '1': {'FLAGS': ['ABC"', 'UID'], 'UID': 1}
-        }),
-        ('FLAGS', [b'1 (FLAGS ("ABC \\\\\\"" UID) UID 1'], {
-            '1': {'FLAGS': ['ABC \\"', 'UID'], 'UID': 1}
-        }),
-        ('FLAGS', [b'1 (FLAGS ("ABC \\")\\\\" UID) UID 1'], {
-            '1': {'FLAGS': ['ABC ")\\', 'UID'], 'UID': 1}
-        }),
-        ('FLAGS', [b'1 (FLAGS (")ABC)\\"" UID) UID 1'], {
-            '1': {'FLAGS': [')ABC)"', 'UID'], 'UID': 1}
-        }),
-        (
-            ['FLAGS', 'BODY[HEADER.FIELDS (TO)]'],
-            [(b'FLAGS (AB) UID 1 BODY[HEADER.FIELDS (TO)] {48}', b'1'), b')'],
-            {'1': {
-                'FLAGS': ['AB'],
-                'BODY[HEADER.FIELDS (TO)]': b'1',
-                'UID': 1
-            }}
-        )
-    ]
-    for query, line, expect in data:
-        im = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
-        rows = imap.fetch_all(im, '1', query)
-        yield ok, 'a == b', dict(a=rows, b=expect)
+@mark.parametrize('query, line, expected', [
+    ('FLAGS', [b'UID 1 FLAGS (\\Seen)'], {
+        '1': {'FLAGS': ['\\Seen'], 'UID': 1}
+    }),
+    ('FLAGS', [b'UID 1 FLAGS (\\Seen))'], {
+        '1': {'FLAGS': ['\\Seen'], 'UID': 1}
+    }),
+    ('FLAGS', [b'UID 1 FLAGS (\\FLAGS FLAGS))'], {
+        '1': {'FLAGS': ['\\FLAGS', 'FLAGS'], 'UID': 1}
+    }),
+    ('FLAGS', [b'1 (FLAGS ("ABC\\"" UID) UID 1'], {
+        '1': {'FLAGS': ['ABC"', 'UID'], 'UID': 1}
+    }),
+    ('FLAGS', [b'1 (FLAGS ("ABC \\\\\\"" UID) UID 1'], {
+        '1': {'FLAGS': ['ABC \\"', 'UID'], 'UID': 1}
+    }),
+    ('FLAGS', [b'1 (FLAGS ("ABC \\")\\\\" UID) UID 1'], {
+        '1': {'FLAGS': ['ABC ")\\', 'UID'], 'UID': 1}
+    }),
+    ('FLAGS', [b'1 (FLAGS (")ABC)\\"" UID) UID 1'], {
+        '1': {'FLAGS': [')ABC)"', 'UID'], 'UID': 1}
+    }),
+    (
+        ['FLAGS', 'BODY[HEADER.FIELDS (TO)]'],
+        [(b'FLAGS (AB) UID 1 BODY[HEADER.FIELDS (TO)] {48}', b'1'), b')'],
+        {'1': {'FLAGS': ['AB'], 'BODY[HEADER.FIELDS (TO)]': b'1', 'UID': 1}}
+    )
+])
+def test_lexer(query, line, expected):
+    im = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
+    rows = imap.fetch_all(im, '1', query)
+    assert rows == expected
 
 
 def test_imap_utf7():
