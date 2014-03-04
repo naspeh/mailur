@@ -15,7 +15,7 @@ def decode_str(text, charset):
         charset_ = chardet.detect(text)['encoding']
         part = text.decode(charset_, 'ignore')
     except UnicodeDecodeError:
-        log.warn('%s -- (%s)', text, charset)
+        log.warn('(%s) -- %s', charset, text)
         part = text.decode(charset, 'ignore')
     return part
 
@@ -82,7 +82,7 @@ def parse_part(parts, msg_id=None):
                 'payload': part.get_payload(decode=True)
             }]
         elif not part.is_multipart():
-            log.warn('%s -- %s', msg_id, part.get_content_type())
+            log.warn('(%s) -- %s', msg_id, part.get_content_type())
     return content
 
 
