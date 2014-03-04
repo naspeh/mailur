@@ -171,5 +171,4 @@ def parse_emails(new=True):
         emails = emails.filter(Email.text == None).filter(Email.html == None)
 
     for email in emails:
-        log.info('%s %s -- %s', email.uid, email.subject, email.size)
         update_email(email.uid, email.body)

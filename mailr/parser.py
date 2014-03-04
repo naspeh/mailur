@@ -15,7 +15,7 @@ def decode_str(text, charset):
         charset_ = chardet.detect(text)['encoding']
         part = text.decode(charset_, 'ignore')
     except UnicodeDecodeError:
-        log.warn('(%s) -- %s', charset, text)
+        log.warn('DecodeError(%s) -- %s', charset, text[:200])
         part = text.decode(charset, 'ignore')
     return part
 
@@ -67,24 +67,24 @@ key_map = {
 }
 
 
-def parse_part(parts, msg_id=None):
+def parse_part(parts, msg_id):
     content = OrderedDict()
     for part in parts:
-        if part.get_content_type() in ['text/html', 'text/plain']:
-            text = part.get_payload(decode=True)
-            text = decode_str(text, part.get_content_charset() or 'utf-8')
-            content[part.get_content_type()] = text
-        elif part.get_filename():
+        if part.get_filename() or part.get_content_maintype() == 'image':
             payload = part.get_payload(decode=True)
             content.setdefault('attachments', [])
             content['attachments'] += [{
                 'content_type': part.get_content_type(),
                 'filename': part.get_filename(),
                 'payload': payload,
-                'size': len(payload)
+                'size': len(payload) if payload else None
             }]
+        elif part.get_content_type() in ['text/html', 'text/plain']:
+            text = part.get_payload(decode=True)
+            text = decode_str(text, part.get_content_charset() or 'utf-8')
+            content[part.get_content_type()] = text
         elif not part.is_multipart():
-            log.warn('(%s) -- %s', msg_id, part.get_content_type())
+            log.warn('UnknownType(%s) -- %s', part.get_content_type(), msg_id)
     return content
 
 
