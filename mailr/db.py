@@ -122,13 +122,17 @@ class Email(Base):
 
     @property
     def text_line(self):
-        subj = re.sub('^Re.*?:', '', self.human_subject)
         text = self.text or re.sub('<[^>]*?>', '', self.html or '')
-        return subj, text[:200].strip()
+        return self.human_subject(), text[:200].strip()
 
-    @property
-    def human_subject(self):
-        return self.subject or '(no subject)'
+    def human_subject(self, strip=True):
+        subj = (
+            re.sub('^Re.*?:', '', self.subject or '')
+            if strip else self.subject
+        ).strip()
+
+        subj = subj or '(no subject)'
+        return subj
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine, autocommit=True)

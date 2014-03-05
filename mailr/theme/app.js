@@ -26,6 +26,10 @@ $(window).bind('hashchange', function() {
             });
         });
 
+        $('.email-head').click(function() {
+            $(this).next('.email-body').toggle();
+        });
+
         $('input[name="store"]').click(function() {
             var $this = $(this);
             imap_store({
