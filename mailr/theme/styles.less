@@ -121,14 +121,20 @@ h2 {
     background-color: #fff;
 }
 .thread .email-head {
-    font-weight: bold;
     border-top: 1px solid @color-bg-poor;
+    font-weight: bold;
     cursor: pointer;
 }
-.thread .email-body {
+.thread .email-body,
+.thread .email-group {
     display: none;
 }
-.thread .email-unread .email-body,
-.thread .email:last-child .email-body {
+.thread .email-group-showed,
+.thread .email-group-showed .email-body {
     display: block;
+}
+.thread .email-show {
+    background-color: @color-bg-poor;
+    padding: 10px;
+    cursor: pointer;
 }

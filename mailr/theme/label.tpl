@@ -1,4 +1,4 @@
-{% if emails %}
+{% if emails or groups %}
 <form name="emails-form" method="POST">
 <input type="button" name="store" value="Add star"
     data-key="X-GM-LABELS" data-value="\Starred">

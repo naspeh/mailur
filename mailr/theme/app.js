@@ -30,6 +30,10 @@ $(window).bind('hashchange', function() {
             $(this).next('.email-body').toggle();
         });
 
+        $('.email-show').click(function() {
+            $(this).hide().next('.email-group').toggle();
+        });
+
         $('input[name="store"]').click(function() {
             var $this = $(this);
             imap_store({

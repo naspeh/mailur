@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from itertools import groupby
 
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
@@ -69,7 +70,12 @@ def gm_thread(env, id):
         .filter(Email.gm_thrid == id)
         .order_by(Email.date)
     )
-    return env.render('thread.tpl', emails=emails)
+    groups = []
+    if emails:
+        groups = groupby(emails[:-1], lambda v: v.unread)
+        groups = [(k, list(v)) for k, v in groups]
+        groups += [(True, [emails[-1]])]
+    return env.render('thread.tpl', groups=groups)
 
 
 def store(env, label):
