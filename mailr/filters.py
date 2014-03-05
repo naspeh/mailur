@@ -4,7 +4,7 @@ from hashlib import md5
 import times
 
 __all__ = [
-    'get_all', 'get_addr_name', 'get_gravatar',
+    'get_all', 'get_addr', 'get_addr_name', 'get_gravatar',
     'localize_dt', 'humanize_dt', 'format_dt'
 ]
 
@@ -13,8 +13,11 @@ def get_all():
     return dict((n, globals()[n]) for n in __all__)
 
 
+def get_addr(addr):
+    return addr and getaddresses([addr])[0][1]
+
 def get_addr_name(addr):
-    return addr and getaddresses([addr])[0][1].split('@')[0]
+    return addr and get_addr(addr).split('@')[0]
 
 
 def get_gravatar(addr):

@@ -77,6 +77,7 @@ h2 {
     &:hover {
         margin-top: 1px;
         cursor: pointer;
+        margin-bottom: -1px;
     }
     &.email-starred {
         color: @color-rich;
@@ -129,6 +130,7 @@ h2 {
     line-height: 0.8;
     border: 1px solid @color-poor * 1.5;
     padding: 0 5px;
+    margin: 5px 0;
     background-color: @color-bg-poor;
     &:hover {
         color: #333;
@@ -140,8 +142,12 @@ h2 {
 }
 .thread .email-head {
     border-top: 1px solid @color-bg-poor;
-    font-weight: bold;
     cursor: pointer;
+    color: @color-poor;
+}
+.thread .email-from {
+    font-weight: bold;
+    width: auto;
 }
 .thread .email-body,
 .thread .email-group {

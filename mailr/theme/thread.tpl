@@ -30,7 +30,7 @@
         <span class="email-star{% if email.starred %} email-starred{% endif %}"></span>
 
         <span class="email-from" title="{{ email.from_|join(', ')|e }}">
-            {{ email.from_|map('get_addr_name')|join(', ') }}
+            {{ email.from_|map('get_addr')|join(', ') }}
         </span>
 
         <span class="email-subject">{{ email.human_subject(strip=False) }}</span>
