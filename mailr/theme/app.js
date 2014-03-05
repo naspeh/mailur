@@ -34,6 +34,10 @@ $(window).bind('hashchange', function() {
             $(this).hide().next('.email-group').toggle();
         });
 
+        $('.email-quote').click(function() {
+            $(this).find('blockquote').toggle();
+        });
+
         $('input[name="store"]').click(function() {
             var $this = $(this);
             imap_store({

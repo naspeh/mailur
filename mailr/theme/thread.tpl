@@ -39,7 +39,7 @@
     </div>
     <div class="email-body">
     {% if email.html %}
-        {{ email.html }}
+        {{ email.human_html('email-quote') }}
     {% else %}
         <pre>{{ email.text|e }}</pre>
     {% endif %}

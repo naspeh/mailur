@@ -116,6 +116,18 @@ h2 {
 }
 .email-body {
     padding: 10px;
+    white-space: normal;
+}
+.email-body .email-quote {
+    .icon-dot-3;
+    &:before {
+        color: @color-poor;
+        border: 1px solid @color-poor * 1.5;
+        padding: 0 5px;
+    }
+    blockquote {
+        display: none;
+    }
 }
 .thread .email {
     background-color: #fff;

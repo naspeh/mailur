@@ -3,6 +3,7 @@ MarkupSafe==0.18
 SQLAlchemy==0.9.3
 Werkzeug==0.9.4
 chardet==2.2.1
+lxml==3.2.5
 psycopg2==2.5.2
 python-dateutil==2.2
 pytz==2013.9

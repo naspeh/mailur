@@ -134,6 +134,20 @@ class Email(Base):
         subj = subj or '(no subject)'
         return subj
 
+    def human_html(self, class_='email-quote'):
+        from .parser import hide_quote
+
+        html = self.html
+        if html and self.in_reply_to:
+            parent = (
+                session.query(Email)
+                .filter(Email.in_reply_to == self.in_reply_to)
+                .first()
+            )
+            if parent:
+                html = hide_quote(html, parent.html, class_)
+        return html
+
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()

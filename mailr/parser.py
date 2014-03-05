@@ -1,9 +1,11 @@
+import copy
 import datetime as dt
 import email
 import re
 from collections import OrderedDict
 
 import chardet
+import lxml.html as html
 
 from . import log
 
@@ -99,3 +101,27 @@ def parse(text):
 
     data.update(parse_part(msg.walk(), data['message_id']))
     return data
+
+
+def hide_quote(mail1, mail0, class_):
+    if not mail0 or not mail1:
+        return mail1
+
+    def clean(v):
+        v = html.tostring(v, pretty_print=True, encoding='utf8').decode()
+        v = re.sub('<[^>]*?>', ' ', v)
+        v = re.sub('[\s]+', ' ', v).strip()
+        v = re.sub('[\s(&#13;)]+$', '', v)  # TODO
+        return v
+
+    html0 = clean(html.fromstring(mail0.strip()))
+    m1 = html.fromstring(mail1.strip())
+    for block in m1.xpath('//blockquote'):
+        text = clean(block)
+        if html0 == text or (text and html0.endswith(text)):
+            parent = block.getparent()
+            new = html.fromstring('<div class="%s"/>' % class_)
+            new.append(copy.deepcopy(block))
+            parent.replace(block, new)
+            return html.tostring(m1, encoding='utf8').decode()
+    return mail1
