@@ -95,7 +95,7 @@ class Email(Base):
     body = Column(LargeBinary)
 
     date = Column(DateTime)
-    subject = Column(String)
+    subject = Column(String, default='')
     from_ = Column(ARRAY(String), name='from')
     sender = Column(ARRAY(String))
     reply_to = Column(ARRAY(String))
@@ -122,12 +122,13 @@ class Email(Base):
 
     @property
     def text_line(self):
+        subj = re.sub('^Re.*?:', '', self.human_subject)
         text = self.text or re.sub('<[^>]*?>', '', self.html or '')
-        return text[:200]
+        return subj, text[:200].strip()
 
     @property
-    def striped_subject(self):
-        return re.sub('Re.*:', '', self.subject)
+    def human_subject(self):
+        return self.subject or '(no subject)'
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine, autocommit=True)

@@ -38,15 +38,15 @@
         {% endif %}
 
         <span class="email-subject">
-        {% if 'thread' in request.path %}
+        {% with subj, text = email.text_line %}
+            {% if 'thread' in request.path %}
             <a href="{{ url_for('raw', email=email.id) }}" target="_blank">
-                <b>{{ email.striped_subject }}</b> - {{ email.text_line|e }}
-            </a>
-        {% else %}
+            {% else %}
             <a href="#{{ url_for('gm_thread', id=email.gm_thrid) }}">
-                <b>{{ email.striped_subject }}</b> - {{ email.text_line|e }}
+            {% endif %}
+                <b>{{ subj }}</b>{% if text %} - {{ text|e }}{% endif %}
             </a>
-        {% endif %}
+        {% endwith %}
         </span>
 
         <span class="email-date" title="{{ email.date|format_dt }}">

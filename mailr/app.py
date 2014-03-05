@@ -3,6 +3,7 @@ import os
 import subprocess
 
 from jinja2 import Environment, FileSystemLoader
+from jinja2.ext import with_
 from werkzeug.exceptions import HTTPException
 from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
@@ -33,6 +34,7 @@ class Env:
 
         self.jinja = jinja = Environment(
             loader=FileSystemLoader(theme_dir),
+            extensions=[with_],
             lstrip_blocks=True, trim_blocks=True
         )
         jinja.globals.update(url_for=self.url_for)
