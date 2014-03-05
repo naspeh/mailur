@@ -69,7 +69,6 @@ h2 {
     width: 90px;
     padding: 0 5px;
     overflow: hidden;
-    background-color: inherit;
 }
 .email-star {
     .icon-star-empty;
@@ -113,7 +112,7 @@ h2 {
     height: 1.2em;
     text-align: right;
     padding: 0 5px;
-    background-color: inherit;
+    background-color: @color-bg-poor;
 }
 .email-body {
     padding: 10px;
@@ -148,6 +147,10 @@ h2 {
 .thread .email-from {
     font-weight: bold;
     width: auto;
+}
+.thread .email-date {
+    font-weight: bold;
+    background-color: #fff;
 }
 .thread .email-body,
 .thread .email-group {

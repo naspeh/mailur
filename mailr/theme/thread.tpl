@@ -1,7 +1,7 @@
 {% extends 'label.tpl' %}
 
 {% block content %}
-<h1>
+<h4>
     {{ thread.subject }}
     {% if thread.labels %}
     <span class="email-labels">
@@ -9,7 +9,7 @@
         <a href="#{{ url_for('label', label=label.id) }}">{{ label.human_name }}</a>
     {% endfor %}
     </span>
-</h1>
+</h4>
 {% endif %}
 <ul class="thread">
 {% for showed, emails in groups %}
