@@ -1,7 +1,16 @@
 {% extends 'label.tpl' %}
 
 {% block content %}
-<h1>{{ groups[-1][1][-1].human_subject() }}</h1>
+<h1>
+    {{ thread.subject }}
+    {% if thread.labels %}
+    <span class="email-labels">
+    {% for label in thread.labels if not label.hidden %}
+        <a href="#{{ url_for('label', label=label.id) }}">{{ label.human_name }}</a>
+    {% endfor %}
+    </span>
+</h1>
+{% endif %}
 <ul class="thread">
 {% for showed, emails in groups %}
     {% if not showed %}
@@ -23,14 +32,6 @@
         <span class="email-from" title="{{ email.from_|join(', ')|e }}">
             {{ email.from_|map('get_addr_name')|join(', ') }}
         </span>
-
-        {% if email.labels %}
-        <span class="email-labels">
-        {% for label in email.full_labels if not label.hidden %}
-            <a href="#{{ url_for('label', label=label.id) }}">{{ label.human_name }}</a>
-        {% endfor %}
-        </span>
-        {% endif %}
 
         <span class="email-subject">{{ email.human_subject(strip=False) }}</span>
 

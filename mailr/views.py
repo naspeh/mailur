@@ -65,7 +65,7 @@ def label(env, label):
 
 
 def gm_thread(env, id):
-    emails = (
+    emails = list(
         session.query(Email)
         .filter(Email.gm_thrid == id)
         .order_by(Email.date)
@@ -75,7 +75,11 @@ def gm_thread(env, id):
         groups = groupby(emails[:-1], lambda v: v.unread)
         groups = [(k, list(v)) for k, v in groups]
         groups += [(True, [emails[-1]])]
-    return env.render('thread.tpl', groups=groups)
+    thread = {
+        'subject': emails[-1].human_subject(),
+        'labels': set(sum([e.full_labels for e in emails], []))
+    }
+    return env.render('thread.tpl', thread=thread, groups=groups)
 
 
 def store(env, label):
