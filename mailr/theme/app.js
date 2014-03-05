@@ -34,8 +34,8 @@ $(window).bind('hashchange', function() {
             $(this).hide().next('.email-group').toggle();
         });
 
-        $('.email-quote').click(function() {
-            $(this).find('blockquote').toggle();
+        $('.email-quote-switch').click(function() {
+            $(this).next('.email-quote').toggle();
         });
 
         $('input[name="store"]').click(function() {

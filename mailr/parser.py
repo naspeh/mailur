@@ -120,8 +120,11 @@ def hide_quote(mail1, mail0, class_):
         text = clean(block)
         if html0 == text or (text and html0.endswith(text)):
             parent = block.getparent()
-            new = html.fromstring('<div class="%s"/>' % class_)
-            new.append(copy.deepcopy(block))
+            new = html.fromstring(
+                '<div class="{0}-switch"/><div class="{0}"/>'
+                .format(class_)
+            )
+            new.find_class(class_)[0].append(copy.deepcopy(block))
             parent.replace(block, new)
             return html.tostring(m1, encoding='utf8').decode()
     return mail1

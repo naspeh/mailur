@@ -119,14 +119,20 @@ h2 {
     white-space: normal;
 }
 .email-body .email-quote {
+    display: none;
+}
+.email-body .email-quote-switch {
     .icon-dot-3;
-    &:before {
-        color: @color-poor;
-        border: 1px solid @color-poor * 1.5;
-        padding: 0 5px;
-    }
-    blockquote {
-        display: none;
+    display: inline-block;
+    cursor: pointer;
+    color: @color-poor;
+    line-height: 0.8;
+    border: 1px solid @color-poor * 1.5;
+    padding: 0 5px;
+    background-color: @color-bg-poor;
+    &:hover {
+        color: #333;
+        background-color: @color-poor *  1.5;
     }
 }
 .thread .email {
