@@ -5,11 +5,9 @@ from . import open_file
 from mailr.parser import hide_quote
 
 
-@mark.parametrize('filename', [
-    '1457489417718057053.html', '1456781505677497494.html'
-])
-def test_thread_with_quotes(filename):
-    with open_file('files_quote', filename) as f:
+@mark.parametrize('id', [1457489417718057053, 1456781505677497494])
+def test_thread_with_quotes(id):
+    with open_file('files_quote', '%s.html' % id) as f:
         thread = etree.fromstring(f.read().decode())
 
     mails = []

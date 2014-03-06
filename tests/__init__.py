@@ -25,11 +25,3 @@ def read_file(*names, decode=True):
         if ftype in filters:
             result = filters[ftype](result)
     return result
-
-
-def ok(expr, context):
-    '''For test generators
-
-    >>> yield ok, 'a == b', dict(a=1, b=2)
-    '''
-    assert eval(expr, {}, context)
