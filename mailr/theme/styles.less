@@ -61,7 +61,7 @@ h2 {
         border: 1px solid @color-rich;
     }
 }
-.email-line_(@bg) {
+.email-line-mixin(@bg) {
     position: relative;
     white-space: nowrap;
     overflow: hidden;
@@ -101,7 +101,7 @@ h2 {
     }
 }
 .email-line {
-    .email-line_(@color-bg-poor);
+    .email-line-mixin(@color-bg-poor);
     border-top: 1px solid @color-bg;
 
     .email-from {
@@ -118,7 +118,7 @@ h2 {
     }
 }
 .email-head {
-    .email-line_(#fff);
+    .email-line-mixin(#fff);
     border-top: 1px solid @color-bg-poor;
     color: @color-poor;
     .email-from {
@@ -156,6 +156,9 @@ h2 {
     font-weight: bold;
 }
 .thread {
+    .email-line .email-subject b {
+        display: none;
+    }
     .email-group, .email-head, .email-body {
         display: none;
     }

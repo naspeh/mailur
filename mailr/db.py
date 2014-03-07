@@ -10,6 +10,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import sessionmaker
 
+from .parser import hide_quote
+from .imap_utf7 import decode
+
 engine = create_engine('postgresql+psycopg2://test:test@/mail', echo=False)
 register_hstore(engine.raw_connection(), True)
 
@@ -46,8 +49,6 @@ class Label(Base):
 
     @property
     def human_name(self):
-        from .imap_utf7 import decode
-
         name = self.name.replace('[Gmail]/', '')
         return decode(name)
 
@@ -127,7 +128,7 @@ class Email(Base):
 
     def human_subject(self, strip=True):
         subj = (
-            re.sub('^(Re[^:]*[:])*', '', self.subject or '')
+            re.sub(r'(?i)^(Re[^:]*:\s?)+', '', self.subject or '')
             if strip else self.subject
         ).strip()
 
@@ -135,8 +136,6 @@ class Email(Base):
         return subj
 
     def human_html(self, class_='email-quote'):
-        from .parser import hide_quote
-
         html = self.html
         if html and self.in_reply_to:
             parent = (
