@@ -13,12 +13,13 @@
 {% endif %}
 <ul class="thread">
 {% for showed, emails in groups %}
+    {% set thread=render(emails, thread=True, show=showed) %}
     {% if not showed %}
     <div class="email-group-show"> Show {{ emails|length }} emails</div>
+    <div class="email-group">{{ thread }}</div>
+    {% else %}
+    {{ thread }}
     {% endif %}
-    <div class="email-group"{% if not showed %} style="display:none"{% endif %}>
-        {{ render(emails, thread=True, show=showed) }}
-    </div>
 {% endfor %}
 </ul>
 {% endblock %}
