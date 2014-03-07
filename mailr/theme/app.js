@@ -7,16 +7,23 @@ $(window).ajaxStart(function() {
 $(window).ajaxStop(function() {
     $('.loader').hide();
 });
-$(window).bind('hashchange', function() {
+$(window).on('hashchange', function() {
     var url = location.hash.slice(1);
     $('select.labels [value="#' + url + '"]').attr('selected', true);
     $.get(url, function(content) {
         $('.label-active').removeClass('label-active');
         $('.labels a[href="#' + url + '"]').addClass('label-active');
 
+        // Set content
         $('.panel-body').html(content);
 
-        $('.email-star').bind('click', function() {
+        $('.email-line .email-subject').click(function() {
+            if (!$(this).parents('.thread').length) {
+                window.location.hash = $(this).data('thread');
+            }
+        });
+
+        $('.email-star').click(function() {
             var $this = $(this);
             imap_store({
                 key: 'X-GM-LABELS',
@@ -26,17 +33,18 @@ $(window).bind('hashchange', function() {
             });
         });
 
-        $('.email-head').click(function() {
-            $(this).next('.email-body').toggle();
-        });
+        if ($('.thread').length) {
+            $('.email-subject').click(function() {
+                $(this).parents('.email').toggleClass('email-showed');
+            });
+            $('.email-group-show').click(function() {
+                $(this).hide().next('.email-group').show();
+            });
 
-        $('.email-show').click(function() {
-            $(this).hide().next('.email-group').toggle();
-        });
-
-        $('.email-quote-switch').click(function() {
-            $(this).next('.email-quote').toggle();
-        });
+            $('.email-quote-switch').click(function() {
+                $(this).next('.email-quote').toggle();
+            });
+        }
 
         $('input[name="store"]').click(function() {
             var $this = $(this);
@@ -84,7 +92,7 @@ function refresh() {
         $('.panel-head').html(content);
 
         $('select.labels')
-            .bind('change', function() {
+            .on('change', function() {
                 window.location.hash = $(this).val();
             });
         if (window.location.hash) {

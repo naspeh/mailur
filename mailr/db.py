@@ -127,7 +127,7 @@ class Email(Base):
 
     def human_subject(self, strip=True):
         subj = (
-            re.sub('^Re.*?:', '', self.subject or '')
+            re.sub('^(Re[^:]*[:])*', '', self.subject or '')
             if strip else self.subject
         ).strip()
 

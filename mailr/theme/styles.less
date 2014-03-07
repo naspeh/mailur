@@ -2,7 +2,7 @@
 @import (inline) url(./reset.css);
 @import url(./font/fontello.less);
 
-@color-link: #008000;
+@color: #008000;
 @color-rich: #f63;
 @color-poor: #777;
 @color-bg: #fff;
@@ -13,7 +13,7 @@ body {
     font-weight: 400;
 }
 a {
-    color: @color-link;
+    color: @color;
     text-decoration: none;
     border-bottom: 1px solid transparent;
 }
@@ -45,123 +45,131 @@ h2 {
 .labels {
     font-size: 14px;
 }
-.email {
+.email-line_(@bg) {
     position: relative;
-    background-color: @color-bg-poor;
-    border-top: 1px solid @color-bg;
     white-space: nowrap;
     overflow: hidden;
     font-size: 0.9em;
     line-height: 1.2em;
     padding: 3px 5px;
+    background-color: @bg;
+
+    &> li {
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .email-star {
+        .icon-star-empty;
+        color: @color-poor;
+        &:hover {
+            margin-top: 1px;
+            cursor: pointer;
+            margin-bottom: -1px;
+        }
+        &.email-starred {
+            color: @color-rich;
+        }
+    }
+    .email-subject {
+        cursor: pointer;
+        width: 100%;
+    }
+    .email-date {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 1.2em;
+        text-align: right;
+        padding: 3px 5px;
+        background-color: @bg;
+    }
 }
-.email span {
-    display: inline-block;
-    vertical-align: top;
+.email-line {
+    .email-line_(@color-bg-poor);
+    border-top: 1px solid @color-bg;
+
+    .email-from {
+        width: 90px;
+        padding: 0 5px;
+        overflow: hidden;
+    }
+    .email-labels {
+        a {
+            display: inline-block;
+            vertical-align: top;
+            color: @color-poor;
+            border: 1px solid @color-poor * 1.5;
+            padding: 0 2px;
+            height: 14px;
+            line-height: 14px;
+            font-size: 12px;
+        }
+        a:hover {
+            color: @color-rich;
+            border: 1px solid @color-rich;
+        }
+    }
+    .email-subject {
+        color: @color-poor;
+
+        b {
+            color: @color;
+        }
+    }
+}
+.email-head {
+    .email-line_(#fff);
+    border-top: 1px solid @color-bg-poor;
+    color: @color-poor;
+    .email-from {
+        font-weight: bold;
+        width: auto;
+        margin-right: 1em;
+    }
+    .email-date {
+        font-weight: bold;
+    }
+}
+.email-body {
+    padding: 10px;
+
+    .email-quote {
+        display: none;
+    }
+    .email-quote-switch {
+        .icon-dot-3;
+        display: inline-block;
+        cursor: pointer;
+        color: @color-poor;
+        line-height: 0.8;
+        border: 1px solid @color-poor * 1.5;
+        padding: 0 5px;
+        margin: 5px 0;
+        background-color: @color-bg-poor;
+        &:hover {
+            color: #333;
+            background-color: @color-poor *  1.5;
+        }
+    }
 }
 .email-unread .email-subject {
     font-weight: bold;
 }
-.email-pics img {
-    vertical-align: middle;
-}
-.email-from {
-    width: 90px;
-    padding: 0 5px;
-    overflow: hidden;
-}
-.email-star {
-    .icon-star-empty;
-    color: @color-poor;
-    &:hover {
-        margin-top: 1px;
+.thread {
+    .email-head, .email-body {
+        display: none;
+    }
+    .email-showed {
+        .email-head, .email-body {
+            display: block;
+        }
+        .email-line {
+            display: none;
+        }
+    }
+    .email-group-show {
+        background-color: @color-bg-poor;
+        padding: 10px;
         cursor: pointer;
-        margin-bottom: -1px;
     }
-    &.email-starred {
-        color: @color-rich;
-    }
-}
-.email-labels a {
-    display: inline-block;
-    vertical-align: top;
-    color: @color-poor;
-    border: 1px solid @color-poor * 1.5;
-    padding: 0 2px;
-    height: 14px;
-    line-height: 14px;
-    font-size: 12px;
-}
-.email-labels a:hover {
-    color: @color-rich;
-    border: 1px solid @color-rich;
-}
-.email-subject {
-    margin-right: 120px;
-    overflow: hidden;
-}
-.email-subject a {
-    color: @color-poor;
-}
-.email-subject a b {
-    color: @color-link;
-}
-.email-date {
-    position: absolute;
-    right: 0;
-    height: 1.2em;
-    text-align: right;
-    padding: 0 5px;
-    background-color: @color-bg-poor;
-}
-.email-body {
-    padding: 10px;
-    white-space: normal;
-}
-.email-body .email-quote {
-    display: none;
-}
-.email-body .email-quote-switch {
-    .icon-dot-3;
-    display: inline-block;
-    cursor: pointer;
-    color: @color-poor;
-    line-height: 0.8;
-    border: 1px solid @color-poor * 1.5;
-    padding: 0 5px;
-    margin: 5px 0;
-    background-color: @color-bg-poor;
-    &:hover {
-        color: #333;
-        background-color: @color-poor *  1.5;
-    }
-}
-.thread .email {
-    background-color: #fff;
-}
-.thread .email-head {
-    border-top: 1px solid @color-bg-poor;
-    cursor: pointer;
-    color: @color-poor;
-}
-.thread .email-from {
-    font-weight: bold;
-    width: auto;
-}
-.thread .email-date {
-    font-weight: bold;
-    background-color: #fff;
-}
-.thread .email-body,
-.thread .email-group {
-    display: none;
-}
-.thread .email-group-showed,
-.thread .email-group-showed .email-body {
-    display: block;
-}
-.thread .email-show {
-    background-color: @color-bg-poor;
-    padding: 10px;
-    cursor: pointer;
 }
