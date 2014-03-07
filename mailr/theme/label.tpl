@@ -51,11 +51,7 @@
             <li class="email-date">{{ email.date|format_dt }}</li>
         </ul>
         <div class="email-body">
-        {% if email.html %}
             {{ email.human_html('email-quote') }}
-        {% else %}
-            <pre>{{ email.text|e }}</pre>
-        {% endif %}
         </div>
         {% endif %}
     </li>

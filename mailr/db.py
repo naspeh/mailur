@@ -135,20 +135,37 @@ class Email(Base):
         subj = subj or '(no subject)'
         return subj
 
+    @property
+    def parent(self):
+        if not hasattr(self, '_parent'):
+            self._parent = None
+            if self.in_reply_to:
+                p = (
+                    session.query(Email)
+                    .filter(Email.message_id == self.in_reply_to)
+                    .first()
+                )
+                self._parent = p if p and p.id != self.id else None
+        return self._parent
+
     def human_html(self, class_='email-quote'):
         from lxml.html.clean import Cleaner
+        from mistune import markdown
 
-        cleaner = Cleaner(links=False, safe_attrs_only=False)
-        html = cleaner.clean_html(self.html)
-        if html and self.in_reply_to:
-            parent = (
-                session.query(Email)
-                .filter(Email.in_reply_to == self.in_reply_to)
-                .first()
-            )
-            if parent:
-                html = hide_quote(html, parent.html, class_)
+        if self.html:
+            cleaner = Cleaner(links=False, safe_attrs_only=False)
+            html = cleaner.clean_html(self.html)
+        elif self.text:
+            html = markdown(self.text)
+            html = re.sub(r'(?m)(\n|\r\n|\r)', '<br/>', html)
+        else:
+            html = ''
+
+        if html and self.parent:
+            parent_html = self.parent.html or self.parent.human_html()
+            html = hide_quote(html, parent_html, class_)
         return html
+
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine, autocommit=True)

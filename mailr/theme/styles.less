@@ -6,7 +6,7 @@
 @color-rich: #f63;
 @color-poor: #777;
 @color-bg: #fff;
-@color-bg-poor: #ededed;
+@color-bg-poor: #eee;
 
 body {
     font: 1em/1.4 "PT Sans", sans-serif;
@@ -82,6 +82,7 @@ blockquote {
     .email-star {
         .icon-star-empty;
         color: @color-poor;
+        font-size: 120%;
         &:hover {
             margin-top: 1px;
             cursor: pointer;
@@ -108,6 +109,7 @@ blockquote {
 .email-line {
     .email-line-mixin(@color-bg-poor);
     border-top: 1px solid @color-bg;
+    border-radius: 7px;
 
     .email-from {
         width: 90px;
@@ -124,8 +126,10 @@ blockquote {
 }
 .email-head {
     .email-line-mixin(#fff);
-    border-top: 1px solid @color-bg-poor;
+    border-top: 2px solid @color-bg-poor * 0.95;
+    border-radius: 7px;
     color: @color-poor;
+
     .email-from {
         font-weight: bold;
         width: auto;
@@ -180,6 +184,7 @@ blockquote {
     .email-group-show {
         color: @color;
         border-top: 1px solid @color-bg;
+        border-radius: 7px;
         background-color: @color-bg-poor;
         padding: 10px;
         cursor: pointer;
