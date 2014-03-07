@@ -74,12 +74,30 @@ def gm_thread(env, id):
     if emails:
         groups = groupby(emails[:-1], lambda v: v.unread)
         groups = [(k, list(v)) for k, v in groups]
+        if groups:
+            few_showed = 2
+            # Show title of few last messages
+            latest = groups[-1]
+            if not latest[0] and len(latest[1]) > few_showed:
+                group_latest = (False, latest[1][-few_showed:])
+                groups[-1] = (False, latest[1][:-few_showed])
+                groups.append(group_latest)
+            # Show title of first message
+            first = groups[0]
+            if not first[0] and len(first[1]) > few_showed:
+                group_1st = (False, [first[1][0]])
+                groups[0] = (False, first[1][1:])
+                groups.insert(0, group_1st)
+        # Show last message
         groups += [(True, [emails[-1]])]
+
     thread = {
         'subject': emails[-1].human_subject(),
         'labels': set(sum([e.full_labels for e in emails], []))
     }
-    return env.render('thread.tpl', thread=thread, groups=groups)
+    return env.render(
+        'thread.tpl', thread=thread, groups=groups, few_showed=few_showed
+    )
 
 
 def store(env, label):

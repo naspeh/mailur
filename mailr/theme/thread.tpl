@@ -14,7 +14,7 @@
 <ul class="thread">
 {% for showed, emails in groups %}
     {% set thread=render(emails, thread=True, show=showed) %}
-    {% if not showed %}
+    {% if not showed and emails|length > few_showed %}
     <div class="email-group-show"> Show {{ emails|length }} emails</div>
     <div class="email-group">{{ thread }}</div>
     {% else %}

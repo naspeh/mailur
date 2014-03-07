@@ -6,7 +6,7 @@
 @color-rich: #f63;
 @color-poor: #777;
 @color-bg: #fff;
-@color-bg-poor: #eee;
+@color-bg-poor: #ededed;
 
 body {
     font: 1em/1.4 "PT Sans", sans-serif;
@@ -156,11 +156,13 @@ h2 {
     font-weight: bold;
 }
 .thread {
-    .email-line .email-subject b {
-        display: none;
-    }
     .email-group, .email-head, .email-body {
         display: none;
+    }
+    .email-line {
+        .email-subject b {
+            display: none;
+        }
     }
     .email-showed {
         .email-head, .email-body {
@@ -171,8 +173,11 @@ h2 {
         }
     }
     .email-group-show {
+        color: @color;
+        border-top: 1px solid @color-bg;
         background-color: @color-bg-poor;
         padding: 10px;
         cursor: pointer;
+        text-align: center;
     }
 }
