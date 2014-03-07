@@ -136,7 +136,10 @@ class Email(Base):
         return subj
 
     def human_html(self, class_='email-quote'):
-        html = self.html
+        from lxml.html.clean import Cleaner
+
+        cleaner = Cleaner(links=False, safe_attrs_only=False)
+        html = cleaner.clean_html(self.html)
         if html and self.in_reply_to:
             parent = (
                 session.query(Email)

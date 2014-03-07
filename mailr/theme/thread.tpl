@@ -1,6 +1,7 @@
 {% extends 'label.tpl' %}
 
 {% block content %}
+<base target="_self" href="/">
 <h4>
     {{ thread.subject }}
     {% if thread.labels %}

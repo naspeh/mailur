@@ -70,12 +70,12 @@ def gm_thread(env, id):
         .filter(Email.gm_thrid == id)
         .order_by(Email.date)
     )
+    few_showed = 2
     groups = []
     if emails:
         groups = groupby(emails[:-1], lambda v: v.unread)
         groups = [(k, list(v)) for k, v in groups]
         if groups:
-            few_showed = 2
             # Show title of few last messages
             latest = groups[-1]
             if not latest[0] and len(latest[1]) > few_showed:
