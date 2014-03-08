@@ -106,8 +106,8 @@ class Email(Base):
     in_reply_to = Column(String, index=True)
     message_id = Column(String, index=True)
 
-    text = Column(String)
-    html = Column(String)
+    text = Column(String, default='')
+    html = Column(String, default='')
 
     @property
     def full_labels(self):
@@ -123,12 +123,12 @@ class Email(Base):
 
     @property
     def text_line(self):
-        text = self.text or re.sub('<[^>]*?>', '', self.html or '')
+        text = self.text or re.sub('<[^>]*?>', '', self.html)
         return self.human_subject(), text[:200].strip()
 
     def human_subject(self, strip=True):
         subj = (
-            re.sub(r'(?i)^(Re[^:]*:\s?)+', '', self.subject or '')
+            re.sub(r'(?i)^(Re[^:]*:\s?)+', '', self.subject)
             if strip else self.subject
         ).strip()
 

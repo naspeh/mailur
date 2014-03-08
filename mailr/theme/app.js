@@ -26,8 +26,8 @@ $(window).on('hashchange', function() {
         $('.email-star').click(function() {
             var $this = $(this);
             imap_store({
-                key: 'X-GM-LABELS',
-                value: '\\Starred',
+                key: 'FLAGS',
+                value: '\\Flagged',
                 ids: [$this.parents('.email').data('id')],
                 unset: $this.hasClass('email-starred')
             });

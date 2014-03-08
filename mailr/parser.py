@@ -85,7 +85,7 @@ def parse_part(parts, msg_id):
             text = part.get_payload(decode=True)
             text = decode_str(text, part.get_content_charset() or 'utf-8')
             content[part.get_content_type()] = text
-        elif not part.is_multipart():
+        elif not part.get_content_maintype() == 'multipart':
             log.warn('UnknownType(%s) -- %s', part.get_content_type(), msg_id)
     return content
 
