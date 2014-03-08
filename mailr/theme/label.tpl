@@ -9,7 +9,7 @@
 {% for email in emails %}
     <li data-id="{{ email.uid }}" class="email
         {% if email.unread %} email-unread{% endif %}
-        {% if email.unread or show %} email-showed{% endif %}
+        {% if show %} email-showed{% endif %}
     ">
         <ul class="email-line">
             {% if not thread %}
@@ -90,7 +90,9 @@
 <input type="button" name="sync" value="Sync">
 <input type="button" name="sync_all" value="Sync all">
 {% block content %}
+<div class="label">
 {{ render(emails) }}
+</div>
 {% endblock %}
 </form>
 {% endif %}

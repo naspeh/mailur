@@ -12,7 +12,7 @@
     </span>
 </h4>
 {% endif %}
-<ul class="thread">
+<div class="thread">
 {% for showed, emails in groups %}
     {% set thread=render(emails, thread=True, show=showed) %}
     {% if not showed and emails|length > few_showed %}
@@ -22,5 +22,5 @@
     {{ thread }}
     {% endif %}
 {% endfor %}
-</ul>
+</div>
 {% endblock %}
