@@ -16,6 +16,7 @@ def get_all():
 def get_addr(addr):
     return addr and getaddresses([addr])[0][1]
 
+
 def get_addr_name(addr):
     return addr and get_addr(addr).split('@')[0]
 
@@ -23,7 +24,7 @@ def get_addr_name(addr):
 def get_gravatar(addr):
     gen_hash = lambda e: md5(e.strip().lower().encode()).hexdigest()
     gen_url = lambda h: '//www.gravatar.com/avatar/%s' % h if h else None
-    return addr and gen_url(gen_hash(getaddresses([addr])[0][1]))
+    return addr and gen_url(gen_hash(get_addr(addr)))
 
 
 def localize_dt(value):

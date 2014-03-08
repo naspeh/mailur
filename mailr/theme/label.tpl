@@ -12,6 +12,12 @@
 
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
 
+            <li class="email-pics">
+            {% for addr in email.from_ %}
+                <img src="{{ addr|get_gravatar }}?s=16" height="16"  alt="{{ addr|e }}" />
+            {% endfor %}
+            </li>
+
             <li class="email-from" title="{{ email.from_|join(', ')|e }}">
                 {{ email.from_|map('get_addr_name')|join(', ') }}
             </li>
@@ -43,6 +49,12 @@
         {% if thread %}
         <ul class="email-head">
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
+
+            <li class="email-pics">
+            {% for addr in email.from_ %}
+                <img src="{{ addr|get_gravatar }}?s=16" height="16"  alt="{{ addr|e }}" />
+            {% endfor %}
+            </li>
 
             <li class="email-from" title="{{ email.from_|join(', ')|e }}">
                 {{ email.from_|map('get_addr')|join(', ') }}
