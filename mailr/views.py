@@ -73,7 +73,7 @@ def gm_thread(env, id):
     few_showed = 2
     groups = []
     if emails:
-        groups = groupby(emails[:-1], lambda v: v.unread)
+        groups = groupby(emails[:-1], lambda v: (v.unread or v.starred))
         groups = [(k, list(v)) for k, v in groups]
         if groups:
             # Show title of few last messages

@@ -19,6 +19,9 @@ def store(im, uids, key, value, rm=True):
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uid_ = data[0].decode().split(' ')[0]
+        if not uid_:
+            log.warn('%s is not found' % uid)
+            continue
         res = im.uid('STORE', uid_, key, value)
         log.info('imap.store(%r, %r): %s', key, value, res)
     return
