@@ -157,10 +157,11 @@ class Email(Base):
             html = cleaner.clean_html(self.html)
         elif self.text:
             html = markdown(self.text)
-            html = re.sub(r'(?m)(\n|\r\n|\r)', '<br/>', html)
+            html = re.sub(r'(?m)(\n|\r|\r\n)', '<br/>', html)
         else:
             html = ''
 
+        html = re.sub(r'(<br[/]?>\s*)$', '', html).strip()
         if html and self.parent:
             parent_html = self.parent.html or self.parent.human_html()
             html = hide_quote(html, parent_html, class_)

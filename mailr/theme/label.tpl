@@ -29,7 +29,9 @@
                 data-thread="#{{ url_for('gm_thread', id=email.gm_thrid) }}"
             >
             {% with subj, text = email.text_line %}
-                <b>{{ subj }}</b>{% if text %} {{ text|e }}{% endif %}
+                <b>{{ subj }}</b>
+                {% if text %} {{ text|e }}{% endif %}
+                {% if thread and not text %}(no text){% endif %}
             {% endwith %}
             </li>
 
