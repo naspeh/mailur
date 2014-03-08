@@ -112,7 +112,7 @@ def hide_quote(mail1, mail0, class_):
         v = re.sub('<[^>]*?>', ' ', v)
         v = re.sub('[\s]+', ' ', v).strip()
         v = re.sub('[\s(&#13;)]+$', '', v)  # TODO
-        return v
+        return v.rstrip()
 
     html0 = clean(html.fromstring(mail0.strip()))
     m1 = html.fromstring(mail1.strip())
