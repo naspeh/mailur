@@ -14,7 +14,7 @@
 
             <li class="email-pics">
             {% for addr in email.from_ %}
-                <img src="{{ addr|get_gravatar }}?s=16" height="16"  alt="{{ addr|e }}" />
+                <img src="{{ addr|get_gravatar(16) }}" height="16"  alt="{{ addr|e }}" />
             {% endfor %}
             </li>
 
@@ -52,7 +52,7 @@
 
             <li class="email-pics">
             {% for addr in email.from_ %}
-                <img src="{{ addr|get_gravatar }}?s=16" height="16"  alt="{{ addr|e }}" />
+                <img src="{{ addr|get_gravatar(16) }}" height="16"  alt="{{ addr|e }}" />
             {% endfor %}
             </li>
 

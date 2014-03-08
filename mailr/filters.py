@@ -1,5 +1,6 @@
 from email.utils import getaddresses
 from hashlib import md5
+from urllib.parse import urlencode
 
 import times
 
@@ -21,9 +22,10 @@ def get_addr_name(addr):
     return addr and get_addr(addr).split('@')[0]
 
 
-def get_gravatar(addr):
+def get_gravatar(addr, size=16, default='identicon'):
+    params = urlencode({'s': size, 'd': default})
     gen_hash = lambda e: md5(e.strip().lower().encode()).hexdigest()
-    gen_url = lambda h: '//www.gravatar.com/avatar/%s' % h if h else None
+    gen_url = lambda h: '//www.gravatar.com/avatar/%s?%s' % (h, params)
     return addr and gen_url(gen_hash(get_addr(addr)))
 
 
