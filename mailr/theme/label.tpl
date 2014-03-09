@@ -27,7 +27,7 @@
             </li>
 
             <li class="email-from" title="{{ email.from_|join(', ')|e }}">
-                {{ email.from_|map('get_addr_name')|join(', ') }}
+                {{ email.from_|map('get_addr')|join(', ') }}
             </li>
 
             {% if not thread and email.labels %}
@@ -90,7 +90,7 @@
     <div class="more">
         <b>More >></b>
         <ul>
-        {% if label != label.A_TRASH %}
+        {% if label and label != label.A_TRASH %}
         <li><button name="mark" value="starred">Add star</button></li>
         <li><button name="mark" value="unstarred">Remove star</button></li>
         {% endif %}

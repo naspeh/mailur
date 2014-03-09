@@ -1,5 +1,4 @@
 (function() {
-
 $(window).ajaxStart(function() {
     $('.loader').show();
     $('input').attr('disabled', true);
@@ -12,8 +11,12 @@ $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
     var id = panel.attr('id');
     var url = data && data.url;
+    var hash = [id, url].join('');
+    if (hash == window.location.hash) {
+        return;
+    }
     if (url) {
-        window.location.hash = [id, url].join('');
+        window.location.hash = hash;
         localStorage[id] = url;
     } else {
         url = localStorage.getItem(id);
@@ -111,12 +114,15 @@ $('.panel').on('panel_get', function(event, data) {
         panel.find('button[name="copy_to_inbox"]').click(function() {
             var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
             $.post(url, {ids: get_ids($(this))}).done(refresh);
+            return false;
         });
         panel.find('button[name="sync"]').click(function() {
             $.get('/sync/' + get_label() + '/').done(refresh);
+            return false;
         });
         panel.find('button[name="sync_all"]').click(function() {
             $.get('/sync/').done(refresh);
+            return false;
         });
     });
 });
@@ -135,6 +141,13 @@ $('.panel')
     .each(function() {
         $(this).trigger('refresh');
     });
+$(window).on('hashchange', function() {
+    var parts = window.location.hash.split('/');
+    var panel = $(parts.shift());
+    if (panel.length) {
+        panel.trigger('panel_get', {url: '/' + parts.join('/')});
+    }
+});
 
 // END
 })();
