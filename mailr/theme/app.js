@@ -68,7 +68,7 @@ $('.panel').on('panel_get', function(event, data) {
             if (checked.not('.email-unread').length > 0) {
                 more.find('[value="unread"]').parents('li').addClass('_show');
             }
-            if (checked.find(':not(.email-starred)').length > 0) {
+            if (checked.find('.email-star:not(.email-starred)').length > 0) {
                 more.find('[value="starred"]').parents('li').addClass('_show');
             }
             if (checked.find('.email-starred').length > 0) {
