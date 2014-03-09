@@ -35,8 +35,8 @@
             {% endif %}
 
             <li class="email-subject"
-                data-raw="#{{ url_for('raw', email=email.uid) }}"
-                data-thread="#{{ url_for('gm_thread', id=email.gm_thrid) }}"
+                data-raw="{{ url_for('raw', email=email.uid) }}"
+                data-thread="{{ url_for('gm_thread', id=email.gm_thrid) }}"
             >
             {% with subj, text = email.text_line %}
                 <b>{{ subj }}</b>

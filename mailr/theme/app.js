@@ -1,78 +1,11 @@
 (function() {
 
-$(window).ajaxStart(function() {
-    $('.loader').show();
-    $('input[type="button"]').attr('disabled', true);
-});
-$(window).ajaxStop(function() {
-    $('.loader').hide();
-});
-$(window).on('hashchange', function() {
-    var url = location.hash.slice(1);
-    $('select.labels [value="#' + url + '"]').attr('selected', true);
-    $.get(url, function(content) {
-        $('.label-active').removeClass('label-active');
-        $('.labels a[href="#' + url + '"]').addClass('label-active');
-
-        // Set content
-        $('.panel-body').html(content);
-
-        $('.email-line .email-subject').click(function() {
-            if (!$(this).parents('.thread').length) {
-                window.location.hash = $(this).data('thread');
-            }
-        });
-
-        $('.email-star').click(function() {
-            var $this = $(this);
-            imap_store({
-                key: 'FLAGS',
-                value: '\\Flagged',
-                ids: [$this.parents('.email').data('id')],
-                unset: $this.hasClass('email-starred')
-            });
-        });
-
-        if ($('.thread').length) {
-            $('.email-subject').click(function() {
-                $(this).parents('.email').toggleClass('email-showed');
-            });
-            $('.email-group-show').click(function() {
-                $(this).hide().next('.email-group').show();
-            });
-
-            $('.email-quote-switch').click(function() {
-                $(this).next('.email-quote').toggle();
-            });
-        }
-
-        $('input[name="store"]').click(function() {
-            var $this = $(this);
-            imap_store({
-                key: $this.data('key'),
-                value: $this.data('value'),
-                ids: get_ids($this),
-                unset: $this.data('unset')
-            });
-            return false;
-        });
-        $('input[name="archive"]').click(function() {
-            $.post('/archive/' + get_label() + '/', {ids: get_ids($(this))})
-                .done(refresh);
-        });
-        $('input[name="copy_to_inbox"]').click(function() {
-            var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
-            $.post(url, {ids: get_ids($(this))}).done(refresh);
-        });
-        $('input[name="sync"]').click(function() {
-            $.get('/sync/' + get_label() + '/').done(refresh);
-        });
-        $('input[name="sync_all"]').click(function() {
-            $.get('/sync/').done(refresh);
-        });
-    });
+$('.panel').on('panel_get', function(event, data) {
+    var panel = $(event.target);
+    var url = data && data.url || panel.find('.labels').val();
+    window.location.hash = [panel.attr('id'), url].join('');
     function get_label() {
-        return $('select.labels :checked').data('id');
+        return panel.find('select.labels :checked').data('id');
     }
     function get_ids(el) {
         var ids = [];
@@ -86,24 +19,103 @@ $(window).on('hashchange', function() {
         data.unset = data.unset && 1 || '';
         $.post('/store/' + get_label() + '/', data).done(refresh);
     }
-});
-function refresh() {
-    $.get('/labels/', function(content) {
-        $('.panel-head').html(content);
+    function start_loader() {
+        panel
+            .find('.loader').show().end()
+            .find('input[type="button"]').attr('disabled', true);
+    }
+    function stop_loader() {
+        panel.find('.loader').hide();
+    }
 
-        $('select.labels')
-            .on('change', function() {
-                window.location.hash = $(this).val();
+    panel.find('select.labels [value="#' + url + '"]').attr('selected', true);
+    start_loader();
+    $.get(url, function(content) {
+        stop_loader();
+        panel.find('.label-active').removeClass('label-active');
+        panel.find('.labels a[href="#' + url + '"]').addClass('label-active');
+
+        // Set content
+        panel.find('.panel-body').html(content);
+
+        panel.find('.email-line .email-subject').click(function() {
+            if (!$(this).parents('.thread').length) {
+                panel.trigger('panel_get', {url: $(this).data('thread')});
+            }
+            return false;
+        });
+
+        panel.find('.email-star').click(function() {
+            var $this = $(this);
+            imap_store({
+                key: 'FLAGS',
+                value: '\\Flagged',
+                ids: [$this.parents('.email').data('id')],
+                unset: $this.hasClass('email-starred')
             });
-        if (window.location.hash) {
-            $('select.labels [value="' + window.location.hash + '"]').attr('selected', true);
-            $(window).trigger('hashchange');
-        } else {
-            $('select.labels').trigger('change');
+        });
+
+        if (panel.find('.thread').length) {
+            panel.find('.email-subject').click(function() {
+                $(this).parents('.email').toggleClass('email-showed');
+            });
+            panel.find('.email-group-show').click(function() {
+                $(this).hide().next('.email-group').show();
+            });
+
+            panel.find('.email-quote-switch').click(function() {
+                $(this).next('.email-quote').toggle();
+            });
         }
+
+        panel.find('input[name="store"]').click(function() {
+            var $this = $(this);
+            imap_store({
+                key: $this.data('key'),
+                value: $this.data('value'),
+                ids: get_ids($this),
+                unset: $this.data('unset')
+            });
+            return false;
+        });
+        panel.find('input[name="archive"]').click(function() {
+            $.post('/archive/' + get_label() + '/', {ids: get_ids($(this))})
+                .done(refresh);
+        });
+        panel.find('input[name="copy_to_inbox"]').click(function() {
+            var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
+            $.post(url, {ids: get_ids($(this))}).done(refresh);
+        });
+        panel.find('input[name="sync"]').click(function() {
+            $.get('/sync/' + get_label() + '/').done(refresh);
+        });
+        panel.find('input[name="sync_all"]').click(function() {
+            $.get('/sync/').done(refresh);
+        });
     });
+});
+$('.panel')
+    .on('refresh', function(event, data) {
+        $.get('/labels/', function(content) {
+            var panel = $(data.panel);
+            panel.find('.panel-head')
+                .html(content)
+                .find('.labels').on('change', function() {
+                    panel.trigger('panel_get');
+                })
+                .trigger('change');
+        });
+    })
+    .each(function() {
+        $(this).trigger('refresh', {panel: this});
+    });
+
+
+if (window.location.hash) {
+    var parts = window.location.hash.slice(1).split('/');
+    var panel = $(parts.shift());
+    panel.trigger('panel_get', {url: '/' + parts.join('/')});
 }
-refresh();
 
 // END
 })();

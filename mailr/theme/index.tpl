@@ -7,7 +7,11 @@
     <link rel="stylesheet" href="/theme/styles.css">
 </head>
 <body>
-<div class="panel">
+<div class="panel" id="panel-one">
+    <div class="panel-head"></div>
+    <div class="panel-body"></div>
+</div>
+<div class="panel panel-side" id="panel-two">
     <div class="panel-head"></div>
     <div class="panel-body"></div>
 </div>

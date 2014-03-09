@@ -47,9 +47,21 @@ blockquote {
         animation: spin 2s infinite linear;
     }
 }
+body {
+    min-width: 1000px
+}
 .panel {
-    min-width: 600px;
-    max-width: 800px;
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    overflow-y: auto;
+    outline: 1px solid @color-bg-poor;
+}
+.panel-side {
+    left: 50%;
+}
+.panel-head, .panel-body {
+    margin: 10px;
 }
 .labels {
     font-size: 14px;
