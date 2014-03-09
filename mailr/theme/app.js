@@ -50,6 +50,30 @@ $('.panel').on('panel_get', function(event, data) {
             return false;
         });
 
+        panel.find('.email-pick input').on('change', function() {
+            var more = panel.find('.more');
+            var checked = panel.find('.email-pick input:checked').parents('.email');
+
+            more.find('li').removeClass('_show');
+            more.css({visibility: 'hidden'});
+
+            if (checked.filter('.email-unread').length > 0) {
+                more.find('[value="read"]').parents('li').toggleClass('_show');
+            }
+            if (checked.not('.email-unread').length > 0) {
+                more.find('[value="unread"]').parents('li').toggleClass('_show');
+            }
+            if (checked.find(':not(.email-starred)').length > 0) {
+                more.find('[value="starred"]').parents('li').toggleClass('_show');
+            }
+            if (checked.find('.email-starred').length > 0) {
+                more.find('[value="unstarred"]').parents('li').toggleClass('_show');
+            }
+            if (more.find('li._show').length > 0) {
+                more.css({visibility: 'visible'});
+            }
+        });
+
         panel.find('.email-star').click(function() {
             var $this = $(this);
             var name = $this.hasClass('email-starred') ? 'unstarred': 'starred';
@@ -74,19 +98,19 @@ $('.panel').on('panel_get', function(event, data) {
             });
         }
 
-        panel.find('input[name="do"]').click(function() {
+        panel.find('button[name="mark"]').click(function() {
             var $this = $(this);
-            mark($this.data('name'), get_ids($this));
+            mark($this.val(), get_ids($this));
             return false;
         });
-        panel.find('input[name="copy_to_inbox"]').click(function() {
+        panel.find('button[name="copy_to_inbox"]').click(function() {
             var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
             $.post(url, {ids: get_ids($(this))}).done(refresh);
         });
-        panel.find('input[name="sync"]').click(function() {
+        panel.find('button[name="sync"]').click(function() {
             $.get('/sync/' + get_label() + '/').done(refresh);
         });
-        panel.find('input[name="sync_all"]').click(function() {
+        panel.find('button[name="sync_all"]').click(function() {
             $.get('/sync/').done(refresh);
         });
     });

@@ -8,7 +8,14 @@
 @color-bg: #fff;
 @color-bg-poor: #eee;
 
+html {
+    height: 100%;
+}
 body {
+    position: relative;
+    min-width: 1000px;
+    margin: 0 auto;
+    height: 100%;
     font: 1em/1.4 "PT Sans", sans-serif;
     font-weight: 400;
 }
@@ -55,15 +62,6 @@ blockquote {
     &:before {
         animation: spin 2s infinite linear;
     }
-}
-html {
-    height: 100%;
-}
-body {
-    position: relative;
-    min-width: 1000px;
-    margin: 0 auto;
-    height: 100%;
 }
 .panel {
     position: absolute;
@@ -225,5 +223,31 @@ body {
         padding: 10px;
         cursor: pointer;
         text-align: center;
+    }
+}
+.more {
+    position: relative;
+    display: inline-block;
+    visibility: hidden;
+    font-weight: bold;
+    white-space: nowrap;
+    cursor: pointer;
+    ul {
+        position: absolute;
+        display: none;
+        z-index: 1;
+        border: 1px solid @color-bg-poor;
+        background-color: @color-bg;
+        padding: 5px;
+
+        > li {
+            display: none;
+        }
+        > li._show {
+            display: block;
+        }
+    }
+    &:hover ul {
+        display: block;
     }
 }

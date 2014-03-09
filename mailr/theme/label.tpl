@@ -13,7 +13,9 @@
     ">
         <ul class="email-line">
             {% if not thread %}
-            <li><input type="checkbox" name="ids" value="{{ email.uid }}"></li>
+            <li class="email-pick">
+                <input type="checkbox" name="ids" value="{{ email.uid }}">
+            </li>
             {% endif %}
 
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
@@ -79,14 +81,21 @@
 
 {% if emails or groups %}
 <form name="emails-form" method="POST">
-    <input type="button" name="mark" data-name="starred" value="Add star"/>
-    <input type="button" name="mark" data-name="unstarred" value="Remove star"/>
-    <input type="button" name="mark" data-name="read" value="Read"/>
-    <input type="button" name="mark" data-name="unread" value="Unread"/>
-    <input type="button" name="mark" data-name="archived" value="Archive">
-    <input type="button" name="copy_to_inbox" value="Copy to Inbox">
-    <input type="button" name="sync" value="Sync">
-    <input type="button" name="sync_all" value="Sync all">
+    <button name="mark" value="archived">Archive</button>
+    <button name="copy_to_inbox">Move to Inbox</button>
+    <button name="sync">Sync</button>
+    <button name="sync_all">Sync all</button>
+    <div class="more">
+        <b>More >></b>
+        <ul>
+        {% if label != label.A_TRASH %}
+        <li><button name="mark" value="starred">Add star</button></li>
+        <li><button name="mark" value="unstarred">Remove star</button></li>
+        {% endif %}
+        <li><button name="mark" value="read">Read</button></li>
+        <li><button name="mark" value="unread">Unread</button></li>
+        </ul>
+    </div>
     {% block content %}
     <div class="label">
         {{ render(emails) }}
