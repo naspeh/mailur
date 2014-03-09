@@ -2,8 +2,16 @@
 
 $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
-    var url = data && data.url || panel.find('.labels').val();
-    window.location.hash = [panel.attr('id'), url].join('');
+    var url = data && data.url;
+    if (url) {
+        window.location.hash = [panel.attr('id'), url].join('');
+    } else if (window.location.hash) {
+        var parts = window.location.hash.slice(1).split('/');
+        if (panel.attr('id') == parts.shift()) {
+            url = '/' + parts.join('/');
+        }
+    }
+    url = url ? url : panel.data('box');
     function get_label() {
         return panel.find('select.labels :checked').data('id');
     }
@@ -28,7 +36,7 @@ $('.panel').on('panel_get', function(event, data) {
         panel.find('.loader').hide();
     }
 
-    panel.find('select.labels [value="#' + url + '"]').attr('selected', true);
+    panel.find('.labels [value="' + url + '"]').attr('selected', true);
     start_loader();
     $.get(url, function(content) {
         stop_loader();
@@ -95,27 +103,20 @@ $('.panel').on('panel_get', function(event, data) {
     });
 });
 $('.panel')
-    .on('refresh', function(event, data) {
+    .on('refresh', function(event) {
         $.get('/labels/', function(content) {
-            var panel = $(data.panel);
+            var panel = $(event.target);
             panel.find('.panel-head')
                 .html(content)
                 .find('.labels').on('change', function() {
-                    panel.trigger('panel_get');
-                })
-                .trigger('change');
+                    panel.trigger('panel_get', {url: $(this).find(':selected').val()});
+                });
+            panel.trigger('panel_get');
         });
     })
     .each(function() {
-        $(this).trigger('refresh', {panel: this});
+        $(this).trigger('refresh');
     });
-
-
-if (window.location.hash) {
-    var parts = window.location.hash.slice(1).split('/');
-    var panel = $(parts.shift());
-    panel.trigger('panel_get', {url: '/' + parts.join('/')});
-}
 
 // END
 })();

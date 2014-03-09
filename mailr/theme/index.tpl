@@ -7,11 +7,11 @@
     <link rel="stylesheet" href="/theme/styles.css">
 </head>
 <body>
-<div class="panel" id="panel-one">
+<div class="panel" id="panel1" data-box="{{ url_for('label', label=inbox.id) }}">
     <div class="panel-head"></div>
     <div class="panel-body"></div>
 </div>
-<div class="panel panel-side" id="panel-two">
+<div class="panel panel-side" id="panel2" data-box="{{ url_for('label', label=starred.id) }}">
     <div class="panel-head"></div>
     <div class="panel-body"></div>
 </div>

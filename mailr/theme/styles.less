@@ -47,13 +47,21 @@ blockquote {
         animation: spin 2s infinite linear;
     }
 }
+html {
+    height: 100%;
+}
 body {
-    min-width: 1000px
+    position: relative;
+    min-width: 1000px;
+    margin: 0 auto;
+    height: 100%;
 }
 .panel {
     position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
     width: 50%;
-    height: 100%;
     overflow-y: auto;
     outline: 1px solid @color-bg-poor;
 }

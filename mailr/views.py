@@ -41,7 +41,8 @@ url_map = Map(rules, converters=converters)
 
 def index(env):
     inbox = Label.get(lambda l: l.alias == Label.A_INBOX)
-    return env.render('index.tpl', inbox=inbox)
+    starred = Label.get(lambda l: l.alias == Label.A_STARRED)
+    return env.render('index.tpl', inbox=inbox, starred=starred)
 
 
 def labels(env):
