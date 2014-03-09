@@ -81,10 +81,10 @@
 
 {% if emails or groups %}
 <form name="emails-form" method="POST">
+    <button name="sync_all">Sync all</button>
+    <button name="sync">Sync</button>
     <button name="mark" value="archived">Archive</button>
     <button name="copy_to_inbox">Move to Inbox</button>
-    <button name="sync">Sync</button>
-    <button name="sync_all">Sync all</button>
     <div class="more">
         <b>More >></b>
         <ul>

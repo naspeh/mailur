@@ -52,27 +52,32 @@ $('.panel').on('panel_get', function(event, data) {
 
         panel.find('.email-pick input').on('change', function() {
             var more = panel.find('.more');
+            var buttons = panel.find('[name="copy_to_inbox"], [value="archived"]');
             var checked = panel.find('.email-pick input:checked').parents('.email');
+
+            buttons.hide();
+            if (checked.length > 0) {
+                buttons.show();
+            }
 
             more.find('li').removeClass('_show');
             more.css({visibility: 'hidden'});
-
             if (checked.filter('.email-unread').length > 0) {
-                more.find('[value="read"]').parents('li').toggleClass('_show');
+                more.find('[value="read"]').parents('li').addClass('_show');
             }
             if (checked.not('.email-unread').length > 0) {
-                more.find('[value="unread"]').parents('li').toggleClass('_show');
+                more.find('[value="unread"]').parents('li').addClass('_show');
             }
             if (checked.find(':not(.email-starred)').length > 0) {
-                more.find('[value="starred"]').parents('li').toggleClass('_show');
+                more.find('[value="starred"]').parents('li').addClass('_show');
             }
             if (checked.find('.email-starred').length > 0) {
-                more.find('[value="unstarred"]').parents('li').toggleClass('_show');
+                more.find('[value="unstarred"]').parents('li').addClass('_show');
             }
             if (more.find('li._show').length > 0) {
                 more.css({visibility: 'visible'});
             }
-        });
+        }).first().trigger('change');
 
         panel.find('.email-star').click(function() {
             var $this = $(this);
