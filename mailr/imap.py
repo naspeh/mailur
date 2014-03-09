@@ -14,8 +14,7 @@ def client():
     return im
 
 
-def store(im, uids, key, value, rm=True):
-    key = '%s%s' % (('-' if rm else '+'), key)
+def store(im, uids, key, value):
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uid_ = data[0].decode().split(' ')[0]

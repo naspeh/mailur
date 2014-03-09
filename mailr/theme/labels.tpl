@@ -7,4 +7,3 @@
 {% endfor %}
 </select>
 {% endif %}
-<span class="loader">Loading..</span>

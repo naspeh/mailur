@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from itertools import groupby
 
+from werkzeug.exceptions import abort
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, imap, syncer
@@ -12,8 +13,7 @@ rules = [
     Rule('/label/<label:label>/', endpoint='label'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<email:email>/', endpoint='raw'),
-    Rule('/store/<label:label>/', methods=['POST'], endpoint='store'),
-    Rule('/archive/<label:label>/', methods=['POST'], endpoint='archive'),
+    Rule('/mark/<label:label>/<name>/', methods=['POST'], endpoint='mark'),
     Rule('/copy/<label:label>/<label:to>/', methods=['POST'], endpoint='copy'),
     Rule('/sync/', defaults={'label': None}, endpoint='sync'),
     Rule('/sync/<label:label>/', endpoint='sync'),
@@ -101,34 +101,37 @@ def gm_thread(env, id):
     )
 
 
-def store(env, label):
-    ids = env.request.form.getlist('ids[]', type=int)
-    key = env.request.form.get('key')
-    value = env.request.form.get('value')
-    unset = env.request.form.get('unset', False, type=bool)
-    im = imap.client()
-    im.select('"%s"' % label.name, readonly=False)
-    imap.store(im, ids, key, value, unset)
-    syncer.fetch_emails(im, label, with_bodies=False)
-    return 'OK'
+def mark(env, label, name):
+    store = {
+        'starred': ('+FLAGS', Email.STARRED),
+        'unstarred': ('-FLAGS', Email.STARRED),
+        'read': ('+FLAGS', Email.SEEN),
+        'unread': ('-FLAGS', Email.SEEN),
+    }
+    if name in store:
+        key, value = store[name]
+        ids = env.request.form.getlist('ids[]', type=int)
+        im = imap.client()
+        im.select('"%s"' % label.name, readonly=False)
+        imap.store(im, ids, key, value)
+    elif name == 'archived':
+        uids = env.request.form.getlist('ids[]', type=int)
+        label_all = Label.get(lambda l: '\\All' in l.attrs)
+        label_trash = Label.get(lambda l: '\\Trash' in l.attrs)
 
-
-def archive(env, label):
-    uids = env.request.form.getlist('ids[]', type=int)
-    label_all = Label.get(lambda l: '\\All' in l.attrs)
-    label_trash = Label.get(lambda l: '\\Trash' in l.attrs)
-
-    im = imap.client()
-    im.select('"%s"' % label.name, readonly=False)
-    for uid in uids:
-        _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
-        uid_ = data[0].decode().split(' ')[0]
-        if label_trash == label:
-            res = im.uid('COPY', uid_, '"%s"' % label_all.name)
-            log.info('Archive(%s): %s', uid, res)
-        else:
-            res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
-            log.info('Delete(%s): %s', uid, res)
+        im = imap.client()
+        im.select('"%s"' % label.name, readonly=False)
+        for uid in uids:
+            _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+            uid_ = data[0].decode().split(' ')[0]
+            if label_trash == label:
+                res = im.uid('COPY', uid_, '"%s"' % label_all.name)
+                log.info('Archive(%s): %s', uid, res)
+            else:
+                res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
+                log.info('Delete(%s): %s', uid, res)
+    else:
+        abort(404)
 
     syncer.fetch_emails(im, label, with_bodies=False)
     return 'OK'

@@ -1,5 +1,13 @@
 (function() {
 
+$(window).ajaxStart(function() {
+    $('.loader').show();
+    $('input').attr('disabled', true);
+});
+$(window).ajaxStop(function() {
+    $('.loader').hide();
+    $('input').attr('disabled', false);
+});
 $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
     var id = panel.attr('id');
@@ -11,6 +19,7 @@ $('.panel').on('panel_get', function(event, data) {
         url = localStorage.getItem(id);
     }
     url = url ? url : panel.data('box');
+
     function get_label() {
         return panel.find('select.labels :checked').data('id');
     }
@@ -22,26 +31,15 @@ $('.panel').on('panel_get', function(event, data) {
             });
         return ids;
     }
-    function imap_store(data) {
-        data.unset = data.unset && 1 || '';
-        $.post('/store/' + get_label() + '/', data).done(refresh);
+    function mark(name, ids) {
+        $.post('/mark/' + [get_label(), name].join('/') + '/', {ids: ids}).done(refresh);
     }
-    function start_loader() {
-        panel
-            .find('.loader').show().end()
-            .find('input[type="button"]').attr('disabled', true);
-    }
-    function stop_loader() {
-        panel.find('.loader').hide();
+    function refresh() {
+        panel.trigger('refresh');
     }
 
     panel.find('.labels [value="' + url + '"]').attr('selected', true);
-    start_loader();
     $.get(url, function(content) {
-        stop_loader();
-        panel.find('.label-active').removeClass('label-active');
-        panel.find('.labels a[href="#' + url + '"]').addClass('label-active');
-
         // Set content
         panel.find('.panel-body').html(content);
 
@@ -54,12 +52,8 @@ $('.panel').on('panel_get', function(event, data) {
 
         panel.find('.email-star').click(function() {
             var $this = $(this);
-            imap_store({
-                key: 'FLAGS',
-                value: '\\Flagged',
-                ids: [$this.parents('.email').data('id')],
-                unset: $this.hasClass('email-starred')
-            });
+            var name = $this.hasClass('email-starred') ? 'unstarred': 'starred';
+            mark(name, [$this.parents('.email').data('id')]);
         });
 
         panel.find('.email-labels a').click(function() {
@@ -80,19 +74,10 @@ $('.panel').on('panel_get', function(event, data) {
             });
         }
 
-        panel.find('input[name="store"]').click(function() {
+        panel.find('input[name="do"]').click(function() {
             var $this = $(this);
-            imap_store({
-                key: $this.data('key'),
-                value: $this.data('value'),
-                ids: get_ids($this),
-                unset: $this.data('unset')
-            });
+            mark($this.data('name'), get_ids($this));
             return false;
-        });
-        panel.find('input[name="archive"]').click(function() {
-            $.post('/archive/' + get_label() + '/', {ids: get_ids($(this))})
-                .done(refresh);
         });
         panel.find('input[name="copy_to_inbox"]').click(function() {
             var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';

@@ -77,15 +77,11 @@
 
 {% if emails or groups %}
 <form name="emails-form" method="POST">
-<input type="button" name="store" value="Add star"
-    data-key="FLAGS" data-value="\Flagged">
-<input type="button" name="store" value="Remove star"
-    data-key="FLAGS" data-value="\Flagged" data-unset="1">
-<input type="button" name="store" value="Read"
-    data-key="FLAGS" data-value="\Seen">
-<input type="button" name="store" value="Unread"
-    data-key="FLAGS" data-value="\Seen" data-unset="1">
-<input type="button" name="archive" value="Archive">
+<input type="button" name="mark" data-name="starred" value="Add star"/>
+<input type="button" name="mark" data-name="unstarred" value="Remove star"/>
+<input type="button" name="mark" data-name="read" value="Read"/>
+<input type="button" name="mark" data-name="unread" value="Unread"/>
+<input type="button" name="mark" data-name="archived" value="Archive">
 <input type="button" name="copy_to_inbox" value="Copy to Inbox">
 <input type="button" name="sync" value="Sync">
 <input type="button" name="sync_all" value="Sync all">
@@ -96,4 +92,3 @@
 {% endblock %}
 </form>
 {% endif %}
-

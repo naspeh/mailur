@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/theme/styles.css">
 </head>
 <body>
+
+<div class="loader">Loading..</div>
 <div class="panel" id="panel1" data-box="{{ url_for('label', label=inbox.id) }}">
     <div class="panel-head"></div>
     <div class="panel-body"></div>
