@@ -6,4 +6,5 @@
     </option>
 {% endfor %}
 </select>
+<div class="loader-fixed">Loading..</div>
 {% endif %}

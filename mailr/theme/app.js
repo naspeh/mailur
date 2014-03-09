@@ -1,11 +1,19 @@
 (function() {
-$(window).ajaxStart(function() {
-    $('.loader').show();
-    $('input').attr('disabled', true);
+$(document).ajaxStart(function() {
+    $('.loader-fixed.loader').show();
+    $('input, button, select').attr('disabled', true);
 });
-$(window).ajaxStop(function() {
-    $('.loader').hide();
-    $('input').attr('disabled', false);
+$(document).ajaxStop(function() {
+    $('.loader-fixed.loader').hide();
+    $('.loader').removeClass('loader');
+    $('input, button, select').attr('disabled', false);
+});
+$('.panel').on('loader', function(event, element) {
+    var panel = $(event.target);
+    panel.find('.loader-fixed').addClass('loader');
+    if (element) {
+        $(element).addClass('loader');
+    }
 });
 $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
@@ -22,6 +30,7 @@ $('.panel').on('panel_get', function(event, data) {
         url = localStorage.getItem(id);
     }
     url = url ? url : panel.data('box');
+    panel.find('.labels [value="' + url + '"]').attr('selected', true);
 
     function get_label() {
         return panel.find('select.labels :checked').data('id');
@@ -35,13 +44,14 @@ $('.panel').on('panel_get', function(event, data) {
         return ids;
     }
     function mark(name, ids) {
-        $.post('/mark/' + [get_label(), name].join('/') + '/', {ids: ids}).done(refresh);
+        var url = '/mark/' + [get_label(), name].join('/') + '/';
+        $.post(url, {ids: ids}).done(refresh);
     }
     function refresh() {
         panel.trigger('refresh');
     }
 
-    panel.find('.labels [value="' + url + '"]').attr('selected', true);
+    panel.trigger('loader');
     $.get(url, function(content) {
         // Set content
         panel.find('.panel-body').html(content);
@@ -83,6 +93,7 @@ $('.panel').on('panel_get', function(event, data) {
         }).first().trigger('change');
 
         panel.find('.email-star').click(function() {
+            panel.trigger('loader');
             var $this = $(this);
             var name = $this.hasClass('email-starred') ? 'unstarred': 'starred';
             mark(name, [$this.parents('.email').data('id')]);
@@ -107,20 +118,24 @@ $('.panel').on('panel_get', function(event, data) {
         }
 
         panel.find('button[name="mark"]').click(function() {
+            panel.trigger('loader', this);
             var $this = $(this);
             mark($this.val(), get_ids($this));
             return false;
         });
         panel.find('button[name="copy_to_inbox"]').click(function() {
+            panel.trigger('loader', this);
             var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
             $.post(url, {ids: get_ids($(this))}).done(refresh);
             return false;
         });
         panel.find('button[name="sync"]').click(function() {
+            panel.trigger('loader', this);
             $.get('/sync/' + get_label() + '/').done(refresh);
             return false;
         });
         panel.find('button[name="sync_all"]').click(function() {
+            panel.trigger('loader', this);
             $.get('/sync/').done(refresh);
             return false;
         });
@@ -128,8 +143,10 @@ $('.panel').on('panel_get', function(event, data) {
 });
 $('.panel')
     .on('refresh', function(event) {
+        var panel = $(event.target);
+
+        panel.trigger('loader');
         $.get('/labels/', function(content) {
-            var panel = $(event.target);
             panel.find('.panel-head')
                 .html(content)
                 .find('.labels').on('change', function() {

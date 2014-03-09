@@ -50,15 +50,6 @@ blockquote {
 }
 .loader {
     .icon-spin;
-    position: fixed;
-    right: 0;
-    top: 0;
-    z-index: 1000;
-    padding: 5px 20px;
-    background-color: @color-bg-poor;
-    border: 2px solid @color-bg;
-    border-radius: 10px;
-
     &:before {
         animation: spin 2s infinite linear;
     }
@@ -77,6 +68,14 @@ blockquote {
 }
 .panel-head, .panel-body {
     margin: 0 10px;
+}
+.panel-head {
+    position: relative;
+
+    .loader-fixed {
+        .loader;
+        display: inline-block;
+    }
 }
 .labels {
     font-size: 14px;
