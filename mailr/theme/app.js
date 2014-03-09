@@ -2,14 +2,13 @@
 
 $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
+    var id = panel.attr('id');
     var url = data && data.url;
     if (url) {
-        window.location.hash = [panel.attr('id'), url].join('');
-    } else if (window.location.hash) {
-        var parts = window.location.hash.slice(1).split('/');
-        if (panel.attr('id') == parts.shift()) {
-            url = '/' + parts.join('/');
-        }
+        window.location.hash = [id, url].join('');
+        localStorage[id] = url;
+    } else {
+        url = localStorage.getItem(id);
     }
     url = url ? url : panel.data('box');
     function get_label() {
