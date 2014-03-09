@@ -1,6 +1,8 @@
-{% macro gravatars(addrs) %}
+{% macro gravatars(addrs, size=16) %}
     {% for addr in addrs %}
-        <img src="{{ addr|get_gravatar(16) }}" alt="{{ addr|e }}" title="{{ addr|e }}"/>
+        <img src="{{ addr|get_gravatar(size) }}"
+            height="{{ size }}" width="{{ size }}"
+            alt="{{ addr|e }}" title="{{ addr|e }}"/>
     {% endfor %}
 {% endmacro %}
 
@@ -30,8 +32,8 @@
 
             {% if not thread and email.labels %}
             <li class="email-labels">
-            {% for label in email.full_labels if not label.hidden %}
-                <a href="{{ url_for('label', label=label.id) }}">{{ label.human_name }}</a>
+            {% for l in email.full_labels if not l.hidden and l != label%}
+                <a href="{{ url_for('label', label=l.id) }}">{{ l.human_name }}</a>
             {% endfor %}
             </li>
             {% endif %}
