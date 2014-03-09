@@ -62,6 +62,11 @@ $('.panel').on('panel_get', function(event, data) {
             });
         });
 
+        panel.find('.email-labels a').click(function() {
+            panel.trigger('panel_get', {url: $(this).attr('href')});
+            return false;
+        });
+
         if (panel.find('.thread').length) {
             panel.find('.email-subject').click(function() {
                 $(this).parents('.email').toggleClass('email-showed');
