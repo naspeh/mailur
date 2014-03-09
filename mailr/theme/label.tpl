@@ -34,14 +34,16 @@
             </li>
             {% endif %}
 
-            <li class="email-subject"
-                data-raw="{{ url_for('raw', email=email.uid) }}"
-                data-thread="{{ url_for('gm_thread', id=email.gm_thrid) }}"
-            >
+            <li class="email-subject" {{ {
+                'data-raw': url_for('raw', email=email.uid),
+                'data-thread': url_for('gm_thread', id=email.gm_thrid)
+            }|xmlattr }}>
             {% with subj, text = email.text_line %}
-                <b>{{ subj }}</b>
-                {% if text %} {{ text|e }}{% endif %}
-                {% if thread and not text %}(no text){% endif %}
+                {% if thread %}
+                {{ text or '(no text)' }}
+                {% else %}
+                <b>{{ subj }}</b>{% if text %} {{ text|e }}{% endif %}
+                {% endif %}
             {% endwith %}
             </li>
 
@@ -77,18 +79,18 @@
 
 {% if emails or groups %}
 <form name="emails-form" method="POST">
-<input type="button" name="mark" data-name="starred" value="Add star"/>
-<input type="button" name="mark" data-name="unstarred" value="Remove star"/>
-<input type="button" name="mark" data-name="read" value="Read"/>
-<input type="button" name="mark" data-name="unread" value="Unread"/>
-<input type="button" name="mark" data-name="archived" value="Archive">
-<input type="button" name="copy_to_inbox" value="Copy to Inbox">
-<input type="button" name="sync" value="Sync">
-<input type="button" name="sync_all" value="Sync all">
-{% block content %}
-<div class="label">
-{{ render(emails) }}
-</div>
-{% endblock %}
+    <input type="button" name="mark" data-name="starred" value="Add star"/>
+    <input type="button" name="mark" data-name="unstarred" value="Remove star"/>
+    <input type="button" name="mark" data-name="read" value="Read"/>
+    <input type="button" name="mark" data-name="unread" value="Unread"/>
+    <input type="button" name="mark" data-name="archived" value="Archive">
+    <input type="button" name="copy_to_inbox" value="Copy to Inbox">
+    <input type="button" name="sync" value="Sync">
+    <input type="button" name="sync_all" value="Sync all">
+    {% block content %}
+    <div class="label">
+        {{ render(emails) }}
+    </div>
+    {% endblock %}
 </form>
 {% endif %}
