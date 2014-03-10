@@ -29,19 +29,20 @@ $('.panel').on('panel_get', function(event, data) {
         window.location.hash = hash;
         storage.url = url;
         storage.uids = []; // Reset picked uids
-        stored_data(storage);
+        stored_data(true);
     } else {
-        url = localStorage[panel_id + ':url'];
+        url = storage.url;
     }
     url = url ? url : panel.data('box');
     panel.find('.labels [value="' + url + '"]').attr('selected', true);
 
-    function stored_data(value) {
-        if (!value) {
+    function stored_data(save) {
+        if (!save) {
             value = localStorage[panel_id];
             value = value ? JSON.parse(value) : ({url: null, uids: []});
         } else {
-            localStorage[panel_id] = JSON.stringify(value);
+            localStorage[panel_id] = JSON.stringify(storage);
+            value = storage;
         }
         return value;
     }
@@ -73,17 +74,20 @@ $('.panel').on('panel_get', function(event, data) {
                 var uid = $(this).val();
                 if (storage.uids.indexOf(uid) > -1) {
                     $(this).attr('checked', true);
+                } else if ($(this).is(':checked')) {
+                    storage.uids.push(uid);
+                    stored_data(true);
                 }
             })
             .on('change', function() {
                 var uid = $(this).val();
-                if ($(this).is(':checked')) {
+                if ($(this).is(':checked') && storage.uids.indexOf(uid) == -1) {
                     storage.uids.push(uid);
                 } else {
                     index = storage.uids.indexOf(uid);
                     storage.uids.splice(index, 1);
                 }
-                stored_data(storage);
+                stored_data(true);
                 panel.trigger('refresh_picks');
             });
         panel.on('refresh_picks', function() {
