@@ -108,14 +108,13 @@ def mark(env, label, name):
         'read': ('+FLAGS', Email.SEEN),
         'unread': ('-FLAGS', Email.SEEN),
     }
+    uids = env.request.form.getlist('ids[]', type=int)
     if name in store:
         key, value = store[name]
-        ids = env.request.form.getlist('ids[]', type=int)
         im = imap.client()
         im.select('"%s"' % label.name, readonly=False)
-        imap.store(im, ids, key, value)
+        imap.store(im, uids, key, value)
     elif name == 'archived':
-        uids = env.request.form.getlist('ids[]', type=int)
         label_all = Label.get(lambda l: '\\All' in l.attrs)
         label_trash = Label.get(lambda l: '\\Trash' in l.attrs)
 

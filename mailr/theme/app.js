@@ -1,4 +1,5 @@
 (function() {
+
 $(document).ajaxStart(function() {
     $('.loader-fixed.loader').show();
     $('input, button, select').attr('disabled', true);
@@ -17,31 +18,35 @@ $('.panel').on('loader', function(event, element) {
 });
 $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
-    var id = panel.attr('id');
+    var panel_id = panel.attr('id');
+    var storage = stored_data();
     var url = data && data.url;
-    var hash = [id, url].join('');
+    var hash = [panel_id, url].join('');
     if (hash == window.location.hash) {
         return;
     }
     if (url) {
         window.location.hash = hash;
-        localStorage[id] = url;
+        storage.url = url;
+        storage.uids = []; // Reset picked uids
+        stored_data(storage);
     } else {
-        url = localStorage.getItem(id);
+        url = localStorage[panel_id + ':url'];
     }
     url = url ? url : panel.data('box');
     panel.find('.labels [value="' + url + '"]').attr('selected', true);
 
+    function stored_data(value) {
+        if (!value) {
+            value = localStorage[panel_id];
+            value = value ? JSON.parse(value) : ({url: null, uids: []});
+        } else {
+            localStorage[panel_id] = JSON.stringify(value);
+        }
+        return value;
+    }
     function get_label() {
         return panel.find('select.labels :checked').data('id');
-    }
-    function get_ids(el) {
-        var ids = [];
-        el.parents('form').find('input[name="ids"]:checked').parents('.email')
-            .each(function() {
-                ids.push($(this).data('id'));
-            });
-        return ids;
     }
     function mark(name, ids) {
         var url = '/mark/' + [get_label(), name].join('/') + '/';
@@ -63,7 +68,25 @@ $('.panel').on('panel_get', function(event, data) {
             return false;
         });
 
-        panel.find('.email-pick input').on('change', function() {
+        panel.find('.email-pick input')
+            .each(function() {
+                var uid = $(this).val();
+                if (storage.uids.indexOf(uid) > -1) {
+                    $(this).attr('checked', true);
+                }
+            })
+            .on('change', function() {
+                var uid = $(this).val();
+                if ($(this).is(':checked')) {
+                    storage.uids.push(uid);
+                } else {
+                    index = storage.uids.indexOf(uid);
+                    storage.uids.splice(index, 1);
+                }
+                stored_data(storage);
+                panel.trigger('refresh_picks');
+            });
+        panel.on('refresh_picks', function() {
             var more = panel.find('.more');
             var buttons = panel.find('[name="copy_to_inbox"], [value="archived"]');
             var checked = panel.find('.email-pick input:checked').parents('.email');
@@ -90,7 +113,7 @@ $('.panel').on('panel_get', function(event, data) {
             if (more.find('li._show').length > 0) {
                 more.css({visibility: 'visible'});
             }
-        }).first().trigger('change');
+        }).trigger('refresh_picks');
 
         panel.find('.email-star').click(function() {
             panel.trigger('loader');
@@ -120,13 +143,13 @@ $('.panel').on('panel_get', function(event, data) {
         panel.find('button[name="mark"]').click(function() {
             panel.trigger('loader', this);
             var $this = $(this);
-            mark($this.val(), get_ids($this));
+            mark($this.val(), storage.uids);
             return false;
         });
         panel.find('button[name="copy_to_inbox"]').click(function() {
             panel.trigger('loader', this);
             var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
-            $.post(url, {ids: get_ids($(this))}).done(refresh);
+            $.post(url, {ids: storage.uids}).done(refresh);
             return false;
         });
         panel.find('button[name="sync"]').click(function() {
