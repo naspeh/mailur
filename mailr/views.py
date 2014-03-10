@@ -40,9 +40,11 @@ url_map = Map(rules, converters=converters)
 
 
 def index(env):
-    inbox = Label.get(lambda l: l.alias == Label.A_INBOX)
-    starred = Label.get(lambda l: l.alias == Label.A_STARRED)
-    return env.render('index.tpl', inbox=inbox, starred=starred)
+    ctx = {
+        l.alias: l for l in Label.get_all()
+        if l.alias in [Label.A_INBOX, Label.A_STARRED, Label.A_TRASH]
+    }
+    return env.render('index.tpl', **ctx)
 
 
 def labels(env):

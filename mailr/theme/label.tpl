@@ -85,10 +85,8 @@
     <button name="sync">Sync</button>
     <button name="mark" value="archived">Archive</button>
     <button name="copy_to_inbox">Move to Inbox</button>
-    {% if not label and label != label.A_TRASH %}
     <button name="mark" value="starred">Add star</button>
     <button name="mark" value="unstarred">Remove star</button>
-    {% endif %}
     <button name="mark" value="read">Read</button>
     <button name="mark" value="unread">Unread</button>
     {% block content %}

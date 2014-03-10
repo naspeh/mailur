@@ -26,6 +26,9 @@ $('.panel').on('panel_get', function(event, data) {
         return;
     }
     if (url) {
+        if (url.indexOf('/label/') === 0) {
+            storage.label = url;
+        }
         window.location.hash = hash;
         storage.url = url;
         storage.uids = []; // Reset picked uids
@@ -34,23 +37,23 @@ $('.panel').on('panel_get', function(event, data) {
         url = storage.url;
     }
     url = url ? url : panel.data('box');
-    panel.find('.labels [value="' + url + '"]').attr('selected', true);
+    panel.find('.labels [value="' + storage.label + '"]').attr('selected', true);
+    var label_id = parseInt(storage.label.split('/')[2]);
 
     function stored_data(save) {
         if (!save) {
             value = localStorage[panel_id];
-            value = value ? JSON.parse(value) : ({url: null, uids: []});
+            value = value ? JSON.parse(value) : {
+                url: null, uids: [], label: null
+            };
         } else {
             localStorage[panel_id] = JSON.stringify(storage);
             value = storage;
         }
         return value;
     }
-    function get_label() {
-        return panel.find('select.labels :checked').data('id');
-    }
     function mark(name, ids) {
-        var url = '/mark/' + [get_label(), name].join('/') + '/';
+        var url = '/mark/' + [label_id, name].join('/') + '/';
         $.post(url, {ids: ids}).done(refresh);
     }
     function refresh() {
@@ -152,13 +155,13 @@ $('.panel').on('panel_get', function(event, data) {
         });
         panel.find('button[name="copy_to_inbox"]').click(function() {
             panel.trigger('loader', this);
-            var url = '/copy/' + get_label() + '/' + CONF.inbox_id + '/';
+            var url = '/copy/' + label_id + '/' + CONF.inbox_id + '/';
             $.post(url, {ids: storage.uids}).done(refresh);
             return false;
         });
         panel.find('button[name="sync"]').click(function() {
             panel.trigger('loader', this);
-            $.get('/sync/' + get_label() + '/').done(refresh);
+            $.get('/sync/' + label_id + '/').done(refresh);
             return false;
         });
         panel.find('button[name="sync_all"]').click(function() {
