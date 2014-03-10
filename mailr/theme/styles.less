@@ -224,29 +224,3 @@ blockquote {
         text-align: center;
     }
 }
-.more {
-    position: relative;
-    display: inline-block;
-    visibility: hidden;
-    font-weight: bold;
-    white-space: nowrap;
-    cursor: pointer;
-    ul {
-        position: absolute;
-        display: none;
-        z-index: 1;
-        border: 1px solid @color-bg-poor;
-        background-color: @color-bg;
-        padding: 5px;
-
-        > li {
-            display: none;
-        }
-        > li._show {
-            display: block;
-        }
-    }
-    &:hover ul {
-        display: block;
-    }
-}

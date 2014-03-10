@@ -85,17 +85,12 @@
     <button name="sync">Sync</button>
     <button name="mark" value="archived">Archive</button>
     <button name="copy_to_inbox">Move to Inbox</button>
-    <div class="more">
-        <b>More >></b>
-        <ul>
-        {% if label and label != label.A_TRASH %}
-        <li><button name="mark" value="starred">Add star</button></li>
-        <li><button name="mark" value="unstarred">Remove star</button></li>
-        {% endif %}
-        <li><button name="mark" value="read">Read</button></li>
-        <li><button name="mark" value="unread">Unread</button></li>
-        </ul>
-    </div>
+    {% if not label and label != label.A_TRASH %}
+    <button name="mark" value="starred">Add star</button>
+    <button name="mark" value="unstarred">Remove star</button>
+    {% endif %}
+    <button name="mark" value="read">Read</button>
+    <button name="mark" value="unread">Unread</button>
     {% block content %}
     <div class="label">
         {{ render(emails) }}
