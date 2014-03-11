@@ -65,6 +65,10 @@ $('.panel').on('panel_get', function(event, data) {
         // Set content
         panel.find('.panel-body').html(content);
 
+        if (url == '/compose/') {
+            return;
+        }
+
         panel.find('.email-line .email-subject').click(function() {
             if (!$(this).parents('.thread').length) {
                 panel.trigger('panel_get', {url: $(this).data('thread')});
@@ -119,28 +123,29 @@ $('.panel').on('panel_get', function(event, data) {
         }
 
         panel.on('refresh_buttons', function() {
-            var buttons = panel.find('button:not([name="sync"], [name="sync_all"])');
-            var checked = panel.find('.email-pick input:checked').parents('.email');
+            var form = panel.find('.emails-form');
+            var buttons = form.find('button:not([name="sync"], [name="sync_all"])');
+            var checked = form.find('.email-pick input:checked').parents('.email');
 
             buttons.hide();
             if (checked.length > 0) {
-                panel.find('[name="copy_to_inbox"]').show();
+                form.find('[name="copy_to_inbox"]').show();
                 if (label_id != CONF.trash_id) {
-                    panel.find('[value="archived"]').show();
-                    panel.find('[value="deleted"]').show();
+                    form.find('[value="archived"]').show();
+                    form.find('[value="deleted"]').show();
                 }
             }
             if (checked.filter('.email-unread').length > 0) {
-                panel.find('[value="read"]').show();
+                form.find('[value="read"]').show();
             }
             if (checked.not('.email-unread').length > 0) {
-                panel.find('[value="unread"]').show();
+                form.find('[value="unread"]').show();
             }
             if (checked.find('.email-star:not(.email-starred)').length > 0) {
-                panel.find('[value="starred"]').show();
+                form.find('[value="starred"]').show();
             }
             if (checked.find('.email-starred').length > 0) {
-                panel.find('[value="unstarred"]').show();
+                form.find('[value="unstarred"]').show();
             }
         }).trigger('refresh_buttons');
 
@@ -180,6 +185,10 @@ $('.panel')
                     panel.trigger('panel_get', {url: $(this).find(':selected').val()});
                 });
             panel.trigger('panel_get');
+
+            panel.find('.btn-compose').click(function() {
+                panel.trigger('panel_get', {url: '/compose/'});
+            });
         });
     })
     .each(function() {

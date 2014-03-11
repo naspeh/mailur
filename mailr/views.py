@@ -9,6 +9,7 @@ from .db import Email, Label, session
 
 rules = [
     Rule('/', endpoint='index'),
+    Rule('/compose/', endpoint='compose'),
     Rule('/labels/', endpoint='labels'),
     Rule('/label/<label:label>/', endpoint='label'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
@@ -45,6 +46,10 @@ def index(env):
         if l.alias in [Label.A_INBOX, Label.A_STARRED, Label.A_TRASH]
     }
     return env.render('index.tpl', **ctx)
+
+
+def compose(env):
+    return env.render('compose.tpl')
 
 
 def labels(env):
