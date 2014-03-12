@@ -21,5 +21,5 @@ def test_emails(path, expected):
         assert 'attachments' in result
         assert len(expected['attachments']) == len(result['attachments'])
         assert expected['attachments'] == [
-            [a['content_type'], a['filename']] for a in result['attachments']
+            [a['type'], a['filename']] for a in result['attachments']
         ]
