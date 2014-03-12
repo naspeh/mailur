@@ -108,7 +108,8 @@ class Email(Base):
 
     text = Column(String)
     html = Column(String)
-    attachments = Column(MutableDict.as_mutable(HSTORE))
+    embedded = Column(MutableDict.as_mutable(HSTORE))
+    attachments = Column(ARRAY(String))
 
     @property
     def full_labels(self):
@@ -157,14 +158,13 @@ class Email(Base):
         if self.html:
             cleaner = Cleaner(links=False, safe_attrs_only=False)
             html_ = cleaner.clean_html(self.html)
-            if self.attachments:
+            if self.embedded:
                 root = html.fromstring(html_)
                 for img in root.findall('.//img'):
                     if not img.attrib.get('src').startswith('cid:'):
                         continue
                     cid = '<%s>' % img.attrib.get('src')[4:]
-                    url = [u for u, c in self.attachments.items() if c == cid]
-                    img.attrib['src'] = '/attachments/' + url[0]
+                    img.attrib['src'] = '/attachments/' + self.embedded[cid]
                 html_ = html.tostring(root, encoding='utf8').decode()
         elif self.text:
             html_ = markdown(self.text)

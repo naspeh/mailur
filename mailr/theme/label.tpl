@@ -72,14 +72,15 @@
         </ul>
         <div class="email-body">
             {{ email.human_html('email-quote') }}
-        </div>
-        {% if email.attachments %}
-        <div class="email-attachments">
-            <h3>Attachments</h3>
-            {% for item in email.attachments %}
-                <a href="/attachments/{{ item }}">{{ item.split('/')[-1] }}</a>
-                {%- if not loop.last %},{% endif %}
-            {% endfor %}
+            {% if email.attachments %}
+            <div class="email-attachments">
+                <h3>Attachments:</h3>
+                <ul>
+                {% for item in email.attachments %}
+                    <li><a href="/attachments/{{ item }}">{{ item.split('/')[-1] }}</a></li>
+                {% endfor %}
+                </ul>
+            </div>
         </div>
         {% endif %}
         {% endif %}

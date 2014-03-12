@@ -65,15 +65,6 @@ blockquote {
 .panel-side {
     left: 50%;
 }
-.panel-body {
-    position: absolute;
-    top: 30px;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 0 10px 20px 10px;
-    overflow-y: auto;
-}
 .panel-head {
     position: relative;
     margin: 0 10px;
@@ -83,6 +74,15 @@ blockquote {
         .loader;
         display: inline-block;
     }
+}
+.panel-body {
+    position: absolute;
+    top: 30px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 10px;
+    overflow-y: auto;
 }
 .labels {
     font-size: 14px;
@@ -198,6 +198,15 @@ blockquote {
         &:hover {
             color: #333;
             background-color: @color-poor *  1.5;
+        }
+    }
+    .email-attachments {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid @color-bg-poor;
+        ul {
+            list-style: decimal;
+            margin-left: 2em;
         }
     }
 }

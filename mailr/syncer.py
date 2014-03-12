@@ -166,18 +166,23 @@ def update_email(uid, raw):
 
     attachments = fields.pop('attachments', None)
     if attachments:
-        paths = {}
+        fields.update(attachments=[], embedded={})
         for index, item in enumerate(attachments):
-            if item['filename'] and item['payload']:
-                filename = secure_filename(item['filename'])
-                url = '/'.join([str(uid), str(index), filename])
+            if item['payload']:
+                name = secure_filename(item['filename'] or item['id'])
+                url = '/'.join([str(uid), str(index), name])
+                if item['id'] and item['maintype'] == 'image':
+                    fields['embedded'][item['id']] = url
+                elif item['filename']:
+                    fields['attachments'] += [url]
+                else:
+                    log.warn('UnknownAttachment(%s)', uid)
+                    continue
                 path = os.path.join(attachments_dir, url)
                 if not os.path.exists(path):
                     os.makedirs(os.path.dirname(path), exist_ok=True)
                     with open(path, 'bw') as f:
                         f.write(item['payload'])
-                paths[url] = item['content_id']
-        fields['attachments'] = paths
 
     session.query(Email).filter(Email.uid == uid)\
         .update(fields, synchronize_session=False)

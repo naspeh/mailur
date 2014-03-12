@@ -10,7 +10,8 @@ import lxml.html as html
 from . import log
 
 
-def decode_str(text, charset, msg_id=None):
+def decode_str(text, charset=None, msg_id=None):
+    charset = charset if charset else 'utf8'
     try:
         part = text.decode(charset)
     except LookupError:
@@ -22,7 +23,7 @@ def decode_str(text, charset, msg_id=None):
     return part
 
 
-def decode_header(text, default='utf-8'):
+def decode_header(text, default='utf-8', msg_id=None):
     if not text:
         return None
 
@@ -32,7 +33,7 @@ def decode_header(text, default='utf-8'):
         if isinstance(text, str):
             part = text
         else:
-            part = decode_str(text, charset or default)
+            part = decode_str(text, charset or default, msg_id)
         parts += [part]
 
     header = ''.join(parts)
@@ -75,17 +76,18 @@ def parse_part(parts, msg_id):
         if part.get_filename() or part.get_content_maintype() == 'image':
             payload = part.get_payload(decode=True)
             content.setdefault('attachments', [])
-            content['attachments'] += [{
-                'content_type': part.get_content_type(),
-                'content_id': part.get('Content-ID'),
-                'filename': part.get_filename(),
+            attachment = {
+                'maintype': part.get_content_maintype(),
+                'type': part.get_content_type(),
+                'id': part.get('Content-ID'),
+                'filename': decode_header(part.get_filename(), msg_id=msg_id),
                 'payload': payload,
                 'size': len(payload) if payload else None
-            }]
+            }
+            content['attachments'] += [attachment]
         elif part.get_content_type() in ['text/html', 'text/plain']:
             text = part.get_payload(decode=True)
-            charset = part.get_content_charset() or 'utf-8'
-            text = decode_str(text, charset, msg_id)
+            text = decode_str(text, part.get_content_charset(), msg_id)
             content[part.get_content_type()] = text
         elif not part.get_content_maintype() == 'multipart':
             log.warn('UnknownType(%s) -- %s', part.get_content_type(), msg_id)
