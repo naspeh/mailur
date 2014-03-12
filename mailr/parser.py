@@ -10,14 +10,14 @@ import lxml.html as html
 from . import log
 
 
-def decode_str(text, charset):
+def decode_str(text, charset, msg_id=None):
     try:
         part = text.decode(charset)
     except LookupError:
         charset_ = chardet.detect(text)['encoding']
         part = text.decode(charset_, 'ignore')
     except UnicodeDecodeError:
-        log.warn('DecodeError(%s) -- %s', charset, text[:200])
+        log.warn('DecodeError(%s) -- %s', charset, msg_id or text[:200])
         part = text.decode(charset, 'ignore')
     return part
 
@@ -83,7 +83,8 @@ def parse_part(parts, msg_id):
             }]
         elif part.get_content_type() in ['text/html', 'text/plain']:
             text = part.get_payload(decode=True)
-            text = decode_str(text, part.get_content_charset() or 'utf-8')
+            charset = part.get_content_charset() or 'utf-8'
+            text = decode_str(text, charset, msg_id)
             content[part.get_content_type()] = text
         elif not part.get_content_maintype() == 'multipart':
             log.warn('UnknownType(%s) -- %s', part.get_content_type(), msg_id)

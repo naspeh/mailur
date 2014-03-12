@@ -1,9 +1,11 @@
+import os
 from collections import OrderedDict, defaultdict
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from werkzeug.utils import secure_filename
 
-from . import log, Timer, imap, parser
+from . import log, attachments_dir, Timer, imap, parser
 from .db import Email, Label, session
 
 
@@ -160,7 +162,22 @@ def update_email(uid, raw):
     fields['body'] = raw
     fields['text'] = fields.pop('text/plain', None)
     fields['html'] = fields.pop('text/html', None)
-    fields.pop('attachments', None)
+
+    attachments = fields.pop('attachments', None)
+    if attachments:
+        paths = []
+        for index, item in enumerate(attachments):
+            if item['filename'] and item['payload']:
+                filename = secure_filename(item['filename'])
+                url = '/'.join([str(uid), str(index), filename])
+                path = os.path.join(attachments_dir, url)
+                if not os.path.exists(path):
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, 'bw') as f:
+                        f.write(item['payload'])
+                paths.append(url)
+        fields['attachments'] = paths
+
     session.query(Email).filter(Email.uid == uid)\
         .update(fields, synchronize_session=False)
 

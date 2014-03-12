@@ -108,6 +108,7 @@ class Email(Base):
 
     text = Column(String)
     html = Column(String)
+    attachments = Column(ARRAY(String))
 
     @property
     def full_labels(self):

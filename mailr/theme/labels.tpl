@@ -6,6 +6,6 @@
     </option>
 {% endfor %}
 </select>
-<button name="compose" class="btn-compose">Compose</button>
+{#<button name="compose" class="btn-compose">Compose</button>#}
 <div class="loader-fixed">Loading..</div>
 {% endif %}

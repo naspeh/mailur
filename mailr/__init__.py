@@ -1,7 +1,11 @@
 import logging
+import os
 import time
 
 log = logging.getLogger(__name__)
+app_dir = os.path.abspath(os.path.dirname(__file__))
+theme_dir = os.path.join(app_dir, 'theme')
+attachments_dir = os.path.join(app_dir, 'attachments')
 
 
 class Timer:

@@ -9,10 +9,7 @@ from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import SharedDataMiddleware
 
-from . import views, filters
-
-app_dir = os.path.abspath(os.path.dirname(__file__))
-theme_dir = os.path.join(app_dir, 'theme')
+from . import theme_dir, views, filters
 
 
 def create_app():
