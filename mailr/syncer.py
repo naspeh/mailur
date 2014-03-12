@@ -96,7 +96,8 @@ def fetch_emails(im, label, with_bodies=True):
                 header = row.pop(query['header'])
                 fields = {k: row[v] for k, v in query.items() if v in row}
                 fields['labels'] = {str(label.id): ''}
-                fields.update(parser.parse(header))
+                if not with_bodies:
+                    fields.update(parser.parse(header))
                 emails.append(fields)
             session.execute(Email.__table__.insert(), emails)
 
@@ -165,7 +166,7 @@ def update_email(uid, raw):
 
     attachments = fields.pop('attachments', None)
     if attachments:
-        paths = []
+        paths = {}
         for index, item in enumerate(attachments):
             if item['filename'] and item['payload']:
                 filename = secure_filename(item['filename'])
@@ -175,7 +176,7 @@ def update_email(uid, raw):
                     os.makedirs(os.path.dirname(path), exist_ok=True)
                     with open(path, 'bw') as f:
                         f.write(item['payload'])
-                paths.append(url)
+                paths[url] = item['content_id']
         fields['attachments'] = paths
 
     session.query(Email).filter(Email.uid == uid)\

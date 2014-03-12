@@ -9,7 +9,7 @@ from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import SharedDataMiddleware
 
-from . import theme_dir, views, filters
+from . import theme_dir, attachments_dir, views, filters
 
 
 def create_app():
@@ -20,7 +20,7 @@ def create_app():
             return env.run()
         except HTTPException as e:
             return e
-    return SharedDataMiddleware(app, {'/theme': theme_dir})
+    return app
 
 
 class Env:
@@ -68,7 +68,9 @@ def run():
     ]
     extra_files = sum(extra_files, [])
 
-    app = create_app()
+    app = SharedDataMiddleware(create_app(), {
+        '/theme': theme_dir, '/attachments': attachments_dir
+    })
     run_simple(
         '0.0.0.0', 5000, app,
         use_debugger=True, use_reloader=True,

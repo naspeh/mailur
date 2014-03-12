@@ -108,7 +108,7 @@ class Email(Base):
 
     text = Column(String)
     html = Column(String)
-    attachments = Column(ARRAY(String))
+    attachments = Column(MutableDict.as_mutable(HSTORE))
 
     @property
     def full_labels(self):
@@ -150,23 +150,33 @@ class Email(Base):
         return self._parent
 
     def human_html(self, class_='email-quote'):
+        from lxml import html
         from lxml.html.clean import Cleaner
         from mistune import markdown
 
         if self.html:
             cleaner = Cleaner(links=False, safe_attrs_only=False)
-            html = cleaner.clean_html(self.html)
+            html_ = cleaner.clean_html(self.html)
+            if self.attachments:
+                root = html.fromstring(html_)
+                for img in root.findall('.//img'):
+                    if not img.attrib.get('src').startswith('cid:'):
+                        continue
+                    cid = '<%s>' % img.attrib.get('src')[4:]
+                    url = [u for u, c in self.attachments.items() if c == cid]
+                    img.attrib['src'] = '/attachments/' + url[0]
+                html_ = html.tostring(root, encoding='utf8').decode()
         elif self.text:
-            html = markdown(self.text)
-            html = re.sub(r'(?m)(\n|\r|\r\n)', '<br/>', html)
+            html_ = markdown(self.text)
+            html_ = re.sub(r'(?m)(\n|\r|\r\n)', '<br/>', html_)
         else:
-            html = ''
+            html_ = ''
 
-        html = re.sub(r'(<br[/]?>\s*)$', '', html).strip()
-        if html and self.parent:
+        html_ = re.sub(r'(<br[/]?>\s*)$', '', html_).strip()
+        if html_ and self.parent:
             parent_html = self.parent.html or self.parent.human_html()
-            html = hide_quote(html, parent_html, class_)
-        return html
+            html_ = hide_quote(html_, parent_html, class_)
+        return html_
 
 
 Base.metadata.create_all(engine)

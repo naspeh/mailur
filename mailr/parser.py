@@ -77,6 +77,7 @@ def parse_part(parts, msg_id):
             content.setdefault('attachments', [])
             content['attachments'] += [{
                 'content_type': part.get_content_type(),
+                'content_id': part.get('Content-ID'),
                 'filename': part.get_filename(),
                 'payload': payload,
                 'size': len(payload) if payload else None
