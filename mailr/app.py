@@ -4,12 +4,14 @@ import subprocess
 
 from jinja2 import Environment, FileSystemLoader
 from jinja2.ext import with_
-from werkzeug.exceptions import HTTPException
+from werkzeug.contrib.securecookie import SecureCookie
+from werkzeug.exceptions import HTTPException, abort
 from werkzeug.serving import run_simple
+from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import SharedDataMiddleware
 
-from . import theme_dir, attachments_dir, views, filters
+from . import conf, theme_dir, attachments_dir, views, filters
 
 
 def create_app():
@@ -17,9 +19,11 @@ def create_app():
     def app(request):
         env = Env(request)
         try:
-            return env.run()
+            response = env.run()
         except HTTPException as e:
-            return e
+            response = e
+        env.session.save_cookie(response)
+        return response
     return app
 
 
@@ -55,6 +59,18 @@ class Env:
 
     def url_for(self, endpoint, _external=False, **values):
         return self.adapter.build(endpoint, values, force_external=_external)
+
+    def redirect(self, endpoint, _code=302, **kw):
+        return redirect(self.url_for(endpoint, **kw), code=_code)
+
+    def abort(self, code, *a, **kw):
+        abort(code, *a, **kw)
+
+    @cached_property
+    def session(self):
+        return SecureCookie.load_cookie(
+            self.request, secret_key=conf('cookie_secret').encode()
+        )
 
 
 def run():

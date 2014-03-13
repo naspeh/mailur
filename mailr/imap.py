@@ -2,15 +2,25 @@ import imaplib
 import re
 from collections import OrderedDict
 
-from . import Timer, log
+from . import log, conf, Timer
 
 re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
 
 
 def client():
-    conf = __import__('conf')
-    im = imaplib.IMAP4_SSL('imap.gmail.com')
-    im.login(conf.username, conf.password)
+    access_token = conf('google_response', {}).get('access_token')
+    if not access_token:
+        raise ValueError('access_token is empty')
+
+    client = imaplib.IMAP4_SSL
+    im = client('imap.gmail.com')
+    #im.debug = 4
+    try:
+        im.authenticate('XOAUTH2', lambda x: (
+            'user=%s\1auth=Bearer %s\1\1' % (conf('email'), access_token)
+        ))
+    except client.error as e:
+        raise ValueError(e)
     return im
 
 
