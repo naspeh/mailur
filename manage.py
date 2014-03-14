@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 import argparse
+import glob
+import os
 import logging
 import subprocess
 
-from mailr import db, app, syncer
+from werkzeug.serving import run_simple
+from werkzeug.wsgi import SharedDataMiddleware
+
+from mailr import theme_dir, attachments_dir, db, app, syncer
 
 logging.basicConfig(
     format='%(levelname)s %(asctime)s  %(message)s',
@@ -12,7 +17,28 @@ logging.basicConfig(
 sh = lambda cmd: subprocess.call(cmd, shell=True)
 
 
-def parse_args():
+def run():
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        main(['lessc'])
+
+    extra_files = [
+        glob.glob(os.path.join(theme_dir, fmask)) +
+        glob.glob(os.path.join(theme_dir, '*', fmask))
+        for fmask in ['*.less', '*.css', '*.js']
+    ]
+    extra_files = sum(extra_files, [])
+
+    wsgi_app = SharedDataMiddleware(app.create_app(), {
+        '/theme': theme_dir, '/attachments': attachments_dir
+    })
+    run_simple(
+        '0.0.0.0', 5000, wsgi_app,
+        use_debugger=True, use_reloader=True,
+        extra_files=extra_files
+    )
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser('mail')
     cmds = parser.add_subparsers(help='commands')
 
@@ -33,7 +59,7 @@ def parse_args():
 
     cmd('db-clear').exe(lambda a: db.drop_all())
 
-    cmd('run').exe(lambda a: app.run())
+    cmd('run').exe(lambda a: run())
 
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
@@ -41,7 +67,7 @@ def parse_args():
         'csso {0}styles.css {0}styles.css'.format('mailr/theme/')
     ))
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if not hasattr(args, 'exe'):
         parser.print_usage()
     else:
@@ -50,6 +76,6 @@ def parse_args():
 
 if __name__ == '__main__':
     try:
-        parse_args()
+        main()
     except KeyboardInterrupt:
         raise SystemExit(1)

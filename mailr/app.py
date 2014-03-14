@@ -1,17 +1,11 @@
-import glob
-import os
-import subprocess
-
 from jinja2 import Environment, FileSystemLoader
 from jinja2.ext import with_
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import HTTPException, abort
-from werkzeug.serving import run_simple
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request, Response
-from werkzeug.wsgi import SharedDataMiddleware
 
-from . import conf, theme_dir, attachments_dir, views, filters
+from . import conf, theme_dir, views, filters
 
 
 def create_app():
@@ -71,24 +65,3 @@ class Env:
         return SecureCookie.load_cookie(
             self.request, secret_key=conf('cookie_secret').encode()
         )
-
-
-def run():
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        subprocess.call('./manage.py lessc', shell=True)
-
-    extra_files = [
-        glob.glob(os.path.join(theme_dir, fmask)) +
-        glob.glob(os.path.join(theme_dir, '*', fmask))
-        for fmask in ['*.less', '*.css', '*.js']
-    ]
-    extra_files = sum(extra_files, [])
-
-    app = SharedDataMiddleware(create_app(), {
-        '/theme': theme_dir, '/attachments': attachments_dir
-    })
-    run_simple(
-        '0.0.0.0', 5000, app,
-        use_debugger=True, use_reloader=True,
-        extra_files=extra_files
-    )
