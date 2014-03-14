@@ -54,8 +54,8 @@ class Env:
     def url_for(self, endpoint, _external=False, **values):
         return self.adapter.build(endpoint, values, force_external=_external)
 
-    def redirect(self, endpoint, _code=302, **kw):
-        return redirect(self.url_for(endpoint, **kw), code=_code)
+    def redirect(self, location, code=302):
+        return redirect(location, code)
 
     def abort(self, code, *a, **kw):
         abort(code, *a, **kw)
