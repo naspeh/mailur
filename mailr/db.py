@@ -10,10 +10,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import sessionmaker
 
+from . import conf
 from .parser import hide_quote
 from .imap_utf7 import decode
 
-engine = create_engine('postgresql+psycopg2://test:test@/mail', echo=False)
+engine = create_engine(
+    'postgresql+psycopg2://{pg_username}:{pg_password}@/{pg_database}'
+    .format(**conf.data), echo=False
+)
 register_hstore(engine.raw_connection(), True)
 
 Base = declarative_base()
