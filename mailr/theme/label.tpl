@@ -91,7 +91,7 @@
 
 {% if emails or groups %}
 <form name="emails-form" class="emails-form" method="POST">
-    <button name="sync_all">Sync all</button>
+    {#<button name="sync_all">Sync all</button>#}
     <button name="sync">Sync</button>
     <button name="mark" value="archived">Archive</button>
     <button name="mark" value="deleted">Delete</button>

@@ -161,6 +161,9 @@ def fetch_emails(im, label, with_bodies=True):
             else:
                 step_uids.append(uid)
                 step_size += size
+        if step_uids:
+            group_uids.append(step_uids)
+
         for uids_ in group_uids:
             q = 'RFC822'
             data = imap.fetch_all(im, uids_, q, len(uids_), 'update bodies')
