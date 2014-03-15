@@ -92,14 +92,6 @@ def auth_refresh(env):
     return '%s: %s' % (res.reason, res.text)
 
 
-def check_imap(env):
-    try:
-        imap.client()
-    except ValueError:
-        return env.make_response('FAIL', status=500)
-    return 'OK'
-
-
 def login_required(func):
     @wraps(func)
     def inner(env, *a, **kw):
@@ -107,6 +99,15 @@ def login_required(func):
             return env.redirect_for('auth')
         return func(env, *a, **kw)
     return inner
+
+
+@login_required
+def check_imap(env):
+    try:
+        imap.client()
+    except ValueError:
+        return env.make_response('FAIL', status=500)
+    return 'OK'
 
 
 @login_required

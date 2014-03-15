@@ -145,14 +145,25 @@ def fetch_emails(im, label, with_bodies=True):
 
     # Fetch bodies
     emails = (
-        session.query(Email.uid)
+        session.query(Email.uid, Email.size)
         .filter(Email.body == None)
         .filter(Email.uid.in_(msgids.keys()))
         .order_by(Email.size)
     )
-    uids = [msgids[r.uid] for r in emails.all()]
+    uids = {msgids[r.uid]: r.size for r in emails.all()}
     if uids:
-        for data in imap.fetch(im, uids, 'RFC822', 500, 'update bodies'):
+        step_size, group_size = 0, 100 * 1024 * 1024
+        step_uids, group_uids = [], []
+        for uid, size in uids.items():
+            if step_uids and step_size + size > group_size:
+                group_uids.append(step_uids)
+                step_uids, step_size = [], 0
+            else:
+                step_uids.append(uid)
+                step_size += size
+        for uids_ in group_uids:
+            q = 'RFC822'
+            data = imap.fetch_all(im, uids_, q, len(uids_), 'update bodies')
             with session.begin():
                 for uid, row in data.items():
                     update_email(uids_map[uid], row['RFC822'])

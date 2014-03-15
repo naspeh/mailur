@@ -8,7 +8,7 @@ import subprocess
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from mailr import theme_dir, attachments_dir, db, app, syncer
+from mailr import theme_dir, attachments_dir, db, app, syncer, views
 
 logging.basicConfig(
     format='%(levelname)s %(asctime)s  %(message)s',
@@ -48,6 +48,9 @@ def main(argv=None):
         p.arg = lambda *a, **kw: p.add_argument(*a, **kw) and p
         p.exe = lambda f: p.set_defaults(exe=f) and p
         return p
+
+    cmd('auth', help='refresh auth')\
+        .exe(lambda a: views.auth_refresh(None))
 
     cmd('sync')\
         .arg('-b', '--with-bodies', action='store_true')\
