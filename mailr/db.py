@@ -101,12 +101,12 @@ class Email(Base):
 
     date = Column(DateTime)
     subject = Column(String, default='')
-    from_ = Column(ARRAY(String), name='from')
-    sender = Column(ARRAY(String))
-    reply_to = Column(ARRAY(String))
-    to = Column(ARRAY(String))
-    cc = Column(ARRAY(String))
-    bcc = Column(ARRAY(String))
+    from_ = Column(ARRAY(String), name='from', default=[])
+    sender = Column(ARRAY(String), default=[])
+    reply_to = Column(ARRAY(String), default=[])
+    to = Column(ARRAY(String), default=[])
+    cc = Column(ARRAY(String), default=[])
+    bcc = Column(ARRAY(String), default=[])
     in_reply_to = Column(String, index=True)
     message_id = Column(String, index=True)
 

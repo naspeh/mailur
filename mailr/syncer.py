@@ -148,7 +148,7 @@ def fetch_emails(im, label, with_bodies=True):
         session.query(Email.uid, Email.size)
         .filter(Email.body == None)
         .filter(Email.uid.in_(msgids.keys()))
-        .order_by(Email.size)
+        .order_by(Email.uid.desc())
     )
     uids = {msgids[r.uid]: r.size for r in emails.all()}
     if uids:

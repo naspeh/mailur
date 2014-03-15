@@ -1,26 +1,86 @@
 import imaplib
 import re
 from collections import OrderedDict
+from urllib.parse import urlencode
+
+import requests
 
 from . import log, conf, Timer
 
+OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
+OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
+
 re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
+
+
+class AuthError(Exception):
+    pass
+
+
+def auth_url(redirect_uri):
+    params = {
+        'client_id': conf('google_id'),
+        'scope': 'https://mail.google.com/',
+        'login_hint': conf('email'),
+        'redirect_uri': redirect_uri,
+        'access_type': 'offline',
+        'response_type': 'code',
+        'approval_prompt': 'force',
+    }
+    return '?'.join([OAUTH_URL, urlencode(params)])
+
+
+def auth_callback(redirect_uri, code):
+    res = requests.post(OAUTH_URL_TOKEN, data={
+        'code': code,
+        'client_id': conf('google_id'),
+        'client_secret': conf('google_secret'),
+        'redirect_uri': redirect_uri,
+        'grant_type': 'authorization_code'
+    })
+    if res.ok:
+        conf.update(google_response=res.json())
+        return
+    raise AuthError('%s: %s' % (res.reason, res.text))
+
+
+def auth_refresh():
+    res = requests.post(OAUTH_URL_TOKEN, data={
+        'client_id': conf('google_id'),
+        'client_secret': conf('google_secret'),
+        'refresh_token': conf('google_response', {}).get('refresh_token'),
+        'grant_type': 'refresh_token',
+    })
+    if res.ok:
+        new = dict(conf('google_response'), **res.json())
+        conf.update(google_response=new)
+        return
+    raise AuthError('%s: %s' % (res.reason, res.text))
 
 
 def client():
     access_token = conf('google_response', {}).get('access_token')
     if not access_token:
-        raise ValueError('access_token is empty')
+        raise AuthError('access_token is empty')
 
     client = imaplib.IMAP4_SSL
     im = client('imap.gmail.com')
     #im.debug = 4
+
+    def login():
+        access_token = conf('google_response', {}).get('access_token')
+        try:
+            im.authenticate('XOAUTH2', lambda x: (
+                'user=%s\1auth=Bearer %s\1\1' % (conf('email'), access_token)
+            ))
+        except client.error as e:
+            raise AuthError(e)
+
     try:
-        im.authenticate('XOAUTH2', lambda x: (
-            'user=%s\1auth=Bearer %s\1\1' % (conf('email'), access_token)
-        ))
-    except client.error as e:
-        raise ValueError(e)
+        login()
+    except AuthError:
+        auth_refresh()
+        login()
     return im
 
 

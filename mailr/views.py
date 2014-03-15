@@ -1,9 +1,7 @@
 from collections import OrderedDict
 from functools import wraps
 from itertools import groupby
-from urllib.parse import urlencode
 
-import requests
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, conf, imap, syncer
@@ -46,50 +44,20 @@ converters = {
 }
 url_map = Map(rules, converters=converters)
 
-OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
-OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
-
 
 def auth(env):
-    params = {
-        'client_id': conf('google_id'),
-        'scope': 'https://mail.google.com/',
-        'login_hint': conf('email'),
-        'redirect_uri': env.url_for('auth_callback', _external=True),
-        'access_type': 'offline',
-        'response_type': 'code',
-        'approval_prompt': 'force',
-    }
-    return env.redirect('?'.join([OAUTH_URL, urlencode(params)]))
+    redirect_uri = env.url_for('auth_callback', _external=True)
+    return env.redirect(imap.auth_url(redirect_uri))
 
 
 def auth_callback(env):
-    res = requests.post(OAUTH_URL_TOKEN, data={
-        'code': env.request.args['code'],
-        'client_id': conf('google_id'),
-        'client_secret': conf('google_secret'),
-        'redirect_uri': env.url_for('auth_callback', _external=True),
-        'grant_type': 'authorization_code'
-    })
-    if res.ok:
+    redirect_uri = env.url_for('auth_callback', _external=True)
+    try:
+        imap.auth_callback(redirect_uri, env.request.args['code'])
         env.session['logined'] = True
-        conf.update(google_response=res.json())
         return 'OK'
-    return '%s: %s' % (res.reason, res.text)
-
-
-def auth_refresh(env):
-    res = requests.post(OAUTH_URL_TOKEN, data={
-        'client_id': conf('google_id'),
-        'client_secret': conf('google_secret'),
-        'refresh_token': conf('google_response', {}).get('refresh_token'),
-        'grant_type': 'refresh_token',
-    })
-    if res.ok:
-        new = dict(conf('google_response'), **res.json())
-        conf.update(google_response=new)
-        return 'OK'
-    return '%s: %s' % (res.reason, res.text)
+    except imap.AuthError as e:
+        return str(e)
 
 
 def login_required(func):
@@ -142,7 +110,9 @@ def label(env, label):
         .order_by(Email.date)
     )
     emails = OrderedDict((email.gm_thrid, email) for email in emails).values()
-    emails = sorted(emails, key=lambda v: v.date, reverse=True)
+    emails = sorted(
+        emails, key=lambda v: v.date or v.internaldate, reverse=True
+    )
     return env.render('label.tpl', emails=emails, label=label)
 
 
