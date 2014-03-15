@@ -110,7 +110,7 @@ def label(env, label):
         .order_by(Email.date)
     )
     emails = OrderedDict((r.gm_thrid, Email.model(r)) for r in emails).values()
-    emails = sorted(emails, key=lambda v: v.date or '', reverse=True)
+    emails = sorted(emails, key=lambda v: v.date, reverse=True)
     return env.render('label.tpl', emails=emails, label=label)
 
 

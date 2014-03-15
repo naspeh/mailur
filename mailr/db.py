@@ -145,12 +145,11 @@ class Email(Base):
         return self.human_subject(), text[:200].strip()
 
     def human_subject(self, strip=True):
-        subj = (
-            re.sub(r'(?i)^(Re[^:]*:\s?)+', '', self.subject or '')
-            if strip else self.subject
-        ).strip()
+        subj = self.subject or ''
+        if strip and subj:
+            subj = re.sub(r'(?i)^(Re[^:]*:\s?)+', '', subj)
 
-        subj = subj or '(no subject)'
+        subj = subj.strip() or '(no subject)'
         return subj
 
     @property

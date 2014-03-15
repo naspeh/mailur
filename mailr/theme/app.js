@@ -26,9 +26,6 @@ $('.panel').on('panel_get', function(event, data) {
         return;
     }
     if (url) {
-        if (url.indexOf('/label/') === 0) {
-            storage.label = url;
-        }
         window.location.hash = hash;
         storage.url = url;
         storage.uids = []; // Reset picked uids
@@ -37,6 +34,10 @@ $('.panel').on('panel_get', function(event, data) {
         url = storage.url;
     }
     url = url ? url : panel.data('box');
+    if (url.indexOf('/label/') === 0) {
+        storage.label = url;
+        stored_data(true);
+    }
     panel.find('.labels [value="' + storage.label + '"]').attr('selected', true);
     var label_id = parseInt(storage.label.split('/')[2]);
 
