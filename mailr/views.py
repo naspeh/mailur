@@ -105,12 +105,12 @@ def labels(env):
 @login_required
 def label(env, label):
     emails = (
-        session.query(Email)
+        session.query(*Email.columns())
         .filter(Email.labels.has_key(str(label.id)))
         .order_by(Email.date)
     )
-    emails = OrderedDict((email.gm_thrid, email) for email in emails).values()
-    emails = sorted(emails, key=lambda v: v.date, reverse=True)
+    emails = OrderedDict((r.gm_thrid, Email.model(r)) for r in emails).values()
+    emails = sorted(emails, key=lambda v: v.date or '', reverse=True)
     return env.render('label.tpl', emails=emails, label=label)
 
 

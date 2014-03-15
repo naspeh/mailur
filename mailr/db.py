@@ -115,6 +115,18 @@ class Email(Base):
     embedded = Column(MutableDict.as_mutable(HSTORE))
     attachments = Column(ARRAY(String))
 
+    @classmethod
+    def columns(cls):
+        columns = list(cls.__table__.columns)
+        columns.remove(cls.body)
+        return sorted(columns, key=lambda v: v.name)
+
+    @classmethod
+    def model(cls, row):
+        fields = {k.name: v for k, v in zip(cls.columns(), row)}
+        fields['from_'] = fields.pop('from')
+        return cls(**fields)
+
     @property
     def full_labels(self):
         return [Label.get(l) for l in self.labels]
