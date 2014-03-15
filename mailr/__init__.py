@@ -12,9 +12,10 @@ attachments_dir = os.path.join(base_dir, 'attachments')
 
 class _Conf:
     def __init__(self):
-        self.filename = os.path.join(base_dir, 'conf.json')
+        filename = os.environ.get('MAILR_CONF', 'conf.json')
+        self.path = os.path.join(base_dir, filename)
 
-        with open(self.filename, 'br') as f:
+        with open(self.path, 'br') as f:
             conf = json.loads(f.read().decode())
         self.data = conf
 
@@ -23,7 +24,7 @@ class _Conf:
         content = json.dumps(
             self.data, sort_keys=True, indent=4, separators=(',', ': ')
         )
-        with open(self.filename, 'bw') as f:
+        with open(self.path, 'bw') as f:
             f.write(content.encode())
 
     def __call__(self, key, default=None):
