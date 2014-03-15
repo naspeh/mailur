@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from functools import wraps
 from itertools import groupby
 from urllib.parse import urlencode
 
@@ -71,6 +72,7 @@ def auth_callback(env):
         'grant_type': 'authorization_code'
     })
     if res.ok:
+        env.session['logined'] = True
         conf.update(google_response=res.json())
         return 'OK'
     return '%s: %s' % (res.reason, res.text)
@@ -98,6 +100,16 @@ def check_imap(env):
     return 'OK'
 
 
+def login_required(func):
+    @wraps(func)
+    def inner(env, *a, **kw):
+        if not conf('is_public') and not env.session.get('logined'):
+            return env.redirect_for('auth')
+        return func(env, *a, **kw)
+    return inner
+
+
+@login_required
 def index(env):
     ctx = {
         l.alias: l for l in Label.get_all()
@@ -106,10 +118,12 @@ def index(env):
     return env.render('index.tpl', **ctx)
 
 
+@login_required
 def compose(env):
     return env.render('compose.tpl')
 
 
+@login_required
 def labels(env):
     labels = (
         session.query(Label)
@@ -119,6 +133,7 @@ def labels(env):
     return env.render('labels.tpl', labels=labels)
 
 
+@login_required
 def label(env, label):
     emails = (
         session.query(Email)
@@ -130,6 +145,7 @@ def label(env, label):
     return env.render('label.tpl', emails=emails, label=label)
 
 
+@login_required
 def gm_thread(env, id):
     emails = list(
         session.query(Email)
@@ -166,6 +182,7 @@ def gm_thread(env, id):
     )
 
 
+@login_required
 def mark(env, label, name):
     store = {
         'starred': ('+FLAGS', Email.STARRED),
@@ -203,6 +220,7 @@ def mark(env, label, name):
     return 'OK'
 
 
+@login_required
 def copy(env, label, to):
     uids = env.request.form.getlist('ids[]', type=int)
     im = imap.client()
@@ -218,6 +236,7 @@ def copy(env, label, to):
     return 'OK'
 
 
+@login_required
 def sync(env, label=None):
     if label:
         im = imap.client()
@@ -228,6 +247,7 @@ def sync(env, label=None):
     return 'OK'
 
 
+@login_required
 def raw(env, email):
     from tests import open_file
 
