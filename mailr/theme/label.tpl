@@ -9,10 +9,14 @@
 {% macro render(emails, thread=False, show=False) %}
 <ul class="emails">
 {% for email in emails %}
-    <li data-id="{{ email.uid }}" class="email
-        {% if email.unread %} email-unread{% endif %}
-        {% if show %} email-showed{% endif %}
-    ">
+    <li class="email
+            {% if email.unread %} email-unread{% endif %}
+            {% if show %} email-showed{% endif %}
+        "
+        data-id="{{ email.uid }}"
+        data-raw="{{ url_for('raw', email=email.uid) }}"
+        data-thread="{{ url_for('gm_thread', id=email.gm_thrid) }}"
+    >
         <ul class="email-line">
             <li class="email-pick">
                 <input type="checkbox" name="ids" value="{{ email.uid }}" {% if thread %}checked{% endif %}>
@@ -20,11 +24,11 @@
 
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
 
-            <li class="email-pics">
+            <li class="email-info email-pics">
                 {{ gravatars(email.from_) }}
             </li>
 
-            <li class="email-from" title="{{ email.from_|join(', ')|e }}">
+            <li class="email-info email-from" title="{{ email.from_|join(', ')|e }}">
                 {{ email.from_|map('get_addr')|join(', ') }}
             </li>
 
@@ -36,20 +40,17 @@
             </li>
             {% endif %}
 
-            <li class="email-subject" {{ {
-                'data-raw': url_for('raw', email=email.uid),
-                'data-thread': url_for('gm_thread', id=email.gm_thrid)
-            }|xmlattr }}>
             {% with subj, text = email.text_line %}
+            <li class="email-info email-subject">
                 {% if thread %}
                 {{ text or '(no text)' }}
                 {% else %}
                 <b>{{ subj }}</b>{% if text %} {{ text|e }}{% endif %}
                 {% endif %}
-            {% endwith %}
             </li>
+            {% endwith %}
 
-            <li class="email-date" title="{{ email.date|format_dt }}">
+            <li class="email-info email-date" title="{{ email.date|format_dt }}">
                 {{ email.date|humanize_dt }}
             </li>
         </ul>
@@ -58,17 +59,19 @@
         <ul class="email-head">
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
 
-            <li class="email-pics">
+            <li class="email-info email-pics">
                 {{ gravatars(email.from_) }}
             </li>
 
-            <li class="email-from" title="{{ email.from_|join(', ')|e }}">
+            <li class="email-info email-from" title="{{ email.from_|join(', ')|e }}">
                 {{ email.from_|map('get_addr')|join(', ') }}
             </li>
 
-            <li class="email-subject">{{ email.human_subject(strip=False) }}</li>
+            <li class="email-info email-subject">
+                {{ email.human_subject(strip=False) }}
+            </li>
 
-            <li class="email-date">{{ email.date|format_dt }}</li>
+            <li class="email-info email-date">{{ email.date|format_dt }}</li>
         </ul>
         <div class="email-body">
             {{ email.human_html('email-quote') }}

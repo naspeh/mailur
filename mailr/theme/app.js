@@ -70,9 +70,9 @@ $('.panel').on('panel_get', function(event, data) {
             return;
         }
 
-        panel.find('.email-line .email-subject').click(function() {
+        panel.find('.email-line .email-info').click(function() {
             if (!$(this).parents('.thread').length) {
-                panel.trigger('panel_get', {url: $(this).data('thread')});
+                panel.trigger('panel_get', {url: $(this).parents('.email').data('thread')});
             }
             return false;
         });
@@ -111,7 +111,7 @@ $('.panel').on('panel_get', function(event, data) {
         });
 
         if (panel.find('.thread').length) {
-            panel.find('.email-subject').click(function() {
+            panel.find('.email-info').click(function() {
                 $(this).parents('.email').toggleClass('email-showed');
             });
             panel.find('.email-group-show').click(function() {
