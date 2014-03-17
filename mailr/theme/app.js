@@ -21,11 +21,8 @@ $('.panel').on('panel_get', function(event, data) {
     var panel_id = panel.attr('id');
     var storage = stored_data();
     var url = data && data.url;
-    var hash = [panel_id, url].join('');
-    if (hash == window.location.hash) {
-        return;
-    }
     if (url) {
+        var hash = [panel_id, url].join('');
         window.location.hash = hash;
         storage.url = url;
         storage.uids = []; // Reset picked uids
