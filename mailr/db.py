@@ -145,7 +145,8 @@ class Email(Base):
 
     @property
     def text_line(self):
-        text = self.text or re.sub('<[^>]*?>', '', self.html or '')
+        text = self.text or self.html or ''
+        text = re.sub('<[^>]*?>', '', text)
         return self.human_subject(), text[:200].strip()
 
     def human_subject(self, strip=True):
