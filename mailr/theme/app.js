@@ -31,7 +31,7 @@ $('.panel').on('panel_get', function(event, data) {
         url = storage.url;
     }
     url = url ? url : panel.data('box');
-    if (url.indexOf('/label/') === 0) {
+    if (url.indexOf('/emails/') === 0) {
         storage.label = url;
         stored_data(true);
     }
@@ -102,7 +102,7 @@ $('.panel').on('panel_get', function(event, data) {
             mark(name, [$this.parents('.email').data('id')]);
         });
 
-        panel.find('.email-labels a').click(function() {
+        panel.find('.email-labels a, .email-from a').click(function() {
             panel.trigger('panel_get', {url: $(this).attr('href')});
             return false;
         });

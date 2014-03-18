@@ -1,4 +1,4 @@
-{% extends 'label.tpl' %}
+{% extends 'emails.tpl' %}
 
 {% block content %}
 <base target="_self" href="/">
@@ -7,7 +7,7 @@
     {% if thread.labels %}
     <span class="email-labels">
     {% for label in thread.labels if not label.hidden %}
-        <a href="{{ url_for('label', label=label.id) }}">{{ label.human_name }}</a>
+        <a href="{{ label.url }}">{{ label.human_name }}</a>
     {% endfor %}
     </span>
 </h4>

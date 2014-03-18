@@ -56,6 +56,10 @@ class Label(Base):
         name = self.name.replace('[Gmail]/', '')
         return decode(name)
 
+    @property
+    def url(self):
+        return '/emails/?label=%s' % self.id
+
     @classmethod
     def get_all(cls):
         if not hasattr(cls, '_labels'):

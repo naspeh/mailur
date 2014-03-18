@@ -2,6 +2,7 @@ from collections import OrderedDict
 from functools import wraps
 from itertools import groupby
 
+from sqlalchemy import or_
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, conf, imap, syncer
@@ -15,7 +16,7 @@ rules = [
     Rule('/', endpoint='index'),
     Rule('/compose/', endpoint='compose'),
     Rule('/labels/', endpoint='labels'),
-    Rule('/label/<label:label>/', endpoint='label'),
+    Rule('/emails/', endpoint='emails'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<email:email>/', endpoint='raw'),
     Rule('/mark/<label:label>/<name>/', methods=['POST'], endpoint='mark'),
@@ -93,15 +94,27 @@ def labels(env):
 
 
 @login_required
-def label(env, label):
+def emails(env):
     emails = (
         session.query(*Email.columns())
-        .filter(Email.labels.has_key(str(label.id)))
         .order_by(Email.date)
     )
+    if 'label' in env.request.args:
+        label_id = env.request.args['label']
+        label = session.query(Label).filter(Label.id == label_id).one()
+        emails = emails.filter(Email.labels.has_key(label_id))
+    elif 'email' in env.request.args:
+        email = env.request.args['email']
+        emails = emails.filter(
+            or_(Email.from_.any(email), Email.to.any(email))
+        )
+        label = None
+    else:
+        env.abort(404)
+
     emails = OrderedDict((r.gm_thrid, Email.model(r)) for r in emails).values()
     emails = sorted(emails, key=lambda v: v.date, reverse=True)
-    return env.render('label.tpl', emails=emails, label=label)
+    return env.render('emails.tpl', emails=emails, label=label)
 
 
 @login_required
