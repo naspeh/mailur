@@ -11,7 +11,6 @@ rules = [
     Rule('/auth/', endpoint='auth'),
     Rule('/auth-callback/', endpoint='auth_callback'),
     Rule('/auth-refresh/', endpoint='auth_refresh'),
-    Rule('/check-imap/', endpoint='check_imap'),
 
     Rule('/', endpoint='index'),
     Rule('/compose/', endpoint='compose'),
@@ -67,15 +66,6 @@ def login_required(func):
             return env.redirect_for('auth')
         return func(env, *a, **kw)
     return inner
-
-
-@login_required
-def check_imap(env):
-    try:
-        imap.client()
-    except ValueError:
-        return env.make_response('FAIL', status=500)
-    return 'OK'
 
 
 @login_required
