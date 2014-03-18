@@ -17,7 +17,7 @@ logging.basicConfig(
 sh = lambda cmd: subprocess.call(cmd, shell=True)
 
 
-def run():
+def run(args):
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         main(['lessc'])
 
@@ -59,7 +59,7 @@ def main(argv=None):
 
     cmd('db-clear').exe(lambda a: db.drop_all())
 
-    cmd('run').exe(lambda a: run())
+    cmd('run').exe(run)
 
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
