@@ -19,7 +19,7 @@ rules = [
     Rule('/emails/', endpoint='emails'),
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<email:email>/', endpoint='raw'),
-    Rule('/mark/<label:label>/<name>/', methods=['POST'], endpoint='mark'),
+    Rule('/mark/<name>/', methods=['POST'], endpoint='mark'),
     Rule('/copy/<label:label>/<label:to>/', methods=['POST'], endpoint='copy'),
     Rule('/sync/', defaults={'label': None}, endpoint='sync'),
     Rule('/sync/<label:label>/', endpoint='sync'),
@@ -155,7 +155,8 @@ def gm_thread(env, id):
 
 
 @login_required
-def mark(env, label, name):
+def mark(env, name):
+    label_all = Label.get(lambda l: l.alias == Label.A_ALL)
     store = {
         'starred': ('+FLAGS', Email.STARRED),
         'unstarred': ('-FLAGS', Email.STARRED),
@@ -166,11 +167,11 @@ def mark(env, label, name):
     if name in store:
         key, value = store[name]
         im = imap.client()
-        im.select('"%s"' % label.name, readonly=False)
+        im.select('"%s"' % label_all.name, readonly=False)
         imap.store(im, uids, key, value)
     elif name == 'archived':
         im = imap.client()
-        im.select('"%s"' % label.name, readonly=False)
+        im.select('"%s"' % label_all.name, readonly=False)
         for uid in uids:
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
             uid_ = data[0].decode().split(' ')[0]
@@ -179,7 +180,7 @@ def mark(env, label, name):
     elif name == 'deleted':
         label_trash = Label.get(lambda l: l.alias == Label.A_TRASH)
         im = imap.client()
-        im.select('"%s"' % label.name, readonly=False)
+        im.select('"%s"' % label_all.name, readonly=False)
         for uid in uids:
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
             uid_ = data[0].decode().split(' ')[0]
@@ -188,7 +189,7 @@ def mark(env, label, name):
     else:
         env.abort(404)
 
-    syncer.fetch_emails(im, label, with_bodies=False)
+    syncer.fetch_emails(im, label_all, with_bodies=False)
     return 'OK'
 
 

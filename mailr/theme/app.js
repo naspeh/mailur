@@ -36,7 +36,7 @@ $('.panel').on('panel_get', function(event, data) {
         stored_data(true);
     }
     panel.find('.labels [value="' + storage.label + '"]').attr('selected', true);
-    var label_id = parseInt(storage.label.split('/')[2]);
+    var label_id = parseInt(storage.label.split('=')[1]);
 
     function stored_data(save) {
         if (!save) {
@@ -51,7 +51,7 @@ $('.panel').on('panel_get', function(event, data) {
         return value;
     }
     function mark(name, ids) {
-        var url = '/mark/' + [label_id, name].join('/') + '/';
+        var url = '/mark/' + name + '/';
         $.post(url, {ids: ids}).done(refresh);
     }
     function refresh() {
@@ -161,7 +161,8 @@ $('.panel').on('panel_get', function(event, data) {
         });
         panel.find('button[name="sync"]').click(function() {
             panel.trigger('loader', this);
-            $.get('/sync/' + label_id + '/').done(refresh);
+            var url = label_id ? '/sync/' + label_id + '/' : '/sync/';
+            $.get(url).done(refresh);
             return false;
         });
         panel.find('button[name="sync_all"]').click(function() {
