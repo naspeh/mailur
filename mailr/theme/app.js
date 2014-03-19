@@ -121,29 +121,29 @@ $('.panel').on('panel_get', function(event, data) {
         }
 
         panel.on('refresh_buttons', function() {
-            var form = panel;
-            var buttons = form.find('button:not([name="sync"], [name="sync_all"])');
-            var checked = form.find('.email-pick input:checked').parents('.email');
+            var buttons = panel.find('button');
+            var checked = panel.find('.email-pick input:checked').parents('.email');
 
             buttons.hide();
+            buttons.filter('[name="sync"], [name="sync_all"]').show();
             if (checked.length > 0) {
-                form.find('[name="copy_to_inbox"]').show();
+                buttons.filter('[name="copy_to_inbox"]').show();
                 if (label_id != CONF.trash_id) {
-                    form.find('[value="archived"]').show();
-                    form.find('[value="deleted"]').show();
+                    buttons.filter('[value="archived"]').show();
+                    buttons.filter('[value="deleted"]').show();
                 }
             }
             if (checked.filter('.email-unread').length > 0) {
-                form.find('[value="read"]').show();
+                buttons.filter('[value="read"]').show();
             }
             if (checked.not('.email-unread').length > 0) {
-                form.find('[value="unread"]').show();
+                buttons.filter('[value="unread"]').show();
             }
             if (checked.find('.email-star:not(.email-starred)').length > 0) {
-                form.find('[value="starred"]').show();
+                buttons.filter('[value="starred"]').show();
             }
             if (checked.find('.email-starred').length > 0) {
-                form.find('[value="unstarred"]').show();
+                buttons.filter('[value="unstarred"]').show();
             }
         }).trigger('refresh_buttons');
 
