@@ -118,11 +118,11 @@ def hide_quote(mail1, mail0, class_):
         v = re.sub('[\s(&#13;)]+$', '', v)  # TODO
         return v.rstrip()
 
-    html0 = clean(html.fromstring(mail0.strip()))
-    m1 = html.fromstring(mail1.strip())
-    for block in m1.xpath('//blockquote'):
-        text = clean(block)
-        if html0 == text or (text and html0.endswith(text)):
+    t0 = clean(html.fromstring(mail0))
+    root1 = html.fromstring(mail1)
+    for block in root1.xpath('//blockquote'):
+        t1 = clean(block)
+        if t0.startswith(t1) or t0.endswith(t1) or t0 in t1:
             parent = block.getparent()
             new = html.fromstring(
                 '<div class="{0}-switch"/><div class="{0}"/>'
@@ -130,5 +130,5 @@ def hide_quote(mail1, mail0, class_):
             )
             new.find_class(class_)[0].append(copy.deepcopy(block))
             parent.replace(block, new)
-            return html.tostring(m1, encoding='utf8').decode()
+            return html.tostring(root1, encoding='utf8').decode()
     return mail1
