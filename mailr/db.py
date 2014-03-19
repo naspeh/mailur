@@ -171,7 +171,7 @@ class Email(Base):
         return self._parent
 
     def human_html(self, class_='email-quote'):
-        htm = re.sub(r'(<br[/]?>\s*)$', '', self.html or '').strip()
+        htm = re.sub(r'(<br[/]?>\s*)$', '', self.html).strip()
         if htm and self.parent:
             parent_html = self.parent.html or self.parent.human_html()
             htm = hide_quote(htm, parent_html, class_)

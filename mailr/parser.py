@@ -152,9 +152,41 @@ def parse(text, msg_id=None):
     return data
 
 
+t2h_re = [
+    ('blockquote', r'^(?: *>[^\n]+(?:\n[^\n]+)*\n*)+'),
+    ('p', r'^(?:(?<=\n\n)[^\n]*\n*)'),
+    ('br', r'\n\n')
+]
+t2h_lexer = re.compile(
+    r'(?m)(%s)' % '|'.join([r'(?P<%s>%s)' % (k, v) for k, v in t2h_re])
+)
+
+
+def t2h_repl(match):
+    groups = match.groupdict()
+    blockquote = groups.get('blockquote')
+    if blockquote:
+        inner = re.sub(r'(?m)^ *> ?', '', blockquote)
+        inner = text2html(inner)
+        return '<blockquote>%s</blockquote>' % inner
+    elif groups.get('p'):
+        inner = groups.get('p').strip()
+        inner = text2html(inner)
+        return '<p>%s</p>' % inner
+    elif groups.get('br'):
+        return '<br/><br/>'
+    else:
+        raise ValueError(match)
+
+
+def text2html(text):
+    text = re.sub(r'(\r\n|\r|\n)', '\n', text)
+    text = t2h_lexer.sub(t2h_repl, text)
+    return text
+
+
 def prepare_html(content):
     from lxml.html.clean import Cleaner
-    from mistune import markdown
 
     embedded = content.get('embedded')
     htm = content.get('text/html')
@@ -171,8 +203,7 @@ def prepare_html(content):
                 img.attrib['src'] = '/attachments/' + embedded[cid]
             htm = html.tostring(root, encoding='utf8').decode()
     elif txt:
-        htm = markdown(txt)
-        htm = re.sub(r'(?m)(\n|\r|\r\n)', '<br/>', htm)
+        htm = text2html(txt)
     else:
         htm = ''
     return htm
@@ -183,10 +214,7 @@ def hide_quote(mail1, mail0, class_):
         return mail1
 
     def clean(v):
-        v = html.tostring(v, pretty_print=True, encoding='utf8').decode()
-        v = re.sub('<[^>]*?>', ' ', v)
-        v = re.sub('[\s]+', ' ', v).strip()
-        v = re.sub('[\s(&#13;)]+$', '', v)  # TODO
+        v = re.sub('[\s]+', '', v.text_content())
         return v.rstrip()
 
     t0 = clean(html.fromstring(mail0))
@@ -194,12 +222,10 @@ def hide_quote(mail1, mail0, class_):
     for block in root1.xpath('//blockquote'):
         t1 = clean(block)
         if t0.startswith(t1) or t0.endswith(t1) or t0 in t1:
+            block.attrib['class'] = class_
             parent = block.getparent()
-            new = html.fromstring(
-                '<div class="{0}-switch"/><div class="{0}"/>'
-                .format(class_)
-            )
-            new.find_class(class_)[0].append(copy.deepcopy(block))
-            parent.replace(block, new)
+            switch = html.fromstring('<div class="%s-switch"/>' % class_)
+            block.attrib['class'] = class_
+            parent.insert(parent.index(block), switch)
             return html.tostring(root1, encoding='utf8').decode()
     return mail1

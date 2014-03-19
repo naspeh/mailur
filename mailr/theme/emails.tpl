@@ -72,8 +72,8 @@
             </li>
 
             <li class="email-info email-date">
-                <a href="{{ url_for('raw', email=email.uid) }}">Raw</a>
                 {{ email.date|format_dt }}
+                <a href="{{ url_for('raw', email=email.uid) }}" title="Raw message" target="_blank">[R]</a>
             </li>
         </ul>
         <div class="email-body">
