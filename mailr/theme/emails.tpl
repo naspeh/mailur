@@ -28,10 +28,8 @@
                 {{ gravatars(email.from_) }}
             </li>
 
-            <li class="email-from" title="{{ email.from_|join(', ')|e }}">
-                <a href="/emails/?email={{ email.from_[0]|get_addr }}">
-                    {{ email.from_|map('get_addr')|join(', ') }}
-                </a>
+            <li class="email-info email-from" title="{{ email.from_|join(', ')|e }}">
+                {{ email.from_|map('get_addr')|join(', ') }}
             </li>
 
             {% if not thread and email.labels %}
