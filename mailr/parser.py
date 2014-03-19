@@ -75,40 +75,46 @@ key_map = {
 
 
 def parse_part(part, msg_id, inner=False):
+    msg_id = str(msg_id)
     content = OrderedDict([
         ('files', []),
         ('attachments', []),
         ('embedded', {}),
     ])
 
-    def update_content(c):
-        content.setdefault('html', '')
-        if part.get_content_subtype() != 'alternative':
-            content['html'] += c.pop('html', '')
-        content['files'] += c.pop('files')
-        content.update(c)
-
-    if part.get_content_maintype() == 'multipart':
+    ctype = part.get_content_type()
+    mtype = part.get_content_maintype()
+    stype = part.get_content_subtype()
+    if mtype == 'multipart':
         for m in part.get_payload():
-            update_content(parse_part(m, msg_id, inner=True))
-    elif part.get_filename() or part.get_content_maintype() == 'image':
+            c = parse_part(m, msg_id, inner=True)
+            if stype != 'alternative':
+                content.setdefault('html', '')
+                content['html'] += c.pop('html', '')
+            content['files'] += c.pop('files')
+            content.update(c)
+        if stype == 'alternative':
+            content['html'] = prepare_html(content)
+    elif part.get_filename() or mtype == 'image':
         payload = part.get_payload(decode=True)
         attachment = {
-            'maintype': part.get_content_maintype(),
-            'type': part.get_content_type(),
+            'maintype': mtype,
+            'type': ctype,
             'id': part.get('Content-ID'),
             'filename': decode_header(part.get_filename(), msg_id=msg_id),
             'payload': payload,
             'size': len(payload) if payload else None
         }
         content['files'] += [attachment]
-    elif part.get_content_type() in ['text/html', 'text/plain']:
+    elif ctype in ['text/html', 'text/plain']:
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id)
-        content[part.get_content_type()] = text
+        content[ctype] = text
         content['html'] = prepare_html(content)
+    elif ctype == 'message/rfc822':
+        pass
     else:
-        log.warn('UnknownType(%s) -- %s', part.get_content_type(), msg_id)
+        log.warn('UnknownType(%s) -- %s', ctype, msg_id)
 
     if inner:
         return content

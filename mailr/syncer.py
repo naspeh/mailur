@@ -171,7 +171,7 @@ def fetch_emails(im, label, with_bodies=True):
 
 
 def update_email(uid, raw):
-    fields = parser.parse(raw)
+    fields = parser.parse(raw, uid)
     fields['body'] = raw
 
     fields.pop('text/plain', None)
