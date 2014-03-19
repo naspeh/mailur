@@ -1,0 +1,172 @@
+Delivered-To: mailr@pusto.org
+Received: by 10.64.225.225 with SMTP id rn1csp149158iec;
+        Mon, 17 Mar 2014 13:06:34 -0700 (PDT)
+X-Received: by 10.15.50.136 with SMTP id l8mr9985224eew.73.1395086793763;
+        Mon, 17 Mar 2014 13:06:33 -0700 (PDT)
+Return-Path: <python-list-bounces+mailr=pusto.org@python.org>
+Received: from mail.python.org (mail.python.org. [82.94.164.166])
+        by mx.google.com with ESMTPS id z2si10424130eeo.304.2014.03.17.13.06.33
+        for <mailr@pusto.org>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Mon, 17 Mar 2014 13:06:33 -0700 (PDT)
+Received-SPF: pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 82.94.164.166 as permitted sender) client-ip=82.94.164.166;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 82.94.164.166 as permitted sender) smtp.mail=python-list-bounces+mailr=pusto.org@python.org;
+       dkim=neutral (no key for signature) header.i=@gmail.com;
+       dmarc=fail (p=NONE dis=NONE) header.from=gmail.com
+Received: from albatross.python.org (localhost [127.0.0.1])
+	by mail.python.org (Postfix) with ESMTP id 3fnpS85sWcz7LlQ
+	for <mailr@pusto.org>; Mon, 17 Mar 2014 21:06:32 +0100 (CET)
+X-Original-To: python-list@python.org
+Delivered-To: python-list@mail.python.org
+Received: from albatross.python.org (localhost [127.0.0.1])
+ by mail.python.org (Postfix) with ESMTP id 3fnpRg3gmgz7Lkw
+ for <python-list@python.org>; Mon, 17 Mar 2014 21:06:07 +0100 (CET)
+X-Spam-Status: OK 0.011
+X-Spam-Evidence: '*H*': 0.98; '*S*': 0.00; 'cpython': 0.05;
+ 'subject:Python': 0.06; 'exits': 0.09; 'implements': 0.09;
+ 'python': 0.11; 'thread': 0.14; '&gt;&gt;': 0.16; 'bytecode':
+ 0.16; 'called.': 0.16; 'concurrency': 0.16; 'concurrency,': 0.16;
+ 'finishes': 0.16; 'threads.': 0.16; 'underlying': 0.16; 'wrote:':
+ 0.18; 'code.': 0.18; 'not,': 0.20; 'starts': 0.20; 'work,': 0.20;
+ 'print': 0.22; '&gt;': 0.26; 'header:In-Reply-To:1': 0.27;
+ 'instruction': 0.29; 'message-id:@mail.gmail.com': 0.30; 'code':
+ 0.31; 'apparently': 0.31; 'run': 0.32; 'another': 0.32; '(e.g.':
+ 0.33; '(most': 0.33; 'received:google.com': 0.35; 'executing':
+ 0.36; 'next': 0.36; 'performance': 0.37; 'e.g.': 0.38; 'to:addr
+ :python-list': 0.38; 'fact': 0.38; 'pm,': 0.38; 'does': 0.39;
+ 'to:addr:python.org': 0.39; '8bit%:6': 0.40; 'ian': 0.60;
+ 'matter': 0.61; 'charset:iso-8859-2': 0.64; 'pick': 0.64; 'mar':
+ 0.68; 'lack': 0.78; "'true'": 0.84; 'preventing': 0.84; 'time)':
+ 0.91
+Received: from localhost (HELO mail.python.org) (127.0.0.1)
+ by albatross.python.org with SMTP; 17 Mar 2014 21:06:07 +0100
+Received: from mail-pd0-x233.google.com (unknown
+ [IPv6:2607:f8b0:400e:c02::233])
+ (using TLSv1 with cipher ECDHE-RSA-AES128-SHA (128/128 bits))
+ (No client certificate requested)
+ by mail.python.org (Postfix) with ESMTPS
+ for <python-list@python.org>; Mon, 17 Mar 2014 21:06:06 +0100 (CET)
+Received: by mail-pd0-f179.google.com with SMTP id w10so6024134pde.38
+ for <python-list@python.org>; Mon, 17 Mar 2014 13:05:59 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmail.com; s=20120113;
+ h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+ :content-type; bh=gMnx4JO0FQruI3IBwECMvHNF49dMY3gIXCtF31QeIp0=;
+ b=OMb90ONBA7mwVXRuIwJvrEVFA9XKCdVc/dXy7Sy5Y5M6mESmYCTYoKIX6L0hA1nhtF
+ 7HVffI9JtXQ6Nht5fkA6TB2efBTnpekQ74mcOPnKwVRQLHsStVYOFp2TvuC14rZyqG2k
+ crEcyM4Da0dvxiAciH5dgVI6gSPsVPUnqj25yjl9DpdKJWvjN21JNB6vx6lQoPIr/glN
+ CCssDraF8wJWp+Xgi3nO3WrvSK9DmASq6KEWP/28kimK74jsomaSaY9ludyFMoYxloDl
+ +i7BgyJrSqsSXjYkgpgcHPqW7ubLn5E367ltChfc/jAVEIFM9kINxXtuXtfRDfNX6QQv
+ GtaA==
+MIME-Version: 1.0
+X-Received: by 10.66.141.144 with SMTP id ro16mr6124343pab.131.1395086758935; 
+ Mon, 17 Mar 2014 13:05:58 -0700 (PDT)
+Received: by 10.66.153.138 with HTTP; Mon, 17 Mar 2014 13:05:58 -0700 (PDT)
+Received: by 10.66.153.138 with HTTP; Mon, 17 Mar 2014 13:05:58 -0700 (PDT)
+In-Reply-To: <lg7g6i$qgg$1@ger.gmane.org>
+References: <279038900.uDlbjECTej@felix-arch>
+ <CAPTjJmrNizyUvY=XC+FwKcTv+TDMKQv9YL6dyc3WjiGDtB+6iw@mail.gmail.com>
+ <CALwzidkdqEGebjtnAsxGzC0Y1z+k_WZxfSHkBbS9sD6RZy10uQ@mail.gmail.com>
+ <lg7g6i$qgg$1@ger.gmane.org>
+Date: Mon, 17 Mar 2014 14:05:58 -0600
+Message-ID: <CALwzid=bfiGgV5YCNjeR6Z9C8E0fY7mSb=m4bXtyKs=uz5WpEg@mail.gmail.com>
+Subject: Re: Thread._stop() behavior changed in Python 3.4
+From: Ian Kelly <ian.g.kelly@gmail.com>
+To: Python <python-list@python.org>
+X-BeenThere: python-list@python.org
+X-Mailman-Version: 2.1.15
+Precedence: list
+List-Id: General discussion list for the Python programming language
+ <python-list.python.org>
+List-Unsubscribe: <https://mail.python.org/mailman/options/python-list>,
+ <mailto:python-list-request@python.org?subject=unsubscribe>
+List-Archive: <http://mail.python.org/pipermail/python-list/>
+List-Post: <mailto:python-list@python.org>
+List-Help: <mailto:python-list-request@python.org?subject=help>
+List-Subscribe: <https://mail.python.org/mailman/listinfo/python-list>,
+ <mailto:python-list-request@python.org?subject=subscribe>
+Content-Type: multipart/mixed; boundary="===============1373004949=="
+Errors-To: python-list-bounces+mailr=pusto.org@python.org
+Sender: "Python-list" <python-list-bounces+mailr=pusto.org@python.org>
+
+--===============1373004949==
+Content-Type: multipart/alternative; boundary=001a1133316cb2810a04f4d2f2a5
+
+--001a1133316cb2810a04f4d2f2a5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On Mar 17, 2014 12:53 PM, "Jurko Gospodneti=C4=87" <jurko.gospodnetic@pke.h=
+r>
+wrote:
+>
+>   Hi.
+>
+>
+> On 17.3.2014. 19:03, Ian Kelly wrote:
+>>
+>> So yes, despite the lack of true concurrency, a thread can continue to
+>> run after its _stop has been called.
+>
+>
+>   Actually 'true' or 'false' concurrency does not matter here.
+>
+>   CPython supports multiple threads and implements them using underlying
+native OS threads. The fact that it has an internal mutex (GIL) preventing
+it from executing/interpreting Python code at the same time in multiple
+threads (most of the time) does not come into play.. When one thread exits
+its GIL protected section (e.g. finishes processing one bytecode
+instruction and is about to go on to processing the next one), another
+thread may pick up the GIL and do some of its work, e.g. print out some
+output.
+
+Yes, and whenever a thread acquires the GIL it *could* check whether its
+_stop flag has been set before it starts executing any Python code.
+Apparently though it does not, perhaps for performance reasons.
+
+--001a1133316cb2810a04f4d2f2a5
+Content-Type: text/html; charset=ISO-8859-2
+Content-Transfer-Encoding: quoted-printable
+
+<p dir=3D"ltr"><br>
+On Mar 17, 2014 12:53 PM, &quot;Jurko Gospodneti=E6&quot; &lt;<a href=3D"ma=
+ilto:jurko.gospodnetic@pke.hr">jurko.gospodnetic@pke.hr</a>&gt; wrote:<br>
+&gt;<br>
+&gt; =A0 Hi.<br>
+&gt;<br>
+&gt;<br>
+&gt; On 17.3.2014. 19:03, Ian Kelly wrote:<br>
+&gt;&gt;<br>
+&gt;&gt; So yes, despite the lack of true concurrency, a thread can continu=
+e to<br>
+&gt;&gt; run after its _stop has been called.<br>
+&gt;<br>
+&gt;<br>
+&gt; =A0 Actually &#39;true&#39; or &#39;false&#39; concurrency does not ma=
+tter here.<br>
+&gt;<br>
+&gt; =A0 CPython supports multiple threads and implements them using underl=
+ying native OS threads. The fact that it has an internal mutex (GIL) preven=
+ting it from executing/interpreting Python code at the same time in multipl=
+e threads (most of the time) does not come into play.. When one thread exit=
+s its GIL protected section (e.g. finishes processing one bytecode instruct=
+ion and is about to go on to processing the next one), another thread may p=
+ick up the GIL and do some of its work, e.g. print out some output.</p>
+
+<p dir=3D"ltr">Yes, and whenever a thread acquires the GIL it *could* check=
+ whether its _stop flag has been set before it starts executing any Python =
+code. Apparently though it does not, perhaps for performance reasons.</p>
+
+
+--001a1133316cb2810a04f4d2f2a5--
+
+--===============1373004949==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+-- 
+https://mail.python.org/mailman/listinfo/python-list
+
+--===============1373004949==--

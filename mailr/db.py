@@ -171,32 +171,11 @@ class Email(Base):
         return self._parent
 
     def human_html(self, class_='email-quote'):
-        from lxml import html
-        from lxml.html.clean import Cleaner
-        from mistune import markdown
-
-        if self.html:
-            cleaner = Cleaner(links=False, safe_attrs_only=False)
-            html_ = cleaner.clean_html(self.html)
-            if self.embedded:
-                root = html.fromstring(html_)
-                for img in root.findall('.//img'):
-                    if not img.attrib.get('src').startswith('cid:'):
-                        continue
-                    cid = '<%s>' % img.attrib.get('src')[4:]
-                    img.attrib['src'] = '/attachments/' + self.embedded[cid]
-                html_ = html.tostring(root, encoding='utf8').decode()
-        elif self.text:
-            html_ = markdown(self.text)
-            html_ = re.sub(r'(?m)(\n|\r|\r\n)', '<br/>', html_)
-        else:
-            html_ = ''
-
-        html_ = re.sub(r'(<br[/]?>\s*)$', '', html_).strip()
-        if html_ and self.parent:
+        htm = re.sub(r'(<br[/]?>\s*)$', '', self.html or '').strip()
+        if htm and self.parent:
             parent_html = self.parent.html or self.parent.human_html()
-            html_ = hide_quote(html_, parent_html, class_)
-        return html_
+            htm = hide_quote(htm, parent_html, class_)
+        return htm
 
 
 Base.metadata.create_all(engine)

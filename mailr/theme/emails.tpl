@@ -71,7 +71,10 @@
                 {{ email.human_subject(strip=False) }}
             </li>
 
-            <li class="email-info email-date">{{ email.date|format_dt }}</li>
+            <li class="email-info email-date">
+                <a href="{{ url_for('raw', email=email.uid) }}">Raw</a>
+                {{ email.date|format_dt }}
+            </li>
         </ul>
         <div class="email-body">
             {{ email.human_html('email-quote') }}

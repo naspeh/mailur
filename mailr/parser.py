@@ -1,13 +1,15 @@
 import copy
 import datetime as dt
 import email
+import os
 import re
 from collections import OrderedDict
 
 import chardet
-import lxml.html as html
+from lxml import html
+from werkzeug.utils import secure_filename
 
-from . import log
+from . import log, attachments_dir
 
 
 def decode_str(text, charset=None, msg_id=None):
@@ -46,7 +48,9 @@ def decode_addresses(text):
         text = str(text)
     res = []
     for name, addr in email.utils.getaddresses([text]):
-        res += ['"%s" <%s>' % (decode_header(name), addr) if name else addr]
+        res += [addr]
+        #name, addr = [decode_header(r) for r in [name, addr]]
+        #res += ['"%s" <%s>' % (name, addr) if name else addr]
     return res
 
 
@@ -70,31 +74,66 @@ key_map = {
 }
 
 
-def parse_part(parts, msg_id):
-    content = OrderedDict()
-    for part in parts:
-        if part.get_filename() or part.get_content_maintype() == 'image':
-            payload = part.get_payload(decode=True)
-            content.setdefault('attachments', [])
-            attachment = {
-                'maintype': part.get_content_maintype(),
-                'type': part.get_content_type(),
-                'id': part.get('Content-ID'),
-                'filename': decode_header(part.get_filename(), msg_id=msg_id),
-                'payload': payload,
-                'size': len(payload) if payload else None
-            }
-            content['attachments'] += [attachment]
-        elif part.get_content_type() in ['text/html', 'text/plain']:
-            text = part.get_payload(decode=True)
-            text = decode_str(text, part.get_content_charset(), msg_id)
-            content[part.get_content_type()] = text
-        elif not part.get_content_maintype() == 'multipart':
-            log.warn('UnknownType(%s) -- %s', part.get_content_type(), msg_id)
+def parse_part(part, msg_id, inner=False):
+    content = OrderedDict([
+        ('files', []),
+        ('attachments', []),
+        ('embedded', {}),
+    ])
+
+    def update_content(c):
+        content.setdefault('html', '')
+        if part.get_content_subtype() != 'alternative':
+            content['html'] += c.pop('html', '')
+        content['files'] += c.pop('files')
+        content.update(c)
+
+    if part.get_content_maintype() == 'multipart':
+        for m in part.get_payload():
+            update_content(parse_part(m, msg_id, inner=True))
+    elif part.get_filename() or part.get_content_maintype() == 'image':
+        payload = part.get_payload(decode=True)
+        attachment = {
+            'maintype': part.get_content_maintype(),
+            'type': part.get_content_type(),
+            'id': part.get('Content-ID'),
+            'filename': decode_header(part.get_filename(), msg_id=msg_id),
+            'payload': payload,
+            'size': len(payload) if payload else None
+        }
+        content['files'] += [attachment]
+    elif part.get_content_type() in ['text/html', 'text/plain']:
+        text = part.get_payload(decode=True)
+        text = decode_str(text, part.get_content_charset(), msg_id)
+        content[part.get_content_type()] = text
+        content['html'] = prepare_html(content)
+    else:
+        log.warn('UnknownType(%s) -- %s', part.get_content_type(), msg_id)
+
+    if inner:
+        return content
+
+    content.update(attachments=[], embedded={})
+    for index, item in enumerate(content['files']):
+        if item['payload']:
+            name = secure_filename(item['filename'] or item['id'])
+            url = '/'.join([secure_filename(msg_id), str(index), name])
+            if item['id'] and item['maintype'] == 'image':
+                content['embedded'][item['id']] = url
+            elif item['filename']:
+                content['attachments'] += [url]
+            else:
+                log.warn('UnknownAttachment(%s)', msg_id)
+                continue
+            path = os.path.join(attachments_dir, url)
+            if not os.path.exists(path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, 'bw') as f:
+                    f.write(item['payload'])
     return content
 
 
-def parse(text):
+def parse(text, msg_id=None):
     msg = email.message_from_bytes(text)
 
     data = {}
@@ -103,8 +142,34 @@ def parse(text):
         value = msg.get(key)
         data[field] = decode(value) if value else None
 
-    data.update(parse_part(msg.walk(), data['message_id']))
+    data.update(parse_part(msg, msg_id or data['message_id']))
     return data
+
+
+def prepare_html(content):
+    from lxml.html.clean import Cleaner
+    from mistune import markdown
+
+    embedded = content.get('embedded')
+    htm = content.get('text/html')
+    txt = content.get('text/plain')
+    if htm:
+        cleaner = Cleaner(links=False, safe_attrs_only=False)
+        htm = cleaner.clean_html(htm)
+        if embedded:
+            root = html.fromstring(htm)
+            for img in root.findall('.//img'):
+                if not img.attrib.get('src').startswith('cid:'):
+                    continue
+                cid = '<%s>' % img.attrib.get('src')[4:]
+                img.attrib['src'] = '/attachments/' + embedded[cid]
+            htm = html.tostring(root, encoding='utf8').decode()
+    elif txt:
+        htm = markdown(txt)
+        htm = re.sub(r'(?m)(\n|\r|\r\n)', '<br/>', htm)
+    else:
+        htm = ''
+    return htm
 
 
 def hide_quote(mail1, mail0, class_):

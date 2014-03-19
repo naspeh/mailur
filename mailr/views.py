@@ -26,10 +26,11 @@ rules = [
 ]
 
 
-def model_converter(model):
+def model_converter(model, pk='id'):
     class Converter(BaseConverter):
         def to_python(self, value):
-            row = session.query(model).filter(model.id == value).first()
+            row = session.query(model)\
+                .filter(getattr(model, pk) == value).first()
             if not row:
                 raise ValidationError
             return row
@@ -40,7 +41,7 @@ def model_converter(model):
 
 converters = {
     'label': model_converter(Label),
-    'email': model_converter(Email)
+    'email': model_converter(Email, pk='uid')
 }
 url_map = Map(rules, converters=converters)
 

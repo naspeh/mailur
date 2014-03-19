@@ -1,0 +1,179 @@
+Delivered-To: mailr@pusto.org
+Received: by 10.64.225.225 with SMTP id rn1csp139271iec;
+        Mon, 17 Mar 2014 10:18:34 -0700 (PDT)
+X-Received: by 10.194.240.7 with SMTP id vw7mr2569211wjc.75.1395076713839;
+        Mon, 17 Mar 2014 10:18:33 -0700 (PDT)
+Return-Path: <python-list-bounces+mailr=pusto.org@python.org>
+Received: from mail.python.org (mail.python.org. [82.94.164.166])
+        by mx.google.com with ESMTPS id k2si5671766wiz.21.2014.03.17.10.18.32
+        for <mailr@pusto.org>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Mon, 17 Mar 2014 10:18:33 -0700 (PDT)
+Received-SPF: pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 82.94.164.166 as permitted sender) client-ip=82.94.164.166;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 82.94.164.166 as permitted sender) smtp.mail=python-list-bounces+mailr=pusto.org@python.org;
+       dkim=neutral (no key for signature) header.i=@gmail.com;
+       dmarc=fail (p=NONE dis=NONE) header.from=gmail.com
+Received: from albatross.python.org (localhost [127.0.0.1])
+	by mail.python.org (Postfix) with ESMTP id 3fnkkJ2kWmz7Lkk
+	for <mailr@pusto.org>; Mon, 17 Mar 2014 18:18:32 +0100 (CET)
+X-Original-To: python-list@python.org
+Delivered-To: python-list@mail.python.org
+Received: from albatross.python.org (localhost [127.0.0.1])
+ by mail.python.org (Postfix) with ESMTP id 3fnkjp2ZMRz7Lk3
+ for <python-list@python.org>; Mon, 17 Mar 2014 18:18:06 +0100 (CET)
+X-Spam-Status: OK 0.000
+X-Spam-Evidence: '*H*': 1.00; '*S*': 0.00; 'broken': 0.04;
+ 'subject:Python': 0.06; 'practice,': 0.07; 'exits': 0.09;
+ 'received:localnet': 0.09; 'reference:': 0.09; 'snippet': 0.09;
+ 'url:github': 0.09; 'python': 0.11; 'def': 0.12; 'bug': 0.12;
+ 'thread': 0.14; '3.3,': 0.16; 'called,': 0.16; 'downstream': 0.16;
+ 'filename:fname piece:signature': 0.16; 'itself,': 0.16;
+ 'raised.': 0.16; 'to:name:python list': 0.16; 'undocumented':
+ 0.16; 'url:issues': 0.16; 'exception': 0.16; 'trying': 0.19;
+ 'reports,': 0.19; 'import': 0.22; 'header:User-Agent:1': 0.23;
+ 'skip:" 30': 0.26; 'wonder': 0.29; 'assert': 0.31; 'file': 0.32;
+ '(most': 0.33; 'skip:# 10': 0.33; 'noticed': 0.34; 'but': 0.35;
+ 'received:google.com': 0.35; 'really': 0.36; 'method': 0.36;
+ 'to:addr:python-list': 0.38; 'list,': 0.38; 'recent': 0.39;
+ 'to:addr:python.org': 0.39; 'easy': 0.60; 'skip:t 30': 0.61;
+ 'behavior': 0.77; 'fail.': 0.84
+Received: from localhost (HELO mail.python.org) (127.0.0.1)
+ by albatross.python.org with SMTP; 17 Mar 2014 18:18:06 +0100
+Received: from mail-wi0-x232.google.com (unknown
+ [IPv6:2a00:1450:400c:c05::232])
+ (using TLSv1 with cipher ECDHE-RSA-AES128-SHA (128/128 bits))
+ (No client certificate requested)
+ by mail.python.org (Postfix) with ESMTPS
+ for <python-list@python.org>; Mon, 17 Mar 2014 18:18:06 +0100 (CET)
+Received: by mail-wi0-f178.google.com with SMTP id bs8so1644231wib.11
+ for <python-list@python.org>; Mon, 17 Mar 2014 10:18:05 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmail.com; s=20120113;
+ h=from:to:subject:date:message-id:user-agent:mime-version
+ :content-type; bh=cUfPiR5wfOpI1OGKTn1++5ICM6YPy4N5cXgLfqzxKWY=;
+ b=L/ZJ5rX7vZH0QBBLA3EO4scwhUPwBjhBT7T0/0l6FapszvNQEKhWnZdJh78Nopg4hz
+ Lxil53CE5fDuArcNI0dexX5QI9bX4ln3lL+DQITX9lPS+fiiDUCx6vYJJXFrlp6ODyc9
+ iBDXYCtutsDtb2aiSMUrd99n+DRdzpyj6j9oPC9XGXMDeDfN2Lh8YNef1Mk5ZAekJ1mz
+ Pn15bezy4SHPPJ8W+OVVZSYAgEGW+ZDwFVnj76U1SxXDSmoroSBVM1JpbrzJ2a1wc9li
+ ouuF1kFj//zBoGOTAWCHHQXR9taYvVcgaD2F1zOT6QI9k7px2TiCr2blRXXbuEZkUfnq
+ c5hQ==
+X-Received: by 10.181.13.112 with SMTP id ex16mr10672138wid.23.1395076685502; 
+ Mon, 17 Mar 2014 10:18:05 -0700 (PDT)
+Received: from felix-arch.localnet
+ (ec2-54-246-82-116.eu-west-1.compute.amazonaws.com. [54.246.82.116])
+ by mx.google.com with ESMTPSA id lz3sm26740034wic.1.2014.03.17.10.18.03
+ for <python-list@python.org>
+ (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+ Mon, 17 Mar 2014 10:18:04 -0700 (PDT)
+From: Felix Yan <felixonmars@gmail.com>
+To: Python List <python-list@python.org>
+Subject: Thread._stop() behavior changed in Python 3.4
+Date: Tue, 18 Mar 2014 01:18:01 +0800
+Message-ID: <279038900.uDlbjECTej@felix-arch>
+User-Agent: KMail/4.12.3 (Linux/3.13.6-1-uksm; KDE/4.12.3; x86_64; ; )
+MIME-Version: 1.0
+X-BeenThere: python-list@python.org
+X-Mailman-Version: 2.1.15
+Precedence: list
+List-Id: General discussion list for the Python programming language
+ <python-list.python.org>
+List-Unsubscribe: <https://mail.python.org/mailman/options/python-list>,
+ <mailto:python-list-request@python.org?subject=unsubscribe>
+List-Archive: <http://mail.python.org/pipermail/python-list/>
+List-Post: <mailto:python-list@python.org>
+List-Help: <mailto:python-list-request@python.org?subject=help>
+List-Subscribe: <https://mail.python.org/mailman/listinfo/python-list>,
+ <mailto:python-list-request@python.org?subject=subscribe>
+Content-Type: multipart/mixed; boundary="===============1136568430=="
+Errors-To: python-list-bounces+mailr=pusto.org@python.org
+Sender: "Python-list" <python-list-bounces+mailr=pusto.org@python.org>
+
+
+--===============1136568430==
+Content-Type: multipart/signed; boundary="nextPart1501399.sFLFpKgjeg"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+
+
+--nextPart1501399.sFLFpKgjeg
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+
+Hi list,
+
+I noticed a behavior change on Thread._stop() with Python 3.4.
+
+I know the method is an undocumented "feature" itself, but some projects are 
+using it, and now they fail.
+
+A minimized snippet to reproduce:
+
+#!/usr/bin/python
+import threading
+def stale():
+    import time
+    time.sleep(1000)
+t = threading.Thread(target=stale)
+t.start()
+t._stop()
+
+This works correctly with Python 3.3, the program exits immediately after 
+t._stop() called, and no exception was raised.
+
+But with Python 3.4, an AssertionError was raised:
+
+Traceback (most recent call last):
+  File "test.py", line 8, in <module>
+    t._stop()
+  File "/usr/lib/python3.4/threading.py", line 990, in _stop
+    assert not lock.locked()
+AssertionError
+
+And the program still waits on the sleep().
+
+I know trying to forcefully stop a thread is not really a good practice, but I 
+still wonder if there's an easy way to get broken programs to work again, just 
+in the way they currently are?
+
+Downstream bug reports, for reference:
+
+http://youtrack.jetbrains.com/issue/PY-12317
+https://github.com/paramiko/paramiko/issues/286
+
+Regards,
+Felix Yan
+--nextPart1501399.sFLFpKgjeg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABAgAGBQJTJy5JAAoJEHhsY/Mw18uSzlwQAIxd+26D09Eez201Gm6sCf4e
+47ToX++/FrvCqmGF/x8VTeglVm8pJLw89uGDsx9EB6jGkQgXoefGEYZhgCxlP3vH
+3W7EL3yBjLjlYidMf99jjN+5k5nx/ypmyOfOnCUMPdbr7to/Za9z+NwPvhdimBcO
+c5bqxx/j175/0rAnlPqHmelzZgtlC2nsvk5MT4ssm5LGfA1NsEJ5RCdm7+buKRRK
+b9Ck3xKgElbYKRTa2nam2g57XESYG7DMW2E2VR168w/rIsRoQqbrzHWjj5USjQo0
++fmN4YjTRA+HbhF+UkpAiRNAuo1/3AKpCMMgJq/jlBDFjBO6Q3wpT9uMFcStK8J0
+4XtpgF2kygHqbv+bwUV8itz+WBmzwZyPYeRaOelCh+j5V1FLaY/xChS9RfkYjcwv
+NK7ghLzK6cO6w3Ahi+V0Hwy87/Y8+TlKPpry5gWwdWRCa4U96SWaDmawyAztxh3N
+3mezW19nb+/Yk2ppu1nTTuEJuPjJ4EMhjy7FkdiuhPbZ3bxhg4QYwWQOOfrF9clI
+OQDq78n6vtwQEdRhaQ0SzP1mvhKS/QZ2oN8RSGcVQkFyqRU38roVq6Q5VESCNihE
+1R1QaDXI3N35wO7HJ10bnvYPsWXi1N8u8AHjo2vysGNW/HRBVY4kIC9AbQnKovJq
+vaw29g4qO/MVMCEyIKvY
+=BhNs
+-----END PGP SIGNATURE-----
+
+--nextPart1501399.sFLFpKgjeg--
+
+
+--===============1136568430==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+-- 
+https://mail.python.org/mailman/listinfo/python-list
+
+--===============1136568430==--
+
