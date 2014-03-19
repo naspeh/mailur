@@ -1,6 +1,7 @@
 {% extends 'emails.tpl' %}
 
 {% block content %}
+{% if groups %}
 <base target="_self" href="/">
 <h4>
     {{ thread.subject }}
@@ -23,4 +24,5 @@
     {% endif %}
 {% endfor %}
 </div>
+{% endif %}
 {% endblock %}

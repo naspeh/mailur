@@ -121,7 +121,7 @@ $('.panel').on('panel_get', function(event, data) {
         }
 
         panel.on('refresh_buttons', function() {
-            var form = panel.find('.emails-form');
+            var form = panel;
             var buttons = form.find('button:not([name="sync"], [name="sync_all"])');
             var checked = form.find('.email-pick input:checked').parents('.email');
 

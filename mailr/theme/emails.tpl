@@ -92,21 +92,10 @@
 </ul>
 {% endmacro %}
 
-{% if emails or groups %}
-<form name="emails-form" class="emails-form" method="POST">
-    {#<button name="sync_all">Sync all</button>#}
-    <button name="sync">Sync</button>
-    <button name="mark" value="archived">Archive</button>
-    <button name="mark" value="deleted">Delete</button>
-    <button name="copy_to_inbox">Move to Inbox</button>
-    <button name="mark" value="starred">Add star</button>
-    <button name="mark" value="unstarred">Remove star</button>
-    <button name="mark" value="read">Read</button>
-    <button name="mark" value="unread">Unread</button>
-    {% block content %}
-    <div class="label">
-        {{ render(emails) }}
-    </div>
-    {% endblock %}
-</form>
+{% block content %}
+{% if emails %}
+<div class="label">
+    {{ render(emails) }}
+</div>
 {% endif %}
+{% endblock %}
