@@ -189,7 +189,7 @@ def mark(env, name):
     else:
         env.abort(404)
 
-    syncer.fetch_emails(im, label_all, with_bodies=False)
+    syncer.sync_gmail(True)
     return 'OK'
 
 
