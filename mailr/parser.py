@@ -1,4 +1,3 @@
-import copy
 import datetime as dt
 import email
 import os
@@ -7,6 +6,7 @@ from collections import OrderedDict
 
 import chardet
 from lxml import html
+from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
 
 from . import log, attachments_dir
@@ -152,10 +152,16 @@ def parse(text, msg_id=None):
     return data
 
 
+def text2html(text):
+    text = re.sub(r'(\r\n|\r|\n)', '\n', text)
+    text = t2h_lexer.sub(t2h_repl, text)
+    return text
+
+
 t2h_re = [
     ('blockquote', r'^(?: *>[^\n]+(?:\n[^\n]+)*\n*)+'),
-    ('p', r'^(?:(?<=\n\n)[^\n]*\n*)'),
-    ('br', r'\n\n')
+    ('p', r'^(?:(?<=\n\n)[^\n]*\n*?)'),
+    ('br', r'\n')
 ]
 t2h_lexer = re.compile(
     r'(?m)(%s)' % '|'.join([r'(?P<%s>%s)' % (k, v) for k, v in t2h_re])
@@ -165,31 +171,23 @@ t2h_lexer = re.compile(
 def t2h_repl(match):
     groups = match.groupdict()
     blockquote = groups.get('blockquote')
-    if blockquote:
+    if blockquote is not None:
         inner = re.sub(r'(?m)^ *> ?', '', blockquote)
         inner = text2html(inner)
         return '<blockquote>%s</blockquote>' % inner
-    elif groups.get('p'):
+    elif groups.get('p') is not None:
         inner = groups.get('p').strip()
         inner = text2html(inner)
         return '<p>%s</p>' % inner
-    elif groups.get('br'):
-        return '<br/><br/>'
+    elif groups.get('br') is not None:
+        return '<br/>'
     else:
-        raise ValueError(match)
-
-
-def text2html(text):
-    text = re.sub(r'(\r\n|\r|\n)', '\n', text)
-    text = t2h_lexer.sub(t2h_repl, text)
-    return text
+        raise ValueError(groups)
 
 
 def prepare_html(content):
-    from lxml.html.clean import Cleaner
-
     embedded = content.get('embedded')
-    htm = content.get('text/html')
+    htm = content.get('text/html', '')
     txt = content.get('text/plain')
     if htm:
         cleaner = Cleaner(links=False, safe_attrs_only=False)
@@ -204,8 +202,6 @@ def prepare_html(content):
             htm = html.tostring(root, encoding='utf8').decode()
     elif txt:
         htm = text2html(txt)
-    else:
-        htm = ''
     return htm
 
 
@@ -221,7 +217,7 @@ def hide_quote(mail1, mail0, class_):
     root1 = html.fromstring(mail1)
     for block in root1.xpath('//blockquote'):
         t1 = clean(block)
-        if t0.startswith(t1) or t0.endswith(t1) or t0 in t1:
+        if t0 and t1 and (t0.startswith(t1) or t0.endswith(t1) or t0 in t1):
             block.attrib['class'] = class_
             parent = block.getparent()
             switch = html.fromstring('<div class="%s-switch"/>' % class_)
