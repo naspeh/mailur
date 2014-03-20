@@ -8,7 +8,7 @@ import subprocess
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from mailr import theme_dir, attachments_dir, db, app, syncer
+from mailr import conf, db, app, syncer
 
 logging.basicConfig(
     format='%(levelname)s %(asctime)s  %(message)s',
@@ -22,14 +22,14 @@ def run(args):
         main(['lessc'])
 
     extra_files = [
-        glob.glob(os.path.join(theme_dir, fmask)) +
-        glob.glob(os.path.join(theme_dir, '*', fmask))
+        glob.glob(os.path.join(conf.theme_dir, fmask)) +
+        glob.glob(os.path.join(conf.theme_dir, '*', fmask))
         for fmask in ['*.less', '*.css', '*.js']
     ]
     extra_files = sum(extra_files, [])
 
     wsgi_app = SharedDataMiddleware(app.create_app(), {
-        '/theme': theme_dir, '/attachments': attachments_dir
+        '/theme': conf.theme_dir, '/attachments': conf.attachments_dir
     })
     run_simple(
         '0.0.0.0', 5000, wsgi_app,

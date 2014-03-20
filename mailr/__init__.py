@@ -6,8 +6,6 @@ import time
 log = logging.getLogger(__name__)
 app_dir = os.path.abspath(os.path.dirname(__file__))
 base_dir = os.path.abspath(os.path.join(app_dir, '..'))
-theme_dir = os.path.join(app_dir, 'theme')
-attachments_dir = os.path.join(base_dir, 'attachments')
 
 
 class _Conf:
@@ -29,6 +27,15 @@ class _Conf:
 
     def __call__(self, key, default=None):
         return self.data.get(key, default)
+
+    @property
+    def theme_dir(self):
+        return os.path.join(app_dir, 'theme')
+
+    @property
+    def attachments_dir(self):
+        dir_ = self('attachments_dir', 'attachments')
+        return os.path.join(base_dir, dir_)
 
 conf = _Conf()
 

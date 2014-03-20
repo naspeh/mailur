@@ -9,7 +9,7 @@ from lxml import html
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
 
-from . import log, attachments_dir
+from . import log, conf
 
 
 def decode_str(text, charset=None, msg_id=None):
@@ -131,7 +131,7 @@ def parse_part(part, msg_id, inner=False):
             else:
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue
-            path = os.path.join(attachments_dir, url)
+            path = os.path.join(conf.attachments_dir, url)
             if not os.path.exists(path):
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, 'bw') as f:

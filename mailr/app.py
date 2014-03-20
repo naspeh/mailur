@@ -5,7 +5,7 @@ from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request, Response
 
-from . import conf, theme_dir, views, filters
+from . import conf, views, filters
 
 
 def create_app():
@@ -28,7 +28,7 @@ class Env:
         self.adapter = self.url_map.bind_to_environ(request.environ)
 
         self.jinja = jinja = Environment(
-            loader=FileSystemLoader(theme_dir),
+            loader=FileSystemLoader(conf.theme_dir),
             extensions=[with_],
             lstrip_blocks=True, trim_blocks=True
         )
