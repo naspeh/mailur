@@ -161,7 +161,7 @@ def text2html(text):
 t2h_re = [
     ('blockquote', r'^(?: *>[^\n]+(?:\n[^\n]+)*\n*)+'),
     ('p', r'^(?:(?<=\n\n)[^\n]*\n*?)'),
-    ('br', r'\n')
+    ('br', r'(?<=>)\n+')
 ]
 t2h_lexer = re.compile(
     r'(?m)(%s)' % '|'.join([r'(?P<%s>%s)' % (k, v) for k, v in t2h_re])

@@ -39,11 +39,6 @@ h1 {
 h2 {
     font-size: 1.2em;
 }
-blockquote {
-    padding-left: 10px;
-    border-left: 1px solid #ccc;
-    color: @color-poor;
-}
 @keyframes spin  {
     from {transform: rotate(0deg);}
     to {transform: rotate(360deg);}
@@ -196,6 +191,15 @@ blockquote {
 .email-body {
     padding: 10px;
 
+    blockquote {
+        padding-left: 10px;
+        border-left: 1px solid #ccc;
+        color: @color-poor;
+    }
+    p, dl, hr, ol, ul, pre, blockquote,
+    table, address, fieldset {
+        margin-bottom: 1em;
+    }
     .email-quote {
         display: none;
     }
