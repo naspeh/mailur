@@ -95,10 +95,37 @@
 </ul>
 {% endmacro %}
 
-{% block content %}
-{% if emails %}
-<div class="label">
-    {{ render(emails) }}
+<div class="panel-head">
+    {% if labels %}
+    <select class="labels">
+    {% for label in labels %}
+        <option value="{{ label.url }}" data-id="{{ label.id }}">
+            {{ label.human_name }} <b>{{ label.unread }}</b>/{{ label.exists }}
+        </option>
+    {% endfor %}
+    </select>
+    <span class="loader-fixed">Loading..</span>
+
+    {#<button name="sync_all">Sync all</button>#}
+    <button name="sync">Sync</button>
+    <button name="mark" value="archived">Archive</button>
+    <button name="mark" value="deleted">Delete</button>
+    <button name="copy_to_inbox">Move to Inbox</button>
+    {#
+    <button name="mark" value="starred">Add star</button>
+    <button name="mark" value="unstarred">Remove star</button>
+    #}
+    <button name="mark" value="read">Read</button>
+    <button name="mark" value="unread">Unread</button>
+    {% endif %}
 </div>
-{% endif %}
-{% endblock %}
+
+<div class="panel-body">
+    {% block content %}
+    {% if emails %}
+    <div class="label">
+        {{ render(emails) }}
+    </div>
+    {% endif %}
+    {% endblock %}
+</div>

@@ -35,7 +35,6 @@ $('.panel').on('panel_get', function(event, data) {
         storage.label = url;
         stored_data(true);
     }
-    panel.find('.labels [value="' + storage.label + '"]').attr('selected', true);
     var label_id = parseInt(storage.label.split('=')[1]);
 
     function stored_data(save) {
@@ -51,21 +50,22 @@ $('.panel').on('panel_get', function(event, data) {
         return value;
     }
     function mark(name, ids) {
-        var url = '/mark/' + name + '/';
-        $.post(url, {ids: ids}).done(refresh);
+        $.post('/mark/' + name + '/', {ids: ids}).done(refresh);
     }
     function refresh() {
-        panel.trigger('refresh');
+        panel.trigger('panel_get');
     }
 
     panel.trigger('loader');
     $.get(url, function(content) {
         // Set content
-        panel.find('.panel-body').html(content);
+        panel.html(content);
 
-        if (url == '/compose/') {
-            return;
-        }
+        panel.find('.labels [value="' + storage.label + '"]').attr('selected', true);
+        panel.find('.panel-head')
+            .find('.labels').on('change', function() {
+                panel.trigger('panel_get', {url: $(this).find(':selected').val()});
+            });
 
         panel.find('.email-line .email-info').click(function() {
             if (!$(this).parents('.thread').length) {
@@ -173,26 +173,10 @@ $('.panel').on('panel_get', function(event, data) {
     });
 });
 $('.panel')
-    .on('refresh', function(event) {
-        var panel = $(event.target);
-
-        panel.trigger('loader');
-        $.get('/labels/', function(content) {
-            panel.find('.panel-head')
-                .html(content)
-                .find('.labels').on('change', function() {
-                    panel.trigger('panel_get', {url: $(this).find(':selected').val()});
-                });
-            panel.trigger('panel_get');
-
-            panel.find('.btn-compose').click(function() {
-                panel.trigger('panel_get', {url: '/compose/'});
-            });
-        });
-    })
     .each(function() {
-        $(this).trigger('refresh');
+        $(this).trigger('panel_get');
     });
+
 $(window).on('hashchange', function() {
     var parts = window.location.hash.split('/');
     var panel = $(parts.shift());

@@ -70,7 +70,7 @@ class Label(Base):
         return cls._labels
 
     @classmethod
-    def get(cls, func_or_id=None):
+    def get(cls, func_or_id):
         if isinstance(func_or_id, (int, str)):
             func = lambda l: l.id == int(func_or_id)
         else:
@@ -82,6 +82,10 @@ class Label(Base):
                 raise ValueError('Must be one row, but %r' % label)
             return label[0]
         return None
+
+    @classmethod
+    def get_by_alias(cls, alias):
+        return cls.get(lambda l: l.alias == alias)
 
 
 class Email(Base):

@@ -42,7 +42,7 @@ class Env:
             return self.make_response(response)
         return response
 
-    def render(self, template_name, **context):
+    def render(self, template_name, context):
         t = self.jinja.get_template(template_name)
         context.setdefault('request', self.request)
         return t.render(context)

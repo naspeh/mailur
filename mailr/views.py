@@ -76,7 +76,7 @@ def index(env):
         l.alias: l for l in Label.get_all()
         if l.alias in [Label.A_INBOX, Label.A_STARRED, Label.A_TRASH]
     }
-    return env.render('index.tpl', **ctx)
+    return env.render('index.tpl', ctx)
 
 
 @login_required
@@ -84,14 +84,13 @@ def compose(env):
     return env.render('compose.tpl')
 
 
-@login_required
-def labels(env):
+def get_labels():
     labels = (
         session.query(Label)
         .filter(~Label.attrs.any(Label.NOSELECT))
         .order_by(Label.weight, Label.index)
     )
-    return env.render('labels.tpl', labels=labels)
+    return labels
 
 
 @login_required
@@ -115,7 +114,11 @@ def emails(env):
 
     emails = OrderedDict((r.gm_thrid, Email.model(r)) for r in emails).values()
     emails = sorted(emails, key=lambda v: v.date, reverse=True)
-    return env.render('emails.tpl', emails=emails, label=label)
+    return env.render('emails.tpl', {
+        'emails': emails,
+        'label': label,
+        'labels': get_labels()
+    })
 
 
 @login_required
@@ -150,14 +153,17 @@ def gm_thread(env, id):
         'subject': emails[-1].human_subject(),
         'labels': set(sum([e.full_labels for e in emails], []))
     }
-    return env.render(
-        'thread.tpl', thread=thread, groups=groups, few_showed=few_showed
-    )
+    return env.render('thread.tpl', {
+        'thread': thread,
+        'groups': groups,
+        'few_showed': few_showed,
+        'labels': get_labels()
+    })
 
 
 @login_required
 def mark(env, name):
-    label_all = Label.get(lambda l: l.alias == Label.A_ALL)
+    label_all = Label.get_by_alias(Label.A_ALL)
     store = {
         'starred': ('+FLAGS', Email.STARRED),
         'unstarred': ('-FLAGS', Email.STARRED),
@@ -165,21 +171,28 @@ def mark(env, name):
         'unread': ('-FLAGS', Email.SEEN),
     }
     uids = env.request.form.getlist('ids[]', type=int)
+    emails = session.query(Email.uid, Email.labels).filter(Email.uid.in_(uids))
+    emails = {m.uid: m for m in emails}
     if name in store:
         key, value = store[name]
         im = imap.client()
         im.select('"%s"' % label_all.name, readonly=False)
         imap.store(im, uids, key, value)
     elif name == 'archived':
+        label_in = Label.get_by_alias(Label.A_INBOX)
         im = imap.client()
-        im.select('"%s"' % label_all.name, readonly=False)
+        im.select('"%s"' % label_in.name, readonly=False)
         for uid in uids:
+            if str(label_in.id) not in emails[uid].labels:
+                continue
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
             uid_ = data[0].decode().split(' ')[0]
             res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
             log.info('Archive(%s): %s', uid, res)
+
+        syncer.fetch_emails(im, label_in, with_bodies=False)
     elif name == 'deleted':
-        label_trash = Label.get(lambda l: l.alias == Label.A_TRASH)
+        label_trash = Label.get_by_alias(Label.A_TRASH)
         im = imap.client()
         im.select('"%s"' % label_all.name, readonly=False)
         for uid in uids:
@@ -187,10 +200,11 @@ def mark(env, name):
             uid_ = data[0].decode().split(' ')[0]
             res = im.uid('COPY', uid_, '"%s"' % label_trash.name)
             log.info('Delete(%s): %s', uid, res)
+        syncer.fetch_emails(im, label_trash, with_bodies=False)
     else:
         env.abort(404)
 
-    syncer.sync_gmail(True)
+    syncer.fetch_emails(im, label_all, with_bodies=False)
     return 'OK'
 
 
