@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from functools import wraps
 from itertools import groupby
 
@@ -97,7 +96,7 @@ def get_labels():
 def emails(env):
     emails = (
         session.query(*Email.columns())
-        .order_by(Email.date)
+        .order_by(Email.gm_thrid, Email.date.desc())
     )
     if 'label' in env.request.args:
         label_id = env.request.args['label']
@@ -112,10 +111,14 @@ def emails(env):
     else:
         env.abort(404)
 
-    emails = OrderedDict((r.gm_thrid, Email.model(r)) for r in emails).values()
+    groups = groupby(emails, lambda v: v.gm_thrid)
+    groups = [(k, list(v)) for k, v in groups]
+    counts = {k: len(v) for k, v in groups}
+    emails = (Email.model(v[0]) for k, v in groups)
     emails = sorted(emails, key=lambda v: v.date, reverse=True)
     return env.render('emails.tpl', {
         'emails': emails,
+        'counts': counts,
         'label': label,
         'labels': get_labels()
     })

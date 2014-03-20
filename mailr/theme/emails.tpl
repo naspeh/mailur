@@ -6,7 +6,7 @@
     {% endfor %}
 {% endmacro %}
 
-{% macro render(emails, thread=False, show=False) %}
+{% macro render(emails, thread=False, show=False, counts={}) %}
 <ul class="emails">
 {% for email in emails %}
     <li class="email
@@ -42,11 +42,13 @@
 
             {% with subj, text = email.text_line %}
             <li class="email-info email-subject">
-                {% if thread %}
+            {% if thread %}
                 {{ text or '(no text)' }}
-                {% else %}
+            {% else %}
+                {% set count = counts[email.gm_thrid] %}
+                {% if count > 1 %}<i>{{ count }}</i>{% endif %}
                 <b>{{ subj }}</b>{% if text %} {{ text|e }}{% endif %}
-                {% endif %}
+            {% endif %}
             </li>
             {% endwith %}
 
@@ -124,7 +126,7 @@
     {% block content %}
     {% if emails %}
     <div class="label">
-        {{ render(emails) }}
+        {{ render(emails, counts=counts) }}
     </div>
     {% endif %}
     {% endblock %}
