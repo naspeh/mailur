@@ -46,7 +46,7 @@
                 {{ text or '(no text)' }}
             {% else %}
                 {% set count = counts[email.gm_thrid] %}
-                {% if count > 1 %}<i>{{ count }}</i>{% endif %}
+                {% if count > 1 %}<span class="email-count">{{ count }}</span>{% endif %}
                 <b>{{ subj }}</b>{% if text %} {{ text|e }}{% endif %}
             {% endif %}
             </li>
