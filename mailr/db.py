@@ -140,8 +140,8 @@ class Email(Base):
     in_reply_to = Column(String, index=True)
     message_id = Column(String, index=True)
 
-    text = Column(String)
-    html = Column(String)
+    text = Column(String, default='')
+    html = Column(String, default='')
     embedded = Column(MutableDict.as_mutable(HSTORE))
     attachments = Column(ARRAY(String))
 

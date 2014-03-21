@@ -80,6 +80,7 @@ def parse_part(part, msg_id, inner=False):
         ('files', []),
         ('attachments', []),
         ('embedded', {}),
+        ('html', '')
     ])
 
     ctype = part.get_content_type()
@@ -149,6 +150,8 @@ def parse(text, msg_id=None):
         data[field] = decode(value) if value else None
 
     data.update(parse_part(msg, msg_id or data['message_id']))
+    data.pop('text/html', '')
+    data.pop('text/plain', '')
     return data
 
 
