@@ -74,7 +74,7 @@ def main(argv=None):
     ))
 
     args, extra = parser.parse_known_args(argv)
-    if args.cmd == 'test':
+    if getattr(args, 'cmd', None) == 'test':
         args.exe(extra)
     elif not hasattr(args, 'exe'):
         parser.print_usage()
