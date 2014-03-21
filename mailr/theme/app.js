@@ -7,17 +7,17 @@ function sync() {
 sync();
 
 $(document).ajaxStart(function() {
-    $('.loader-fixed.loader').show();
+    $('.refresh.loader').show();
     $('input, button, select').attr('disabled', true);
 });
 $(document).ajaxStop(function() {
-    $('.loader-fixed.loader').hide();
+    $('.refresh.loader').hide();
     $('.loader').removeClass('loader');
     $('input, button, select').attr('disabled', false);
 });
 $('.panel').on('loader', function(event, element) {
     var panel = $(event.target);
-    panel.find('.loader-fixed').addClass('loader');
+    panel.find('.refresh').addClass('loader');
     if (element) {
         $(element).addClass('loader');
     }
@@ -131,7 +131,7 @@ $('.panel').on('panel_get', function(event, data) {
             var checked = panel.find('.email-pick input:checked').parents('.email');
 
             buttons.hide();
-            buttons.filter('[name="refresh"]').show();
+            buttons.filter('.refresh').show();
             if (checked.length > 0) {
                 buttons.filter('[name="copy_to_inbox"]').show();
                 if (label_id != CONF.trash_id) {

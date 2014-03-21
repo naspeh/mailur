@@ -105,9 +105,7 @@
         </option>
         {% endfor %}
     </select>
-    <span class="loader-fixed">Loading..</span>
-
-    <button name="refresh">Refresh</button>
+    <button name="refresh" class="refresh"></button>
     <button name="mark" value="archived">Archive</button>
     <button name="mark" value="deleted">Delete</button>
     <button name="copy_to_inbox">Move to Inbox</button>

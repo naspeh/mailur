@@ -45,8 +45,9 @@ h2 {
 }
 .loader {
     .icon-spin;
+    display: inline-block;
     &:before {
-        animation: spin 2s infinite linear;
+        animation: spin 1s infinite linear;
     }
 }
 .panel {
@@ -66,12 +67,11 @@ h2 {
     height: 30px;
     white-space: nowrap;
 
-    .loader-fixed {
-        .loader;
-        display: none;
-    }
     button {
         display: none;
+    }
+    .refresh {
+        .icon-spin;
     }
 }
 .panel-body {
