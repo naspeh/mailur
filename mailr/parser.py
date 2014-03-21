@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 import chardet
 from lxml import html
-from lxml.html.clean import Cleaner
+from lxml.html import clean
 from werkzeug.utils import secure_filename
 
 from . import log, conf
@@ -152,10 +152,19 @@ def parse(text, msg_id=None):
     return data
 
 
-def text2html(text):
-    text = re.sub(r'(\r\n|\r|\n)', '\n', text)
-    text = t2h_lexer.sub(t2h_repl, text)
-    return text
+def text2html(txt):
+    def fill_br(match):
+        if match.groups()[1]:
+            return '<br>' * 2
+        else:
+            return '<br>'
+
+    txt = re.sub(r'(\r\n|\r|\n)', '\n', txt)
+    htm = re.sub('((\n\n+)|\n)', fill_br, txt)
+    htm = clean.autolink_html(htm)
+
+    #text = t2h_lexer.sub(t2h_repl, text)
+    return htm
 
 
 t2h_re = [
@@ -190,7 +199,7 @@ def prepare_html(content):
     htm = content.get('text/html', '')
     txt = content.get('text/plain')
     if htm:
-        cleaner = Cleaner(links=False, safe_attrs_only=False)
+        cleaner = clean.Cleaner(links=False, safe_attrs_only=False)
         htm = cleaner.clean_html(htm)
         if embedded:
             root = html.fromstring(htm)
