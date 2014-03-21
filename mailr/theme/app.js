@@ -131,7 +131,7 @@ $('.panel').on('panel_get', function(event, data) {
             var checked = panel.find('.email-pick input:checked').parents('.email');
 
             buttons.hide();
-            buttons.filter('[name="sync"], [name="sync_all"]').show();
+            buttons.filter('[name="sync"]').show();
             if (checked.length > 0) {
                 buttons.filter('[name="copy_to_inbox"]').show();
                 if (label_id != CONF.trash_id) {
@@ -167,13 +167,8 @@ $('.panel').on('panel_get', function(event, data) {
         });
         panel.find('button[name="sync"]').click(function() {
             panel.trigger('loader', this);
-            var url = label_id ? '/sync/' + label_id + '/' : '/sync/';
-            $.get(url).done(refresh);
-            return false;
-        });
-        panel.find('button[name="sync_all"]').click(function() {
-            panel.trigger('loader', this);
-            $.get('/sync/').done(refresh);
+            sync();
+            refresh();
             return false;
         });
     });

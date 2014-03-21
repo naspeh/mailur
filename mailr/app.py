@@ -68,3 +68,10 @@ class Env:
         return SecureCookie.load_cookie(
             self.request, secret_key=conf('cookie_secret').encode()
         )
+
+    def login(self):
+        self.session['logined'] = True
+
+    @property
+    def is_logined(self):
+        return self.session.get('logined')

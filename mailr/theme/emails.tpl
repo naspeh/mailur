@@ -59,23 +59,21 @@
 
         {% if thread %}
         <ul class="email-head">
+            <li>
+                <a href="{{ url_for('raw', email=email.uid) }}" title="Raw message" target="_blank">[r]</a>
+            </li>
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
-
             <li class="email-info email-pics">
                 {{ gravatars(email.from_) }}
             </li>
-
             <li class="email-info email-from" title="{{ email.from_|join(', ')|e }}">
                 {{ email.from_|map('get_addr')|join(', ') }}
             </li>
-
             <li class="email-info email-subject">
                 {{ email.human_subject(strip=False) }}
             </li>
-
             <li class="email-info email-date">
                 {{ email.date|format_dt }}
-                <a href="{{ url_for('raw', email=email.uid) }}" title="Raw message" target="_blank">[R]</a>
             </li>
         </ul>
         <div class="email-body">

@@ -53,7 +53,7 @@ def auth_callback(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
     try:
         imap.auth_callback(redirect_uri, env.request.args['code'])
-        env.session['logined'] = True
+        env.login()
         return 'OK'
     except imap.AuthError as e:
         return str(e)
@@ -62,7 +62,7 @@ def auth_callback(env):
 def login_required(func):
     @wraps(func)
     def inner(env, *a, **kw):
-        if not conf('is_public') and not env.session.get('logined'):
+        if not conf('is_public') and not env.is_logined:
             return env.redirect_for('auth')
         return func(env, *a, **kw)
     return inner
@@ -237,7 +237,7 @@ def raw(env, email):
     from tests import open_file
 
     desc = env.request.args.get('desc')
-    if desc:
+    if env.is_logined and desc:
         name = '%s--%s.txt' % (email.uid, desc)
         with open_file('files_parser', name, mode='bw') as f:
             f.write(email.body)
