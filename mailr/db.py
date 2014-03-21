@@ -1,9 +1,11 @@
 import re
+import uuid
 
 from psycopg2.extras import register_hstore
 from sqlalchemy import (
     create_engine, Column, func,
-    DateTime, String, Integer, BigInteger, SmallInteger, Boolean, LargeBinary
+    DateTime, String, Integer, BigInteger, SmallInteger,
+    Boolean, LargeBinary, Float
 )
 from sqlalchemy.dialects.postgresql import ARRAY, HSTORE
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,6 +24,26 @@ register_hstore(engine.raw_connection(), True)
 
 Base = declarative_base()
 drop_all = lambda: Base.metadata.drop_all(engine)
+
+
+class Task(Base):
+    __tablename__ = 'tasks'
+    N_SYNC = 'sync'
+
+    id = Column(String, primary_key=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+
+    uids = Column(ARRAY(BigInteger), default=[])
+    name = Column(String)
+    params = Column(HSTORE)
+    is_new = Column(Boolean, default=True)
+    duration = Column(Float)
+
+    __mapper_args__ = {
+        'version_id_col': id,
+        'version_id_generator': lambda v: uuid.uuid4().hex
+    }
 
 
 class Label(Base):

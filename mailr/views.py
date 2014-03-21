@@ -4,7 +4,7 @@ from itertools import groupby
 from sqlalchemy import or_
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
-from . import log, conf, imap, syncer
+from . import log, conf, imap, syncer, async_tasks
 from .db import Email, Label, session
 
 rules = [
@@ -20,8 +20,7 @@ rules = [
     Rule('/raw/<email:email>/', endpoint='raw'),
     Rule('/mark/<name>/', methods=['POST'], endpoint='mark'),
     Rule('/copy/<label:label>/<label:to>/', methods=['POST'], endpoint='copy'),
-    Rule('/sync/', defaults={'label': None}, endpoint='sync'),
-    Rule('/sync/<label:label>/', endpoint='sync'),
+    Rule('/sync/', endpoint='sync'),
 ]
 
 
@@ -228,13 +227,8 @@ def copy(env, label, to):
 
 
 @login_required
-def sync(env, label=None):
-    if label:
-        im = imap.client()
-        im.select('"%s"' % label.name, readonly=False)
-        syncer.fetch_emails(im, label, with_bodies=True)
-    else:
-        syncer.sync_gmail(True)
+def sync(env):
+    async_tasks.sync()
     return 'OK'
 
 

@@ -8,7 +8,7 @@ import subprocess
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from mailr import conf, db, app, syncer
+from mailr import conf, db, app, syncer, async_tasks
 
 logging.basicConfig(
     format='%(levelname)s %(asctime)s  %(message)s',
@@ -57,7 +57,13 @@ def main(argv=None):
         .arg('-n', '--new', action='store_true')\
         .exe(lambda a: syncer.parse_emails(a.new))
 
+    cmd('tasks').exe(lambda a: async_tasks.process_all())
+
     cmd('db-clear').exe(lambda a: db.drop_all())
+
+    cmd('test').exe(lambda a: (
+        sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))
+    ))
 
     cmd('run').exe(run)
 
@@ -67,8 +73,10 @@ def main(argv=None):
         'csso {0}styles.css {0}styles.css'.format('mailr/theme/')
     ))
 
-    args = parser.parse_args(argv)
-    if not hasattr(args, 'exe'):
+    args, extra = parser.parse_known_args(argv)
+    if args.cmd == 'test':
+        args.exe(extra)
+    elif not hasattr(args, 'exe'):
         parser.print_usage()
     else:
         args.exe(args)

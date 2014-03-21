@@ -1,5 +1,11 @@
 (function() {
 
+function sync() {
+    $.get('/sync/');
+    setTimeout(sync, 30000);
+}
+sync();
+
 $(document).ajaxStart(function() {
     $('.loader-fixed.loader').show();
     $('input, button, select').attr('disabled', true);
