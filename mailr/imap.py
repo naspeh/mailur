@@ -45,10 +45,14 @@ def auth_callback(redirect_uri, code):
 
 
 def auth_refresh():
+    refresh_token = conf('google_response', {}).get('refresh_token')
+    if not refresh_token:
+        raise AuthError('refresh_token is empty')
+
     res = requests.post(OAUTH_URL_TOKEN, data={
         'client_id': conf('google_id'),
         'client_secret': conf('google_secret'),
-        'refresh_token': conf('google_response', {}).get('refresh_token'),
+        'refresh_token': refresh_token,
         'grant_type': 'refresh_token',
     })
     if res.ok:
