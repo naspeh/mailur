@@ -98,16 +98,16 @@
 <div class="panel-head">
     {% if labels %}
     <select class="labels">
-    {% for label in labels %}
+        <option value="">
+        {% for label in labels %}
         <option value="{{ label.url }}" data-id="{{ label.id }}">
             {{ label.human_name }} <b>{{ label.unread }}</b>/{{ label.exists }}
         </option>
-    {% endfor %}
+        {% endfor %}
     </select>
     <span class="loader-fixed">Loading..</span>
 
-    {#<button name="sync_all">Sync all</button>#}
-    <button name="sync">Sync</button>
+    <button name="refresh">Refresh</button>
     <button name="mark" value="archived">Archive</button>
     <button name="mark" value="deleted">Delete</button>
     <button name="copy_to_inbox">Move to Inbox</button>

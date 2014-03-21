@@ -67,7 +67,7 @@ $('.panel').on('panel_get', function(event, data) {
         // Set content
         panel.html(content);
 
-        panel.find('.labels [value="' + storage.label + '"]').attr('selected', true);
+        panel.find('.labels [value="' + url + '"]').attr('selected', true);
         panel.find('.panel-head')
             .find('.labels').on('change', function() {
                 panel.trigger('panel_get', {url: $(this).find(':selected').val()});
@@ -131,7 +131,7 @@ $('.panel').on('panel_get', function(event, data) {
             var checked = panel.find('.email-pick input:checked').parents('.email');
 
             buttons.hide();
-            buttons.filter('[name="sync"]').show();
+            buttons.filter('[name="refresh"]').show();
             if (checked.length > 0) {
                 buttons.filter('[name="copy_to_inbox"]').show();
                 if (label_id != CONF.trash_id) {
@@ -165,7 +165,7 @@ $('.panel').on('panel_get', function(event, data) {
             $.post(url, {ids: storage.uids}).done(refresh);
             return false;
         });
-        panel.find('button[name="sync"]').click(function() {
+        panel.find('button[name="refresh"]').click(function() {
             panel.trigger('loader', this);
             sync();
             refresh();
