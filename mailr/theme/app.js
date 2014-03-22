@@ -55,8 +55,9 @@ $('.panel').on('panel_get', function(event, data) {
         }
         return value;
     }
-    function mark(name, ids) {
-        $.post('/mark/' + name + '/', {ids: ids, label: label_id}).done(refresh);
+    function mark(name, ids, callback) {
+        callback = callback || refresh;
+        $.post('/mark/' + name + '/', {ids: ids, label: label_id}).done(callback);
     }
     function refresh() {
         panel.trigger('panel_get');
@@ -156,7 +157,13 @@ $('.panel').on('panel_get', function(event, data) {
         panel.find('button[name="mark"]').click(function() {
             panel.trigger('loader', this);
             var $this = $(this);
-            mark($this.val(), storage.uids);
+            var callback = refresh;
+            if ($this.val() == 'deleted' || $this.val() == 'archived') {
+                callback = function() {
+                    panel.trigger('panel_get', {url: storage.label});
+                };
+            }
+            mark($this.val(), storage.uids, callback);
             return false;
         });
         panel.find('button[name="copy_to_inbox"]').click(function() {
