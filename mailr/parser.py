@@ -138,7 +138,8 @@ def parse_part(part, msg_id, inner=False):
         if content['embedded']:
             root = html.fromstring(htm)
             for img in root.findall('.//img'):
-                if not img.attrib.get('src').startswith('cid:'):
+                src = img.attrib.get('src')
+                if not src or not src.startswith('cid:'):
                     continue
                 cid = '<%s>' % img.attrib.get('src')[4:]
                 img.attrib['src'] = '/attachments/' + content['embedded'][cid]
