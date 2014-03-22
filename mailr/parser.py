@@ -135,14 +135,18 @@ def parse_part(part, msg_id, inner=False):
 
         cleaner = clean.Cleaner(links=False, safe_attrs_only=False)
         htm = cleaner.clean_html(htm)
-        if content['embedded']:
+        embedded = content['embedded']
+        if embedded:
             root = html.fromstring(htm)
             for img in root.findall('.//img'):
                 src = img.attrib.get('src')
                 if not src or not src.startswith('cid:'):
                     continue
                 cid = '<%s>' % img.attrib.get('src')[4:]
-                img.attrib['src'] = '/attachments/' + content['embedded'][cid]
+                if cid in embedded:
+                    img.attrib['src'] = '/attachments/' + embedded[cid]
+                else:
+                    log.warn('No embedded %s in %s', cid, msg_id)
             htm = html.tostring(root, encoding='utf8').decode()
         content['html'] = htm
     return content
