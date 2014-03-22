@@ -128,8 +128,12 @@ def parse_part(part, msg_id, inner=False):
                     f.write(item['payload'])
 
     if content['html']:
+        htm = re.sub(r'[<?].*?[?>]', '', content['html']).strip()
+        if not htm:
+            content['html'] = htm
+            return content
+
         cleaner = clean.Cleaner(links=False, safe_attrs_only=False)
-        htm = re.sub('<\?.*?\?>', '', content['html'])
         htm = cleaner.clean_html(htm)
         if content['embedded']:
             root = html.fromstring(htm)
