@@ -69,6 +69,15 @@ def fetch_emails(im, label, with_bodies=True):
     })
     log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())
     if not msgids:
+        updated = (
+            session.query(Email.id)
+            .filter(Email.labels.has_key(str(label.id)))
+            .update(
+                {Email.labels: Email.labels.delete(str(label.id))},
+                synchronize_session=False
+            )
+        )
+        log.info('  * Clean %s label', label.name)
         return
 
     # Fetch properties
