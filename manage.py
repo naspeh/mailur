@@ -55,7 +55,9 @@ def main(argv=None):
 
     cmd('parse')\
         .arg('-n', '--new', action='store_true')\
-        .exe(lambda a: syncer.parse_emails(a.new))
+        .arg('-l', '--limit', type=int, default=500)\
+        .arg('-t', '--last')\
+        .exe(lambda a: syncer.parse_emails(a.new, a.limit, a.last))
 
     cmd('tasks').exe(lambda a: async_tasks.process_all())
 

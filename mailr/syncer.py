@@ -182,15 +182,16 @@ def update_email(uid, raw):
         .update(fields, synchronize_session=False)
 
 
-def parse_emails(new=True):
+def parse_emails(new=True, limit=500, last=None):
     emails = session.query(Email)
     if new:
         emails = emails.filter(Email.text == None).filter(Email.html == None)
 
-    last = session.query(func.max(Email.updated_at)).scalar()
+    if not last:
+        last = session.query(func.max(Email.updated_at)).scalar()
     emails = emails.filter(Email.updated_at <= last)
-    log.info('* Parse %s emails...', emails.count())
+    log.info('* Parse %s emails (%s)...', emails.count(), last)
     while emails.count():
-        for i, email in enumerate(emails.limit(500), 1):
+        for i, email in enumerate(emails.limit(limit), 1):
             update_email(email.uid, email.body)
         log.info('  - parsed %s ones', i)
