@@ -1,23 +1,7 @@
-import socket
-from functools import wraps
 from itertools import groupby
 
-from . import log, syncer, Timer, conf
+from . import log, syncer, Timer, with_lock
 from .db import session, Task
-
-
-def with_lock(func):
-    target = ':'.join([func.__module__, func.__name__, conf.path])
-
-    @wraps(func)
-    def inner(*a, **kw):
-        lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-        try:
-            lock_socket.bind('\0' + target)
-            return func(*a, **kw)
-        except socket.error:
-            raise SystemExit('Already run: %s' % target)
-    return inner
 
 
 def sync():

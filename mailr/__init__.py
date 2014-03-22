@@ -1,7 +1,9 @@
-import logging
 import json
+import logging
 import os
+import socket
 import time
+from functools import wraps
 
 log = logging.getLogger(__name__)
 app_dir = os.path.abspath(os.path.dirname(__file__))
@@ -38,6 +40,20 @@ class _Conf:
         return os.path.join(base_dir, dir_)
 
 conf = _Conf()
+
+
+def with_lock(func):
+    target = ':'.join([func.__module__, func.__name__, conf.path])
+
+    @wraps(func)
+    def inner(*a, **kw):
+        lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        try:
+            lock_socket.bind('\0' + target)
+            return func(*a, **kw)
+        except socket.error:
+            raise SystemExit('Already run: %s' % target)
+    return inner
 
 
 class Timer:

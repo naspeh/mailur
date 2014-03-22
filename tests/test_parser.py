@@ -12,7 +12,7 @@ def test_emails(path, expected):
     result = parser.parse(raw, 'test')
     assert expected['subject'] == result['subject']
 
-    for type_ in ['html', 'text/calendar']:
+    for type_ in ['html']:
         if expected.get(type_):
             assert type_ in result
             assert expected[type_] in result[type_]

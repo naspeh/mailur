@@ -3,12 +3,13 @@ from collections import OrderedDict, defaultdict
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from . import log, Timer, imap, parser
+from . import log, Timer, imap, parser, with_lock
 from .db import Email, Label, session
 
 BODY_MAXSIZE = 50 * 1024 * 1024
 
 
+@with_lock
 def sync_gmail(with_bodies=True):
     im = imap.client()
 
