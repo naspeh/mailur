@@ -60,20 +60,6 @@ def decode_date(text):
     return tm
 
 
-key_map = {
-    'date': ('date', decode_date),
-    'subject': ('subject', decode_header),
-    'from': ('from', decode_addresses),
-    'sender': ('sender', decode_addresses),
-    'reply-to': ('reply_to', decode_addresses),
-    'to': ('to', decode_addresses),
-    'cc': ('cc', decode_addresses),
-    'bcc': ('bcc', decode_addresses),
-    'in-reply-to': ('in_reply_to', str),
-    'message-id': ('message_id', str)
-}
-
-
 def parse_part(part, msg_id, inner=False):
     msg_id = str(msg_id)
     content = OrderedDict([
@@ -86,7 +72,7 @@ def parse_part(part, msg_id, inner=False):
     ctype = part.get_content_type()
     mtype = part.get_content_maintype()
     stype = part.get_content_subtype()
-    if mtype == 'multipart':
+    if part.is_multipart():
         for m in part.get_payload():
             c = parse_part(m, msg_id, inner=True)
             if stype != 'alternative':
@@ -94,8 +80,10 @@ def parse_part(part, msg_id, inner=False):
                 content['html'] += c.pop('html', '')
             content['files'] += c.pop('files')
             content.update(c)
-        if stype == 'alternative':
-            content['html'] = prepare_html(content)
+    elif mtype == 'multipart':
+        text = part.get_payload(decode=True)
+        text = decode_str(text, part.get_content_charset(), msg_id)
+        content['html'] = text
     elif part.get_filename() or mtype == 'image':
         payload = part.get_payload(decode=True)
         attachment = {
@@ -110,8 +98,9 @@ def parse_part(part, msg_id, inner=False):
     elif ctype in ['text/html', 'text/plain']:
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id)
-        content[ctype] = text
-        content['html'] = prepare_html(content)
+        if ctype == 'text/plain':
+            text = text2html(text)
+        content['html'] = text
     elif ctype == 'message/rfc822':
         pass
     else:
@@ -137,7 +126,35 @@ def parse_part(part, msg_id, inner=False):
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, 'bw') as f:
                     f.write(item['payload'])
+
+    if content['html']:
+        cleaner = clean.Cleaner(links=False, safe_attrs_only=False)
+        htm = re.sub('<\?.*?\?>', '', content['html'])
+        htm = cleaner.clean_html(htm)
+        if content['embedded']:
+            root = html.fromstring(htm)
+            for img in root.findall('.//img'):
+                if not img.attrib.get('src').startswith('cid:'):
+                    continue
+                cid = '<%s>' % img.attrib.get('src')[4:]
+                img.attrib['src'] = '/attachments/' + content['embedded'][cid]
+            htm = html.tostring(root, encoding='utf8').decode()
+        content['html'] = htm
     return content
+
+
+key_map = {
+    'date': ('date', decode_date),
+    'subject': ('subject', decode_header),
+    'from': ('from', decode_addresses),
+    'sender': ('sender', decode_addresses),
+    'reply-to': ('reply_to', decode_addresses),
+    'to': ('to', decode_addresses),
+    'cc': ('cc', decode_addresses),
+    'bcc': ('bcc', decode_addresses),
+    'in-reply-to': ('in_reply_to', str),
+    'message-id': ('message_id', str)
+}
 
 
 def parse(text, msg_id=None):
@@ -150,12 +167,14 @@ def parse(text, msg_id=None):
         data[field] = decode(value) if value else None
 
     data.update(parse_part(msg, msg_id or data['message_id']))
-    data.pop('text/html', '')
-    data.pop('text/plain', '')
     return data
 
 
 def text2html(txt):
+    txt = txt.strip()
+    if not txt:
+        return ''
+
     def fill_br(match):
         if match.groups()[1]:
             return '<br>' * 2
@@ -195,26 +214,6 @@ def t2h_repl(match):
         return '<br/>'
     else:
         raise ValueError(groups)
-
-
-def prepare_html(content):
-    embedded = content.get('embedded')
-    htm = content.get('text/html', '')
-    txt = content.get('text/plain')
-    if htm:
-        cleaner = clean.Cleaner(links=False, safe_attrs_only=False)
-        htm = cleaner.clean_html(htm)
-        if embedded:
-            root = html.fromstring(htm)
-            for img in root.findall('.//img'):
-                if not img.attrib.get('src').startswith('cid:'):
-                    continue
-                cid = '<%s>' % img.attrib.get('src')[4:]
-                img.attrib['src'] = '/attachments/' + embedded[cid]
-            htm = html.tostring(root, encoding='utf8').decode()
-    elif txt:
-        htm = text2html(txt)
-    return htm
 
 
 def hide_quote(mail1, mail0, class_):

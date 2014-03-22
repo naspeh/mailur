@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from . import log, Timer, imap, parser
 from .db import Email, Label, session
 
+BODY_MAXSIZE = 100 * 1024 * 1024
+
 
 def sync_gmail(with_bodies=True):
     im = imap.client()
@@ -95,7 +97,7 @@ def fetch_emails(im, label, with_bodies=True):
                 fields = {k: row[v] for k, v in query.items() if v in row}
                 fields['labels'] = {str(label.id): ''}
                 if not with_bodies:
-                    fields.update(parser.parse(header))
+                    fields.update(parser.parse(header, fields['uid']))
                 emails.append(fields)
             session.execute(Email.__table__.insert(), emails)
 
@@ -150,7 +152,7 @@ def fetch_emails(im, label, with_bodies=True):
     )
     uids = {msgids[r.uid]: r.size for r in emails.all()}
     if uids:
-        step_size, group_size = 0, 100 * 1024 * 1024
+        step_size, group_size = 0, BODY_MAXSIZE
         step_uids, group_uids = [], []
         for uid, size in uids.items():
             if step_uids and step_size + size > group_size:
