@@ -172,13 +172,15 @@ def mark(env, name):
         'read': ('+FLAGS', Email.SEEN),
         'unread': ('-FLAGS', Email.SEEN),
     }
+    label_id = env.request.form.get('label', label_all.id)
+    label = Label.get(label_id)
     uids = env.request.form.getlist('ids[]', type=int)
     emails = session.query(Email.uid, Email.labels).filter(Email.uid.in_(uids))
     emails = {m.uid: m for m in emails}
     if name in store:
         key, value = store[name]
         im = imap.client()
-        im.select('"%s"' % label_all.name, readonly=False)
+        im.select('"%s"' % label.name, readonly=False)
         imap.store(im, uids, key, value)
     elif name == 'archived':
         label_in = Label.get_by_alias(Label.A_INBOX)
@@ -196,7 +198,7 @@ def mark(env, name):
     elif name == 'deleted':
         label_trash = Label.get_by_alias(Label.A_TRASH)
         im = imap.client()
-        im.select('"%s"' % label_all.name, readonly=False)
+        im.select('"%s"' % label.name, readonly=False)
         for uid in uids:
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
             uid_ = data[0].decode().split(' ')[0]
@@ -206,7 +208,7 @@ def mark(env, name):
     else:
         env.abort(404)
 
-    syncer.fetch_emails(im, label_all, with_bodies=False)
+    syncer.fetch_emails(im, label, with_bodies=False)
     return 'OK'
 
 

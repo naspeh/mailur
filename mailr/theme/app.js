@@ -56,7 +56,7 @@ $('.panel').on('panel_get', function(event, data) {
         return value;
     }
     function mark(name, ids) {
-        $.post('/mark/' + name + '/', {ids: ids}).done(refresh);
+        $.post('/mark/' + name + '/', {ids: ids, label: label_id}).done(refresh);
     }
     function refresh() {
         panel.trigger('panel_get');
