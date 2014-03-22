@@ -187,5 +187,10 @@ def parse_emails(new=True):
     if new:
         emails = emails.filter(Email.text == None).filter(Email.html == None)
 
-    for email in emails:
-        update_email(email.uid, email.body)
+    last = session.query(func.max(Email.updated_at)).scalar()
+    emails = emails.filter(Email.updated_at <= last)
+    log.info('* Parse %s emails...', emails.count())
+    while emails.count():
+        for i, email in enumerate(emails.limit(100)):
+            update_email(email.uid, email.body)
+        log.info('  - parsed %s ones', i)
