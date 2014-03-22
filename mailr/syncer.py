@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from . import log, Timer, imap, parser
 from .db import Email, Label, session
 
-BODY_MAXSIZE = 100 * 1024 * 1024
+BODY_MAXSIZE = 50 * 1024 * 1024
 
 
 def sync_gmail(with_bodies=True):
