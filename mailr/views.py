@@ -190,6 +190,8 @@ def mark(env, name):
             if str(label_in.id) not in emails[uid].labels:
                 continue
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+            if not data[0]:
+                continue
             uid_ = data[0].decode().split(' ')[0]
             res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
             log.info('Archive(%s): %s', uid, res)
@@ -201,6 +203,8 @@ def mark(env, name):
         im.select('"%s"' % label.name, readonly=False)
         for uid in uids:
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+            if not data[0]:
+                continue
             uid_ = data[0].decode().split(' ')[0]
             res = im.uid('COPY', uid_, '"%s"' % label_trash.name)
             log.info('Delete(%s): %s', uid, res)
