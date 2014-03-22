@@ -191,6 +191,6 @@ def parse_emails(new=True):
     emails = emails.filter(Email.updated_at <= last)
     log.info('* Parse %s emails...', emails.count())
     while emails.count():
-        for i, email in enumerate(emails.limit(100)):
+        for i, email in enumerate(emails.limit(500), 1):
             update_email(email.uid, email.body)
         log.info('  - parsed %s ones', i)
