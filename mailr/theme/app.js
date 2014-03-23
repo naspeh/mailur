@@ -68,8 +68,7 @@ $('.panel').on('panel_get', function(event, data) {
         // Set content
         panel.html(content);
 
-        panel.find('.labels option').attr('selected', false);
-        panel.find('.labels [value="' + url + '"]').attr('selected', true);
+        panel.find('.labels [value="' + url + '"]').prop('selected', true);
         panel.find('.panel-head')
             .find('.labels').on('change', function() {
                 panel.trigger('panel_get', {url: $(this).find(':selected').val()});
