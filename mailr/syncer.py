@@ -23,6 +23,7 @@ def sync_gmail(with_bodies=True):
         '\\Trash': (-40, True, Label.A_TRASH),
         '\\Important': (-30, True, Label.A_IMPORTANT)
     }
+    last = session.query(func.max(Email.updated_at)).scalar()
     folders_ = imap.list_(im)
     for index, value in enumerate(folders_):
         attrs, delim, name = value
@@ -48,6 +49,19 @@ def sync_gmail(with_bodies=True):
         if Label.NOSELECT in attrs:
             continue
         fetch_emails(im, label, with_bodies)
+
+    # Cleanup labels
+    for label in session.query(Label).filter(Label.updated_at <= last):
+        updated = (
+            session.query(Email.id)
+            .filter(Email.labels.has_key(str(label.id)))
+            .update(
+                {Email.labels: Email.labels.delete(str(label.id))},
+                synchronize_session=False
+            )
+        )
+        log.info('Cleanup %s emails from label %s', updated, label.id)
+        session.delete(label)
 
 
 def fetch_emails(im, label, with_bodies=True):
