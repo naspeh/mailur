@@ -26,6 +26,11 @@ $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
     var panel_id = panel.attr('id');
     var storage = stored_data();
+    if (window.location.hash == '#reset') {
+        storage = {};
+        stored_data(true);
+    }
+
     var url = data && data.url;
     if (url) {
         var hash = [panel_id, url].join('');
