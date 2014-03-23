@@ -39,6 +39,26 @@ h1 {
 h2 {
     font-size: 1.2em;
 }
+button {
+    border: 1px solid @color-poor * 1.2;
+    border-radius: 3px;
+    background-color: @color-bg-poor;
+    font-size: 12px;
+    margin: 0;
+    padding: 3px 5px;
+    vertical-align: middle;
+    &:hover {
+        cursor: pointer;
+        background-color: @color-bg-poor * 1.2;
+    }
+}
+select {
+    font-size: 12px;
+    vertical-align: middle;
+    &:hover {
+        cursor: pointer;
+    }
+}
 @keyframes spin  {
     from {transform: rotate(0deg);}
     to {transform: rotate(360deg);}
@@ -64,7 +84,9 @@ h2 {
 .panel-head {
     position: relative;
     margin: 0 10px;
-    height: 30px;
+    padding: 2px 0;
+    height: 24px;
+    line-height: 24px;
     white-space: nowrap;
 
     button {
