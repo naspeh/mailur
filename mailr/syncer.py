@@ -1,7 +1,6 @@
 from collections import OrderedDict, defaultdict
 
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 
 from . import log, Timer, imap, parser, with_lock
 from .db import Email, Label, session
@@ -23,7 +22,7 @@ def sync_gmail(with_bodies=True):
         '\\Trash': (-40, True, Label.A_TRASH),
         '\\Important': (-30, True, Label.A_IMPORTANT)
     }
-    last = session.query(func.max(Email.updated_at)).scalar()
+    session.query(Email).update({Email.updated_at: None})
     folders_ = imap.list_(im)
     for index, value in enumerate(folders_):
         attrs, delim, name = value
@@ -32,26 +31,24 @@ def sync_gmail(with_bodies=True):
         weight, hidden, alias = (
             folder[0] if folder else (0, Label.NOSELECT in attrs, None)
         )
-        label = Label(attrs=attrs, delim=delim, name=name)
-        try:
-            session.add(label)
-            session.flush()
-        except IntegrityError:
-            pass
-
         label = session.query(Label).filter(Label.name == name).one()
-        label.hidden = hidden
-        label.index = index
-        label.weight = weight
-        label.alias = alias
-        session.merge(label)
+        if not label:
+            label = Label(attrs=attrs, delim=delim, name=name)
+            session.add(label)
+
+        session.query(Label).filter(Label.name == name).update({
+            Label.hidden: hidden,
+            Label.index: index,
+            Label.weight: weight,
+            Label.alias: alias
+        })
 
         if Label.NOSELECT in attrs:
             continue
         fetch_emails(im, label, with_bodies)
 
     # Cleanup labels
-    for label in session.query(Label).filter(Label.updated_at <= last):
+    for label in session.query(Label).filter(Label.updated_at == None):
         updated = (
             session.query(Email.id)
             .filter(Email.labels.has_key(str(label.id)))
