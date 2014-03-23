@@ -39,25 +39,30 @@ h1 {
 h2 {
     font-size: 1.2em;
 }
-button {
+.button() {
+    color: @color-poor * 0.7;
     border: 1px solid @color-poor * 1.2;
     border-radius: 3px;
     background-color: @color-bg-poor;
-    font-size: 12px;
-    margin: 0;
-    padding: 3px 5px;
     vertical-align: middle;
     &:hover {
         cursor: pointer;
+        color: #333;
         background-color: @color-bg-poor * 1.2;
     }
 }
-select {
+button {
+    .button;
     font-size: 12px;
-    vertical-align: middle;
-    &:hover {
-        cursor: pointer;
-    }
+    font-weight: bold;
+    margin: 0;
+    padding: 3px 5px;
+}
+select {
+    .button;
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
 }
 @keyframes spin  {
     from {transform: rotate(0deg);}
@@ -227,18 +232,11 @@ select {
     }
     .email-quote-switch {
         .icon-dot-3;
+        .button;
         display: inline-block;
-        cursor: pointer;
-        color: @color-poor;
         line-height: 0.8;
-        border: 1px solid @color-poor * 1.5;
         padding: 0 5px;
         margin: 5px 0;
-        background-color: @color-bg-poor;
-        &:hover {
-            color: #333;
-            background-color: @color-poor *  1.5;
-        }
     }
     .email-attachments {
         margin-top: 10px;
