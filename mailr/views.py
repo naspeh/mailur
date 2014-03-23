@@ -54,7 +54,7 @@ def auth_callback(env):
     try:
         imap.auth_callback(redirect_uri, env.request.args['code'])
         env.login()
-        return 'OK'
+        return env.redirect_for('index')
     except imap.AuthError as e:
         return str(e)
 
