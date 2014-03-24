@@ -89,7 +89,7 @@ $('.panel').on('panel_get', function(event, data) {
         panel.find('.email-pick input')
             .each(function() {
                 var uid = $(this).val();
-                if (storage.uids.indexOf(uid) > -1) {
+                if (storage.uids && storage.uids.indexOf(uid) > -1) {
                     $(this).attr('checked', true);
                 } else if ($(this).is(':checked')) {
                     storage.uids.push(uid);

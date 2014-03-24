@@ -50,6 +50,13 @@ h2 {
         color: #333;
         background-color: @color-bg-poor * 1.2;
     }
+    &[disabled] {
+        color: @color-poor;
+        &:hover {
+            color: @color-poor;
+            background-color: @color-bg-poor;
+        }
+    }
 }
 button {
     .button;
