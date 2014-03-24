@@ -31,7 +31,7 @@ def sync_gmail(with_bodies=True):
         weight, hidden, alias = (
             folder[0] if folder else (0, Label.NOSELECT in attrs, None)
         )
-        label = session.query(Label).filter(Label.name == name).one()
+        label = session.query(Label).filter(Label.name == name).first()
         if not label:
             label = Label(attrs=attrs, delim=delim, name=name)
             session.add(label)
