@@ -3,10 +3,11 @@ import email
 import os
 import re
 from collections import OrderedDict
+from html import escape as html_escape
 
 import chardet
-from lxml import html
-from lxml.html import clean
+from lxml import html as lhtml
+from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
 
 from . import log, conf
@@ -133,11 +134,11 @@ def parse_part(part, msg_id, inner=False):
             content['html'] = htm
             return content
 
-        cleaner = clean.Cleaner(links=False, safe_attrs_only=False)
+        cleaner = Cleaner(links=False, safe_attrs_only=False)
         htm = cleaner.clean_html(htm)
         embedded = content['embedded']
         if embedded:
-            root = html.fromstring(htm)
+            root = lhtml.fromstring(htm)
             for img in root.findall('.//img'):
                 src = img.attrib.get('src')
                 if not src or not src.startswith('cid:'):
@@ -147,7 +148,7 @@ def parse_part(part, msg_id, inner=False):
                     img.attrib['src'] = '/attachments/' + embedded[cid]
                 else:
                     log.warn('No embedded %s in %s', cid, msg_id)
-            htm = html.tostring(root, encoding='utf8').decode()
+            htm = lhtml.tostring(root, encoding='utf8').decode()
         content['html'] = htm
     return content
 
@@ -179,6 +180,17 @@ def parse(text, msg_id=None):
     return data
 
 
+link_regexes = [
+    (
+        r'(https?://|www\.)[a-z0-9._-]+'
+        r'(?:/[/\-_.,a-z0-9%&?;=~#]*)?'
+        r'(?:\([/\-_.,a-z0-9%&?;=~#]*\))?'
+    ),
+    r'mailto:([a-z0-9._-]+@[a-z0-9_._]+[a-z])',
+]
+link_re = re.compile('(?i)(%s)' % '|'.join(link_regexes))
+
+
 def text2html(txt):
     txt = txt.strip()
     if not txt:
@@ -190,22 +202,14 @@ def text2html(txt):
         else:
             return '<br>'
 
+    def fill_link(match):
+        return '<a href="{0}" target_="_blank">{0}</a>'.format(match.group())
+
     txt = re.sub(r'(\r\n|\r|\n)', '\n', txt)
-    htm = re.sub('((\n\n+)|\n)', fill_br, txt)
-    htm = clean.autolink_html(htm)
-
-    #text = t2h_lexer.sub(t2h_repl, text)
+    htm = html_escape(txt)
+    htm = re.sub(r'((\n\n+)|\n)', fill_br, htm)
+    htm = link_re.sub(fill_link, htm)
     return htm
-
-
-t2h_re = [
-    ('blockquote', r'^(?: *>[^\n]+(?:\n[^\n]+)*\n*)+'),
-    ('p', r'^(?:(?<=\n\n)[^\n]*\n*?)'),
-    ('br', r'(?<=>)\n+')
-]
-t2h_lexer = re.compile(
-    r'(?m)(%s)' % '|'.join([r'(?P<%s>%s)' % (k, v) for k, v in t2h_re])
-)
 
 
 def t2h_repl(match):
@@ -233,15 +237,15 @@ def hide_quote(mail1, mail0, class_):
         v = re.sub('[\s]+', '', v.text_content())
         return v.rstrip()
 
-    t0 = clean(html.fromstring(mail0))
-    root1 = html.fromstring(mail1)
+    t0 = clean(lhtml.fromstring(mail0))
+    root1 = lhtml.fromstring(mail1)
     for block in root1.xpath('//blockquote'):
         t1 = clean(block)
         if t0 and t1 and (t0.startswith(t1) or t0.endswith(t1) or t0 in t1):
             block.attrib['class'] = class_
             parent = block.getparent()
-            switch = html.fromstring('<div class="%s-switch"/>' % class_)
+            switch = lhtml.fromstring('<div class="%s-switch"/>' % class_)
             block.attrib['class'] = class_
             parent.insert(parent.index(block), switch)
-            return html.tostring(root1, encoding='utf8').decode()
+            return lhtml.tostring(root1, encoding='utf8').decode()
     return mail1
