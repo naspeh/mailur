@@ -28,6 +28,7 @@ $('.panel').on('panel_get', function(event, data) {
     var storage = stored_data();
     if (window.location.hash == '#reset') {
         storage = {};
+        storage.uids = [];
         stored_data(true);
     }
 
@@ -46,7 +47,7 @@ $('.panel').on('panel_get', function(event, data) {
         storage.label = url;
         stored_data(true);
     }
-    var label_id = parseInt(storage.label.split('=')[1]);
+    var label_id = storage.label && parseInt(storage.label.split('=')[1]);
 
     function stored_data(save) {
         if (!save) {
