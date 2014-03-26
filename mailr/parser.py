@@ -75,12 +75,15 @@ def parse_part(part, msg_id, inner=False):
     stype = part.get_content_subtype()
     if part.is_multipart():
         for m in part.get_payload():
-            c = parse_part(m, msg_id, inner=True)
+            child = parse_part(m, msg_id, inner=True)
+            child_html = child.pop('html', '')
+            content.setdefault('html', '')
             if stype != 'alternative':
-                content.setdefault('html', '')
-                content['html'] += c.pop('html', '')
-            content['files'] += c.pop('files')
-            content.update(c)
+                content['html'] += child_html
+            elif child_html:
+                content['html'] = child_html
+            content['files'] += child.pop('files')
+            content.update(child)
     elif mtype == 'multipart':
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id)
