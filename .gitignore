@@ -1,3 +1,4 @@
 *.pyc
 conf*.json
+!conf_test.json
 attachments/*
