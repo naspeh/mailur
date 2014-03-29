@@ -50,7 +50,8 @@ def decode_addresses(text):
     res = []
     for name, addr in email.utils.getaddresses([text]):
         name, addr = [decode_header(r) for r in [name, addr]]
-        res += ['"%s" <%s>' % (name if name else addr.split('@')[0], addr)]
+        if addr:
+            res += ['"%s" <%s>' % (name if name else addr.split('@')[0], addr)]
     return res
 
 
