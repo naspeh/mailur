@@ -198,19 +198,12 @@ def text2html(txt):
     if not txt:
         return ''
 
-    def fill_br(match):
-        if match.groups()[1]:
-            return '<br>' * 2
-        else:
-            return '<br>'
-
     def fill_link(match):
         return '<a href="{0}" target_="_blank">{0}</a>'.format(match.group())
 
-    txt = re.sub(r'(\r\n|\r|\n)', '\n', txt)
     htm = html_escape(txt)
-    htm = re.sub(r'((\n\n+)|\n)', fill_br, htm)
     htm = link_re.sub(fill_link, htm)
+    htm = '<pre>%s</pre>' % htm
     return htm
 
 

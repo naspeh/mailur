@@ -15,7 +15,8 @@ def get_all():
 
 
 def get_addr(addr):
-    return addr and getaddresses([addr])[0][1]
+    addr = [addr] if isinstance(addr, str) else addr
+    return addr and getaddresses(addr)[0][1]
 
 
 def get_addr_name(addr):

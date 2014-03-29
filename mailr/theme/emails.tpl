@@ -61,6 +61,8 @@
         <ul class="email-head">
             <li>
                 <a href="{{ url_for('raw', email=email.uid) }}" title="Raw message" target="_blank">[r]</a>
+                {% set url = '%s?email=%s' % (url_for('emails'), email.from_|get_addr) %}
+                <a href="{{ url }}" title="Filter by {{ email.from_|get_addr }}" class="email-filter">[f]</a>
             </li>
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
             <li class="email-info email-pics">

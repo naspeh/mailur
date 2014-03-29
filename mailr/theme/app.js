@@ -131,7 +131,7 @@ $('.panel').on('panel_get', function(event, data) {
             mark(name, [$this.parents('.email').data('id')]);
         });
 
-        panel.find('.email-labels a, .email-from a').click(function() {
+        panel.find('.email-labels a, .email-filter').click(function() {
             panel.trigger('panel_get', {url: $(this).attr('href')});
             return false;
         });

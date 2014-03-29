@@ -1,7 +1,7 @@
 from functools import wraps
 from itertools import groupby
 
-from sqlalchemy import or_
+from sqlalchemy import func
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, conf, imap, syncer, async_tasks
@@ -104,7 +104,8 @@ def emails(env):
     elif 'email' in env.request.args:
         email = env.request.args['email']
         emails = emails.filter(
-            or_(Email.from_.any(email), Email.to.any(email))
+            func.array_to_string(Email.from_ + Email.to, ',')
+            .contains('<%s>' % email)
         )
         label = None
     else:
