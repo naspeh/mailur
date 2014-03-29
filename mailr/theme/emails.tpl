@@ -28,8 +28,8 @@
                 {{ gravatars(email.from_) }}
             </li>
 
-            <li class="email-info email-from" title="{{ email.from_|join(', ')|e }}">
-                {{ email.from_|map('get_addr')|join(', ') }}
+            <li class="email-info email-from" title="{{ email.from_str(full=True)|e }}">
+                {{ email.from_str() }}
             </li>
 
             {% if not thread and email.labels %}
@@ -66,8 +66,8 @@
             <li class="email-info email-pics">
                 {{ gravatars(email.from_) }}
             </li>
-            <li class="email-info email-from" title="{{ email.from_|join(', ')|e }}">
-                {{ email.from_|map('get_addr')|join(', ') }}
+            <li class="email-info email-from" title="{{ email.from_str(full=True)|e }}">
+                {{ email.from_str() }}
             </li>
             <li class="email-info email-subject">
                 {{ email.human_subject(strip=False) }}

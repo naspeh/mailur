@@ -4,7 +4,7 @@
     "email": "mailr@pusto.org",
     "google_id": "id",
     "google_secret": "secret",
-    "is_public": true,
+    "opt:is_public": true,
     "pg_database": "mail_test",
     "pg_password": "test",
     "pg_username": "test"

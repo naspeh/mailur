@@ -12,7 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import sessionmaker
 
-from . import conf
+from . import conf, filters
 from .parser import hide_quote
 from .imap_utf7 import decode
 
@@ -174,6 +174,14 @@ class Email(Base):
         text = self.text or self.html or ''
         text = re.sub('<[^>]*?>', '', text)
         return self.human_subject(), text[:200].strip()
+
+    def from_str(self, delimiter=', ', full=False):
+        if full:
+            filter = lambda v: v
+        else:
+            filter = 'get_addr_name' if conf('opt:use_names') else 'get_addr'
+            filter = getattr(filters, filter)
+        return delimiter.join([filter(f) for f in self.from_])
 
     def human_subject(self, strip=True):
         subj = self.subject or ''
