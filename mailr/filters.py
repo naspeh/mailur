@@ -19,7 +19,7 @@ def get_addr(addr):
 
 
 def get_addr_name(addr):
-    return addr and getaddresses([addr])[0][0] or get_addr(addr).split('@')[0]
+    return addr and getaddresses([addr])[0][0]
 
 
 def get_gravatar(addr, size=16, default='identicon'):
