@@ -25,41 +25,59 @@ $('.panel').on('loader', function(event, element) {
 $('.panel').on('panel_get', function(event, data) {
     var panel = $(event.target);
     var panel_id = panel.attr('id');
-    var storage = stored_data();
+    var storage = Storage(panel_id);
+
     if (window.location.hash == '#reset') {
-        storage = {};
-        storage.uids = [];
-        stored_data(true);
+        storage.reset();
     }
 
     var url = data && data.url;
     if (url) {
         var hash = [panel_id, url].join('');
         window.location.hash = hash;
-        storage.url = url;
-        storage.uids = []; // Reset picked uids
-        stored_data(true);
+        storage.set('url', url);
+        storage.set('uids', []); // Reset picked uids
     } else {
-        url = storage.url;
+        url = storage.get('url');
     }
     url = url ? url : panel.data('box');
     if (url.indexOf('/emails/') === 0) {
-        storage.label = url;
-        stored_data(true);
+        storage.set('label', url);
     }
-    var label_id = storage.label && parseInt(storage.label.split('=')[1]);
+    var label_id = storage.get('label');
+    label_id = label_id && parseInt(label_id.split('=')[1]);
 
-    function stored_data(save) {
-        if (!save) {
-            value = localStorage[panel_id];
-            value = value ? JSON.parse(value) : {
-                url: null, uids: [], label: null
-            };
-        } else {
-            localStorage[panel_id] = JSON.stringify(storage);
-            value = storage;
-        }
-        return value;
+    function Storage(panel_id) {
+        var defaults = {url: null, uids: [], label: null};
+        var storage = localStorage[panel_id];
+        storage = storage ? JSON.parse(storage) : defaults;
+
+        var me = {
+            get: function(key) {
+                return storage[key];
+            },
+            set: function(key, val) {
+                storage[key] = val;
+                me.save();
+            },
+            addChild: function(key, val) {
+                storage[key].push(val);
+                me.save();
+            },
+            delChild: function(key, val) {
+                var index = storage[key].indexOf(uid);
+                storage[key].splice(index, 1);
+            },
+            reset: function() {
+                storage = defaults;
+                me.save();
+                return storage;
+            },
+            save: function() {
+                localStorage[panel_id] = JSON.stringify(storage);
+            }
+        };
+        return me;
     }
     function mark(name, ids, callback) {
         callback = callback || refresh;
@@ -90,20 +108,18 @@ $('.panel').on('panel_get', function(event, data) {
         panel.find('.email-pick input')
             .each(function() {
                 var uid = $(this).val();
-                if (storage.uids && storage.uids.indexOf(uid) > -1) {
+                if (storage.get('uids').indexOf(uid) > -1) {
                     $(this).attr('checked', true);
                 } else if ($(this).is(':checked')) {
-                    storage.uids.push(uid);
-                    stored_data(true);
+                    storage.addChild('uids', uid);
                 }
             })
             .on('change', function() {
                 var uid = $(this).val();
-                if ($(this).is(':checked') && storage.uids.indexOf(uid) == -1) {
-                    storage.uids.push(uid);
+                if ($(this).is(':checked') && storage.get('uids').indexOf(uid) == -1) {
+                    storage.addChild('uids', uid);
                 } else {
-                    index = storage.uids.indexOf(uid);
-                    storage.uids.splice(index, 1);
+                    storage.delChild('uids', uid);
                 }
                 stored_data(true);
                 panel.trigger('refresh_buttons');
@@ -164,18 +180,18 @@ $('.panel').on('panel_get', function(event, data) {
             panel.trigger('loader', this);
             var $this = $(this);
             var callback = refresh;
-            if ($this.val() == 'deleted' || $this.val() == 'archived') {
+            if ($this.val() == 'deleted' || ($this.val() == 'archived' && label_id == CONF.inbox_id)) {
                 callback = function() {
-                    panel.trigger('panel_get', {url: storage.label});
+                    panel.trigger('panel_get', {url: storage.get('label')});
                 };
             }
-            mark($this.val(), storage.uids, callback);
+            mark($this.val(), storage.get('uids'), callback);
             return false;
         });
         panel.find('button[name="copy_to_inbox"]').click(function() {
             panel.trigger('loader', this);
             var url = '/copy/' + label_id + '/' + CONF.inbox_id + '/';
-            $.post(url, {ids: storage.uids}).done(refresh);
+            $.post(url, {ids: storage.get('uids')}).done(refresh);
             return false;
         });
         panel.find('button[name="refresh"]').click(function() {
