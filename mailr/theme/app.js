@@ -40,20 +40,21 @@ $('.panel').on('panel_get', function(event, data) {
         return;
     }
 
+    var hash = window.location.hash.slice(1);
+    var new_hash = [panel_id, url].join('');
     var prev_url = storage.get('url');
     prev_url = [panel_id, prev_url].join('');
-    if (window.location.hash.slice(1) != prev_url) {
+    if (hash != prev_url && hash != new_hash) {
         window.location.hash = prev_url;
     }
 
     panel.trigger('loader');
     $.get(url, function(content) {
-        var hash = [panel_id, url].join('');
         var storage = Storage(panel_id);
         if (url != storage.get('url')) {
             storage.set('url', url);
             storage.set('uids', []); // Reset picked uids
-            window.location.hash = hash;
+            window.location.hash = new_hash;
         }
         if (url.indexOf('/emails/') === 0) {
             storage.set('label', url);
