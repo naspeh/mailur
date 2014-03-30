@@ -14,7 +14,10 @@ logging.basicConfig(
     format='%(levelname)s %(asctime)s  %(message)s',
     datefmt='%H:%M:%S', level=logging.DEBUG
 )
-sh = lambda cmd: subprocess.call(cmd, shell=True)
+sh = lambda cmd: print(cmd) or subprocess.call(cmd, shell=True)
+ssh = lambda cmd: sh('ssh %s "%s"' % (
+    conf('server_host'), cmd.replace('"', '\"').replace('$', '\$')
+))
 
 
 def run(args):
@@ -74,6 +77,15 @@ def main(argv=None):
         'autoprefixer {0}styles.css {0}styles.css && '
         'csso {0}styles.css {0}styles.css'.format('mailr/theme/')
     ))
+
+    cmd('deploy', help='deploy to server')\
+        .arg('-t', '--target', default='origin/master', help='checkout it')\
+        .exe(lambda a: ssh(
+            'cd /home/mailr/src'
+            '&& git fetch origin' +
+            '&& git checkout {}'.format(a.target) +
+            '&& touch ../reload'
+        ))
 
     args, extra = parser.parse_known_args(argv)
     if getattr(args, 'cmd', None) == 'test':
