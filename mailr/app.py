@@ -32,7 +32,7 @@ class Env:
             extensions=[with_],
             lstrip_blocks=True, trim_blocks=True
         )
-        jinja.globals.update(url_for=self.url_for)
+        jinja.globals.update(url_for=self.url_for, conf=conf)
         jinja.filters.update(**filters.get_all())
 
     def run(self):
