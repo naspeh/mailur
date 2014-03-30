@@ -42,7 +42,7 @@ class _Conf:
         return os.path.join(base_dir, dir_)
 
     def setup_logging(self):
-        logging.config.dictConfig({
+        conf = {
             'version': 1,
             'disable_existing_loggers': False,
             'formatters': {
@@ -70,15 +70,6 @@ class _Conf:
                     'formatter': 'detail',
                     'stream': 'ext://sys.stdout'
                 },
-                'file': {
-                    'class': 'logging.handlers.RotatingFileHandler',
-                    'level': 'INFO',
-                    'formatter': 'detail',
-                    'filename': self('log_file', 'common.log'),
-                    'maxBytes': 10485760,
-                    'backupCount': 20,
-                    'encoding': 'utf8'
-                },
             },
             'loggers': {
                 '': {
@@ -87,7 +78,20 @@ class _Conf:
                     'propagate': True
                 }
             }
-        })
+        }
+        log_file = self('log_file')
+        if log_file:
+            conf['handlers'].update(file={
+                'class': 'logging.handlers.RotatingFileHandler',
+                'level': 'INFO',
+                'formatter': 'detail',
+                'filename': log_file,
+                'maxBytes': 10485760,
+                'backupCount': 20,
+                'encoding': 'utf8'
+            })
+            conf['loggers']['']['handlers'].append('file')
+        logging.config.dictConfig(conf)
 
 conf = _Conf()
 
