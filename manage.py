@@ -2,19 +2,14 @@
 import argparse
 import glob
 import os
-import logging
 import subprocess
 
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from mailr import conf, db, app, syncer, async_tasks
+from mailr import conf, db, app, syncer, async_tasks, log
 
-logging.basicConfig(
-    format='%(levelname)s %(asctime)s  %(message)s',
-    datefmt='%H:%M:%S', level=logging.DEBUG
-)
-sh = lambda cmd: print(cmd) or subprocess.call(cmd, shell=True)
+sh = lambda cmd: log.info(cmd) or subprocess.call(cmd, shell=True)
 ssh = lambda cmd: sh('ssh %s "%s"' % (
     conf('server_host'), cmd.replace('"', '\"').replace('$', '\$')
 ))

@@ -1,5 +1,6 @@
 import json
 import logging
+import logging.config
 import os
 import socket
 import time
@@ -18,6 +19,7 @@ class _Conf:
         with open(self.path, 'br') as f:
             conf = json.loads(f.read().decode())
         self.data = conf
+        self.setup_logging()
 
     def update(self, *args, **kwargs):
         self.data.update(*args, **kwargs)
@@ -38,6 +40,54 @@ class _Conf:
     def attachments_dir(self):
         dir_ = self('attachments_dir', 'attachments')
         return os.path.join(base_dir, dir_)
+
+    def setup_logging(self):
+        logging.config.dictConfig({
+            'version': 1,
+            'disable_existing_loggers': False,
+            'formatters': {
+                'simple': {
+                    'format': '%(levelname)s %(asctime)s  %(message)s',
+                    'datefmt': '%H:%M:%S'
+                },
+                'detail': {
+                    'format': (
+                        '%(asctime)s[%(threadName)-12.12s][%(levelname)-5.5s] '
+                        '%(name)s %(message)s'
+                    )
+                }
+            },
+            'handlers': {
+                'console_simple': {
+                    'class': 'logging.StreamHandler',
+                    'level': 'DEBUG',
+                    'formatter': 'simple',
+                    'stream': 'ext://sys.stdout'
+                },
+                'console_detail': {
+                    'class': 'logging.StreamHandler',
+                    'level': 'DEBUG',
+                    'formatter': 'detail',
+                    'stream': 'ext://sys.stdout'
+                },
+                'file': {
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'level': 'INFO',
+                    'formatter': 'detail',
+                    'filename': self('log_file', 'common.log'),
+                    'maxBytes': 10485760,
+                    'backupCount': 20,
+                    'encoding': 'utf8'
+                },
+            },
+            'loggers': {
+                '': {
+                    'handlers': self('log_enabled', ['console_detail']),
+                    'level': 'INFO',
+                    'propagate': True
+                }
+            }
+        })
 
 conf = _Conf()
 
