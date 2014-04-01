@@ -137,13 +137,13 @@ def search(im, name):
 
 
 def fetch(im, uids, query, batch_size=500, label='some updates', quiet=False):
-    steps = range(0, len(uids) + 1, batch_size)
+    steps = range(0, len(uids), batch_size)
     log_ = (lambda *a, **kw: None) if quiet else log.info
     log_('  * Fetch (%d) %d ones with %s...', len(steps), len(uids), query)
 
     timer = Timer()
     for num, i in enumerate(steps, 1):
-        uids_ = uids[i: i + batch_size]
+        uids_ = uids[i: i + batch_size + 1]
         if not uids_:
             continue
         data_ = _fetch(im, uids_, query)
