@@ -5,8 +5,8 @@ done.
 
 Here is more information http://pusto.org/en/mailr/.
 
-Here is public demo http://mail.pusto.org, you can send email to mailr[at]pusto.org and it
-probably appears in Inbox.
+Here is **public demo** http://mail.pusto.org, you can send email to 
+**mailr[at]pusto.org** and it probably appears in Inbox.
 
 ###Screenshot
 
