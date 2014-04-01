@@ -19,12 +19,12 @@ $ pip install -r requiremets.txt
 $ cp conf_test.json conf.json
 # Then fix "google_id", "google_secret", "email" and "pg_*" settings
 
-$ ./m run
+$ ./manage.py run
 # Go to http://localhost:5000/auth/ for getting auth token from google
 
 # Then synchronize all emails
-$ ./m sync -b
+$ ./manage.py sync -b
 
 # Then you can see your emails in Mailr
-$ ./m run
+$ ./manage.py run
 ```
