@@ -16,6 +16,10 @@ Requires Python>=3.3 and PostgreSQL.
 ```
 $ pip install -r requiremets.txt
 
+# Create database with hstore extension
+> CREATE DATABASE mailr WITH OWNER mailr;
+> CREATE EXTENSION hstore;
+
 $ cp conf_test.json conf.json
 # Then fix "google_id", "google_secret", "email" and "pg_*" settings
 
