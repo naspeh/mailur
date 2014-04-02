@@ -59,6 +59,7 @@ def main(argv=None):
 
     cmd('tasks').exe(lambda a: async_tasks.process_all())
 
+    cmd('db-init').exe(lambda a: db.create_all())
     cmd('db-clear').exe(lambda a: db.drop_all())
 
     cmd('test').exe(lambda a: (

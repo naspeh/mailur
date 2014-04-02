@@ -20,10 +20,14 @@ engine = create_engine(
     'postgresql+psycopg2://{pg_username}:{pg_password}@/{pg_database}'
     .format(**conf.data), echo=False
 )
-register_hstore(engine.raw_connection(), True)
 
 Base = declarative_base()
 drop_all = lambda: Base.metadata.drop_all(engine)
+create_all = lambda: Base.metadata.create_all(engine)
+
+register_hstore(engine.raw_connection(), True)
+Session = sessionmaker(bind=engine, autocommit=True)
+session = Session()
 
 
 class Task(Base):
@@ -210,8 +214,3 @@ class Email(Base):
             parent_html = self.parent.html or self.parent.human_html()
             htm = hide_quote(htm, parent_html, class_)
         return htm
-
-
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine, autocommit=True)
-session = Session()
