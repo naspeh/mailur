@@ -5,7 +5,7 @@ import trafaret as t
 from sqlalchemy import func
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
-from . import log, conf, imap, syncer, async_tasks
+from . import log, conf, cache, imap, syncer, async_tasks
 from .db import Email, Label, session
 
 rules = [
@@ -69,6 +69,20 @@ def login_required(func):
     return inner
 
 
+def cached_view(timeout=10):
+    def wrapper(func):
+        @wraps(func)
+        def inner(env, *a, **kw):
+            key = env.request.full_path
+            value = cache.get(key)
+            if value is None:
+                value = func(env, *a, **kw)
+                cache.set(key, value, timeout=10)
+            return value
+        return inner
+    return wrapper
+
+
 @login_required
 def index(env):
     ctx = {
@@ -93,6 +107,7 @@ def get_labels():
 
 
 @login_required
+@cached_view()
 def emails(env):
     emails = (
         session.query(*Email.columns())
@@ -126,6 +141,7 @@ def emails(env):
 
 
 @login_required
+@cached_view()
 def gm_thread(env, id):
     emails = list(
         session.query(Email)
