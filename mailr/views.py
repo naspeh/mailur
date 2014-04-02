@@ -1,8 +1,8 @@
 from functools import wraps
 from itertools import groupby
 
+import trafaret as t
 from sqlalchemy import func
-from voluptuous import Schema, Required, Coerce, MultipleInvalid
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, conf, imap, syncer, async_tasks
@@ -174,13 +174,13 @@ def mark(env, name):
         'read': ('+FLAGS', Email.SEEN),
         'unread': ('-FLAGS', Email.SEEN),
     }
-    schema = Schema({
-        Required('label', default=label_all.id): int,
-        Required('ids'): [Coerce(int)]
+    schema = t.Dict({
+        t.Key('label', label_all.id): t.Int,
+        'ids': t.List(t.Int)
     })
     try:
-        data = schema(env.request.json)
-    except MultipleInvalid as e:
+        data = schema.check(env.request.json)
+    except t.DataError as e:
         return env.abort(400, e)
 
     label = Label.get(data['label'])
@@ -228,10 +228,10 @@ def mark(env, name):
 
 @login_required
 def copy(env, label, to):
-    schema = Schema({Required('ids'): [Coerce(int)]})
+    schema = t.Dict(ids=t.List(t.Int))
     try:
-        data = schema(env.request.json)
-    except MultipleInvalid as e:
+        data = schema.check(env.request.json)
+    except t.DataError as e:
         return env.abort(400, e)
 
     im = imap.client()

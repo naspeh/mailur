@@ -9,4 +9,4 @@ python-dateutil==2.2
 pytz==2014.1
 requests==2.2.1
 times==0.6.2
-voluptuous==0.8.5
+trafaret==0.5.0
