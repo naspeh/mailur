@@ -6,6 +6,7 @@ jQuery.extend({
             type: 'POST',
             url: url,
             data: JSON.stringify(data),
+            success: callback,
             dataType: 'text',
             contentType: 'application/json',
             processData: false
