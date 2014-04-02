@@ -2,6 +2,7 @@ from functools import wraps
 from itertools import groupby
 
 from sqlalchemy import func
+from voluptuous import Schema, Required, Coerce, MultipleInvalid
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import log, conf, imap, syncer, async_tasks
@@ -173,9 +174,17 @@ def mark(env, name):
         'read': ('+FLAGS', Email.SEEN),
         'unread': ('-FLAGS', Email.SEEN),
     }
-    label_id = env.request.form.get('label', label_all.id)
-    label = Label.get(label_id)
-    uids = env.request.form.getlist('ids[]', type=int)
+    schema = Schema({
+        Required('label', default=label_all.id): int,
+        Required('ids'): [Coerce(int)]
+    })
+    try:
+        data = schema(env.request.json)
+    except MultipleInvalid as e:
+        return env.abort(400, e)
+
+    label = Label.get(data['label'])
+    uids = data['ids']
     emails = session.query(Email.uid, Email.labels).filter(Email.uid.in_(uids))
     emails = {m.uid: m for m in emails}
     if name in store:
@@ -219,10 +228,15 @@ def mark(env, name):
 
 @login_required
 def copy(env, label, to):
-    uids = env.request.form.getlist('ids[]', type=int)
+    schema = Schema({Required('ids'): [Coerce(int)]})
+    try:
+        data = schema(env.request.json)
+    except MultipleInvalid as e:
+        return env.abort(400, e)
+
     im = imap.client()
     im.select('"%s"' % label.name, readonly=False)
-    for uid in uids:
+    for uid in data['ids']:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
         uid_ = data[0].decode().split(' ')[0]
         res = im.uid('COPY', uid_, '"%s"' % to.name)

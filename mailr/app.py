@@ -1,11 +1,19 @@
+import json
+
 from jinja2 import Environment, FileSystemLoader
 from jinja2.ext import with_
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
-from werkzeug.wrappers import Request, Response
+from werkzeug.wrappers import Request as _Request, Response
 
 from . import conf, views, filters
+
+
+class Request(_Request):
+    @cached_property
+    def json(self):
+        return json.loads(self.data.decode())
 
 
 def create_app():

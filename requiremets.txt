@@ -4,9 +4,9 @@ SQLAlchemy==0.9.3
 Werkzeug==0.9.4
 chardet==2.2.1
 lxml==3.3.3
-mistune==0.2.0
 psycopg2==2.5.2
 python-dateutil==2.2
 pytz==2014.1
 requests==2.2.1
 times==0.6.2
+voluptuous==0.8.5

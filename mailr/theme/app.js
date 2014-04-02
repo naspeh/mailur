@@ -1,10 +1,17 @@
 (function() {
 
-function sync() {
-    $.get('/sync/');
-    setTimeout(sync, 30000);
-}
-sync();
+jQuery.extend({
+    postJSON: function(url, data, callback) {
+        return jQuery.ajax({
+            type: 'POST',
+            url: url,
+            data: JSON.stringify(data),
+            dataType: 'text',
+            contentType: 'application/json',
+            processData: false
+        });
+    }
+});
 
 $(document).ajaxStart(function() {
     $('.refresh.loader').show();
@@ -15,6 +22,13 @@ $(document).ajaxStop(function() {
     $('.loader').removeClass('loader');
     $('input, button, select').attr('disabled', false);
 });
+
+function sync() {
+    $.get('/sync/');
+    setTimeout(sync, 30000);
+}
+sync();
+
 $('.panel').on('loader', function(event, element) {
     var panel = $(event.target);
     panel.find('.refresh').addClass('loader');
@@ -63,8 +77,8 @@ $('.panel').on('panel_get', function(event, data) {
         var label_id = storage.get('label');
         label_id = label_id && parseInt(label_id.split('=')[1]);
         var mark = function(name, ids, callback) {
-            callback = callback || refresh;
-            $.post('/mark/' + name + '/', {ids: ids, label: label_id}).done(callback);
+            $.postJSON('/mark/' + name + '/', {ids: ids, label: label_id})
+                .done(callback || refresh);
         };
 
         // Set content
@@ -169,7 +183,7 @@ $('.panel').on('panel_get', function(event, data) {
         panel.find('button[name="copy_to_inbox"]').click(function() {
             panel.trigger('loader', this);
             var url = '/copy/' + label_id + '/' + CONF.inbox_id + '/';
-            $.post(url, {ids: storage.get('uids')}).done(refresh);
+            $.postJSON(url, {ids: storage.get('uids')}).done(refresh);
             return false;
         });
         panel.find('button[name="refresh"]').click(function() {

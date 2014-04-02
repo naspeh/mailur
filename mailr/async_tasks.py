@@ -26,9 +26,9 @@ def process_all():
     groups = groupby(tasks.order_by(Task.name), lambda v: v.name)
     timer = Timer()
     for name, group in groups:
+        group = list(group)
+        log.info('### Process "sync" tasks %r...' % [t.id for t in group])
         if name == 'sync':
-            group = list(group)
-            log.info('### Process "sync" tasks %r...' % [t.id for t in group])
             syncer.sync_gmail()
             duration = timer.time()
             with session.begin():
