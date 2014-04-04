@@ -69,7 +69,7 @@ def login_required(func):
     return inner
 
 
-def cached_view(timeout=10):
+def cached_view(timeout=conf('cached_view_timeout', 5)):
     def wrapper(func):
         @wraps(func)
         def inner(env, *a, **kw):
@@ -77,7 +77,7 @@ def cached_view(timeout=10):
             value = cache.get(key)
             if value is None:
                 value = func(env, *a, **kw)
-                cache.set(key, value, timeout=10)
+                cache.set(key, value, timeout=timeout)
             return value
         return inner
     return wrapper
