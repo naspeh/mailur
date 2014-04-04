@@ -128,7 +128,7 @@ class Email(Base):
     gm_msgid = Column(BigInteger, unique=True)
     gm_thrid = Column(BigInteger)
 
-    flags = Column(ARRAY(String), default=[])
+    flags = Column(MutableDict.as_mutable(HSTORE))
     internaldate = Column(DateTime)
     size = Column(Integer, index=True)
     body = Column(LargeBinary)

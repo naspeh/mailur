@@ -149,7 +149,7 @@ $('.panel').on('panel_get', function(event, data) {
             buttons.hide();
             buttons.filter('.refresh').show();
             if (checked.length > 0) {
-                buttons.filter('[name="copy_to_inbox"]').show();
+                buttons.filter('[value="inboxed"]').show();
                 if (label_id != CONF.trash_id) {
                     buttons.filter('[value="archived"]').show();
                     buttons.filter('[value="deleted"]').show();
@@ -179,12 +179,6 @@ $('.panel').on('panel_get', function(event, data) {
                 };
             }
             mark($this.val(), storage.get('uids'), callback);
-            return false;
-        });
-        panel.find('button[name="copy_to_inbox"]').click(function() {
-            panel.trigger('loader', this);
-            var url = '/copy/' + label_id + '/' + CONF.inbox_id + '/';
-            $.postJSON(url, {ids: storage.get('uids')}).done(refresh);
             return false;
         });
         panel.find('button[name="refresh"]').click(function() {

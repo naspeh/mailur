@@ -7,7 +7,7 @@ import subprocess
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from mailr import conf, db, app, syncer, async_tasks, log
+from mailr import conf, db, app, syncer, log
 
 sh = lambda cmd: log.info(cmd) or subprocess.call(cmd, shell=True)
 ssh = lambda cmd: sh('ssh %s "%s"' % (
@@ -51,16 +51,16 @@ def main(argv=None):
         .arg('-b', '--with-bodies', action='store_true')\
         .exe(lambda a: (syncer.sync_gmail(a.with_bodies)))
 
+    cmd('tasks').exe(lambda a: syncer.process_tasks())
+
     cmd('parse')\
         .arg('-n', '--new', action='store_true')\
         .arg('-l', '--limit', type=int, default=500)\
         .arg('-t', '--last')\
         .exe(lambda a: syncer.parse_emails(a.new, a.limit, a.last))
 
-    cmd('tasks').exe(lambda a: async_tasks.process_all())
-
     cmd('db-init').exe(lambda a: db.create_all())
-    cmd('db-clear').exe(lambda a: db.drop_all())
+    cmd('db-clear').exe(lambda a: db.drop_all() or db.create_all())
 
     cmd('test').exe(lambda a: (
         sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))

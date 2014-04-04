@@ -143,7 +143,7 @@ def fetch(im, uids, query, batch_size=500, label='some updates', quiet=False):
 
     timer = Timer()
     for num, i in enumerate(steps, 1):
-        uids_ = uids[i: i + batch_size + 1]
+        uids_ = uids[i: i + batch_size]
         if not uids_:
             continue
         data_ = _fetch(im, uids_, query)

@@ -1,9 +1,10 @@
 from collections import OrderedDict, defaultdict
+from itertools import groupby
 
 from sqlalchemy import func
 
-from . import log, Timer, imap, parser, with_lock
-from .db import Email, Label, session
+from . import log, Timer, imap, parser, async_tasks, with_lock
+from .db import Email, Label, Task, session
 
 BODY_MAXSIZE = 50 * 1024 * 1024
 
@@ -60,6 +61,16 @@ def sync_gmail(with_bodies=True):
         log.info('Cleanup %s emails from label %s', updated, label.id)
         session.delete(label)
 
+    # Restore state
+    tasks = (
+        session.query(Task)
+        .filter(Task.is_new)
+        .filter(Task.name.like('mark_%'))
+    )
+    log.info('Restore state from %s tasks', tasks.count())
+    for task in tasks:
+        async_tasks.mark(task.name[5:], task.uids)
+
 
 def fetch_emails(im, label, with_bodies=True):
     timer = Timer()
@@ -95,7 +106,7 @@ def fetch_emails(im, label, with_bodies=True):
     emails = session.query(Email.uid).filter(Email.uid.in_(msgids.keys()))
 
     # Cleanup flags
-    emails.update({Email.flags: []}, synchronize_session=False)
+    emails.update({Email.flags: {}}, synchronize_session=False)
 
     msgids_ = sum([[r.uid] for r in emails.all()], [])
     msgids_ = list(set(msgids.keys()) - set(msgids_))
@@ -117,6 +128,7 @@ def fetch_emails(im, label, with_bodies=True):
                 header = row.pop(query['header'])
                 fields = {k: row[v] for k, v in query.items() if v in row}
                 fields['labels'] = {str(label.id): ''}
+                fields['flags'] = {str(r): '' for r in fields['flags']}
                 if not with_bodies:
                     fields.update(parser.parse(header, fields['uid']))
                 emails.append(fields)
@@ -155,7 +167,7 @@ def fetch_emails(im, label, with_bodies=True):
             updated += (
                 emails.filter(Email.uid.in_(uids_))
                 .update(
-                    {Email.flags: func.array_append(Email.flags, flag)},
+                    {Email.flags: Email.flags + {flag: ''}},
                     synchronize_session=False
                 )
             )
@@ -201,6 +213,97 @@ def update_email(uid, raw):
 
     session.query(Email).filter(Email.uid == uid)\
         .update(fields, synchronize_session=False)
+
+
+def mark_emails(name, uids):
+    label_all = Label.get_by_alias(Label.A_ALL)
+    store = {
+        'starred': ('+FLAGS', Email.STARRED),
+        'unstarred': ('-FLAGS', Email.STARRED),
+        'read': ('+FLAGS', Email.SEEN),
+        'unread': ('-FLAGS', Email.SEEN),
+    }
+    if name in store:
+        key, value = store[name]
+        im = imap.client()
+        im.select('"%s"' % label_all.name, readonly=False)
+        imap.store(im, uids, key, value)
+        return
+
+    label_in = Label.get_by_alias(Label.A_INBOX)
+    label_trash = Label.get_by_alias(Label.A_TRASH)
+    emails = session.query(Email.uid, Email.labels).filter(Email.uid.in_(uids))
+    emails = {m.uid: m for m in emails}
+    if name == 'inboxed':
+        im = imap.client()
+        for label in [label_all, label_trash]:
+            for uid in uids:
+                im.select('"%s"' % label.name, readonly=False)
+                _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+                if not data[0]:
+                    continue
+                uid_ = data[0].decode().split(' ')[0]
+                res = im.uid('COPY', uid_, '"%s"' % label_in.name)
+                log.info(
+                    'Copy(%s from %s to %s): %s',
+                    uid, label.name, label_in.name, res
+                )
+
+    elif name == 'archived':
+        im = imap.client()
+        im.select('"%s"' % label_in.name, readonly=False)
+        for uid in uids:
+            _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+            if not data[0]:
+                continue
+            uid_ = data[0].decode().split(' ')[0]
+            res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
+            log.info('Archive(%s): %s', uid, res)
+
+    elif name == 'deleted':
+        im = imap.client()
+        im.select('"%s"' % label_all.name, readonly=False)
+        for uid in uids:
+            _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+            if not data[0]:
+                continue
+            uid_ = data[0].decode().split(' ')[0]
+            res = im.uid('COPY', uid_, '"%s"' % label_trash.name)
+            log.info('Delete(%s): %s', uid, res)
+
+    else:
+        raise ValueError('Wrong name for "mark" task: %s' % name)
+
+
+@with_lock
+def process_tasks():
+    tasks = (
+        session.query(Task)
+        .with_for_update(nowait=True, of=Task)
+        .filter(Task.is_new)
+        .order_by(Task.created_at)
+    )
+    groups = [(k, list(v)) for k, v in groupby(tasks, lambda v: v.name)]
+    timer = Timer()
+    for name, group in groups:
+        log.info('### Process %s tasks %r...' % (name, [t.id for t in group]))
+        if name == 'sync':
+            with session.begin():
+                sync_gmail()
+        elif name.startswith('mark_'):
+            mark_emails(name[5:], sum([t.uids for t in group], []))
+
+        duration = timer.time()
+        with session.begin():
+            for task in group:
+                task.is_new = False
+                task.duration = duration
+                session.merge(task)
+                log.info('# Task %s is done for %.2f', task.id, duration)
+
+    if groups and groups[-1][0] != 'sync':
+        with session.begin():
+            sync_gmail()
 
 
 def parse_emails(new=True, limit=500, last=None):

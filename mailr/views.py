@@ -69,7 +69,7 @@ def login_required(func):
     return inner
 
 
-def cached_view(timeout=conf('cached_view_timeout', 5)):
+def cached_view(timeout=conf('cached_view_timeout', 1)):
     def wrapper(func):
         @wraps(func)
         def inner(env, *a, **kw):
@@ -184,12 +184,6 @@ def gm_thread(env, id):
 @login_required
 def mark(env, name):
     label_all = Label.get_by_alias(Label.A_ALL)
-    store = {
-        'starred': ('+FLAGS', Email.STARRED),
-        'unstarred': ('-FLAGS', Email.STARRED),
-        'read': ('+FLAGS', Email.SEEN),
-        'unread': ('-FLAGS', Email.SEEN),
-    }
     schema = t.Dict({
         t.Key('label', label_all.id): t.Int,
         'ids': t.List(t.Int)
@@ -199,46 +193,7 @@ def mark(env, name):
     except t.DataError as e:
         return env.abort(400, e)
 
-    label = Label.get(data['label'])
-    uids = data['ids']
-    emails = session.query(Email.uid, Email.labels).filter(Email.uid.in_(uids))
-    emails = {m.uid: m for m in emails}
-    if name in store:
-        key, value = store[name]
-        im = imap.client()
-        im.select('"%s"' % label.name, readonly=False)
-        imap.store(im, uids, key, value)
-    elif name == 'archived':
-        label_in = Label.get_by_alias(Label.A_INBOX)
-        im = imap.client()
-        im.select('"%s"' % label_in.name, readonly=False)
-        for uid in uids:
-            if str(label_in.id) not in emails[uid].labels:
-                continue
-            _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
-            if not data[0]:
-                continue
-            uid_ = data[0].decode().split(' ')[0]
-            res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
-            log.info('Archive(%s): %s', uid, res)
-
-        syncer.fetch_emails(im, label_in, with_bodies=False)
-    elif name == 'deleted':
-        label_trash = Label.get_by_alias(Label.A_TRASH)
-        im = imap.client()
-        im.select('"%s"' % label.name, readonly=False)
-        for uid in uids:
-            _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
-            if not data[0]:
-                continue
-            uid_ = data[0].decode().split(' ')[0]
-            res = im.uid('COPY', uid_, '"%s"' % label_trash.name)
-            log.info('Delete(%s): %s', uid, res)
-        syncer.fetch_emails(im, label_trash, with_bodies=False)
-    else:
-        env.abort(404)
-
-    syncer.fetch_emails(im, label, with_bodies=False)
+    async_tasks.mark(name, data['ids'], add_task=True)
     return 'OK'
 
 

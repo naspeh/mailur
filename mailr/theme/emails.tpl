@@ -110,7 +110,7 @@
     <button name="refresh" class="refresh" title="Refresh"></button>
     <button name="mark" value="archived">Archive</button>
     <button name="mark" value="deleted">Delete</button>
-    <button name="copy_to_inbox">Move to Inbox</button>
+    <button name="mark" value="inboxed">Move to Inbox</button>
     {#
     <button name="mark" value="starred">Add star</button>
     <button name="mark" value="unstarred">Remove star</button>
