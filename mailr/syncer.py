@@ -302,26 +302,36 @@ def process_tasks():
         .order_by(Task.created_at)
     )
     groups = [(k, list(v)) for k, v in groupby(tasks, lambda v: v.name)]
-    timer = Timer()
-    for name, group in groups:
-        log.info('### Process %s tasks %r...' % (name, [t.id for t in group]))
-        if name == 'sync':
-            with session.begin(subtransactions=True):
-                sync_gmail()
-        elif name.startswith('mark_'):
-            mark_emails(name[5:], sum([t.uids for t in group], []))
-
-        duration = timer.time()
-        with session.begin():
-            for task in group:
-                task.is_new = False
-                task.duration = duration
-                session.merge(task)
-                log.info('# Task %s is done for %.2f', task.id, duration)
-
-    if groups and groups[-1][0] != 'sync':
+    sync = [(k, v) for k, v in groups if k == Task.N_SYNC]
+    other = [(k, v) for k, v in groups if k != Task.N_SYNC]
+    if sync:
         with session.begin(subtransactions=True):
-            sync_gmail()
+            process_task(*sync[0])
+
+    if not other:
+        return
+
+    with session.begin(subtransactions=True):
+        for task in other:
+            process_task(*task)
+
+        sync_gmail()
+
+
+def process_task(name, group):
+    timer = Timer()
+    log.info('### Process %s tasks %r...' % (name, [t.id for t in group]))
+    if name == Task.N_SYNC:
+        sync_gmail()
+    elif name.startswith('mark_'):
+        mark_emails(name[5:], sum([t.uids for t in group], []))
+
+    duration = timer.time()
+    for task in group:
+        task.is_new = False
+        task.duration = duration
+        session.merge(task)
+        log.info('# Task %s is done for %.2f', task.id, duration)
 
 
 def parse_emails(new=True, limit=500, last=None):
