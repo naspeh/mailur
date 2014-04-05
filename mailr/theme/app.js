@@ -144,7 +144,8 @@ $('.panel').on('panel_get', function(event, data) {
         panel.on('refresh_buttons', function() {
             var buttons = panel.find('button');
             var checked = panel.find('.email-pick input:checked').parents('.email');
-            var in_trash = panel.find('.email').data('labels').indexOf(CONF.trash_id) != -1;
+            var in_trash = panel.find('.email').data('labels');
+            in_trash = in_trash &&  in_trash.indexOf(CONF.trash_id) != -1;
 
             buttons.hide();
             buttons.filter('.refresh').show();
