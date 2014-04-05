@@ -237,8 +237,8 @@ def mark_emails(name, uids):
     if name == 'inboxed':
         im = imap.client()
         for label in [label_all, label_trash]:
+            im.select('"%s"' % label.name, readonly=False)
             for uid in uids:
-                im.select('"%s"' % label.name, readonly=False)
                 _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
                 if not data[0]:
                     continue
@@ -251,14 +251,15 @@ def mark_emails(name, uids):
 
     elif name == 'archived':
         im = imap.client()
-        im.select('"%s"' % label_in.name, readonly=False)
-        for uid in uids:
-            _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
-            if not data[0]:
-                continue
-            uid_ = data[0].decode().split(' ')[0]
-            res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
-            log.info('Archive(%s): %s', uid, res)
+        for label in [label_in, label_trash]:
+            im.select('"%s"' % label.name, readonly=False)
+            for uid in uids:
+                _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
+                if not data[0]:
+                    continue
+                uid_ = data[0].decode().split(' ')[0]
+                res = im.uid('STORE', uid_, '+FLAGS', '\\Deleted')
+                log.info('Archive(%s): %s', uid, res)
 
     elif name == 'deleted':
         im = imap.client()
