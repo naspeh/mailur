@@ -191,10 +191,12 @@ $('.panel').on('panel_get', function(event, data) {
         });
     });
 });
-$('.panel')
-    .each(function() {
+
+$.get('init', {'offset': new Date().getTimezoneOffset() / 60}).done(function() {
+    $('.panel').each(function() {
         $(this).trigger('panel_get');
     });
+});
 
 $(window).on('hashchange', function(event) {
     var parts = window.location.hash.split('/');

@@ -14,6 +14,7 @@ rules = [
     Rule('/auth-refresh/', endpoint='auth_refresh'),
 
     Rule('/', endpoint='index'),
+    Rule('/init/', endpoint='init'),
     Rule('/compose/', endpoint='compose'),
     Rule('/labels/', endpoint='labels'),
     Rule('/emails/', endpoint='emails'),
@@ -90,6 +91,12 @@ def index(env):
         if l.alias in [Label.A_INBOX, Label.A_STARRED, Label.A_TRASH]
     }
     return env.render('index.tpl', ctx)
+
+
+@login_required
+def init(env):
+    env.session['tz_offset'] = env.request.args.get('offset', type=int)
+    return 'OK'
 
 
 @login_required

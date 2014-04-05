@@ -1,8 +1,10 @@
+import datetime as dt
 from email.utils import getaddresses
 from hashlib import md5
 from urllib.parse import urlencode
 
-import times
+from jinja2 import contextfilter
+
 
 __all__ = [
     'get_all', 'get_addr', 'get_addr_name', 'get_gravatar',
@@ -30,13 +32,16 @@ def get_gravatar(addr, size=16, default='identicon'):
     return addr and gen_url(gen_hash(get_addr(addr)))
 
 
-def localize_dt(value):
-    return times.to_local(value, 'Europe/Kiev')
+@contextfilter
+def localize_dt(ctx, value):
+    tz_offset = ctx.get('env').session['tz_offset']
+    return value + dt.timedelta(hours=tz_offset)
 
 
-def humanize_dt(val):
-    val = localize_dt(val)
-    now = localize_dt(times.now())
+@contextfilter
+def humanize_dt(ctx, val):
+    val = localize_dt(ctx, val)
+    now = localize_dt(ctx, dt.datetime.utcnow())
     if (now - val).total_seconds() < 12 * 60 * 60:
         fmt = '%H:%M'
     elif now.year == val.year:
@@ -46,5 +51,6 @@ def humanize_dt(val):
     return val.strftime(fmt)
 
 
-def format_dt(value, fmt='%a, %d %b, %Y at %H:%M'):
-    return localize_dt(value).strftime(fmt)
+@contextfilter
+def format_dt(ctx, value, fmt='%a, %d %b, %Y at %H:%M'):
+    return localize_dt(ctx, value).strftime(fmt)

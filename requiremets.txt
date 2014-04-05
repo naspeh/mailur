@@ -5,8 +5,5 @@ Werkzeug==0.9.4
 chardet==2.2.1
 lxml==3.3.3
 psycopg2==2.5.2
-python-dateutil==2.2
-pytz==2014.1
 requests==2.2.1
-times==0.6.2
 trafaret==0.5.0
