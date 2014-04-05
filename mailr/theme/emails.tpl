@@ -19,7 +19,7 @@
     >
         <ul class="email-line">
             <li class="email-pick">
-                <input type="checkbox" name="ids" value="{{ email.uid }}" {% if thread %}checked{% endif %}>
+                <input type="checkbox" name="ids" value="{{ email.uid if thread else email.gm_thrid }}" {% if thread %}checked{% endif %}>
             </li>
 
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>

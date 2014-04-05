@@ -77,8 +77,8 @@ $('.panel').on('panel_get', function(event, data) {
 
         var label_id = storage.get('label');
         label_id = label_id && parseInt(label_id.split('=')[1]);
-        var mark = function(name, ids, callback) {
-            $.postJSON('/mark/' + name + '/', {ids: ids, label: label_id})
+        var mark = function(name, ids, use_threads, callback) {
+            $.postJSON('/mark/' + name + '/', {ids: ids, use_threads: use_threads})
                 .done(callback || refresh);
         };
 
@@ -114,7 +114,6 @@ $('.panel').on('panel_get', function(event, data) {
                 } else {
                     storage.delChild('uids', uid);
                 }
-                stored_data(true);
                 panel.trigger('refresh_buttons');
             });
         panel.find('.email-star').click(function() {
@@ -174,12 +173,13 @@ $('.panel').on('panel_get', function(event, data) {
             panel.trigger('loader', this);
             var $this = $(this);
             var callback = refresh;
+            var use_threads = panel.find('thread').length === 0;
             if ($this.val() == 'deleted' || ($this.val() == 'archived' && label_id == CONF.inbox_id)) {
                 callback = function() {
                     panel.trigger('panel_get', {url: storage.get('label')});
                 };
             }
-            mark($this.val(), storage.get('uids'), callback);
+            mark($this.val(), storage.get('uids'), use_threads, callback);
             return false;
         });
         panel.find('button[name="refresh"]').click(function() {
@@ -223,8 +223,9 @@ function Storage(panel_id) {
             me.save();
         },
         delChild: function(key, val) {
-            var index = storage[key].indexOf(uid);
+            var index = storage[key].indexOf(val);
             storage[key].splice(index, 1);
+            me.save();
         },
         reset: function() {
             storage = defaults;

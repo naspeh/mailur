@@ -183,17 +183,19 @@ def gm_thread(env, id):
 
 @login_required
 def mark(env, name):
-    label_all = Label.get_by_alias(Label.A_ALL)
     schema = t.Dict({
-        t.Key('label', label_all.id): t.Int,
+        t.Key('use_threads', False): t.Bool,
         'ids': t.List(t.Int)
     })
     try:
         data = schema.check(env.request.json)
     except t.DataError as e:
         return env.abort(400, e)
-
-    async_tasks.mark(name, data['ids'], add_task=True)
+    uids = data['ids']
+    if data['use_threads']:
+        uids = session.query(Email.uid).filter(Email.gm_thrid.in_(uids))
+        uids = [r.uid for r in uids]
+    async_tasks.mark(name, uids, add_task=True)
     return 'OK'
 
 
