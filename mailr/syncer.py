@@ -85,10 +85,6 @@ def fetch_emails(im, label, with_bodies=True):
     uids_map = {v: k for k, v in msgids.items()}
     flags = OrderedDict(sorted(flags.items()))
 
-    session.query(Label).filter(Label.id == label.id).update({
-        'unread': len(msgids.keys()) - len(flags.get(Email.SEEN, [])),
-        'exists': len(msgids.keys()),
-    })
     log.info('%s|%d uids|%.2fs', label.name, len(msgids), timer.time())
     if not msgids:
         updated = (
@@ -100,6 +96,7 @@ def fetch_emails(im, label, with_bodies=True):
             )
         )
         log.info('  * Clean %s label', label.name)
+        update_label(label)
         return
 
     # Fetch properties
@@ -173,6 +170,7 @@ def fetch_emails(im, label, with_bodies=True):
             )
         log.info('  - %d ones for %.2fs', updated, timer.time())
 
+    update_label(label)
     if not with_bodies:
         return
 
@@ -203,6 +201,17 @@ def fetch_emails(im, label, with_bodies=True):
             with session.begin(subtransactions=True):
                 for uid, row in data.items():
                     update_email(uids_map[uid], row['RFC822'])
+
+
+def update_label(label):
+    emails = (
+        session.query(Email.gm_thrid.distinct())
+        .filter(Email.labels.has_key(str(label.id)))
+    )
+    session.query(Label).filter(Label.id == label.id).update({
+        'unread': emails.filter(~Email.flags.has_key(Email.SEEN)).count(),
+        'exists': emails.count(),
+    })
 
 
 def update_email(uid, raw):
