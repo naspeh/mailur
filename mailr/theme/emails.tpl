@@ -14,7 +14,7 @@
             {% if show %} email-showed{% endif %}
         "
         data-id="{{ email.uid }}"
-        data-raw="{{ url_for('raw', email=email.uid) }}"
+        data-labels="{{ email.labels.keys()|map('int')|list }}"
         data-thread="{{ url_for('gm_thread', id=email.gm_thrid) }}"
     >
         <ul class="email-line">

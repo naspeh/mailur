@@ -145,13 +145,14 @@ $('.panel').on('panel_get', function(event, data) {
         panel.on('refresh_buttons', function() {
             var buttons = panel.find('button');
             var checked = panel.find('.email-pick input:checked').parents('.email');
+            var in_trash = panel.find('.email').data('labels').indexOf(CONF.trash_id) != -1;
 
             buttons.hide();
             buttons.filter('.refresh').show();
             if (checked.length > 0) {
                 buttons.filter('[value="inboxed"]').show();
-                if (label_id != CONF.trash_id) {
-                    buttons.filter('[value="archived"]').show();
+                buttons.filter('[value="archived"]').show();
+                if (!in_trash) {
                     buttons.filter('[value="deleted"]').show();
                 }
             }
