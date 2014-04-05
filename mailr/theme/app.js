@@ -185,7 +185,7 @@ $('.panel').on('panel_get', function(event, data) {
         });
         panel.find('button[name="refresh"]').click(function() {
             panel.trigger('loader', this);
-            sync();
+            $.get('/sync/');
             refresh();
             return false;
         });
