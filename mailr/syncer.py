@@ -200,7 +200,7 @@ def fetch_emails(im, label, with_bodies=True):
         for uids_ in group_uids:
             q = 'RFC822'
             data = imap.fetch_all(im, uids_, q, len(uids_), 'update bodies')
-            with session.begin():
+            with session.begin(subtransactions=True):
                 for uid, row in data.items():
                     update_email(uids_map[uid], row['RFC822'])
 
@@ -288,7 +288,7 @@ def process_tasks():
     for name, group in groups:
         log.info('### Process %s tasks %r...' % (name, [t.id for t in group]))
         if name == 'sync':
-            with session.begin():
+            with session.begin(subtransactions=True):
                 sync_gmail()
         elif name.startswith('mark_'):
             mark_emails(name[5:], sum([t.uids for t in group], []))
@@ -302,7 +302,7 @@ def process_tasks():
                 log.info('# Task %s is done for %.2f', task.id, duration)
 
     if groups and groups[-1][0] != 'sync':
-        with session.begin():
+        with session.begin(subtransactions=True):
             sync_gmail()
 
 
