@@ -303,7 +303,7 @@ def mark_emails(name, uids):
 
 
 @with_lock
-def process_tasks(just_sync=False):
+def process_tasks(just_sync=False, clear=False):
     tasks = (
         session.query(Task)
         .with_for_update(nowait=True, of=Task)
@@ -316,6 +316,13 @@ def process_tasks(just_sync=False):
     if sync:
         with session.begin(subtransactions=True):
             process_task(*sync[0])
+
+    if clear:
+        # TODO: It needs for demo, will be removed one day
+        tasks = session.query(Task).filter(Task.is_new)
+        log.info('Delete %s tasks', tasks.count())
+        tasks.delete()
+        return
 
     if just_sync or not other:
         return

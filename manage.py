@@ -53,7 +53,8 @@ def main(argv=None):
 
     cmd('tasks')\
         .arg('-s', '--just-sync', action='store_true')\
-        .exe(lambda a: syncer.process_tasks(a.just_sync))
+        .arg('-c', '--clear', action='store_true')\
+        .exe(lambda a: syncer.process_tasks(a.just_sync, a.clear))
 
     cmd('parse')\
         .arg('-n', '--new', action='store_true')\
