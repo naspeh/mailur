@@ -67,9 +67,12 @@ def sync_gmail(with_bodies=True):
         .filter(Task.is_new)
         .filter(Task.name.like('mark_%'))
     )
-    log.info('Restore state from %s tasks', tasks.count())
-    for task in tasks:
-        async_tasks.mark(task.name[5:], task.uids)
+    if tasks.count():
+        log.info('Restore state from %s tasks', tasks.count())
+        for task in tasks:
+            async_tasks.mark(task.name[5:], task.uids)
+
+        update_labels()
 
 
 def fetch_emails(im, label, with_bodies=True):
@@ -203,6 +206,11 @@ def fetch_emails(im, label, with_bodies=True):
                     update_email(uids_map[uid], row['RFC822'])
 
 
+def update_labels():
+    for label in session.query(Label):
+        update_label(label)
+
+
 def update_label(label):
     emails = (
         session.query(Email.gm_thrid.distinct())
@@ -212,6 +220,7 @@ def update_label(label):
         'unread': emails.filter(~Email.flags.has_key(Email.SEEN)).count(),
         'exists': emails.count(),
     })
+    log.info('  * Updated label %s', label.name)
 
 
 def update_email(uid, raw):
