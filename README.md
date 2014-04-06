@@ -1,12 +1,14 @@
+##Mailr
+
 **Mailr** is an Open Source webmail client with gmail like conversations.
 
-**Note.** Mailr is at the beginning of development. There is a lot of work, that has to be 
-done.
+**More information**: http://pusto.org/en/mailr/
 
-Here is more information http://pusto.org/en/mailr/.
+**Public demo**: http://mail.pusto.org
 
-Here is **public demo** http://mail.pusto.org, you can send email to 
-**mailr[at]pusto.org** and it probably appears in Inbox.
+You can send emails to **mailr[at]pusto.org** for them to appear in the Inbox.
+
+_Mailr is early in development. Lots of work still has to be done._
 
 ###Screenshot
 
@@ -16,19 +18,24 @@ Here is **public demo** http://mail.pusto.org, you can send email to
 
 Requires Python>=3.3 and PostgreSQL.
 
-```
+```bash
 $ pip install -r requiremets.txt
+```
 
+```sql
 # Create database with hstore extension
 > CREATE DATABASE mailr WITH OWNER mailr;
 > CREATE EXTENSION hstore;
+```
+
+```bash
 $ ./manage.py db-init
 
 $ cp conf_test.json conf.json
 # Then fix "google_id", "google_secret", "email" and "pg_*" settings
 
 $ ./manage.py run
-# Go to http://localhost:5000/auth/ for getting auth token from google
+# Go to http://localhost:5000/auth/ to get an auth token from Google
 
 # Then synchronize all emails
 $ ./manage.py sync -b
