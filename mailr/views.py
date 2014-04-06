@@ -95,7 +95,7 @@ def index(env):
 
 @login_required
 def init(env):
-    env.session['tz_offset'] = env.request.args.get('offset', type=int)
+    env.session['tz_offset'] = env.request.args.get('offset', type=int) or 0
     return 'OK'
 
 
