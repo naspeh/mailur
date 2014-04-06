@@ -311,8 +311,8 @@ def process_tasks(just_sync=False):
     if just_sync or not other:
         return
 
-    for task in other:
-        with session.begin(subtransactions=True):
+    with session.begin(subtransactions=True):
+        for task in other:
             process_task(*task)
 
         sync_gmail()
