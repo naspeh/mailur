@@ -324,7 +324,8 @@ def process_task(name, group):
     if name == Task.N_SYNC:
         sync_gmail()
     elif name.startswith('mark_'):
-        mark_emails(name[5:], sum([t.uids for t in group], []))
+        uids = set(sum([t.uids for t in group], []))
+        mark_emails(name[5:], uids)
 
     duration = timer.time()
     for task in group:
