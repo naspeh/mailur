@@ -51,7 +51,9 @@ def main(argv=None):
         .arg('-b', '--with-bodies', action='store_true')\
         .exe(lambda a: (syncer.sync_gmail(a.with_bodies)))
 
-    cmd('tasks').exe(lambda a: syncer.process_tasks())
+    cmd('tasks')\
+        .arg('-s', '--just-sync', action='store_true')\
+        .exe(lambda a: syncer.process_tasks(a.just_sync))
 
     cmd('parse')\
         .arg('-n', '--new', action='store_true')\

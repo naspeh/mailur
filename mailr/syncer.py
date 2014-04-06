@@ -294,7 +294,7 @@ def mark_emails(name, uids):
 
 
 @with_lock
-def process_tasks():
+def process_tasks(just_sync=False):
     tasks = (
         session.query(Task)
         .with_for_update(nowait=True, of=Task)
@@ -308,7 +308,7 @@ def process_tasks():
         with session.begin(subtransactions=True):
             process_task(*sync[0])
 
-    if not other:
+    if just_sync or not other:
         return
 
     for task in other:
