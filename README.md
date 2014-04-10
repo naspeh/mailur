@@ -34,12 +34,12 @@ $ ./manage.py db-init
 $ cp conf_test.json conf.json
 # Then fix "google_id", "google_secret", "email" and "pg_*" settings
 
-$ ./manage.py run
+$ ./manage.py run -w
 # Go to http://localhost:5000/auth/ to get an auth token from Google
 
 # Then synchronize all emails
 $ ./manage.py sync -b
 
 # Then you can see your emails in Mailr
-$ ./manage.py run
+$ ./manage.py run -w
 ```

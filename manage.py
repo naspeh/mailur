@@ -16,7 +16,7 @@ ssh = lambda cmd: sh('ssh %s "%s"' % (
 
 
 def run(args):
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+    if not args.only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         main(['lessc'])
 
     extra_files = [
@@ -69,7 +69,9 @@ def main(argv=None):
         sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))
     ))
 
-    cmd('run').exe(run)
+    cmd('run')\
+        .arg('-w', '--only-wsgi', action='store_true')\
+        .exe(run)
 
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
