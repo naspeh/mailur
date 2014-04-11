@@ -5,7 +5,7 @@ import trafaret as t
 from sqlalchemy import func
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
-from . import log, conf, cache, imap, syncer, async_tasks
+from . import conf, cache, imap, async_tasks
 from .db import Email, Label, session
 
 rules = [
@@ -21,7 +21,6 @@ rules = [
     Rule('/gm-thread/<int:id>/', endpoint='gm_thread'),
     Rule('/raw/<email:email>/', endpoint='raw'),
     Rule('/mark/<name>/', methods=['POST'], endpoint='mark'),
-    Rule('/copy/<label:label>/<label:to>/', methods=['POST'], endpoint='copy'),
     Rule('/sync/', endpoint='sync'),
 ]
 
@@ -203,27 +202,6 @@ def mark(env, name):
         uids = session.query(Email.uid).filter(Email.gm_thrid.in_(uids))
         uids = [r.uid for r in uids]
     async_tasks.mark(name, uids, add_task=True)
-    return 'OK'
-
-
-@login_required
-def copy(env, label, to):
-    schema = t.Dict(ids=t.List(t.Int))
-    try:
-        data = schema.check(env.request.json)
-    except t.DataError as e:
-        return env.abort(400, e)
-
-    im = imap.client()
-    im.select('"%s"' % label.name, readonly=False)
-    for uid in data['ids']:
-        _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
-        uid_ = data[0].decode().split(' ')[0]
-        res = im.uid('COPY', uid_, '"%s"' % to.name)
-        log.info('Copy(%s from %s to %s): %s', uid, label.name, to.name, res)
-
-    syncer.fetch_emails(im, label, with_bodies=False)
-    syncer.fetch_emails(im, to, with_bodies=False)
     return 'OK'
 
 
