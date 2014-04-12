@@ -18,10 +18,6 @@ _Mailr is early in development. Lots of work still has to be done._
 
 Requires Python>=3.3 and PostgreSQL.
 
-```bash
-$ pip install -r requiremets.txt
-```
-
 ```sql
 # Create database with hstore extension
 > CREATE DATABASE mailr WITH OWNER mailr;
@@ -29,13 +25,25 @@ $ pip install -r requiremets.txt
 ```
 
 ```bash
-$ ./manage.py db-init
+$ pip install -r requiremets.txt
 
 $ cp conf_test.json conf.json
-# Then fix "google_id", "google_secret", "email" and "pg_*" settings
+# Then fix "email" and "pg_*" settings
 
+$ ./manage.py db-init
+
+# Then you have two way for authorization
+## 1. Via OAuth (preferred)
+# Go to https://console.developers.google.com/ and create new client id
+# - host: "http://localhost"
+# - redirect uri: "http://localhost:5000/auth-callback/"
+#
+# Fill `"google_id"`, `"google_secret"` fields in config file
+#
 $ ./manage.py run -w
-# Go to http://localhost:5000/auth/ to get an auth token from Google
+# Go to `http://localhost:5000/auth/` to get an auth token from Google
+
+## 2. Or just fill a "password" field in config file (more simple for trying)
 
 # Then synchronize all emails
 $ ./manage.py sync -b

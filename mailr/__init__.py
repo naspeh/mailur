@@ -110,11 +110,8 @@ def with_lock(func):
     @wraps(func)
     def inner(*a, **kw):
         lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-        try:
-            lock_socket.bind('\0' + target)
-            return func(*a, **kw)
-        except socket.error:
-            raise SystemExit('Already run: %s' % target)
+        lock_socket.bind('\0' + target)
+        return func(*a, **kw)
     return inner
 
 

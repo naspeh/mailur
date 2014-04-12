@@ -63,28 +63,34 @@ def auth_refresh():
 
 
 def client():
-    access_token = conf('google_response', {}).get('access_token')
-    if not access_token:
-        raise AuthError('access_token is empty')
+    if conf('password'):
+        def login(im):
+            im.login(conf('email'), conf('password'))
 
-    client = imaplib.IMAP4_SSL
-    im = client('imap.gmail.com')
-    #im.debug = 4
+    elif conf('google_response', {}).get('access_token'):
+        def login(im, retry=False):
+            access_token = conf('google_response', {}).get('access_token')
+            try:
+                im.authenticate('XOAUTH2', lambda x: (
+                    'user=%s\1auth=Bearer %s\1\1'
+                    % (conf('email'), access_token)
+                ))
+            except im.error as e:
+                if retry:
+                    raise AuthError(e)
 
-    def login():
-        access_token = conf('google_response', {}).get('access_token')
-        try:
-            im.authenticate('XOAUTH2', lambda x: (
-                'user=%s\1auth=Bearer %s\1\1' % (conf('email'), access_token)
-            ))
-        except client.error as e:
-            raise AuthError(e)
+                auth_refresh()
+                login(im, True)
+    else:
+        raise AuthError('Fill access_token or password in config')
 
     try:
-        login()
-    except AuthError:
-        auth_refresh()
-        login()
+        client = imaplib.IMAP4_SSL
+        im = client('imap.gmail.com')
+        # im.debug = 4
+        login(im)
+    except IOError as e:
+        raise AuthError(e)
     return im
 
 
