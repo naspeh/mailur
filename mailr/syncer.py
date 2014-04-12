@@ -4,7 +4,7 @@ from itertools import groupby
 from sqlalchemy import func
 
 from . import log, Timer, imap, parser, async_tasks, with_lock
-from .db import Email, Label, Task, session
+from .db import Email, EmailBody, Label, Task, session
 
 BODY_MAXSIZE = 50 * 1024 * 1024
 
@@ -225,12 +225,16 @@ def update_label(label):
 
 def update_email(uid, raw):
     fields = parser.parse(raw, uid)
-    fields['body'] = raw
 
     fields.pop('files', None)
 
     session.query(Email).filter(Email.uid == uid)\
         .update(fields, synchronize_session=False)
+
+    updated = session.query(EmailBody).filter(EmailBody.uid == uid)\
+        .update({'body': raw}, synchronize_session=False)
+    if not updated:
+        session.add(EmailBody(uid=uid, body=raw))
 
 
 def mark_emails(name, uids):

@@ -116,7 +116,7 @@ def get_labels():
 @cached_view()
 def emails(env):
     emails = (
-        session.query(*Email.columns())
+        session.query(Email)
         .order_by(Email.gm_thrid, Email.date.desc())
     )
     if 'label' in env.request.args:
@@ -136,7 +136,7 @@ def emails(env):
     groups = groupby(emails, lambda v: v.gm_thrid)
     groups = [(k, list(v)) for k, v in groups]
     counts = {k: len(v) for k, v in groups}
-    emails = (Email.model(v[0]) for k, v in groups)
+    emails = (v[0] for k, v in groups)
     emails = sorted(emails, key=lambda v: v.date, reverse=True)
     return env.render('emails.tpl', {
         'emails': emails,

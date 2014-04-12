@@ -3,14 +3,14 @@ import uuid
 
 from psycopg2.extras import register_hstore
 from sqlalchemy import (
-    create_engine, Column, func,
+    create_engine, func, Column, ForeignKey,
     DateTime, String, Integer, BigInteger, SmallInteger,
     Boolean, LargeBinary, Float
 )
 from sqlalchemy.dialects.postgresql import ARRAY, HSTORE
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 
 from . import conf, filters
 from .parser import hide_quote
@@ -114,6 +114,13 @@ class Label(Base):
         return cls.get(lambda l: l.alias == alias)
 
 
+class EmailBody(Base):
+    __tablename__ = 'email_bodies'
+
+    uid = Column(BigInteger, ForeignKey('emails.uid'), primary_key=True)
+    body = Column(LargeBinary)
+
+
 class Email(Base):
     __tablename__ = 'emails'
     SEEN = '\\Seen'
@@ -131,7 +138,6 @@ class Email(Base):
     flags = Column(MutableDict.as_mutable(HSTORE))
     internaldate = Column(DateTime)
     size = Column(Integer, index=True)
-    body = Column(LargeBinary)
 
     date = Column(DateTime)
     subject = Column(String, default='')
@@ -149,17 +155,7 @@ class Email(Base):
     embedded = Column(MutableDict.as_mutable(HSTORE))
     attachments = Column(ARRAY(String))
 
-    @classmethod
-    def columns(cls):
-        columns = list(cls.__table__.columns)
-        columns.remove(cls.body)
-        return sorted(columns, key=lambda v: v.name)
-
-    @classmethod
-    def model(cls, row):
-        fields = {k.name: v for k, v in zip(cls.columns(), row)}
-        fields['from_'] = fields.pop('from')
-        return cls(**fields)
+    body = relationship('EmailBody', backref='email')
 
     @property
     def full_labels(self):
