@@ -31,20 +31,25 @@ $ cp conf_test.json conf.json
 # Then fix "email" and "pg_*" settings
 
 $ ./manage.py db-init
+```
 
-# Then you have two way for authorization
-## 1. Via OAuth (preferred)
-# Go to https://console.developers.google.com/ and create new client id
-# - host: "http://localhost"
-# - redirect uri: "http://localhost:5000/auth-callback/"
-#
-# Fill `"google_id"`, `"google_secret"` fields in config file
-#
-$ ./manage.py run -w
-# Go to `http://localhost:5000/auth/` to get an auth token from Google
+#### Then you have two way for authorization to gmail
+1. Via OAuth (preferred)
+    Go to https://console.developers.google.com/ and create new client id
+    - host: "http://localhost"
+    - redirect uri: "http://localhost:5000/auth-callback/"
 
-## 2. Or just fill a "password" field in config file (more simple for trying)
+    Fill `"google_id"`, `"google_secret"` fields in config file
 
+    ```bash
+    $ ./manage.py run -w
+    ```
+
+    Go to `http://localhost:5000/auth/` to get an auth token from Google
+
+2. Or just fill a "password" field in config file (more simple for trying)
+
+```bash
 # Then synchronize all emails
 $ ./manage.py sync -b
 
