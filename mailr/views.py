@@ -116,7 +116,7 @@ def get_labels():
 @cached_view()
 def emails(env):
     emails = (
-        session.query(Email)
+        session.query(Email.gm_thrid)
         .order_by(Email.gm_thrid, Email.date.desc())
     )
     if 'label' in env.request.args:
@@ -133,11 +133,21 @@ def emails(env):
     else:
         env.abort(404)
 
-    groups = groupby(emails, lambda v: v.gm_thrid)
-    groups = [(k, list(v)) for k, v in groups]
-    counts = {k: len(v) for k, v in groups}
-    emails = (v[0] for k, v in groups)
-    emails = sorted(emails, key=lambda v: v.date, reverse=True)
+    threads = list(
+        session.query(
+            Email.gm_thrid,
+            func.count('*').label('count'),
+            func.max(Email.uid).label('uid')
+        )
+        .filter(Email.gm_thrid.in_([m.gm_thrid for m in emails]))
+        .group_by(Email.gm_thrid)
+    )
+    emails = (
+        session.query(Email)
+        .filter(Email.uid.in_([m.uid for m in threads]))
+        .order_by(Email.date)
+    )
+    counts = {t.gm_thrid: t.count for t in threads}
     return env.render('emails.tpl', {
         'emails': emails,
         'counts': counts,
