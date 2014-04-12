@@ -145,7 +145,7 @@ def emails(env):
     emails = (
         session.query(Email)
         .filter(Email.uid.in_([m.uid for m in threads]))
-        .order_by(Email.date)
+        .order_by(Email.date.desc())
     )
     counts = {t.gm_thrid: t.count for t in threads}
     return env.render('emails.tpl', {
