@@ -103,10 +103,8 @@ def parse_part(part, msg_id, inner=False):
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id)
         if ctype == 'text/plain':
-            content['text'] = text
-            content['html'] = text2html(text)
-        else:
-            content['html'] = text
+            text = text2html(text)
+        content['html'] = text
     elif ctype == 'message/rfc822':
         pass
     else:

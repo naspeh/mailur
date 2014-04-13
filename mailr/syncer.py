@@ -180,7 +180,8 @@ def fetch_emails(im, label, with_bodies=True):
     # Fetch bodies
     emails = (
         session.query(Email.uid, Email.size)
-        .filter(Email.body == None)
+        .outerjoin(EmailBody)
+        .filter(EmailBody.body == None)
         .filter(Email.uid.in_(msgids.keys()))
         .order_by(Email.uid.desc())
     )
