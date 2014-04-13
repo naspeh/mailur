@@ -4,7 +4,7 @@ import uuid
 
 from psycopg2.extras import register_hstore
 from sqlalchemy import (
-    create_engine, func, Column, ForeignKey,
+    create_engine, func, Column, ForeignKey, Index,
     DateTime, String, Integer, BigInteger, SmallInteger,
     Boolean, LargeBinary, Float
 )
@@ -130,6 +130,10 @@ class EmailBody(Base):
 
 class Email(Base):
     __tablename__ = 'emails'
+    __table_args__ = (
+        Index('ix_labels', 'labels', postgresql_using='gin'),
+        Index('ix_flags', 'flags', postgresql_using='gin'),
+    )
     SEEN = '\\Seen'
     STARRED = '\\Flagged'
 
@@ -140,7 +144,7 @@ class Email(Base):
     uid = Column(BigInteger, unique=True)
     labels = Column(MutableDict.as_mutable(HSTORE))
     gm_msgid = Column(BigInteger, unique=True)
-    gm_thrid = Column(BigInteger)
+    gm_thrid = Column(BigInteger, index=True)
 
     flags = Column(MutableDict.as_mutable(HSTORE))
     internaldate = Column(DateTime)

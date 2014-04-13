@@ -132,10 +132,11 @@ def emails(env):
         ).all()
     elif 'q' in env.request.args and env.request.args['q']:
         query = env.request.args['q']
+        query = query.replace(' ', '\ ')
         emails = session.execute(
             '''
             SELECT id, gm_thrid
-            FROM search_index
+            FROM emails_search
             WHERE document @@ to_tsquery(:query)
             ORDER BY ts_rank(document, to_tsquery(:query)) DESC
             ''',
