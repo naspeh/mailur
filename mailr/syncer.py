@@ -74,6 +74,9 @@ def sync_gmail(with_bodies=True):
 
         update_labels()
 
+    # Refresh search index
+    session.execute('REFRESH MATERIALIZED VIEW emails_search')
+
 
 def fetch_emails(im, label, with_bodies=True):
     timer = Timer()
