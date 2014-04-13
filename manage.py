@@ -62,8 +62,8 @@ def main(argv=None):
         .arg('-t', '--last')\
         .exe(lambda a: syncer.parse_emails(a.new, a.limit, a.last))
 
-    cmd('db-init').exe(lambda a: db.create_all())
-    cmd('db-clear').exe(lambda a: db.drop_all() or db.create_all())
+    cmd('db-init').exe(lambda a: db.init())
+    cmd('db-clear').exe(lambda a: db.drop_all() or db.init())
 
     cmd('test').exe(lambda a: (
         sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))

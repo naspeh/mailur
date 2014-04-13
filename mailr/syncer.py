@@ -369,6 +369,6 @@ def parse_emails(new=True, limit=500, last=None):
     timer = Timer()
     while emails.count():
         for email in emails.limit(limit):
-            update_email(email.uid, email.body)
+            update_email(email.uid, email.raw.body)
             i += 1
         log.info('  - parsed %s ones for %.2f', i, timer.time(reset=False))

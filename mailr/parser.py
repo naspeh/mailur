@@ -103,8 +103,10 @@ def parse_part(part, msg_id, inner=False):
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id)
         if ctype == 'text/plain':
-            text = text2html(text)
-        content['html'] = text
+            content['text'] = text
+            content['html'] = text2html(text)
+        else:
+            content['html'] = text
     elif ctype == 'message/rfc822':
         pass
     else:
@@ -153,6 +155,8 @@ def parse_part(part, msg_id, inner=False):
                     log.warn('No embedded %s in %s', cid, msg_id)
             htm = lhtml.tostring(root, encoding='utf8').decode()
         content['html'] = htm
+        if 'text' not in content or not content['text']:
+            content['text'] = lhtml.fromstring(htm).text_content()
     return content
 
 

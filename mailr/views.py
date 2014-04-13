@@ -115,6 +115,7 @@ def get_labels():
 @login_required
 @cached_view()
 def emails(env):
+    label = None
     emails = (
         session.query(Email.gm_thrid)
         .order_by(Email.gm_thrid, Email.date.desc())
@@ -122,35 +123,49 @@ def emails(env):
     if 'label' in env.request.args:
         label_id = env.request.args['label']
         label = session.query(Label).filter(Label.id == label_id).one()
-        emails = emails.filter(Email.labels.has_key(label_id))
+        emails = emails.filter(Email.labels.has_key(label_id)).all()
     elif 'email' in env.request.args:
         email = env.request.args['email']
         emails = emails.filter(
             func.array_to_string(Email.from_ + Email.to, ',')
             .contains('<%s>' % email)
-        )
-        label = None
+        ).all()
+    elif 'q' in env.request.args and env.request.args['q']:
+        query = env.request.args['q']
+        emails = session.execute(
+            '''
+            SELECT id, gm_thrid
+            FROM search_index
+            WHERE document @@ to_tsquery(:query)
+            ORDER BY ts_rank(document, to_tsquery(:query)) DESC
+            ''',
+            {'query': query}
+        ).fetchall()
     else:
         env.abort(404)
 
-    threads = list(
-        session.query(
-            Email.gm_thrid,
-            func.count('*').label('count'),
-            func.max(Email.uid).label('uid')
+    if len(emails):
+        threads = list(
+            session.query(
+                Email.gm_thrid,
+                func.count('*').label('count'),
+                func.max(Email.uid).label('uid')
+            )
+            .filter(Email.gm_thrid.in_([m.gm_thrid for m in emails]))
+            .group_by(Email.gm_thrid)
         )
-        .filter(Email.gm_thrid.in_([m.gm_thrid for m in emails]))
-        .group_by(Email.gm_thrid)
-    )
-    emails = (
-        session.query(Email)
-        .filter(Email.uid.in_([m.uid for m in threads]))
-        .order_by(Email.date.desc())
-    )
-    counts = {t.gm_thrid: t.count for t in threads}
+        emails = (
+            session.query(Email)
+            .filter(Email.uid.in_([m.uid for m in threads]))
+            .order_by(Email.date.desc())
+        ).all()
+        counts = {t.gm_thrid: t.count for t in threads}
+    else:
+        emails, counts = [], {}
+
     return env.render('emails.tpl', {
         'emails': emails,
-        'emails_count': emails.count(),
+        'emails_count': len(emails),
         'counts': counts,
         'label': label,
         'labels': get_labels()
@@ -230,5 +245,5 @@ def raw(env, email):
     if env.is_logined and desc:
         name = '%s--%s.txt' % (email.uid, desc)
         with open_file('files_parser', name, mode='bw') as f:
-            f.write(email.body)
-    return env.make_response(email.body, content_type='text/plain')
+            f.write(email.raw.body)
+    return env.make_response(email.raw.body, content_type='text/plain')

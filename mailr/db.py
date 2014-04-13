@@ -1,3 +1,4 @@
+import os
 import re
 import uuid
 
@@ -12,7 +13,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import sessionmaker, relationship
 
-from . import conf, filters
+from . import conf, filters, base_dir
 from .parser import hide_quote
 from .imap_utf7 import decode
 
@@ -23,11 +24,17 @@ engine = create_engine(
 
 Base = declarative_base()
 drop_all = lambda: Base.metadata.drop_all(engine)
-create_all = lambda: Base.metadata.create_all(engine)
 
 register_hstore(engine.raw_connection(), True)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
+
+
+def init():
+    Base.metadata.create_all(engine)
+    with open(os.path.join(base_dir, 'init.sql')) as f:
+        sql = f.read()
+    engine.execute(sql)
 
 
 class Task(Base):
@@ -155,7 +162,7 @@ class Email(Base):
     embedded = Column(MutableDict.as_mutable(HSTORE))
     attachments = Column(ARRAY(String))
 
-    body = relationship('EmailBody', backref='email')
+    raw = relationship('EmailBody', backref='email', uselist=False)
 
     @property
     def full_labels(self):
