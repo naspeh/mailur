@@ -175,7 +175,7 @@ class Email(Base):
         text = re.sub('<[^>]*?>', '', text)
         return self.human_subject(), text[:200].strip()
 
-    def from_str(self, delimiter=', ', full=False):
+    def str_from(self, delimiter=', ', full=False):
         if full:
             filter = lambda v: v
         else:

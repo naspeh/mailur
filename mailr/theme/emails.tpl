@@ -29,8 +29,8 @@
                 {{ gravatars(email.from_) }}
             </li>
 
-            <li class="email-info email-from" title="{{ email.from_str(full=True)|e }}">
-                {{ email.from_str() }}
+            <li class="email-info email-from" title="{{ email.str_from(full=True)|e }}">
+                {{ email.str_from() }}
             </li>
 
             {% if not thread and email.labels %}
@@ -69,8 +69,8 @@
             <li class="email-info email-pics">
                 {{ gravatars(email.from_) }}
             </li>
-            <li class="email-info email-from" title="{{ email.from_str(full=True)|e }}">
-                {{ email.from_str() }}
+            <li class="email-info email-from" title="{{ email.str_from(full=True)|e }}">
+                {{ email.str_from() }}
             </li>
             <li class="email-info email-subject">
                 {{ email.human_subject(strip=False) }}
