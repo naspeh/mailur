@@ -2,14 +2,15 @@ from unittest.mock import patch
 
 from sqlalchemy import event
 
-from mailr import async_tasks
-from mailr.db import engine, session, drop_all, Task
+from mailr import syncer, async_tasks
+from mailr.db import engine, session, drop_all, create_all, Task
 
 trans = None
 
 
 def setup():
     global trans
+    create_all()
     trans = engine.begin()
 
     @event.listens_for(session, 'after_transaction_end')
@@ -35,9 +36,9 @@ def test_sync():
     task = tasks.first()
     assert task.is_new
 
-    with patch('mailr.async_tasks.syncer') as mok:
-        async_tasks.process_all()
-        assert mok.sync_gmail.called
+    with patch('mailr.syncer.sync_gmail') as mok:
+        syncer.process_tasks()
+        assert mok.called
 
     task = tasks.first()
     assert not task.is_new
