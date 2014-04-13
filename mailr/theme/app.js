@@ -189,6 +189,23 @@ $('.panel').on('panel_get', function(event, data) {
             refresh();
             return false;
         });
+        panel.find('.email-show a').click(function() {
+            var $this = $(this);
+            var parent = $this.parents('.email-show');
+            var count = parent.data('count');
+            if ($this.hasClass('show-all')) {
+                panel.find('.email-hide').removeClass('email-hide');
+                parent.hide();
+            }
+            if ($this.hasClass('show-next')) {
+                panel.find('.email-hide').slice(0, count).removeClass('email-hide');
+                if (!panel.find('.email-hide').length) {
+                    parent.hide();
+                } else if (panel.find('.email-hide').length <= count) {
+                    $this.hide();
+                }
+            }
+        });
     });
 });
 

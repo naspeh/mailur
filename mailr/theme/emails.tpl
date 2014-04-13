@@ -6,12 +6,13 @@
     {% endfor %}
 {% endmacro %}
 
-{% macro render(emails, thread=False, show=False, counts={}) %}
+{% macro render(emails, thread=False, show=False, counts={}, max_count=50) %}
 <ul class="emails">
 {% for email in emails %}
     <li class="email
             {% if email.unread %} email-unread{% endif %}
             {% if show %} email-showed{% endif %}
+            {% if loop.index > max_count %} email-hide{% endif %}
         "
         data-id="{{ email.uid }}"
         data-labels="{{ email.labels.keys()|map('int')|list }}"
@@ -95,6 +96,15 @@
     </li>
 {% endfor %}
 </ul>
+
+{% if emails_count and emails_count > max_count %}
+<div class="email-show" data-count={{ max_count }}>
+    <a class="show-all">Show all</a>
+    {% if (emails_count / max_count) > 2 %}
+    <a class="show-next">Show next {{ max_count }}</a>
+    {% endif %}
+</div>
+{% endif %}
 {% endmacro %}
 
 <div class="panel-head">

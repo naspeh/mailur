@@ -150,6 +150,7 @@ def emails(env):
     counts = {t.gm_thrid: t.count for t in threads}
     return env.render('emails.tpl', {
         'emails': emails,
+        'emails_count': emails.count(),
         'counts': counts,
         'label': label,
         'labels': get_labels()
