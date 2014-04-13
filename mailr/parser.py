@@ -28,7 +28,7 @@ def decode_str(text, charset=None, msg_id=None):
 
 def decode_header(text, default='utf-8', msg_id=None):
     if not text:
-        return None
+        return ''
 
     parts_ = email.header.decode_header(text)
     parts = []

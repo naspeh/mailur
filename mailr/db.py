@@ -199,10 +199,14 @@ class Email(Base):
             filter = getattr(filters, filter)
         return delimiter.join([filter(f) for f in self.from_])
 
+    @property
+    def clean_subject(self):
+        return re.sub(r'(?i)^(.{2,10}:\ ?)+', '', self.subject or '')
+
     def human_subject(self, strip=True):
         subj = self.subject or ''
         if strip and subj:
-            subj = re.sub(r'(?i)^(Re[^:]*:\s?)+', '', subj)
+            subj = self.clean_subject
 
         subj = subj.strip() or '(no subject)'
         return subj

@@ -132,7 +132,9 @@ def emails(env):
         ).all()
     elif 'subj' in env.request.args:
         subj = env.request.args['subj']
-        emails = emails.filter(Email.subject.like('%%%s' % subj)).all()
+        emails = emails.filter(
+            Email.subject.op('SIMILAR TO')('(_{2,10}:)*\ ?' + subj)
+        ).all()
     elif 'q' in env.request.args and env.request.args['q']:
         query = env.request.args['q']
         query = query.replace(' ', '\ ')
