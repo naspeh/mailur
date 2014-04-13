@@ -3,14 +3,14 @@ from unittest.mock import patch
 from sqlalchemy import event
 
 from mailr import syncer, async_tasks
-from mailr.db import engine, session, drop_all, create_all, Task
+from mailr.db import engine, session, init, clear, Task
 
 trans = None
 
 
 def setup():
     global trans
-    create_all()
+    init()
     trans = engine.begin()
 
     @event.listens_for(session, 'after_transaction_end')
@@ -22,7 +22,7 @@ def setup():
 def teardown():
     global trans
     trans.transaction.rollback()
-    drop_all()
+    clear()
 
 
 def test_sync():

@@ -21,20 +21,25 @@ engine = create_engine(
     'postgresql+psycopg2://{pg_username}:{pg_password}@/{pg_database}'
     .format(**conf.data), echo=False
 )
+register_hstore(engine.raw_connection(), True)
 
 Base = declarative_base()
-drop_all = lambda: Base.metadata.drop_all(engine)
-
-register_hstore(engine.raw_connection(), True)
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
 
 
 def init():
     Base.metadata.create_all(engine)
-    with open(os.path.join(base_dir, 'init.sql')) as f:
+    with open(os.path.join(base_dir, 'db-init.sql')) as f:
         sql = f.read()
     engine.execute(sql)
+
+
+def clear():
+    with open(os.path.join(base_dir, 'db-clear.sql')) as f:
+        sql = f.read()
+    engine.execute(sql)
+    Base.metadata.drop_all(engine)
 
 
 class Task(Base):
