@@ -7,6 +7,7 @@
 @color-poor: #777;
 @color-bg: #fff;
 @color-bg-poor: #eee;
+@1em: 1em;
 
 html {
     height: 100%;
@@ -16,8 +17,14 @@ body {
     min-width: 1000px;
     margin: 0 auto;
     height: 100%;
-    font: 1em/1.4 "PT Sans", sans-serif;
+    font-size: 1em;
+    line-height: 1.4;
+    font-family: "PT Sans", sans-serif;
     font-weight: 400;
+}
+body.cozy {
+    font-size: 1.2em;
+    line-height: 1.6;
 }
 a {
     color: @color;
@@ -45,6 +52,9 @@ h2 {
     border-radius: 3px;
     background-color: @color-bg-poor;
     vertical-align: middle;
+    font-size: 0.75em;
+    margin: 0;
+    padding: 0;
     &:hover {
         cursor: pointer;
         color: #333;
@@ -60,16 +70,11 @@ h2 {
 }
 button {
     .button;
-    font-size: 12px;
     font-weight: bold;
-    margin: 0;
-    padding: 3px 5px;
+    padding: 0.25em 0.35em;
 }
 select {
     .button;
-    font-size: 12px;
-    margin: 0;
-    padding: 0;
 }
 @keyframes spin  {
     from {transform: rotate(0deg);}
@@ -95,10 +100,10 @@ select {
 }
 .panel-head {
     position: relative;
-    margin: 0 10px;
-    padding: 2px 0;
-    height: 24px;
-    line-height: 24px;
+    margin: 0 0.5em;
+    padding: 0.2em 0;
+    height: 1.5em;
+    line-height: 1.5em;
     white-space: nowrap;
 
     button {
@@ -110,15 +115,15 @@ select {
 }
 .panel-body {
     position: absolute;
-    top: 30px;
+    top: 2em;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 0 10px 10px 10px;
+    padding: 0 0.5em 0.5em 0.5em;
     overflow-y: auto;
 }
 .labels {
-    font-size: 14px;
+    font-size: 0.9em;
 }
 .email-labels {
     a {
@@ -126,10 +131,10 @@ select {
         vertical-align: middle;
         color: @color-poor;
         border: 1px solid @color-poor * 1.5;
-        padding: 0 2px;
-        height: 14px;
-        line-height: 14px;
-        font-size: 12px;
+        padding: 0.15em 0.2em;
+        height: 0.9em;
+        line-height: 0.9em;
+        font-size: 0.85em;
     }
     a:hover {
         color: @color-rich;
@@ -142,12 +147,15 @@ select {
 .email-show {
     color: @color;
     border-top: 1px solid @color-bg;
-    border-radius: 7px;
+    border-radius: 0.5em;
     background-color: @color-bg-poor;
-    padding: 10px;
+    padding: 0.75em;
     text-align: center;
     a {
-        margin: 0 30px;
+        padding: 0 2em;
+    }
+    a:last-child {
+        border-left: 1px solid @color;
     }
 }
 .email-line-mixin(@bg) {
@@ -156,7 +164,7 @@ select {
     overflow: hidden;
     font-size: 0.9em;
     line-height: 1.2em;
-    padding: 3px 5px;
+    padding: 0.15em 0.3em;
     background-color: @bg;
 
     &> li {
@@ -188,7 +196,7 @@ select {
         right: 0;
         height: 1.2em;
         text-align: right;
-        padding: 3px 5px;
+        padding: 0.15em 0.4em;
         background-color: @bg;
     }
     .email-info {
@@ -198,11 +206,11 @@ select {
 .email-line {
     .email-line-mixin(@color-bg-poor);
     border-top: 1px solid @color-bg;
-    border-radius: 7px;
+    border-radius: 0.5em;
 
     .email-from {
-        width: 90px;
-        padding: 0 5px;
+        width: 6em;
+        padding: 0 0.4em;
         overflow: hidden;
     }
     .email-subject {
@@ -213,18 +221,18 @@ select {
         }
     }
     .email-count {
-        padding: 0 2px;
+        padding: 0 0.2em;
         color: @color-poor;
         background-color: @color-bg;
-        border-radius: 5px;
+        border-radius: 0.4em;
         font-weight: bold;
-        font-size: 12px;
+        font-size: 0.8em;
     }
 }
 .email-head {
     .email-line-mixin(#fff);
     border-top: 2px solid @color-bg-poor * 0.95;
-    border-radius: 7px;
+    border-radius: 0.5em;
     color: @color-poor;
 
     .email-from {
@@ -237,10 +245,10 @@ select {
     }
 }
 .email-body {
-    padding: 10px;
+    padding: 0.75em;
 
     blockquote {
-        padding-left: 10px;
+        padding-left: 0.75em;
         border-left: 1px solid #ccc;
         color: @color-poor;
     }
@@ -259,12 +267,12 @@ select {
         .button;
         display: inline-block;
         line-height: 0.8;
-        padding: 0 5px;
-        margin: 5px 0;
+        padding: 0 0.4em;
+        margin: 0.4em 0;
     }
     .email-attachments {
-        margin-top: 10px;
-        padding-top: 10px;
+        margin-top: 0.75em;
+        padding-top: 0.75em;
         border-top: 1px solid @color-bg-poor;
         ul {
             list-style: decimal;
@@ -295,9 +303,9 @@ select {
     .email-group-show {
         color: @color;
         border-top: 1px solid @color-bg;
-        border-radius: 7px;
+        border-radius: 0.5em;
         background-color: @color-bg-poor;
-        padding: 10px;
+        padding: 0.75em;
         cursor: pointer;
         text-align: center;
     }
