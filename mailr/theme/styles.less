@@ -112,6 +112,24 @@ select {
     .refresh {
         .icon-spin;
     }
+    .search {
+        .icon-search;
+    }
+    .inputs {
+        display: inline-block;
+        .search-query {
+            display: none;
+        }
+        &.search-on {
+            .search-query {
+                display: inline;
+                font-size: bold;
+            }
+            .labels {
+                display: none;
+            }
+        }
+    }
 }
 .panel-body {
     position: absolute;

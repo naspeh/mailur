@@ -111,6 +111,8 @@
 
 <div class="panel-head">
     {% if labels %}
+    <div class="inputs">
+    <button name="search" class="search" title="Search"></button>
     <select class="labels">
         <option value="">
         {% for label in labels %}
@@ -119,7 +121,12 @@
         </option>
         {% endfor %}
     </select>
+    <form class="search-query" method="get">
+        <input name="q">
+        <button type="submit" class="search-go" title="Go!">Go!</button>
+    </form>
     <button name="refresh" class="refresh" title="Refresh"></button>
+    </div>
     <button name="mark" value="archived">Archive</button>
     <button name="mark" value="deleted">Delete</button>
     <button name="mark" value="inboxed">Move to Inbox</button>

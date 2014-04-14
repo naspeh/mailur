@@ -54,7 +54,6 @@ $('.panel').on('panel_get', function(event, data) {
     if (!(url.indexOf('/emails/') === 0 || url.indexOf('/gm-thread/') === 0)) {
         return;
     }
-
     var hash = window.location.hash.slice(1);
     var new_hash = [panel_id, url].join('');
     var prev_url = storage.get('url');
@@ -65,7 +64,6 @@ $('.panel').on('panel_get', function(event, data) {
 
     panel.trigger('loader');
     $.get(url, function(content) {
-        var storage = Storage(panel_id);
         if (url != storage.get('url')) {
             storage.set('url', url);
             storage.set('uids', []); // Reset picked uids
@@ -74,7 +72,9 @@ $('.panel').on('panel_get', function(event, data) {
         if (url.indexOf('/emails/') === 0) {
             storage.set('label', url);
         }
-
+        if (url.indexOf('?q=') === -1) {
+            storage.set('q', null);
+        }
         var label_id = storage.get('label');
         label_id = label_id && parseInt(label_id.split('=')[1]);
         var mark = function(name, ids, use_threads, callback) {
@@ -148,7 +148,11 @@ $('.panel').on('panel_get', function(event, data) {
             in_trash = in_trash &&  in_trash.indexOf(CONF.trash_id) != -1;
 
             buttons.hide();
-            buttons.filter('.refresh').show();
+            panel.find('.inputs button').show();
+            if (storage.get('q') !== null) {
+                panel.find('.inputs').addClass('search-on');
+                panel.find('[name="q"]').val(storage.get('q'));
+            }
             if (checked.length > 0) {
                 buttons.filter('[value="inboxed"]').show();
                 buttons.filter('[value="archived"]').show();
@@ -170,6 +174,19 @@ $('.panel').on('panel_get', function(event, data) {
             }
         }).trigger('refresh_buttons');
 
+        panel.find('button[name="search"]').click(function() {
+            $(this).parents('.inputs').toggleClass('search-on');
+            return false;
+        });
+        panel.find('.search-query').submit(function() {
+            panel.trigger('loader', panel.find('.search-go'));
+            var query = panel.find('[name="q"]').val();
+            if (query) {
+                storage.set('q', query);
+                panel.trigger('panel_get', {url: '/emails/?q=' + query});
+            }
+            return false;
+        });
         panel.find('button[name="mark"]').click(function() {
             panel.trigger('loader', this);
             var $this = $(this);
@@ -226,12 +243,16 @@ $(window).on('hashchange', function(event) {
 });
 
 function Storage(panel_id) {
-    var defaults = {url: null, uids: [], label: null};
-    var storage = localStorage[panel_id];
-    storage = storage ? JSON.parse(storage) : defaults;
+    var defaults = {url: null, uids: [], label: null, q: null};
+    var storage = null;
 
     var me = {
+        loads: function() {
+            storage = localStorage[panel_id];
+            storage = storage ? JSON.parse(storage) : defaults;
+        },
         get: function(key) {
+            me.loads(); // FIXME
             return storage[key];
         },
         set: function(key, val) {
@@ -256,6 +277,7 @@ function Storage(panel_id) {
             localStorage[panel_id] = JSON.stringify(storage);
         }
     };
+    me.loads();
     return me;
 }
 // END
