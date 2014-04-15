@@ -284,7 +284,6 @@ function settings() {
             opts.two_panels = block.find('.opt-two_panels').is(':checked');
             opts.fluid = block.find('.opt-fluid').is(':checked');
             opts.font_size = block.find('.opt-font:checked').val();
-            storage.set('opts', opts);
             $(this).trigger('refresh');
             return false;
         });
