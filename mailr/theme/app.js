@@ -47,7 +47,7 @@ $('.panel').on('panel_get', function(event, data) {
 
     if (window.location.hash == '#reset') {
         storage.reset();
-        $('opts').trigger('reset');
+        $('.opts').trigger('reset');
     }
 
     var url = data && data.url || storage.get('url');
@@ -256,13 +256,28 @@ function settings() {
     var storage = Storage('opts');
     var opts = $.extend(defaults, storage.get('opts') || {});
     var block = $('.opts');
-    block.find('.opt-two_panels').attr('checked', opts.two_panels);
-    block.find('.opt-fluid').attr('checked', opts.fluid);
-    block.find('.opt-font[value="' + opts.font_size + '"]').attr('checked', true);
     if (opts.closed) {
-        $('.opts').hide();
+        block.hide();
     }
-    $('.opts')
+    block.find('.opt-two_panels')
+        .prop('checked', opts.two_panels)
+        .on('change', function() {
+            opts.two_panels = !opts.two_panels;
+            block.trigger('refresh');
+        });
+    block.find('.opt-fluid')
+        .prop('checked', opts.fluid)
+        .on('change', function() {
+            opts.fluid = !opts.fluid;
+            block.trigger('refresh');
+        });
+    block.find('.opt-font')
+        .on('change', function() {
+            opts.font_size = $(this).val();
+            block.trigger('refresh');
+        })
+        .filter('[value="' + opts.font_size + '"]').prop('checked', true);
+    block
         .on('refresh', function() {
             var classes = [];
             if (opts.two_panels) {
@@ -278,6 +293,7 @@ function settings() {
         })
         .on('reset', function() {
             storage.set('opts', null);
+            block.show();
         })
         .trigger('refresh')
         .submit(function() {
@@ -287,16 +303,16 @@ function settings() {
             $(this).trigger('refresh');
             return false;
         });
-        $('body').on('keyup', function(e) {
-            if (e.shiftKey && e.which == 191) {
-                e.preventDefault();
-                $('.opts').show();
-            }
-        });
     $('.opts-save').click(function() {
         opts.closed = true;
         storage.set('opts', opts);
-        $('.opts').hide();
+        block.hide();
+    });
+    $('body').on('keyup', function(e) {
+        if (e.shiftKey && e.which == 191) {
+            e.preventDefault();
+            block.show();
+        }
     });
 }
 settings();

@@ -12,22 +12,21 @@
 <h2>Settings</h2>
 <ul>
     <li>
-        <input type="checkbox" name="opt-two_panels" class="opt-two_panels">
+        <input type="checkbox" id="opt-two_panels" class="opt-two_panels">
         <label for="opt-two_panels">Two panels</label>
     </li>
     <li>
-        <input type="checkbox" name="opt-fluid" class="opt-fluid">
+        <input type="checkbox" id="opt-fluid" class="opt-fluid">
         <label for="opt-fluid">Fluid width</label>
     </li>
     <li>
-        <label for="opt-font">Font size:</label>
+        <label>Font size:</label>
         <input type="radio" name="opt-font" class="opt-font" value="normal">normal
         <input type="radio" name="opt-font" class="opt-font" value="bigger">bigger
     </li>
     <li>
-        <button name="opts-preview" class="opts-preview">Preview</button>
-        <button name="opts-save" class="opts-save">Save</button>
-        <label for="opts-preview">Press "?" for show again</label>
+        <button name="opts-save" class="opts-save">Save and close</button>
+        <label for="opts-save">Press "?" to show again</label>
     </li>
 </ul>
 </form>
