@@ -47,7 +47,6 @@ $('.panel').on('panel_get', function(event, data) {
 
     if (window.location.hash == '#reset') {
         storage.reset();
-        $('.opts').trigger('reset');
     }
 
     var url = data && data.url || storage.get('url');
@@ -238,6 +237,10 @@ $.get('init', {'offset': new Date().getTimezoneOffset() / 60}).done(function() {
 });
 
 $(window).on('hashchange', function(event) {
+    if (window.location.hash == '#reset') {
+        $('.opts').trigger('reset');
+        return;
+    }
     var parts = window.location.hash.split('/');
     var panel = $(parts.shift());
     var url = '/' + parts.join('/');
@@ -256,17 +259,12 @@ function settings() {
     var storage = Storage('opts');
     var opts = $.extend(defaults, storage.get('opts') || {});
     var block = $('.opts');
-    if (opts.closed) {
-        block.hide();
-    }
     block.find('.opt-two_panels')
-        .prop('checked', opts.two_panels)
         .on('change', function() {
             opts.two_panels = !opts.two_panels;
             block.trigger('refresh');
         });
     block.find('.opt-fluid')
-        .prop('checked', opts.fluid)
         .on('change', function() {
             opts.fluid = !opts.fluid;
             block.trigger('refresh');
@@ -275,9 +273,19 @@ function settings() {
         .on('change', function() {
             opts.font_size = $(this).val();
             block.trigger('refresh');
-        })
-        .filter('[value="' + opts.font_size + '"]').prop('checked', true);
+        });
+
     block
+        .on('init', function() {
+            if (opts.closed) {
+                block.hide();
+            }
+            block.find('.opt-two_panels').prop('checked', opts.two_panels);
+            block.find('.opt-fluid').prop('checked', opts.fluid);
+            block.find('.opt-font')
+                .filter('[value="' + opts.font_size + '"]').prop('checked', true);
+        })
+        .trigger('init')
         .on('refresh', function() {
             var classes = [];
             if (opts.two_panels) {
@@ -291,11 +299,12 @@ function settings() {
             }
             $('body').attr('class', classes.join(' ')).trigger('refresh');
         })
-        .on('reset', function() {
-            storage.set('opts', null);
-            block.show();
-        })
         .trigger('refresh')
+        .on('reset', function() {
+            opts = defaults;
+            storage.set('opts', null);
+            block.trigger('init');
+        })
         .submit(function() {
             opts.two_panels = block.find('.opt-two_panels').is(':checked');
             opts.fluid = block.find('.opt-fluid').is(':checked');
