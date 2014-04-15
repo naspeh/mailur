@@ -47,6 +47,7 @@ $('.panel').on('panel_get', function(event, data) {
 
     if (window.location.hash == '#reset') {
         storage.reset();
+        $('opts').trigger('reset');
     }
 
     var url = data && data.url || storage.get('url');
@@ -226,10 +227,14 @@ $('.panel').on('panel_get', function(event, data) {
     });
 });
 
-$.get('init', {'offset': new Date().getTimezoneOffset() / 60}).done(function() {
-    $('.panel').each(function() {
+$('body').on('refresh', function() {
+    $('.panel:visible').each(function() {
         $(this).trigger('panel_get');
     });
+});
+
+$.get('init', {'offset': new Date().getTimezoneOffset() / 60}).done(function() {
+    $('body').trigger('refresh');
 });
 
 $(window).on('hashchange', function(event) {
@@ -242,13 +247,68 @@ $(window).on('hashchange', function(event) {
     }
 });
 
-function Storage(panel_id) {
+function settings() {
+    var defaults = {
+        two_panels: true,
+        fluid: false,
+        font_size: 'normal'
+    };
+    var storage = Storage('opts');
+    var opts = $.extend(defaults, storage.get('opts') || {});
+    var block = $('.opts');
+    block.find('.opt-two_panels').attr('checked', opts.two_panels);
+    block.find('.opt-fluid').attr('checked', opts.fluid);
+    block.find('.opt-font[value="' + opts.font_size + '"]').attr('checked', true);
+    if (opts.closed) {
+        $('.opts').hide();
+    }
+    $('.opts')
+        .on('refresh', function() {
+            var classes = [];
+            if (opts.two_panels) {
+                classes.push('two-panels');
+            }
+            if (opts.fluid) {
+                classes.push('fluid');
+            }
+            if (opts.font_size == 'bigger') {
+                classes.push('bigger');
+            }
+            $('body').attr('class', classes.join(' ')).trigger('refresh');
+        })
+        .on('reset', function() {
+            storage.set('opts', null);
+        })
+        .trigger('refresh')
+        .submit(function() {
+            opts.two_panels = block.find('.opt-two_panels').is(':checked');
+            opts.fluid = block.find('.opt-fluid').is(':checked');
+            opts.font_size = block.find('.opt-font:checked').val();
+            storage.set('opts', opts);
+            $(this).trigger('refresh');
+            return false;
+        });
+        $('body').on('keyup', function(e) {
+            if (e.shiftKey && e.which == 191) {
+                e.preventDefault();
+                $('.opts').show();
+            }
+        });
+    $('.opts-save').click(function() {
+        opts.closed = true;
+        storage.set('opts', opts);
+        $('.opts').hide();
+    });
+}
+settings();
+
+function Storage(target) {
     var defaults = {url: null, uids: [], label: null, q: null};
     var storage = null;
 
     var me = {
         loads: function() {
-            storage = localStorage[panel_id];
+            storage = localStorage[target];
             storage = storage ? JSON.parse(storage) : defaults;
         },
         get: function(key) {
@@ -274,7 +334,7 @@ function Storage(panel_id) {
             return storage;
         },
         save: function() {
-            localStorage[panel_id] = JSON.stringify(storage);
+            localStorage[target] = JSON.stringify(storage);
         }
     };
     me.loads();

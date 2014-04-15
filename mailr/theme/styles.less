@@ -7,24 +7,37 @@
 @color-poor: #777;
 @color-bg: #fff;
 @color-bg-poor: #eee;
-@1em: 1em;
 
 html {
     height: 100%;
 }
 body {
     position: relative;
-    min-width: 1000px;
     margin: 0 auto;
     height: 100%;
     font-size: 1em;
     line-height: 1.4;
     font-family: "PT Sans", sans-serif;
     font-weight: 400;
+    max-width: 2000px;
 }
-body.cozy {
+body.bigger {
     font-size: 1.2em;
     line-height: 1.6;
+}
+body.two-panels {
+    .panel {
+        width: 50%;
+    }
+    .panel-side {
+        display: block;
+    }
+}
+body.fluid {
+    max-width: 100%;
+    .panel {
+        max-width: 100%;
+    }
 }
 a {
     color: @color;
@@ -87,17 +100,30 @@ select {
         animation: spin 1s infinite linear;
     }
 }
+.opts {
+    position: absolute;
+    top: 0;
+    padding: 1em;
+    z-index: 1;
+    background-color: @color-bg-poor;
+    border: 1px solid @color-bg;
+    font-weight: bold;
+}
 .panel {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
-    width: 50%;
-    outline: 1px solid @color-bg-poor;
+    width: 100%;
+    min-width: 500px;
+    max-width: 1000px;
 }
 .panel-side {
+    display: none;
     left: 50%;
+    outline: 1px solid @color-bg-poor;
 }
+
 .panel-head {
     position: relative;
     margin: 0 0.5em;
