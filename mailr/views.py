@@ -142,8 +142,8 @@ def emails(env):
             '''
             SELECT id, gm_thrid
             FROM emails_search
-            WHERE document @@ to_tsquery(:query)
-            ORDER BY ts_rank(document, to_tsquery(:query)) DESC
+            WHERE document @@ to_tsquery('simple', :query)
+            ORDER BY ts_rank(document, to_tsquery('simple', :query)) DESC
             ''',
             {'query': query}
         ).fetchall()
