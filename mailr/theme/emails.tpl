@@ -63,9 +63,9 @@
             <li class="email-star{% if email.starred %} email-starred{% endif %}"></li>
             <li title="[r] raw message, [s] filter by subject, [f] filter by <{{ email.from_|get_addr }}>">
                 <a href="{{ url_for('raw', email=email.uid) }}" target="_blank">[r]</a>
-                {% set url = '%s?subj=%s' % (url_for('emails'), email.clean_subject) %}
+                {% set url = '%s?subj=%s' % (url_for('emails'), email.clean_subject|urlencode) %}
                 <a href="{{ url }}" class="email-filter">[s]</a>
-                {% set url = '%s?email=%s' % (url_for('emails'), email.from_|get_addr) %}
+                {% set url = '%s?email=%s' % (url_for('emails'), email.from_|get_addr|urlencode) %}
                 <a href="{{ url }}" class="email-filter">[f]</a>
             </li>
             <li class="email-info email-pics">
