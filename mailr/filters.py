@@ -34,7 +34,7 @@ def get_gravatar(addr, size=16, default='identicon'):
 
 @contextfilter
 def localize_dt(ctx, value):
-    tz_offset = ctx.get('env').session['tz_offset']
+    tz_offset = ctx.get('env').session.get('tz_offset')
     return value + dt.timedelta(hours=-(tz_offset or 0))
 
 
