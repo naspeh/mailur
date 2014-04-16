@@ -1,3 +1,4 @@
+import re
 from functools import wraps
 from itertools import groupby
 
@@ -132,6 +133,7 @@ def emails(env):
         ).all()
     elif 'subj' in env.request.args:
         subj = env.request.args['subj']
+        subj = re.sub(r'([()\[\]{}_*|+?])', r'\\\1', subj)
         emails = emails.filter(
             Email.subject.op('SIMILAR TO')('(_{2,10}:)*\ ?' + subj)
         ).all()
