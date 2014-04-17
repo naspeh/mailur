@@ -1,3 +1,3 @@
-from mailr import app
+from namail import app
 
 application = app.create_app()

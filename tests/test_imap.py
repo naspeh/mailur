@@ -3,7 +3,7 @@ from collections import namedtuple
 from pytest import mark
 
 from . import read_file
-from mailr import imap, imap_utf7
+from namail import imap, imap_utf7
 
 
 def gen_response(filename, query):

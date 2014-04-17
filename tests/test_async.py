@@ -2,8 +2,8 @@ from unittest.mock import patch
 
 from sqlalchemy import event
 
-from mailr import syncer, async_tasks
-from mailr.db import engine, session, init, clear, Task
+from namail import syncer, async_tasks
+from namail.db import engine, session, init, clear, Task
 
 trans = None
 
@@ -36,7 +36,7 @@ def test_sync():
     task = tasks.first()
     assert task.is_new
 
-    with patch('mailr.syncer.sync_gmail') as mok:
+    with patch('namail.syncer.sync_gmail') as mok:
         syncer.process_tasks()
         assert mok.called
 

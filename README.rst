@@ -1,7 +1,11 @@
-Mailr
-=====
+NaMail
+======
 
-**Mailr** is an Open Source webmail client with gmail like conversations.
+**NaMail** is an Open Source webmail client with gmail like conversations.
+
+**Note:** The first name was Mailr, but was taken for similar project.
+
+**Note** NaMail is early in development. Lots of work still has to be done.
 
 **More information:** http://pusto.org/en/mailr/
 
@@ -11,7 +15,6 @@ Mailr
 
 You can send emails to **mailr[at]pusto.org** for them to appear in the Inbox.
 
-*Mailr is early in development. Lots of work still has to be done.*
 
 Screenshot
 ----------
@@ -28,7 +31,7 @@ Requires **Python>=3.3** and **PostgreSQL**.
 .. code:: sql
 
     # Create database with hstore extension
-    CREATE DATABASE mailr WITH OWNER mailr;
+    CREATE DATABASE namail WITH OWNER namail;
     CREATE EXTENSION hstore;
 
 .. code:: bash
@@ -64,5 +67,5 @@ Synchronize emails
     # Then synchronize all emails
     $ ./manage.py sync -b
 
-    # Then you can see your emails in Mailr
+    # Then you can see your emails in NaMail
     $ ./manage.py run -w

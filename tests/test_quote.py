@@ -2,7 +2,7 @@ from lxml import etree
 from pytest import mark
 
 from . import open_file
-from mailr.parser import hide_quote
+from namail.parser import hide_quote
 
 
 @mark.parametrize('id', [1457489417718057053, 1456781505677497494])
