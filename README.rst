@@ -3,9 +3,7 @@ Namail
 
 **Namail** is an Open Source webmail client with gmail like conversations.
 
-**Note:** The first name was Mailr, but was taken for similar project.
-
-**Note** Namail is early in development. Lots of work still has to be done.
+*The first name was Mailr, but it was taken for similar project on Ruby.*
 
 **More information:** http://pusto.org/en/mailr/
 
@@ -14,6 +12,8 @@ Namail
 **Fundraising:** https://www.bountysource.com/teams/naspeh/fundraiser
 
 You can send emails to **mailr[at]pusto.org** for them to appear in the Inbox.
+
+*Namail is early in development. Lots of work still has to be done.*
 
 
 Screenshot
