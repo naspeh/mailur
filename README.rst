@@ -18,8 +18,7 @@ You can send emails to **mailr[at]pusto.org** for them to appear in the Inbox.
 
 Screenshot
 ----------
-
-.. image:: http://pusto.org/en/mailr/screenshot-xs.png
+.. image:: http://pusto.org/en/mailr/screenshot-one.png
 
 .. image:: http://pusto.org/en/mailr/screenshot-s.png
 
