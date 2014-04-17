@@ -1,11 +1,11 @@
-NaMail
+Namail
 ======
 
-**NaMail** is an Open Source webmail client with gmail like conversations.
+**Namail** is an Open Source webmail client with gmail like conversations.
 
 **Note:** The first name was Mailr, but was taken for similar project.
 
-**Note** NaMail is early in development. Lots of work still has to be done.
+**Note** Namail is early in development. Lots of work still has to be done.
 
 **More information:** http://pusto.org/en/mailr/
 
@@ -66,5 +66,5 @@ Synchronize emails
     # Then synchronize all emails
     $ ./manage.py sync -b
 
-    # Then you can see your emails in NaMail
+    # Then you can see your emails in Namail
     $ ./manage.py run -w
