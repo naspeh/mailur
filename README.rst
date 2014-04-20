@@ -1,7 +1,7 @@
 Namail
 ======
 
-**Namail** is an Open Source webmail client with gmail like conversations.
+**Namail** is an Open Source webmail client with Gmail-like conversations.
 
 *The first name was Mailr, but it was taken for similar project on Ruby.*
 
