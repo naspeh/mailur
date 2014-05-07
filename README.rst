@@ -9,8 +9,6 @@ Namail
 
 **Public demo:** http://mail.pusto.org
 
-**Fundraising:** https://www.bountysource.com/teams/naspeh/fundraiser
-
 You can send emails to **mailr[at]pusto.org** for them to appear in the Inbox.
 
 *Namail is early in development. Lots of work still has to be done.*
