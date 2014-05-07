@@ -7,7 +7,7 @@ import subprocess
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from namail import conf, db, app, syncer, log
+from mailur import conf, db, app, syncer, log
 
 sh = lambda cmd: log.info(cmd) or subprocess.call(cmd, shell=True)
 ssh = lambda cmd: sh('ssh %s "%s"' % (
@@ -76,7 +76,7 @@ def main(argv=None):
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
         'autoprefixer {0}styles.css {0}styles.css && '
-        'csso {0}styles.css {0}styles.css'.format('namail/theme/')
+        'csso {0}styles.css {0}styles.css'.format('mailur/theme/')
     ))
 
     cmd('deploy', help='deploy to server')\

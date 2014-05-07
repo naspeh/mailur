@@ -1,7 +1,7 @@
 from pytest import mark
 
 from . import read_file
-from namail import parser
+from mailur import parser
 
 emails = read_file('files_parser', 'expected.json').items()
 
