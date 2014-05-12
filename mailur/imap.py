@@ -7,9 +7,6 @@ import requests
 
 from . import log, conf, Timer
 
-BATCH_SIZE = 2000
-BODY_MAXSIZE = 50 * 1024 * 1024
-
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
 
@@ -137,7 +134,7 @@ def status(im, name, readonly=True):
 
 def search(im, name):
     uid_next = status(im, name)
-    uids, step = [], BATCH_SIZE
+    uids, step = [], conf('opt:imap_batch_size')
     for i in range(1, uid_next, step):
         _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
         if data[0]:
@@ -164,8 +161,9 @@ def fetch(im, uids, query, label='some updates', quiet=False):
     if not uids:
         return
 
+    batch_size = conf('opt:imap_batch_size')
     if isinstance(uids[0], (tuple, list)):
-        step_size, group_size = 0, BODY_MAXSIZE
+        step_size, group_size = 0, conf('opt:imap_body_maxsize')
         step_uids, group_uids = [], []
         for uid, size in uids:
             if step_uids and step_size + size > group_size:
@@ -178,8 +176,8 @@ def fetch(im, uids, query, label='some updates', quiet=False):
             group_uids.append(step_uids)
         steps = group_uids
     else:
-        steps = range(0, len(uids), BATCH_SIZE)
-        steps = [uids[i: i + BATCH_SIZE] for i in steps]
+        steps = range(0, len(uids), batch_size)
+        steps = [uids[i: i + batch_size] for i in steps]
 
     log_ = (lambda *a, **kw: None) if quiet else log.info
     log_('  * Fetch (%d) %d ones with %s...', len(steps), len(uids), query)

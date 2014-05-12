@@ -19,7 +19,17 @@ class _Conf:
 
         with open(self.path, 'br') as f:
             conf = json.loads(f.read().decode())
-        self.data = conf
+
+        defaults = {
+            'attachments_dir': 'attachments',
+            'cache_type': 'werkzeug.contrib.cache.NullCache',
+            'opt:ga_id': '',
+            'opt:is_public': False,
+            'opt:use_names': True,
+            'opt:imap_body_maxsize': 50 * 1024 * 1024,
+            'opt:imap_batch_size': 2000
+        }
+        self.data = dict(defaults, **conf)
         self.setup_logging()
 
     def update(self, *args, **kwargs):
@@ -39,11 +49,11 @@ class _Conf:
 
     @property
     def attachments_dir(self):
-        dir_ = self('attachments_dir', 'attachments')
+        dir_ = self('attachments_dir')
         return os.path.join(base_dir, dir_)
 
     def get_cache(self):
-        cache_type = self('cache_type') or 'werkzeug.contrib.cache.NullCache'
+        cache_type = self('cache_type')
         module, name = cache_type.rsplit('.', 1)
         cache = getattr(import_module(module), name)
         return cache(**self('cache_params', {}))

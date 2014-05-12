@@ -1,5 +1,4 @@
 {
-    "attachments_dir": "../attachments-test",
     "cookie_secret": "blabla",
     "email": "mailr@pusto.org",
     "password": "",
