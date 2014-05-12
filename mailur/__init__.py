@@ -23,11 +23,11 @@ class _Conf:
         defaults = {
             'attachments_dir': 'attachments',
             'cache_type': 'werkzeug.contrib.cache.NullCache',
-            'opt:ga_id': '',
-            'opt:is_public': False,
-            'opt:use_names': True,
-            'opt:imap_body_maxsize': 50 * 1024 * 1024,
-            'opt:imap_batch_size': 2000
+            'imap_body_maxsize': 50 * 1024 * 1024,
+            'imap_batch_size': 2000,
+            'ui_ga_id': '',
+            'ui_is_public': False,
+            'ui_use_names': True,
         }
         self.data = dict(defaults, **conf)
         self.setup_logging()

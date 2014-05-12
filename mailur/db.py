@@ -195,7 +195,7 @@ class Email(Base):
         if full:
             filter = lambda v: v
         else:
-            filter = 'get_addr_name' if conf('opt:use_names') else 'get_addr'
+            filter = 'get_addr_name' if conf('ui_use_names') else 'get_addr'
             filter = getattr(filters, filter)
         return delimiter.join([filter(f) for f in self.from_])
 

@@ -134,7 +134,7 @@ def status(im, name, readonly=True):
 
 def search(im, name):
     uid_next = status(im, name)
-    uids, step = [], conf('opt:imap_batch_size')
+    uids, step = [], conf('imap_batch_size')
     for i in range(1, uid_next, step):
         _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
         if data[0]:
@@ -161,9 +161,9 @@ def fetch(im, uids, query, label='some updates', quiet=False):
     if not uids:
         return
 
-    batch_size = conf('opt:imap_batch_size')
+    batch_size = conf('imap_batch_size')
     if isinstance(uids[0], (tuple, list)):
-        step_size, group_size = 0, conf('opt:imap_body_maxsize')
+        step_size, group_size = 0, conf('imap_body_maxsize')
         step_uids, group_uids = [], []
         for uid, size in uids:
             if step_uids and step_size + size > group_size:

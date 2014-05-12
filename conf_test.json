@@ -4,7 +4,7 @@
     "password": "",
     "google_id": "FIXME",
     "google_secret": "FIXME",
-    "opt:is_public": true,
+    "ui_is_public": true,
     "pg_database": "mail_test",
     "pg_password": "test",
     "pg_username": "test"
