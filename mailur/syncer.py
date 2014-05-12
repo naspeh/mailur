@@ -6,8 +6,6 @@ from sqlalchemy import func
 from . import log, Timer, imap, parser, async_tasks, with_lock
 from .db import Email, EmailBody, Label, Task, session
 
-BODY_MAXSIZE = 50 * 1024 * 1024
-
 
 @with_lock
 def sync_gmail(with_bodies=True):
@@ -188,23 +186,9 @@ def fetch_emails(im, label, with_bodies=True):
         .filter(Email.uid.in_(msgids.keys()))
         .order_by(Email.uid.desc())
     )
-    uids = {msgids[r.uid]: r.size for r in emails.all()}
+    uids = [(msgids[r.uid], r.size) for r in emails.all()]
     if uids:
-        step_size, group_size = 0, BODY_MAXSIZE
-        step_uids, group_uids = [], []
-        for uid, size in uids.items():
-            if step_uids and step_size + size > group_size:
-                group_uids.append(step_uids)
-                step_uids, step_size = [], 0
-            else:
-                step_uids.append(uid)
-                step_size += size
-        if step_uids:
-            group_uids.append(step_uids)
-
-        for uids_ in group_uids:
-            q = 'RFC822'
-            data = imap.fetch_all(im, uids_, q, 'update bodies')
+        for data in imap.fetch(im, uids, 'RFC822', 'update bodies'):
             with session.begin(subtransactions=True):
                 for uid, row in data.items():
                     update_email(uids_map[uid], row['RFC822'])
@@ -224,7 +208,7 @@ def update_label(label):
         'unread': emails.filter(~Email.flags.has_key(Email.SEEN)).count(),
         'exists': emails.count(),
     })
-    log.info('  * Updated label %s', label.name)
+    log.info('  * Updated label %r', label.name)
 
 
 def update_email(uid, raw):
@@ -249,9 +233,9 @@ def mark_emails(name, uids):
         'read': ('+FLAGS', Email.SEEN),
         'unread': ('-FLAGS', Email.SEEN),
     }
+    im = imap.client()
     if name in store:
         key, value = store[name]
-        im = imap.client()
         im.select('"%s"' % label_all.name, readonly=False)
         imap.store(im, uids, key, value)
         return
@@ -261,7 +245,6 @@ def mark_emails(name, uids):
     emails = session.query(Email.uid, Email.labels).filter(Email.uid.in_(uids))
     emails = {m.uid: m for m in emails}
     if name == 'inboxed':
-        im = imap.client()
         for label in [label_all, label_trash]:
             im.select('"%s"' % label.name, readonly=False)
             for uid in uids:
@@ -276,7 +259,6 @@ def mark_emails(name, uids):
                 )
 
     elif name == 'archived':
-        im = imap.client()
         im.select('"%s"' % label_in.name, readonly=False)
         for uid in uids:
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
@@ -296,7 +278,6 @@ def mark_emails(name, uids):
             log.info('Archive(%s): %s', uid, res)
 
     elif name == 'deleted':
-        im = imap.client()
         im.select('"%s"' % label_all.name, readonly=False)
         for uid in uids:
             _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)

@@ -8,6 +8,8 @@ import requests
 from . import log, conf, Timer
 
 BATCH_SIZE = 2000
+BODY_MAXSIZE = 50 * 1024 * 1024
+
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
 
@@ -144,13 +146,46 @@ def search(im, name):
 
 
 def fetch(im, uids, query, label='some updates', quiet=False):
-    steps = range(0, len(uids), BATCH_SIZE)
+    '''Fetch data from IMAP server
+
+    Args:
+        im: IMAP instance
+        uids: a sequence of UID, it uses BATCH_SIZE for spliting to steps
+              or sequence of (UID, BODY.SIZE), it uses BODY_MAXSIZE
+        query: fetch query
+
+    Kargs:
+        label: label for logging
+        quiet: without info logging logging
+
+    Return:
+        generator of batch data
+    '''
+    if not uids:
+        return
+
+    if isinstance(uids[0], (tuple, list)):
+        step_size, group_size = 0, BODY_MAXSIZE
+        step_uids, group_uids = [], []
+        for uid, size in uids:
+            if step_uids and step_size + size > group_size:
+                group_uids.append(step_uids)
+                step_uids, step_size = [], 0
+            else:
+                step_uids.append(uid)
+                step_size += size
+        if step_uids:
+            group_uids.append(step_uids)
+        steps = group_uids
+    else:
+        steps = range(0, len(uids), BATCH_SIZE)
+        steps = [uids[i: i + BATCH_SIZE] for i in steps]
+
     log_ = (lambda *a, **kw: None) if quiet else log.info
     log_('  * Fetch (%d) %d ones with %s...', len(steps), len(uids), query)
 
     timer = Timer()
-    for num, i in enumerate(steps, 1):
-        uids_ = uids[i: i + BATCH_SIZE]
+    for num, uids_ in enumerate(steps, 1):
         if not uids_:
             continue
         data_ = _fetch(im, uids_, query)
