@@ -82,7 +82,7 @@ def fetch_emails(im, label, with_bodies=True):
     timer = Timer()
     msgids, flags = OrderedDict(), defaultdict(list)
     uids = imap.search(im, label.name)
-    data = imap.fetch_all(im, uids, 'X-GM-MSGID FLAGS', 1000, quiet=True)
+    data = imap.fetch_all(im, uids, 'X-GM-MSGID FLAGS', quiet=True)
     for k, v in data.items():
         msgid = v['X-GM-MSGID']
         msgids[msgid] = k
@@ -125,7 +125,7 @@ def fetch_emails(im, label, with_bodies=True):
             ('header', 'BODY[HEADER]'),
         ])
         q = list(query.values())
-        for data in imap.fetch(im, uids, q, 1000, 'add emails'):
+        for data in imap.fetch(im, uids, q, 'add emails'):
             emails = []
             for row in data.values():
                 header = row.pop(query['header'])
@@ -204,7 +204,7 @@ def fetch_emails(im, label, with_bodies=True):
 
         for uids_ in group_uids:
             q = 'RFC822'
-            data = imap.fetch_all(im, uids_, q, len(uids_), 'update bodies')
+            data = imap.fetch_all(im, uids_, q, 'update bodies')
             with session.begin(subtransactions=True):
                 for uid, row in data.items():
                     update_email(uids_map[uid], row['RFC822'])

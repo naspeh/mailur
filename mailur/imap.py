@@ -7,6 +7,7 @@ import requests
 
 from . import log, conf, Timer
 
+BATCH_SIZE = 2000
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
 
@@ -134,7 +135,7 @@ def status(im, name, readonly=True):
 
 def search(im, name):
     uid_next = status(im, name)
-    uids, step = [], 5000
+    uids, step = [], BATCH_SIZE
     for i in range(1, uid_next, step):
         _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
         if data[0]:
@@ -142,14 +143,14 @@ def search(im, name):
     return uids
 
 
-def fetch(im, uids, query, batch_size=500, label='some updates', quiet=False):
-    steps = range(0, len(uids), batch_size)
+def fetch(im, uids, query, label='some updates', quiet=False):
+    steps = range(0, len(uids), BATCH_SIZE)
     log_ = (lambda *a, **kw: None) if quiet else log.info
     log_('  * Fetch (%d) %d ones with %s...', len(steps), len(uids), query)
 
     timer = Timer()
     for num, i in enumerate(steps, 1):
-        uids_ = uids[i: i + batch_size]
+        uids_ = uids[i: i + BATCH_SIZE]
         if not uids_:
             continue
         data_ = _fetch(im, uids_, query)
