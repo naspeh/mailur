@@ -14,6 +14,10 @@ ssh = lambda cmd: sh('ssh %s "%s"' % (
     conf('server_host'), cmd.replace('"', '\"').replace('$', '\$')
 ))
 
+# Hack imaplib limit
+import imaplib
+imaplib._MAXLINE = 100000
+
 
 def run(args):
     if not args.only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
