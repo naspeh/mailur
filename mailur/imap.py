@@ -153,7 +153,7 @@ def fetch(im, uids, query, label='some updates', quiet=False):
 
     Kargs:
         label: label for logging
-        quiet: without info logging logging
+        quiet: without info logging
 
     Return:
         generator of batch data
