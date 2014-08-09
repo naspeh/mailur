@@ -14,7 +14,7 @@ from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import sessionmaker, relationship
 
 from . import conf, filters, base_dir
-from .parser import hide_quote
+from .parser import human_html
 from .imap_utf7 import decode
 
 engine = create_engine(
@@ -225,8 +225,4 @@ class Email(Base):
         return self._parent
 
     def human_html(self, class_='email-quote'):
-        htm = re.sub(r'(<br[/]?>\s*)$', '', self.html).strip()
-        if htm and self.parent:
-            parent_html = self.parent.html or self.parent.human_html()
-            htm = hide_quote(htm, parent_html, class_)
-        return htm
+        return human_html(self.html, self.parent and self.parent.html)

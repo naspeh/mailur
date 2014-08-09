@@ -210,7 +210,7 @@ def gm_thread(env, id):
         groups += [(True, [emails[-1]])]
 
     thread = {
-        'subject': emails[-1].human_subject(),
+        'subject': emails[-1].human_subject() if emails else None,
         'labels': set(sum([e.full_labels for e in emails], []))
     }
     return env.render('thread.tpl', {

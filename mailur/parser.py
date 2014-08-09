@@ -6,6 +6,7 @@ from collections import OrderedDict
 from html import escape as html_escape
 
 import chardet
+import toronado
 from lxml import html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
@@ -225,6 +226,15 @@ def t2h_repl(match):
         return '<br/>'
     else:
         raise ValueError(groups)
+
+
+def human_html(htm, parent=None, class_='email-quote'):
+    htm = re.sub(r'(<br[ ]?[/]?>\s*)$', '', htm).strip()
+    if htm and parent:
+        htm = hide_quote(htm, parent, class_)
+    if htm:
+        htm = toronado.from_string(htm).decode()
+    return htm
 
 
 def hide_quote(mail1, mail0, class_):
