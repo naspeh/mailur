@@ -14,10 +14,6 @@ ssh = lambda cmd: sh('ssh %s "%s"' % (
     conf('server_host'), cmd.replace('"', '\"').replace('$', '\$')
 ))
 
-# Hack imaplib limit
-import imaplib
-imaplib._MAXLINE = 100000
-
 
 def run(args):
     if not args.only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
@@ -41,6 +37,10 @@ def run(args):
 
 
 def main(argv=None):
+    # FIXME: Hack imaplib limit
+    import imaplib
+    imaplib._MAXLINE = 100000
+
     parser = argparse.ArgumentParser('mail')
     cmds = parser.add_subparsers(help='commands')
 
@@ -76,6 +76,14 @@ def main(argv=None):
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
         .exe(run)
+
+    cmd('node', help='install node packages')\
+        .exe(lambda a: sh(
+            'npm install'
+            '   autoprefixer@2.2.0'
+            '   csso@1.3.11'
+            '   less@1.7.4'
+        ))
 
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
