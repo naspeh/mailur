@@ -25,8 +25,10 @@ def sync_gmail(with_bodies=True):
     folders_ = imap.list_(im)
     for index, value in enumerate(folders_):
         attrs, delim, name = value
-        lookup = lambda k: name == k if k == 'INBOX' else k in attrs
-        folder = [v for k, v in opts.items() if lookup(k)]
+        folder = [
+            v for k, v in opts.items()
+            if (name == k if k == 'INBOX' else k in attrs)
+        ]
         weight, hidden, alias = (
             folder[0] if folder else (0, Label.NOSELECT in attrs, None)
         )
