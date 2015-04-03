@@ -18,7 +18,7 @@ from .parser import human_html
 from .imap_utf7 import decode
 
 engine = create_engine(
-    'postgresql+psycopg2://{pg_username}:{pg_password}@/{pg_database}'
+    'postgresql+psycopg2://{pg_username}:{pg_password}@localhost/{pg_database}'
     .format(**conf.data), echo=False
 )
 register_hstore(engine.raw_connection(), True)
