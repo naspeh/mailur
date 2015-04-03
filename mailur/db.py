@@ -35,13 +35,6 @@ def init():
     engine.execute(sql)
 
 
-def clear():
-    with open(os.path.join(base_dir, 'db-clear.sql')) as f:
-        sql = f.read()
-    engine.execute(sql)
-    Base.metadata.drop_all(engine)
-
-
 class Task(Base):
     __tablename__ = 'tasks'
     N_SYNC = 'sync'

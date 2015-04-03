@@ -67,7 +67,6 @@ def main(argv=None):
         .exe(lambda a: syncer.parse_emails(a.new, a.limit, a.last))
 
     cmd('db-init').exe(lambda a: db.init())
-    cmd('db-clear').exe(lambda a: db.clear() or db.init())
 
     cmd('test').exe(lambda a: (
         sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))
@@ -80,9 +79,9 @@ def main(argv=None):
     cmd('node', help='install node packages')\
         .exe(lambda a: sh(
             'npm install'
-            '   autoprefixer@2.2.0'
+            '   autoprefixer@5.1.0'
             '   csso@1.3.11'
-            '   less@1.7.4'
+            '   less@2.5.0'
         ))
 
     cmd('lessc').exe(lambda a: sh(
