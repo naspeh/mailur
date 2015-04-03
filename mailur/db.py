@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime, String, Integer, BigInteger, SmallInteger,
     Boolean, LargeBinary, Float
 )
+from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import ARRAY, HSTORE
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import MutableDict
@@ -21,11 +22,14 @@ engine = create_engine(
     'postgresql+psycopg2://{pg_username}:{pg_password}@localhost/{pg_database}'
     .format(**conf.data), echo=False
 )
-register_hstore(engine.raw_connection(), True)
 
 Base = declarative_base()
 Session = sessionmaker(bind=engine, autocommit=True)
 session = Session()
+
+@event.listens_for(Session, 'before_attach')
+def hstore(session, instance):
+    register_hstore(engine.raw_connection(), True)
 
 
 def init():
