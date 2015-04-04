@@ -4,7 +4,7 @@ from itertools import groupby
 from sqlalchemy import func
 
 from . import log, Timer, imap, parser, async_tasks, with_lock
-from .db import Email, EmailBody, Label, Task, session
+from .db import Email, EmailBody, Label, Task, session, engine
 
 
 @with_lock
@@ -343,19 +343,35 @@ def process_task(name, group):
 
 
 def parse_emails(new=True, limit=500, last=None):
-    emails = session.query(Email)
+    cur = engine.raw_connection().cursor()
+    def exe(*a, **kw):
+        cur.execute(*a, **kw)
+        return cur
+
+    where = []
+    params = {}
     if new:
-        emails = emails.filter(Email.text == None).filter(Email.html == None)
+        where = ['text IS NULL', 'html IS NULL']
 
     if not last:
-        last = session.query(func.max(Email.updated_at)).scalar()
+        last = exe('SELECT MAX(updated_at) FROM emails').fetchone()[0]
+    if last:
+        where.append('updated_at <= %(last)s')
+        params['last'] = last
 
-    emails = emails.filter(Email.updated_at <= last)
-    log.info('* Parse %s emails (%s)...', emails.count(), last)
+    frm = 'FROM emails WHERE %s' % ' AND '.join(where)
+
+    count = lambda: exe('SELECT count(id) ' + frm, params).fetchone()[0]
+    log.info('* Parse %s emails (%s)...', count(), last)
     i = 0
     timer = Timer()
-    while emails.count():
-        for email in emails.limit(limit):
-            update_email(email.uid, email.raw.body)
+    while count():
+        cur = exe(
+            'SELECT uid, body FROM email_bodies '
+            'WHERE uid in (SELECT uid %s LIMIT %s)' % (frm, limit),
+            params
+        )
+        for uid, body in cur.fetchall():
+            update_email(uid, body.tobytes())
             i += 1
         log.info('  - parsed %s ones for %.2f', i, timer.time(reset=False))
