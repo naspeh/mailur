@@ -7,7 +7,7 @@ import subprocess
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from mailur import conf, db, app, syncer, log
+from mailur import conf, db, db2, app, syncer, log
 
 sh = lambda cmd: log.info(cmd) or subprocess.call(cmd, shell=True)
 ssh = lambda cmd: sh('ssh %s "%s"' % (
@@ -67,6 +67,7 @@ def main(argv=None):
         .exe(lambda a: syncer.parse_emails(a.new, a.limit, a.last))
 
     cmd('db-init').exe(lambda a: db.init())
+    cmd('db2-init').exe(lambda a: db2.init())
 
     cmd('test').exe(lambda a: (
         sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))
