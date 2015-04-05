@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import psycopg2
 
 pre = '''
@@ -25,7 +27,21 @@ def fill_updated(table, field='updated'):
     '''.format(table, field)
 
 
-class Emails():
+class TableBase(type):
+    def __new__(cls, name, bases, classdict):
+        new = type.__new__(cls, name, bases, dict(classdict))
+        new._fields = [
+            k for k, v in classdict.items()
+            if not k.startswith('_') and isinstance(v, str)
+        ]
+        return new
+
+    @classmethod
+    def __prepare__(mcls, cls, bases):
+        return OrderedDict()
+
+
+class Emails(metaclass=TableBase):
     __slots__ = ()
 
     _name = 'emails'
@@ -56,9 +72,9 @@ class Emails():
     to = '"to" character varying[]'
     cc = 'cc character varying[]'
     bcc = 'bcc character varying[]'
-    sent_time = 'sent_time timestamp'
     sender = 'sender character varying[]'
     reply_to = 'reply_to character varying[]'
+    sent_time = 'sent_time timestamp'
 
     text = 'text character varying'
     html = 'html character varying'
@@ -69,9 +85,8 @@ class Emails():
 
 def create_table(tbl):
     body = []
-    for attr in dir(tbl):
-        if not attr.startswith('_'):
-            body.append(getattr(tbl, attr))
+    for attr in tbl._fields:
+        body.append(getattr(tbl, attr))
     if hasattr(tbl, '_post'):
         body.append(tbl._post)
     body = ', '.join(body)
