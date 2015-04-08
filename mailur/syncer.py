@@ -9,8 +9,8 @@ from .db import connect, Email
 def sync_gmail(cur, with_bodies=False):
     im = imap.client()
     for attrs, delim, name in imap.list_(im):
-        # if not {'\\All', '\\Junk', '\\Trash'} & set(attrs):
-        if not {'\\Junk', '\\Trash'} & set(attrs):
+        if not {'\\All', '\\Junk', '\\Trash'} & set(attrs):
+        # if not {'\\Junk', '\\Trash'} & set(attrs):
             continue
 
         uids = imap.search(im, name)
@@ -37,7 +37,8 @@ def get_gids(cur, where=None):
 
 @connect()
 def fetch_headers(cur, im, map_uids):
-    uids = [uid for uid, gid in map_uids.items() if gid not in get_gids(cur)]
+    gids = get_gids(cur)
+    uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
         return
 

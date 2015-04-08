@@ -179,7 +179,7 @@ def fetch(im, uids, query, label=None):
         steps = [uids[i: i + batch_size] for i in steps]
 
     log_ = log.info if label else (lambda *a, **kw: None)
-    log_('  * Fetch (%d) %d (%s)...', len(steps), len(uids), query)
+    log_('  * Fetch (%d) %d %r...', len(steps), len(uids), query)
 
     timer = Timer()
     for num, uids_ in enumerate(steps, 1):
@@ -195,7 +195,7 @@ def fetch_all(im, uids, query, label=None):
     data = OrderedDict()
     for data_ in fetch(im, uids, query, label):
         data.update(data_)
-    log.info('  * Got %d (%s) for %.2fs', len(data), query, timer.time())
+    log.info('  * Got %d %r for %.2fs', len(data), query, timer.time())
     return data
 
 
