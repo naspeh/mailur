@@ -7,7 +7,7 @@ from sqlalchemy import func
 from werkzeug.routing import Map, Rule, BaseConverter, ValidationError
 
 from . import conf, cache, imap, async_tasks
-from .db import Email, Label, session
+from .db0 import Email, Label, session
 
 rules = [
     Rule('/auth/', endpoint='auth'),

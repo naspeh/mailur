@@ -1,8 +1,11 @@
+from uuid import UUID
 from collections import OrderedDict
 
 import psycopg2
+import psycopg2.extras
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
+psycopg2.extensions.register_adapter(UUID, psycopg2.extras.UUID_adapter)
 pre = '''
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE OR REPLACE FUNCTION fill_updated()

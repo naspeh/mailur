@@ -40,7 +40,7 @@ def fetch_emails(cur, im, label, with_bodies=False):
                 header = row.pop(query['header'])
                 gm_msgid = row.pop(query['gm_msgid'])
                 fields = {k: row[v] for k, v in query.items() if v in row}
-                fields['id'] = str(uuid4())
+                fields['id'] = uuid4()
                 fields['thrid'] = fields['id']
                 fields['extra'] = {'X-GM-MSGID': gm_msgid}
                 if not with_bodies:
