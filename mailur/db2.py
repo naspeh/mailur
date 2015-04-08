@@ -21,9 +21,15 @@ $$ language 'plpgsql';
 def fill_updated(table, field='updated'):
     return '''
     DROP TRIGGER IF EXISTS fill_{0}_{1} ON {0};
-    CREATE TRIGGER fill_{0}_{1}
-       BEFORE UPDATE ON {0}
+    CREATE TRIGGER fill_{0}_{1} BEFORE UPDATE ON {0}
        FOR EACH ROW EXECUTE PROCEDURE fill_updated()
+    '''.format(table, field)
+
+
+def make_index(table, field):
+    return '''
+    DROP INDEX IF EXISTS ix_{0}_{1};
+    CREATE INDEX ix_{0}_{1} ON {0} ({1})
     '''.format(table, field)
 
 
@@ -47,46 +53,44 @@ class Emails(metaclass=TableBase):
     _name = 'emails'
     _post_table = '; '.join([
         fill_updated(_name),
-        (
-            'DROP INDEX IF EXISTS ix_{0}_{1};'
-            'CREATE INDEX ix_{0}_{1} ON {0} ({1})'
-            .format(_name, 'size')
-        )
+        make_index(_name, 'size'),
+        make_index(_name, 'in_reply_to'),
+        make_index(_name, 'msgid')
     ])
 
-    uid = 'uid uuid PRIMARY KEY DEFAULT gen_random_uuid()'
-    created = 'created timestamp NOT NULL DEFAULT current_timestamp'
-    updated = 'updated timestamp NOT NULL DEFAULT current_timestamp'
+    id = 'uuid PRIMARY KEY DEFAULT gen_random_uuid()'
+    created = 'timestamp NOT NULL DEFAULT current_timestamp'
+    updated = 'timestamp NOT NULL DEFAULT current_timestamp'
+    thrid = 'uuid NOT NULL REFERENCES emails(id)'
 
-    size = 'size integer'
-    time = 'time timestamp'
-    raw = 'raw oid'
-    labels = 'labels integer[]'
+    raw = 'oid'
+    size = 'integer'
+    time = 'timestamp'
+    labels = 'integer[]'
 
-    id = 'id character varying'
-    parent = 'parent character varying'
-    refs = 'refs character varying[]'
+    subj = 'character varying'
+    fr = 'character varying[]'
+    to = 'character varying[]'
+    cc = 'character varying[]'
+    bcc = 'character varying[]'
+    reply_to = 'character varying[]'
+    sender = 'character varying'
+    sender_time = 'timestamp'
+    msgid = 'character varying'
+    in_reply_to = 'character varying'
+    refs = 'character varying[]'
 
-    subj = 'subj character varying'
-    fr = 'fr character varying[]'
-    to = '"to" character varying[]'
-    cc = 'cc character varying[]'
-    bcc = 'bcc character varying[]'
-    sender = 'sender character varying[]'
-    reply_to = 'reply_to character varying[]'
-    sent_time = 'sent_time timestamp'
-
-    text = 'text character varying'
-    html = 'html character varying'
-    attachments = 'attachments character varying[]'
-    embedded = 'embedded json'
-    extra = 'extra json'
+    text = 'character varying'
+    html = 'character varying'
+    attachments = 'character varying[]'
+    embedded = 'jsonb'
+    extra = 'jsonb'
 
 
 def create_table(tbl):
     body = []
     for attr in tbl._fields:
-        body.append(getattr(tbl, attr))
+        body.append('"%s" %s' % (attr, getattr(tbl, attr)))
     if hasattr(tbl, '_post'):
         body.append(tbl._post)
     body = ', '.join(body)
@@ -99,7 +103,15 @@ def create_table(tbl):
     return '; '.join(sql)
 
 
-def init():
+def init(reset=False):
+    if reset:
+        conn = psycopg2.connect('host=localhost user=postgres dbname=postgres')
+        conn.set_isolation_level(0)
+        cur = conn.cursor()
+        cur.execute('DROP DATABASE IF EXISTS test')
+        cur.execute('CREATE DATABASE test')
+        conn.commit()
+
     conn = psycopg2.connect('host=localhost user=postgres dbname=test')
     cur = conn.cursor()
     sql = pre + create_table(Emails)

@@ -67,7 +67,9 @@ def main(argv=None):
         .exe(lambda a: syncer.parse_emails(a.new, a.limit, a.last))
 
     cmd('db-init').exe(lambda a: db.init())
-    cmd('db2-init').exe(lambda a: db2.init())
+    cmd('db2-init')\
+        .arg('-r', '--reset', action='store_true')\
+        .exe(lambda a: db2.init(a.reset))
 
     cmd('test').exe(lambda a: (
         sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))
