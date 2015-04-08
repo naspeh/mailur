@@ -160,16 +160,17 @@ def parse_part(part, msg_id, inner=False):
 
 
 key_map = {
-    'date': ('date', decode_date),
-    'subject': ('subject', decode_header),
-    'from': ('from', decode_addresses),
-    'sender': ('sender', decode_addresses),
-    'reply-to': ('reply_to', decode_addresses),
+    'subject': ('subj', decode_header),
+    'from': ('fr', decode_addresses),
     'to': ('to', decode_addresses),
     'cc': ('cc', decode_addresses),
     'bcc': ('bcc', decode_addresses),
+    'reply-to': ('reply_to', decode_addresses),
+    'sender': ('sender', decode_addresses),
+    'date': ('sender_time', decode_date),
+    'message-id': ('msgid', str),
     'in-reply-to': ('in_reply_to', str),
-    'message-id': ('message_id', str)
+    # 'references': ('refs', )
 }
 
 
@@ -182,7 +183,11 @@ def parse(text, msg_id=None):
         value = msg.get(key)
         data[field] = decode(value) if value else None
 
-    data.update(parse_part(msg, msg_id or data['message_id']))
+    files = parse_part(msg, msg_id or data['message_id'])
+    data['attachments'] = files['attachments']
+    data['embedded'] = files['embedded']
+    data['html'] = files.get('html', None)
+    data['text'] = files.get('text', None)
     return data
 
 

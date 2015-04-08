@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 import psycopg2
 
+psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 pre = '''
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE OR REPLACE FUNCTION fill_updated()
@@ -33,7 +34,7 @@ def create_index(table, field):
     '''.format(table, field)
 
 
-class TableBase(type):
+class TableMeta(type):
     def __new__(cls, name, bases, classdict):
         new = type.__new__(cls, name, bases, dict(classdict))
         new._fields = [
@@ -47,7 +48,25 @@ class TableBase(type):
         return OrderedDict()
 
 
-class Email(metaclass=TableBase):
+class Table(metaclass=TableMeta):
+    @classmethod
+    def insert(cls, items):
+        fields = sorted(f for f in items[0])
+        error = set(fields) - set(cls._fields)
+        if error:
+            raise ValueError('Fields are not exists %s' % error)
+
+        sql = 'INSERT INTO {table} ({fields}) VALUES ({values})'.format(
+            table=cls._name,
+            fields=', '.join('"%s"' % i for i in fields),
+            values=', '.join('%%(%s)s' % i for i in fields),
+        )
+        with connect() as cur:
+            cur.executemany(sql, items)
+            return cur
+
+
+class Email(Table):
     __slots__ = ()
 
     _name = 'emails'
@@ -103,17 +122,50 @@ def create_table(tbl):
     return '; '.join(sql)
 
 
+class connect():
+    conn = None
+
+    def __init__(self, **params):
+        self.params = params
+
+    def __enter__(self):
+        params = dict(self.params)
+        post = params.pop('post', None)
+        params = dict({
+            'host': 'localhost',
+            'user': 'postgres',
+            'dbname': 'test'
+        }, **params)
+        self.conn = conn = psycopg2.connect(**params)
+        if post:
+            post(conn)
+        self.cur = cur = conn.cursor()
+        return cur
+
+    def __exit__(self, type, value, traceback):
+        if type is None:
+            self.conn.commit()
+        else:
+            self.conn.rollback()
+        self.cur.close()
+        self.conn.close()
+
+    def __call__(self, func):
+        def inner(*a, **kw):
+            with connect(**self.params) as cur:
+                return func(cur, *a, **kw)
+        return inner
+
+
 def init(reset=False):
     if reset:
-        conn = psycopg2.connect('host=localhost user=postgres dbname=postgres')
-        conn.set_isolation_level(0)
-        cur = conn.cursor()
-        cur.execute('DROP DATABASE IF EXISTS test')
-        cur.execute('CREATE DATABASE test')
-        conn.commit()
+        params = {
+            'dbname': 'postgres',
+            'post': lambda c: c.set_isolation_level(0)
+        }
+        with connect(**params) as cur:
+            cur.execute('DROP DATABASE IF EXISTS test')
+            cur.execute('CREATE DATABASE test')
 
-    conn = psycopg2.connect('host=localhost user=postgres dbname=test')
-    cur = conn.cursor()
-    sql = pre + create_table(Email)
-    cur.execute(sql)
-    conn.commit()
+    with connect() as cur:
+        cur.execute(pre + create_table(Email))

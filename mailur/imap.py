@@ -142,7 +142,7 @@ def search(im, name):
     return uids
 
 
-def fetch(im, uids, query, label='some updates', quiet=False):
+def fetch(im, uids, query, label=None):
     '''Fetch data from IMAP server
 
     Args:
@@ -153,7 +153,6 @@ def fetch(im, uids, query, label='some updates', quiet=False):
 
     Kargs:
         label: label for logging
-        quiet: without info logging
 
     Return:
         generator of batch data
@@ -179,7 +178,7 @@ def fetch(im, uids, query, label='some updates', quiet=False):
         steps = range(0, len(uids), batch_size)
         steps = [uids[i: i + batch_size] for i in steps]
 
-    log_ = (lambda *a, **kw: None) if quiet else log.info
+    log_ = log.info if label else (lambda *a, **kw: None)
     log_('  * Fetch (%d) %d ones with %s...', len(steps), len(uids), query)
 
     timer = Timer()

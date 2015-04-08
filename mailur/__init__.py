@@ -14,7 +14,7 @@ base_dir = os.path.abspath(os.path.join(app_dir, '..'))
 
 class _Conf:
     def __init__(self):
-        filename = os.environ.get('MAILR_CONF', 'conf.json')
+        filename = os.environ.get('MAILUR_CONF', 'conf.json')
         self.path = os.path.join(base_dir, filename)
 
         with open(self.path, 'br') as f:
