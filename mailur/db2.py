@@ -26,7 +26,7 @@ def fill_updated(table, field='updated'):
     '''.format(table, field)
 
 
-def make_index(table, field):
+def create_index(table, field):
     return '''
     DROP INDEX IF EXISTS ix_{0}_{1};
     CREATE INDEX ix_{0}_{1} ON {0} ({1})
@@ -47,15 +47,15 @@ class TableBase(type):
         return OrderedDict()
 
 
-class Emails(metaclass=TableBase):
+class Email(metaclass=TableBase):
     __slots__ = ()
 
     _name = 'emails'
     _post_table = '; '.join([
         fill_updated(_name),
-        make_index(_name, 'size'),
-        make_index(_name, 'in_reply_to'),
-        make_index(_name, 'msgid')
+        create_index(_name, 'size'),
+        create_index(_name, 'in_reply_to'),
+        create_index(_name, 'msgid')
     ])
 
     id = 'uuid PRIMARY KEY DEFAULT gen_random_uuid()'
@@ -114,6 +114,6 @@ def init(reset=False):
 
     conn = psycopg2.connect('host=localhost user=postgres dbname=test')
     cur = conn.cursor()
-    sql = pre + create_table(Emails)
+    sql = pre + create_table(Email)
     cur.execute(sql)
     conn.commit()
