@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION fill_updated()
 RETURNS TRIGGER AS $$
 BEGIN
    IF row(NEW.*) IS DISTINCT FROM row(OLD.*) THEN
-      NEW.modified = now();
+      NEW.updated = now();
       RETURN NEW;
    ELSE
       RETURN OLD;
@@ -85,7 +85,7 @@ class Email(Table):
     updated = 'timestamp NOT NULL DEFAULT current_timestamp'
     thrid = 'uuid NOT NULL REFERENCES emails(id)'
 
-    raw = 'oid'
+    raw = 'bytea'
     size = 'integer'
     time = 'timestamp'
     labels = 'integer[]'
