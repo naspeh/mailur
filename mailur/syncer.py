@@ -69,8 +69,13 @@ def fetch_bodies(cur, im, map_uids):
         return
 
     for data in imap.fetch(im, uids, 'RFC822', 'add bodies'):
-        cur.executemany(
-            "UPDATE emails SET raw=%s"
-            "  WHERE (extra->>'X-GM-MSGID')::bigint=%s",
-            ((row['RFC822'], map_uids[uid]) for uid, row in data.items())
-        )
+        conn = cur.connection
+        for uid, row in data.items():
+            lobj = conn.lobject()
+            lobj.write(row['RFC822'])
+            cur.execute(
+                "UPDATE emails SET raw=%s"
+                "  WHERE (extra->>'X-GM-MSGID')::bigint=%s",
+                ((lobj.oid, map_uids[uid]))
+            )
+        conn.commit()
