@@ -1,5 +1,6 @@
-from uuid import UUID
 from collections import OrderedDict
+from functools import wraps
+from uuid import UUID
 
 import psycopg2
 import psycopg2.extras
@@ -153,6 +154,7 @@ class connect():
         self.conn.close()
 
     def __call__(self, func):
+        @wraps(func)
         def inner(*a, **kw):
             with connect(**self.params) as cur:
                 return func(cur, *a, **kw)

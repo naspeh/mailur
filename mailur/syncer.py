@@ -1,10 +1,11 @@
 from collections import OrderedDict
 from uuid import uuid4
 
-from . import imap, imap_utf7, parser, log, Timer
+from . import imap, imap_utf7, parser, log, Timer, with_lock
 from .db import connect, Email
 
 
+@with_lock
 @connect()
 def sync_gmail(cur, with_bodies=False, only_labels=None):
     im = imap.client()
