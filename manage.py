@@ -53,7 +53,8 @@ def main(argv=None):
 
     cmd('sync')\
         .arg('-b', '--with-bodies', action='store_true')\
-        .exe(lambda a: (syncer.sync_gmail(a.with_bodies)))
+        .arg('-l', '--only-labels', nargs='+')\
+        .exe(lambda a: (syncer.sync_gmail(a.with_bodies, a.only_labels)))
 
     cmd('tasks')\
         .arg('-s', '--just-sync', action='store_true')\

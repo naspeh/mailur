@@ -6,11 +6,15 @@ from .db import connect, Email
 
 
 @connect()
-def sync_gmail(cur, with_bodies=False):
+def sync_gmail(cur, with_bodies=False, only_labels=None):
     im = imap.client()
     folders = imap.list_(im)
+    if not only_labels:
+        only_labels = ('\\All', '\\Junk', '\\Trash')
     for attrs, delim, name in folders:
-        if not {'\\All', '\\Junk', '\\Trash'} & set(attrs):
+        label = set(only_labels) & set(attrs)
+        label = label and label.pop()
+        if not label:
             continue
 
         uids = imap.search(im, name)
@@ -22,23 +26,26 @@ def sync_gmail(cur, with_bodies=False):
         uids = OrderedDict((k, v['X-GM-MSGID']) for k, v in data.items())
 
         fetch_headers(im, uids)
-        fetch_labels(im, uids)
+        fetch_labels(im, uids, label)
         if with_bodies:
             fetch_bodies(im, uids)
 
 
-def get_gids(cur, where=None):
-    sql = "SELECT extra->'X-GM-MSGID' msgid FROM emails"
+def get_gids(cur, gids, where=None):
+    sql = '''
+    SELECT extra->'X-GM-MSGID' msgid FROM emails
+      WHERE %(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint]
+    '''
     if where:
-        sql += ' WHERE %s' % where
-    cur.execute(sql)
+        sql += ' AND %s' % where
+    cur.execute(sql, {'gids': list(gids)})
     gids = [r[0] for r in cur.fetchall()]
     return gids
 
 
 @connect()
 def fetch_headers(cur, im, map_uids):
-    gids = get_gids(cur)
+    gids = get_gids(cur, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
         return
@@ -65,7 +72,7 @@ def fetch_headers(cur, im, map_uids):
 
 @connect()
 def fetch_bodies(cur, im, map_uids):
-    gids = get_gids(cur, where='raw IS NULL')
+    gids = get_gids(cur, map_uids.values(), where='raw IS NULL')
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
         return
@@ -84,8 +91,10 @@ def fetch_bodies(cur, im, map_uids):
 
 
 @connect()
-def fetch_labels(cur, im, map_uids):
-    gids = get_gids(cur)
+def fetch_labels(cur, im, map_uids, folder):
+    gids = get_gids(cur, map_uids.values())
+    update_label(cur, gids, folder)
+
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
         return
@@ -106,22 +115,25 @@ def fetch_labels(cur, im, map_uids):
     ]
     for label, args, func in labels:
         gids = [map_uids[uid] for uid, row in data.items() if func(row, *args)]
-        update_label(cur, gids, label)
+        update_label(cur, gids, label, folder)
         log.info('  * Updated %r for %2fs', label, timer.time())
 
 
-def update_label(cur, gids, label):
-    cur.execute(
-        "UPDATE emails SET labels=array_remove(labels, %(label)s)"
-        "  WHERE NOT (%(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint])"
-        "  AND labels @> ARRAY[%(label)s::varchar]",
-        {'label': label, 'gids': gids}
-    )
+def update_label(cur, gids, label, folder=None):
+    def step(sql):
+        sql += ('AND labels @> ARRAY[%(folder)s::varchar]' if folder else '')
+        cur.execute(sql, {'label': label, 'gids': gids, 'folder': folder})
+
+    step('''
+    UPDATE emails SET labels=array_remove(labels, %(label)s)
+      WHERE NOT (%(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint])
+      AND labels @> ARRAY[%(label)s::varchar]
+    ''')
     log.info('  - remove %r from %d emails', label, cur.rowcount)
-    cur.execute(
-        "UPDATE emails SET labels=(labels || %(label)s::varchar)"
-        "  WHERE %(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint]"
-        "  AND NOT (labels @> ARRAY[%(label)s::varchar])",
-        {'label': label, 'gids': gids}
-    )
+
+    step('''
+    UPDATE emails SET labels=(labels || %(label)s::varchar)
+      WHERE %(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint]
+      AND NOT (labels @> ARRAY[%(label)s::varchar])
+    ''')
     log.info('  - add %r to %d emails', label, cur.rowcount)
