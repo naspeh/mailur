@@ -126,10 +126,19 @@ def with_lock(func):
 
 
 class Timer:
-    __slots__ = ('start', 'finish')
+    __slots__ = ('start', 'finish', 'label')
 
-    def __init__(self):
+    def __init__(self, label=None):
         self.reset()
+        self.label = label
+
+    def __enter__(self):
+        self.reset()
+
+    def __exit__(self, *a, **kw):
+        duration = self.duration
+        if self.label:
+            log.info('  - %s for %2fs', self.label, duration)
 
     def reset(self):
         self.start = time.time()

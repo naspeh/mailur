@@ -190,6 +190,7 @@ def fetch(im, uids, query, label=None):
         yield data_
         log_('  - %s for %.2fs', label, timer.time())
 
+
 def fetch_all(im, uids, query, label=None):
     timer = Timer()
     data = OrderedDict()
@@ -207,7 +208,6 @@ def _fetch(im, ids, query):
         keys = query.split()
 
     status, data_ = im.uid('fetch', ','.join(ids), '(%s)' % query)
-
     data = iter(data_)
     if 'UID' not in keys:
         keys.append('UID')
