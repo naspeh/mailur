@@ -53,7 +53,7 @@ class TableMeta(type):
 
 class Table(metaclass=TableMeta):
     @classmethod
-    def insert(cls, items):
+    def insert(cls, cur, items):
         fields = sorted(f for f in items[0])
         error = set(fields) - set(cls._fields)
         if error:
@@ -64,9 +64,8 @@ class Table(metaclass=TableMeta):
             fields=', '.join('"%s"' % i for i in fields),
             values=', '.join('%%(%s)s' % i for i in fields),
         )
-        with connect() as cur:
-            cur.executemany(sql, items)
-            return cur
+        cur.executemany(sql, items)
+        return cur
 
 
 class Email(Table):
@@ -88,23 +87,23 @@ class Email(Table):
     raw = 'oid'
     size = 'integer'
     time = 'timestamp'
-    labels = 'integer[]'
+    labels = "varchar[] DEFAULT '{}'"
 
-    subj = 'character varying'
-    fr = 'character varying[]'
-    to = 'character varying[]'
-    cc = 'character varying[]'
-    bcc = 'character varying[]'
-    reply_to = 'character varying[]'
-    sender = 'character varying'
+    subj = 'varchar'
+    fr = "varchar[] DEFAULT '{}'"
+    to = "varchar[] DEFAULT '{}'"
+    cc = "varchar[] DEFAULT '{}'"
+    bcc = "varchar[] DEFAULT '{}'"
+    reply_to = "varchar[] DEFAULT '{}'"
+    sender = 'varchar'
     sender_time = 'timestamp'
-    msgid = 'character varying'
-    in_reply_to = 'character varying'
-    refs = 'character varying[]'
+    msgid = 'varchar'
+    in_reply_to = 'varchar'
+    refs = "varchar[] DEFAULT '{}'"
 
-    text = 'character varying'
-    html = 'character varying'
-    attachments = 'character varying[]'
+    text = 'text'
+    html = 'text'
+    attachments = "varchar[] DEFAULT '{}'"
     embedded = 'jsonb'
     extra = 'jsonb'
 
