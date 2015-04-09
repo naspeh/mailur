@@ -96,17 +96,19 @@ def fetch_labels(cur, im, map_uids, folder):
     gids = get_gids(cur, map_uids.values())
     update_label(cur, gids, folder)
 
+    # TODO: should find faster way
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
         return
 
     data = imap.fetch_all(im, uids, 'X-GM-LABELS FLAGS')
-    glabels = set(sum((r['X-GM-LABELS'] for r in data.values()), []))
-    gflags = set(sum((r['FLAGS'] for r in data.values()), []))
+    glabels, gflags = set(), set()
+    for row in data.values():
+        glabels |= set(row['X-GM-LABELS'])
+        gflags |= set(row['FLAGS'])
     log.info('  * Unique labels %r', glabels)
     log.info('  * Unique flags %r', gflags)
 
-    timer = Timer()
     labels = [
         (imap_utf7.decode(l), [l], lambda row, l: l in row['X-GM-LABELS'])
         for l in glabels
@@ -117,24 +119,24 @@ def fetch_labels(cur, im, map_uids, folder):
     for label, args, func in labels:
         gids = [map_uids[uid] for uid, row in data.items() if func(row, *args)]
         update_label(cur, gids, label, folder)
-        log.info('  * Updated %r for %2fs', label, timer.time())
 
 
 def update_label(cur, gids, label, folder=None):
-    def step(sql):
+    def step(action, sql):
+        t = Timer()
         sql += ('AND labels @> ARRAY[%(folder)s::varchar]' if folder else '')
         cur.execute(sql, {'label': label, 'gids': gids, 'folder': folder})
+        log.info('  - %s %d emails for %.2fs', action, cur.rowcount, t.time())
 
-    step('''
+    log.info('  * Process %r...', label)
+    step('remove from', '''
     UPDATE emails SET labels=array_remove(labels, %(label)s)
       WHERE NOT (%(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint])
       AND labels @> ARRAY[%(label)s::varchar]
     ''')
-    log.info('  - remove %r from %d emails', label, cur.rowcount)
 
-    step('''
+    step('add to', '''
     UPDATE emails SET labels=(labels || %(label)s::varchar)
       WHERE %(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint]
       AND NOT (labels @> ARRAY[%(label)s::varchar])
     ''')
-    log.info('  - add %r to %d emails', label, cur.rowcount)

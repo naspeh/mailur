@@ -4,6 +4,7 @@ import logging.config
 import os
 import socket
 import time
+from contextlib import ContextDecorator
 from functools import wraps
 from importlib import import_module
 
@@ -125,7 +126,7 @@ def with_lock(func):
     return inner
 
 
-class Timer:
+class Timer(ContextDecorator):
     __slots__ = ('start', 'finish', 'label')
 
     def __init__(self, label=None):
@@ -138,7 +139,7 @@ class Timer:
     def __exit__(self, *a, **kw):
         duration = self.duration
         if self.label:
-            log.info('  - %s for %2fs', self.label, duration)
+            log.info('%s for %.2fs', self.label, duration)
 
     def reset(self):
         self.start = time.time()
