@@ -31,11 +31,13 @@ def fill_updated(table, field='updated'):
     '''.format(table, field)
 
 
-def create_index(table, field):
+def create_index(table, field, using=''):
+    if using:
+        using = 'USING %s ' % using
     return '''
     DROP INDEX IF EXISTS ix_{0}_{1};
-    CREATE INDEX ix_{0}_{1} ON {0} ({1})
-    '''.format(table, field)
+    CREATE INDEX ix_{0}_{1} ON {0} {2}({1})
+    '''.format(table, field, using)
 
 
 class TableMeta(type):
@@ -77,7 +79,8 @@ class Email(Table):
         fill_updated(_name),
         create_index(_name, 'size'),
         create_index(_name, 'in_reply_to'),
-        create_index(_name, 'msgid')
+        create_index(_name, 'msgid'),
+        create_index(_name, 'labels', 'GIN'),
     ])
 
     id = 'uuid PRIMARY KEY DEFAULT gen_random_uuid()'
@@ -85,7 +88,7 @@ class Email(Table):
     updated = 'timestamp NOT NULL DEFAULT current_timestamp'
     thrid = 'uuid NOT NULL REFERENCES emails(id)'
 
-    raw = 'oid'
+    raw = 'bytea'
     size = 'integer'
     time = 'timestamp'
     labels = "varchar[] DEFAULT '{}'"

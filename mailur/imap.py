@@ -1,6 +1,5 @@
 import imaplib
 import re
-from collections import OrderedDict
 from urllib.parse import urlencode
 
 import requests
@@ -193,11 +192,12 @@ def fetch(im, uids, query, label=None):
 
 def fetch_all(im, uids, query, label=None):
     timer = Timer()
-    data = OrderedDict()
-    for data_ in fetch(im, uids, query, label):
-        data.update(data_)
-    log.info('  * Got %d %r for %.2fs', len(data), query, timer.time())
-    return data
+    num = 1
+    for data in fetch(im, uids, query, label):
+        for row in data:
+            num += 1
+            yield row
+    log.info('  * Got %d %r for %.2fs', num, query, timer.time())
 
 
 def _fetch(im, ids, query):
@@ -244,8 +244,6 @@ def _fetch(im, ids, query):
                     row[key] = value_
         return row
 
-    rows = OrderedDict()
-    for i in range(len(ids)):
-        row = parse(next(data), {})
-        rows[str(row['UID'])] = row
+    rows = (parse(next(data), {}) for i in range(len(ids)))
+    rows = ((str(row['UID']), row) for row in rows)
     return rows

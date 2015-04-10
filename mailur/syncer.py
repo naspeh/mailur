@@ -24,7 +24,7 @@ def sync_gmail(cur, with_bodies=False, only_labels=None):
             continue
 
         data = imap.fetch_all(im, uids, 'X-GM-MSGID')
-        uids = OrderedDict((k, v['X-GM-MSGID']) for k, v in data.items())
+        uids = OrderedDict((k, v['X-GM-MSGID']) for k, v in data)
 
         fetch_headers(im, uids)
         fetch_labels(im, uids, label)
@@ -59,7 +59,7 @@ def fetch_headers(cur, im, map_uids):
     q = list(query.values())
     for data in imap.fetch(im, uids, q, 'add emails with headers'):
         emails = []
-        for uid, row in data.items():
+        for uid, row in data:
             header = row.pop(query['header'])
             fields = {k: row[v] for k, v in query.items() if v in row}
             fields['id'] = uuid4()
@@ -78,16 +78,13 @@ def fetch_bodies(cur, im, map_uids):
     if not uids:
         return
 
+    conn = cur.connection
     for data in imap.fetch(im, uids, 'RFC822', 'add bodies'):
-        conn = cur.connection
-        for uid, row in data.items():
-            lobj = conn.lobject()
-            lobj.write(row['RFC822'])
-            cur.execute(
-                "UPDATE emails SET raw=%s"
-                "  WHERE (extra->>'X-GM-MSGID')::bigint=%s",
-                ((lobj.oid, map_uids[uid]))
-            )
+        cur.executemany(
+            "UPDATE emails SET raw=%s"
+            "  WHERE (extra->>'X-GM-MSGID')::bigint=%s",
+            ((row['RFC822'], map_uids[uid]) for uid, row in data)
+        )
         conn.commit()
 
 
@@ -101,9 +98,9 @@ def fetch_labels(cur, im, map_uids, folder):
     if not uids:
         return
 
-    data = imap.fetch_all(im, uids, 'X-GM-LABELS FLAGS')
+    data = tuple(imap.fetch_all(im, uids, 'X-GM-LABELS FLAGS'))
     glabels, gflags = set(), set()
-    for row in data.values():
+    for _, row in data:
         glabels |= set(row['X-GM-LABELS'])
         gflags |= set(row['FLAGS'])
     log.info('  * Unique labels %r', glabels)
@@ -117,7 +114,7 @@ def fetch_labels(cur, im, map_uids, folder):
         ('\\Unread', [], (lambda row: '\\Seen' not in row['FLAGS'])),
     ]
     for label, args, func in labels:
-        gids = [map_uids[uid] for uid, row in data.items() if func(row, *args)]
+        gids = [map_uids[uid] for uid, row in data if func(row, *args)]
         update_label(cur, gids, label, folder)
 
 
