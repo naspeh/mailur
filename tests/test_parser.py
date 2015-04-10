@@ -10,7 +10,7 @@ emails = read_file('files_parser', 'expected.json').items()
 def test_emails(path, expected):
     raw = read_file('files_parser', path)
     result = parser.parse(raw, 'test')
-    assert expected['subject'] == result['subject']
+    assert expected['subject'] == result['subj']
 
     for type_ in ['html']:
         if expected.get(type_):
