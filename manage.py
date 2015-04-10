@@ -7,7 +7,7 @@ import subprocess
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import SharedDataMiddleware
 
-from mailur import conf, db, app, syncer, log
+from mailur import conf, db, syncer, log
 
 sh = lambda cmd: log.info(cmd) or subprocess.call(cmd, shell=True)
 ssh = lambda cmd: sh('ssh %s "%s"' % (
@@ -16,6 +16,8 @@ ssh = lambda cmd: sh('ssh %s "%s"' % (
 
 
 def run(args):
+    from mailur import app
+
     if not args.only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         main(['lessc'])
 
