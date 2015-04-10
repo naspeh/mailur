@@ -52,9 +52,9 @@ def main(argv=None):
         return p
 
     cmd('sync')\
-        .arg('-b', '--with-bodies', action='store_true')\
+        .arg('-b', '--bodies', action='store_true')\
         .arg('-l', '--only-labels', nargs='+')\
-        .exe(lambda a: (syncer.sync_gmail(a.with_bodies, a.only_labels)))
+        .exe(lambda a: (syncer.sync_gmail(a.bodies, a.only_labels)))
 
     cmd('tasks')\
         .arg('-s', '--just-sync', action='store_true')\

@@ -141,7 +141,7 @@ def search(im, name):
     return uids
 
 
-def fetch(im, uids, query, label=None):
+def fetch_batch(im, uids, query, label=None):
     '''Fetch data from IMAP server
 
     Args:
@@ -190,10 +190,10 @@ def fetch(im, uids, query, label=None):
         log_('  - %s for %.2fs', label, timer.time())
 
 
-def fetch_all(im, uids, query, label=None):
+def fetch(im, uids, query, label=None):
     timer = Timer()
     num = 1
-    for data in fetch(im, uids, query, label):
+    for data in fetch_batch(im, uids, query, label):
         for row in data:
             num += 1
             yield row

@@ -7,7 +7,7 @@ from .db import connect, Email
 
 @with_lock
 @connect()
-def sync_gmail(cur, with_bodies=False, only_labels=None):
+def sync_gmail(cur, bodies=False, only_labels=None):
     im = imap.client()
     folders = imap.list_(im)
     if not only_labels:
@@ -23,13 +23,14 @@ def sync_gmail(cur, with_bodies=False, only_labels=None):
         if not uids:
             continue
 
-        data = imap.fetch_all(im, uids, 'X-GM-MSGID')
+        data = imap.fetch(im, uids, 'X-GM-MSGID')
         uids = OrderedDict((k, v['X-GM-MSGID']) for k, v in data)
 
-        fetch_headers(im, uids)
-        fetch_labels(im, uids, label)
-        if with_bodies:
+        if bodies:
             fetch_bodies(im, uids)
+        else:
+            fetch_headers(im, uids)
+            fetch_labels(im, uids, label)
 
 
 def get_gids(cur, gids, where=None):
@@ -57,7 +58,7 @@ def fetch_headers(cur, im, map_uids):
         'header': 'BODY[HEADER]',
     }
     q = list(query.values())
-    for data in imap.fetch(im, uids, q, 'add emails with headers'):
+    for data in imap.fetch_batch(im, uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
             header = row.pop(query['header'])
@@ -79,7 +80,7 @@ def fetch_bodies(cur, im, map_uids):
         return
 
     conn = cur.connection
-    for data in imap.fetch(im, uids, 'RFC822', 'add bodies'):
+    for data in imap.fetch_batch(im, uids, 'RFC822', 'add bodies'):
         cur.executemany(
             "UPDATE emails SET raw=%s"
             "  WHERE (extra->>'X-GM-MSGID')::bigint=%s",
@@ -98,7 +99,7 @@ def fetch_labels(cur, im, map_uids, folder):
     if not uids:
         return
 
-    data = tuple(imap.fetch_all(im, uids, 'X-GM-LABELS FLAGS'))
+    data = tuple(imap.fetch(im, uids, 'X-GM-LABELS FLAGS'))
     glabels, gflags = set(), set()
     for _, row in data:
         glabels |= set(row['X-GM-LABELS'])
