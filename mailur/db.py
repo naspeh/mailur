@@ -62,12 +62,14 @@ class Table(metaclass=TableMeta):
         if error:
             raise ValueError('Fields are not exists %s' % error)
 
-        sql = 'INSERT INTO {table} ({fields}) VALUES ({values})'.format(
+        values = '(%s)' % (', '.join('%%(%s)s' % i for i in fields))
+        values = ','.join([cur.mogrify(values, v).decode() for v in items])
+        sql = 'INSERT INTO {table} ({fields}) VALUES '.format(
             table=cls._name,
             fields=', '.join('"%s"' % i for i in fields),
-            values=', '.join('%%(%s)s' % i for i in fields),
         )
-        cur.executemany(sql, items)
+        sql += values
+        cur.execute(sql)
         return cur
 
 
@@ -129,50 +131,58 @@ def create_table(tbl):
 
 
 class connect():
-    conn = None
+    _conn = {}
 
     def __init__(self, **params):
         self.params = params
+        self.dbname = params.get('dbname')
+
+    @property
+    def conn(self):
+        return self._conn[self.dbname]
 
     def __enter__(self):
         params = dict(self.params)
-        post = params.pop('post', None)
         params = dict({
             'host': 'localhost',
             'user': 'postgres',
             'dbname': 'test'
         }, **params)
-        self.conn = conn = psycopg2.connect(**params)
-        if post:
-            post(conn)
-        self.cur = cur = conn.cursor()
-        return cur
+        self._conn[self.dbname] = conn = psycopg2.connect(**params)
+        return conn
 
     def __exit__(self, type, value, traceback):
         if type is None:
             self.conn.commit()
         else:
             self.conn.rollback()
-        self.cur.close()
-        self.conn.close()
 
     def __call__(self, func):
         @wraps(func)
         def inner(*a, **kw):
-            with connect(**self.params) as cur:
-                return func(cur, *a, **kw)
+            with self.__class__(**self.params) as c:
+                return func(c, *a, **kw)
         return inner
+
+
+class cursor(connect):
+    def __enter__(self):
+        conn = super().__enter__()
+        self.cur = cur = conn.cursor()
+        return cur
+
+    def __exit__(self, type, value, traceback):
+        super().__exit__(type, value, traceback)
+        self.cur.close()
 
 
 def init(reset=False):
     if reset:
-        params = {
-            'dbname': 'postgres',
-            'post': lambda c: c.set_isolation_level(0)
-        }
-        with connect(**params) as cur:
-            cur.execute('DROP DATABASE IF EXISTS test')
-            cur.execute('CREATE DATABASE test')
+        with connect(dbname='postgres') as conn:
+            conn.set_isolation_level(0)
+            with conn.cursor() as cur:
+                cur.execute('DROP DATABASE IF EXISTS test')
+                cur.execute('CREATE DATABASE test')
 
-    with connect() as cur:
+    with cursor() as cur:
         cur.execute(pre + create_table(Email))

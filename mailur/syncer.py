@@ -2,11 +2,11 @@ from collections import OrderedDict
 from uuid import uuid4
 
 from . import imap, imap_utf7, parser, log, Timer, with_lock
-from .db import connect, Email
+from .db import cursor, Email
 
 
 @with_lock
-@connect()
+@cursor()
 def sync_gmail(cur, bodies=False, only_labels=None):
     im = imap.client()
     folders = imap.list_(im)
@@ -40,12 +40,13 @@ def get_gids(cur, gids, where=None):
     '''
     if where:
         sql += ' AND %s' % where
+
     cur.execute(sql, {'gids': list(gids)})
     gids = [r[0] for r in cur.fetchall()]
     return gids
 
 
-@connect()
+@cursor()
 def fetch_headers(cur, im, map_uids):
     gids = get_gids(cur, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
@@ -72,7 +73,7 @@ def fetch_headers(cur, im, map_uids):
         cur.connection.commit()
 
 
-@connect()
+@cursor()
 def fetch_bodies(cur, im, map_uids):
     gids = get_gids(cur, map_uids.values(), where='raw IS NULL')
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
@@ -89,7 +90,7 @@ def fetch_bodies(cur, im, map_uids):
         conn.commit()
 
 
-@connect()
+@cursor()
 def fetch_labels(cur, im, map_uids, folder):
     gids = get_gids(cur, map_uids.values())
     update_label(cur, gids, folder)
