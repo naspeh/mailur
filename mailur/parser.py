@@ -183,7 +183,7 @@ def parse(text, msg_id=None):
         value = msg.get(key)
         data[field] = decode(value) if value else None
 
-    files = parse_part(msg, msg_id or data['message_id'])
+    files = parse_part(msg, msg_id or data['msgid'])
     data['attachments'] = files['attachments']
     data['embedded'] = files['embedded']
     data['html'] = files.get('html', None)

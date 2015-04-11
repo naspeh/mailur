@@ -11,6 +11,7 @@ def sync_gmail(cur, bodies=False, only_labels=None):
     im = imap.client()
     folders = imap.list_(im)
     if not only_labels:
+        # Only these folders exist unique emails
         only_labels = ('\\All', '\\Junk', '\\Trash')
     for attrs, delim, name in folders:
         label = set(only_labels) & set(attrs)
@@ -23,8 +24,9 @@ def sync_gmail(cur, bodies=False, only_labels=None):
         if not uids:
             continue
 
-        data = imap.fetch(im, uids, 'X-GM-MSGID')
-        uids = OrderedDict((k, v['X-GM-MSGID']) for k, v in data)
+        q = 'BODY[HEADER.FIELDS (MESSAGE-ID)]'
+        data = imap.fetch(im, uids, [q])
+        uids = OrderedDict((k, parser.parse(v[q])['msgid']) for k, v in data)
 
         if bodies:
             fetch_bodies(im, uids)
@@ -35,8 +37,8 @@ def sync_gmail(cur, bodies=False, only_labels=None):
 
 def get_gids(cur, gids, where=None):
     sql = '''
-    SELECT extra->'X-GM-MSGID' msgid FROM emails
-      WHERE %(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint]
+    SELECT msgid FROM emails
+      WHERE %(gids)s::varchar[] @> ARRAY[msgid]
     '''
     if where:
         sql += ' AND %s' % where
@@ -81,10 +83,9 @@ def fetch_bodies(cur, im, map_uids):
         return
 
     conn = cur.connection
-    for data in imap.fetch_batch(im, uids, 'RFC822', 'add bodies'):
-        cur.executemany(
-            "UPDATE emails SET raw=%s"
-            "  WHERE (extra->>'X-GM-MSGID')::bigint=%s",
+    for data in imap.fetch(im, uids, 'RFC822', 'add bodies'):
+        cur.execute(
+            "UPDATE emails SET raw=%s WHERE msgid=%s",
             ((row['RFC822'], map_uids[uid]) for uid, row in data)
         )
         conn.commit()
@@ -95,7 +96,6 @@ def fetch_labels(cur, im, map_uids, folder):
     gids = get_gids(cur, map_uids.values())
     update_label(cur, gids, folder)
 
-    # TODO: should find faster way
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
         return
@@ -123,19 +123,19 @@ def fetch_labels(cur, im, map_uids, folder):
 def update_label(cur, gids, label, folder=None):
     def step(action, sql):
         t = Timer()
-        sql += ('AND labels @> ARRAY[%(folder)s::varchar]' if folder else '')
+        sql += (' AND %(folder)s = ANY(labels)' if folder else '')
         cur.execute(sql, {'label': label, 'gids': gids, 'folder': folder})
         log.info('  - %s %d emails for %.2fs', action, cur.rowcount, t.time())
 
     log.info('  * Process %r...', label)
     step('remove from', '''
     UPDATE emails SET labels=array_remove(labels, %(label)s)
-      WHERE NOT (%(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint])
-      AND labels @> ARRAY[%(label)s::varchar]
+      WHERE NOT (msgid = ANY(%(gids)s))
+      AND %(label)s = ANY(labels)
     ''')
 
     step('add to', '''
     UPDATE emails SET labels=(labels || %(label)s::varchar)
-      WHERE %(gids)s @> ARRAY[(extra->>'X-GM-MSGID')::bigint]
-      AND NOT (labels @> ARRAY[%(label)s::varchar])
+      WHERE msgid = ANY(%(gids)s)
+      AND NOT (%(label)s = ANY(labels))
     ''')
