@@ -78,6 +78,19 @@ def test_fetch_body():
         ['FLAGS', 'BODY[HEADER.FIELDS (TO)]'],
         [(b'FLAGS (AB) UID 1 BODY[HEADER.FIELDS (TO)] {48}', b'1'), b')'],
         {'1': {'FLAGS': ['AB'], 'BODY[HEADER.FIELDS (TO)]': b'1', 'UID': 1}}
+    ),
+    (
+        ['BODY[HEADER.FIELDS (MESSAGE-ID)]'],
+        [(
+            b'1 (UID 1 BODY[HEADER.FIELDS (MESSAGE-ID)] {84}',
+            b'Message-ID: <123@mail.com>\r\n\r\n'
+        ), b')'],
+        {'1': {
+            'BODY[HEADER.FIELDS (MESSAGE-ID)]': (
+                b'Message-ID: <123@mail.com>\r\n\r\n'
+            ),
+            'UID': 1
+        }}
     )
 ])
 def test_lexer(query, line, expected):
