@@ -36,10 +36,7 @@ def sync_gmail(cur, bodies=False, only_labels=None):
 
 
 def get_gids(cur, gids, where=None):
-    sql = '''
-    SELECT msgid FROM emails
-      WHERE %(gids)s::varchar[] @> ARRAY[msgid]
-    '''
+    sql = 'SELECT msgid FROM emails WHERE msgid = ANY(%(gids)s)'
     if where:
         sql += ' AND %s' % where
 
@@ -59,16 +56,18 @@ def fetch_headers(cur, im, map_uids):
         'time': 'INTERNALDATE',
         'size': 'RFC822.SIZE',
         'header': 'BODY[HEADER]',
+        'gm_msgid': 'X-GM-MSGID',
     }
     q = list(query.values())
     for data in imap.fetch_batch(im, uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
             header = row.pop(query['header'])
+            gm_msgid = row.pop(query['gm_msgid'])
             fields = {k: row[v] for k, v in query.items() if v in row}
             fields['id'] = uuid4()
             fields['thrid'] = fields['id']
-            fields['extra'] = {'X-GM-MSGID': map_uids[uid]}
+            fields['extra'] = {'X-GM-MSGID': gm_msgid}
             fields.update(parser.parse(header, fields['id']))
             emails.append(fields)
         Email.insert(cur, emails)
