@@ -1,0 +1,6 @@
+Werkzeug
+chardet
+lxml
+psycopg2
+requests
+toronado

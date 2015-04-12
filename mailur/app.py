@@ -73,9 +73,8 @@ class Env:
 
     @cached_property
     def session(self):
-        return SecureCookie.load_cookie(
-            self.request, secret_key=conf('cookie_secret').encode()
-        )
+        secret_key = conf('cookie_secret').encode()
+        return SecureCookie.load_cookie(self.request, secret_key=secret_key)
 
     def login(self):
         self.session['logined'] = True

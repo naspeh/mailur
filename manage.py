@@ -89,6 +89,23 @@ def main(argv=None):
             '   less@2.5.0'
         ))
 
+    cmd('reqs', help='update requirements.txt file')\
+        .arg('-w', '--wheels', action='store_true')\
+        .exe(lambda a: sh(''.join([
+            (
+                'pip install wheel && '
+                'pip wheel -w ../wheels/ -r requirements.in && '
+                'pip uninstall -y wheel &&'
+                if a.wheels else ''
+            ),
+            (
+                'rm -rf $VIRTUAL_ENV && '
+                'virtualenv $VIRTUAL_ENV && '
+                'pip install --no-index -f ../wheels -r requirements.in && '
+                'pip freeze | sort > requirements.txt'
+            )
+        ])))
+
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
         'autoprefixer {0}styles.css {0}styles.css && '
