@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from multiprocessing.dummy import Pool
 from uuid import uuid4
 
 from . import imap, imap_utf7, parser, log, Timer, with_lock
@@ -6,8 +7,7 @@ from .db import cursor, Email
 
 
 @with_lock
-@cursor()
-def sync_gmail(cur, bodies=False, only_labels=None):
+def sync_gmail(bodies=False, only_labels=None):
     im = imap.client()
     folders = imap.list_(im)
     if not only_labels:
@@ -50,25 +50,21 @@ def fetch_headers(cur, im, map_uids):
     gids = get_gids(cur, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
+        log.info('  - no headers to fetch')
         return
 
-    query = {
-        'time': 'INTERNALDATE',
-        'size': 'RFC822.SIZE',
-        'header': 'BODY[HEADER]',
-        'gm_msgid': 'X-GM-MSGID',
-    }
-    q = list(query.values())
+    q = ['INTERNALDATE', 'RFC822.SIZE', 'BODY[HEADER]', 'X-GM-MSGID']
     for data in imap.fetch_batch(im, uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
-            header = row.pop(query['header'])
-            gm_msgid = row.pop(query['gm_msgid'])
-            fields = {k: row[v] for k, v in query.items() if v in row}
-            fields['id'] = uuid4()
+            fields = {
+                'id': uuid4(),
+                'size': row['RFC822.SIZE'],
+                'time': row['INTERNALDATE'],
+                'extra': {'X-GM-MSGID': row['X-GM-MSGID']}
+            }
             fields['thrid'] = fields['id']
-            fields['extra'] = {'X-GM-MSGID': gm_msgid}
-            fields.update(parser.parse(header, fields['id']))
+            fields.update(parser.parse(row['BODY[HEADER]'], fields['id']))
             emails.append(fields)
         Email.insert(cur, emails)
         cur.connection.commit()
@@ -79,15 +75,21 @@ def fetch_bodies(cur, im, map_uids):
     gids = get_gids(cur, map_uids.values(), where='raw IS NULL')
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
+        log.info('  - no bodies to fetch')
         return
 
-    conn = cur.connection
-    for data in imap.fetch(im, uids, 'RFC822', 'add bodies'):
-        cur.execute(
-            "UPDATE emails SET raw=%s WHERE msgid=%s",
-            ((row['RFC822'], map_uids[uid]) for uid, row in data)
-        )
-        conn.commit()
+    @cursor()
+    def update(cur, items):
+        cur.executemany("UPDATE emails SET raw=%s WHERE msgid=%s", items)
+
+    pool = Pool(4)
+    results = []
+    for data in imap.fetch_batch(im, uids, 'RFC822', 'add bodies'):
+        items = ((row['RFC822'], map_uids[uid]) for uid, row in data)
+        results.append(pool.apply_async(update, (items,)))
+    [r.get() for r in results]
+    pool.close()
+    pool.join()
 
 
 @cursor()
@@ -97,6 +99,7 @@ def fetch_labels(cur, im, map_uids, folder):
 
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
+        log.info('  - no labels to update')
         return
 
     data = tuple(imap.fetch(im, uids, 'X-GM-LABELS FLAGS'))
