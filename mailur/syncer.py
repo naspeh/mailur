@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from contextlib import contextmanager
 from multiprocessing.dummy import Pool
 from uuid import uuid4
 
@@ -70,6 +71,21 @@ def fetch_headers(cur, im, map_uids):
         cur.connection.commit()
 
 
+@contextmanager
+def async_runner():
+    pool = Pool(4)
+    results = []
+
+    def run(func, *a, **kw):
+        results.append(pool.apply_async(func, a, kw))
+
+    yield run
+
+    [r.get() for r in results]
+    pool.close()
+    pool.join()
+
+
 @cursor()
 def fetch_bodies(cur, im, map_uids):
     gids = get_gids(cur, map_uids.values(), where='raw IS NULL')
@@ -82,14 +98,10 @@ def fetch_bodies(cur, im, map_uids):
     def update(cur, items):
         cur.executemany("UPDATE emails SET raw=%s WHERE msgid=%s", items)
 
-    pool = Pool(4)
-    results = []
-    for data in imap.fetch_batch(im, uids, 'RFC822', 'add bodies'):
-        items = ((row['RFC822'], map_uids[uid]) for uid, row in data)
-        results.append(pool.apply_async(update, (items,)))
-    [r.get() for r in results]
-    pool.close()
-    pool.join()
+    with async_runner() as run:
+        for data in imap.fetch_batch(im, uids, 'RFC822', 'add bodies'):
+            items = ((row['RFC822'], map_uids[uid]) for uid, row in data)
+            run(update, items)
 
 
 @cursor()
