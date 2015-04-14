@@ -88,7 +88,7 @@ class Email(Table):
     id = 'uuid PRIMARY KEY DEFAULT gen_random_uuid()'
     created = 'timestamp NOT NULL DEFAULT current_timestamp'
     updated = 'timestamp NOT NULL DEFAULT current_timestamp'
-    thrid = 'uuid NOT NULL REFERENCES emails(id)'
+    thrid = 'uuid REFERENCES emails(id)'
 
     raw = 'bytea'
     size = 'integer'

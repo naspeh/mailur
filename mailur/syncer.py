@@ -63,7 +63,6 @@ def fetch_headers(cur, map_uids):
                 'time': row['INTERNALDATE'],
                 'extra': {'X-GM-MSGID': row['X-GM-MSGID']}
             }
-            fields['thrid'] = fields['id']
             fields.update(parser.parse(row['BODY[HEADER]'], fields['id']))
             emails.append(fields)
         Email.insert(cur, emails)
