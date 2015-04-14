@@ -87,8 +87,15 @@ def async_runner():
 
 @cursor()
 def fetch_bodies(cur, map_uids):
-    gids = get_gids(cur, map_uids.values(), where='raw IS NULL')
-    uids = [uid for uid, gid in map_uids.items() if gid in gids]
+    sql = '''
+    SELECT msgid, size FROM emails
+      WHERE msgid = ANY(%(ids)s)
+      AND raw IS NULL
+    '''
+    cur.execute(sql, {'ids': list(map_uids.values())})
+    pairs = dict(cur.fetchall())
+
+    uids = [(uid, pairs[mid]) for uid, mid in map_uids.items() if mid in pairs]
     if not uids:
         log.info('  - no bodies to fetch')
         return
