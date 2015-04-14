@@ -1,5 +1,6 @@
 import imaplib
 import re
+from functools import wraps
 from urllib.parse import urlencode
 
 import requests
@@ -10,6 +11,7 @@ OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
 
 re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
+_client = None
 
 
 class AuthError(Exception):
@@ -61,7 +63,7 @@ def auth_refresh():
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
-def client():
+def connect():
     if conf('password'):
         def login(im):
             im.login(conf('email'), conf('password'))
@@ -93,6 +95,18 @@ def client():
     return im
 
 
+def client(func):
+    @wraps(func)
+    def inner(*a, **kw):
+        global _client
+        if not _client:
+            _client = connect()
+
+        return func(_client, *a, **kw)
+    return inner
+
+
+@client
 def store(im, uids, key, value):
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
@@ -105,6 +119,7 @@ def store(im, uids, key, value):
     return
 
 
+@client
 def list_(im):
     _, data = im.list()
 
@@ -119,6 +134,7 @@ def list_(im):
     return rows
 
 
+@client
 def status(im, name, readonly=True):
     name = '"%s"' % name
     im.select(name, readonly=readonly)
@@ -131,8 +147,9 @@ def status(im, name, readonly=True):
     return uid
 
 
+@client
 def search(im, name):
-    uid_next = status(im, name)
+    uid_next = status(name)
     uids, step = [], conf('imap_batch_size')
     for i in range(1, uid_next, step):
         _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
@@ -141,6 +158,7 @@ def search(im, name):
     return uids
 
 
+@client
 def fetch_batch(im, uids, query, label=None):
     '''Fetch data from IMAP server
 
@@ -184,22 +202,24 @@ def fetch_batch(im, uids, query, label=None):
     for num, uids_ in enumerate(steps, 1):
         if not uids_:
             continue
-        data_ = _fetch(im, uids_, query)
+        data_ = _fetch(uids_, query)
         log_('  - (%d) %d ones for %.2fs', num, len(uids_), timer.time())
         yield data_
         log_('  - %s for %.2fs', label, timer.time())
 
 
+@client
 def fetch(im, uids, query, label=None):
     timer = Timer()
     num = 1
-    for data in fetch_batch(im, uids, query, label):
+    for data in fetch_batch(uids, query, label):
         for row in data:
             num += 1
             yield row
     log.info('  * Got %d %r for %.2fs', num, query, timer.time())
 
 
+@client
 def _fetch(im, ids, query):
     if not isinstance(query, str):
         keys = list(query)

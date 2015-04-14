@@ -9,8 +9,7 @@ from .db import cursor, Email
 
 @with_lock
 def sync_gmail(bodies=False, only_labels=None):
-    im = imap.client()
-    folders = imap.list_(im)
+    folders = imap.list_()
     if not only_labels:
         # Only these folders exist unique emails
         only_labels = ('\\All', '\\Junk', '\\Trash')
@@ -20,20 +19,20 @@ def sync_gmail(bodies=False, only_labels=None):
         if not label:
             continue
 
-        uids = imap.search(im, name)
+        uids = imap.search(name)
         log.info('"%s" has %i messages' % (imap_utf7.decode(name), len(uids)))
         if not uids:
             continue
 
         q = 'BODY[HEADER.FIELDS (MESSAGE-ID)]'
-        data = imap.fetch(im, uids, [q])
+        data = imap.fetch(uids, [q])
         uids = OrderedDict((k, parser.parse(v[q])['msgid']) for k, v in data)
 
         if bodies:
-            fetch_bodies(im, uids)
+            fetch_bodies(uids)
         else:
-            fetch_headers(im, uids)
-            fetch_labels(im, uids, label)
+            fetch_headers(uids)
+            fetch_labels(uids, label)
 
 
 def get_gids(cur, gids, where=None):
@@ -47,7 +46,7 @@ def get_gids(cur, gids, where=None):
 
 
 @cursor()
-def fetch_headers(cur, im, map_uids):
+def fetch_headers(cur, map_uids):
     gids = get_gids(cur, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
@@ -55,7 +54,7 @@ def fetch_headers(cur, im, map_uids):
         return
 
     q = ['INTERNALDATE', 'RFC822.SIZE', 'BODY[HEADER]', 'X-GM-MSGID']
-    for data in imap.fetch_batch(im, uids, q, 'add emails with headers'):
+    for data in imap.fetch_batch(uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
             fields = {
@@ -87,7 +86,7 @@ def async_runner():
 
 
 @cursor()
-def fetch_bodies(cur, im, map_uids):
+def fetch_bodies(cur, map_uids):
     gids = get_gids(cur, map_uids.values(), where='raw IS NULL')
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
@@ -99,13 +98,13 @@ def fetch_bodies(cur, im, map_uids):
         cur.executemany("UPDATE emails SET raw=%s WHERE msgid=%s", items)
 
     with async_runner() as run:
-        for data in imap.fetch_batch(im, uids, 'RFC822', 'add bodies'):
+        for data in imap.fetch_batch(uids, 'RFC822', 'add bodies'):
             items = ((row['RFC822'], map_uids[uid]) for uid, row in data)
             run(update, items)
 
 
 @cursor()
-def fetch_labels(cur, im, map_uids, folder):
+def fetch_labels(cur, map_uids, folder):
     gids = get_gids(cur, map_uids.values())
     update_label(cur, gids, folder)
 
@@ -114,7 +113,7 @@ def fetch_labels(cur, im, map_uids, folder):
         log.info('  - no labels to update')
         return
 
-    data = tuple(imap.fetch(im, uids, 'X-GM-LABELS FLAGS'))
+    data = tuple(imap.fetch(uids, 'X-GM-LABELS FLAGS'))
     glabels, gflags = set(), set()
     for _, row in data:
         glabels |= set(row['X-GM-LABELS'])

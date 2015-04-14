@@ -29,8 +29,8 @@ def test_fetch_header_and_other():
 
     ids, data = read_file(filename)
 
-    im = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = OrderedDict(imap.fetch(im, ids, query))
+    imap._client = namedtuple('_', 'uid')(lambda *a, **kw: data)
+    rows = OrderedDict(imap.fetch(ids, query))
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
     for id in ids:
@@ -46,8 +46,8 @@ def test_fetch_body():
 
     ids, data = read_file(filename)
 
-    im = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = OrderedDict(imap.fetch(im, ids, query))
+    imap._client = namedtuple('_', 'uid')(lambda *a, **kw: data)
+    rows = OrderedDict(imap.fetch(ids, query))
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
 
@@ -94,8 +94,8 @@ def test_fetch_body():
     )
 ])
 def test_lexer(query, line, expected):
-    im = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
-    rows = imap.fetch(im, '1', query)
+    imap._client = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
+    rows = imap.fetch('1', query)
     assert dict(rows) == expected
 
 
@@ -126,8 +126,8 @@ def test_list():
         b'(\\HasNoChildren) "/" "&BEIENQRBBEI-"'
     ]
 
-    im = namedtuple('_', 'list')(lambda *a, **kw: ('OK', data))
-    rows = imap.list_(im)
+    imap._client = namedtuple('_', 'list')(lambda *a, **kw: ('OK', data))
+    rows = imap.list_()
     assert rows[0] == (('\\HasNoChildren',), '/', '-job proposals')
     assert rows[3] == (('\\HasNoChildren',), '/', 'INBOX')
     assert rows[5] == (('\\Noselect', '\\HasChildren'), '/', '[Gmail]')
