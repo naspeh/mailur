@@ -121,17 +121,6 @@ def get_full(argv):
         .arg('-l', '--only-labels', nargs='+')\
         .exe(lambda a: (syncer.sync_gmail(a.bodies, a.only_labels)))
 
-    cmd('tasks')\
-        .arg('-s', '--just-sync', action='store_true')\
-        .arg('-c', '--clear', action='store_true')\
-        .exe(lambda a: syncer.process_tasks(a.just_sync, a.clear))
-
-    cmd('parse')\
-        .arg('-n', '--new', action='store_true')\
-        .arg('-l', '--limit', type=int, default=500)\
-        .arg('-t', '--last')\
-        .exe(lambda a: syncer.parse_emails(a.new, a.limit, a.last))
-
     cmd('db-init')\
         .arg('-r', '--reset', action='store_true')\
         .exe(lambda a: db.init(a.reset))
