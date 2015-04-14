@@ -4,18 +4,23 @@ import glob
 import os
 import subprocess
 
-from werkzeug.serving import run_simple
-from werkzeug.wsgi import SharedDataMiddleware
+from mailur import log, conf
 
-from mailur import conf, db, syncer, log
 
-sh = lambda cmd: log.info(cmd) or subprocess.call(cmd, shell=True)
-ssh = lambda cmd: sh('ssh %s "%s"' % (
-    conf('server_host'), cmd.replace('"', '\"').replace('$', '\$')
-))
+def sh(cmd):
+    log.info(cmd)
+    return subprocess.call(cmd, shell=True)
+
+
+def ssh(cmd):
+    return sh('ssh %s "%s"' % (
+        conf('server_host'), cmd.replace('"', '\"').replace('$', '\$')
+    ))
 
 
 def run(args):
+    from werkzeug.serving import run_simple
+    from werkzeug.wsgi import SharedDataMiddleware
     from mailur import app
 
     if not args.only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
@@ -38,11 +43,7 @@ def run(args):
     )
 
 
-def main(argv=None):
-    # FIXME: Hack imaplib limit
-    import imaplib
-    imaplib._MAXLINE = 100000
-
+def get_base(argv):
     parser = argparse.ArgumentParser('mail')
     cmds = parser.add_subparsers(help='commands')
 
@@ -52,6 +53,68 @@ def main(argv=None):
         p.arg = lambda *a, **kw: p.add_argument(*a, **kw) and p
         p.exe = lambda f: p.set_defaults(exe=f) and p
         return p
+
+    cmd('node', help='install node packages')\
+        .exe(lambda a: sh(
+            'npm install'
+            '   autoprefixer@5.1.0'
+            '   csso@1.3.11'
+            '   less@2.5.0'
+        ))
+
+    requirements = (
+        'Jinja2 '
+        'Werkzeug '
+        'chardet '
+        'lxml '
+        'psycopg2 '
+        'requests '
+        'toronado '
+    )
+    cmd('reqs', help='update requirements.txt file')\
+        .arg('-w', '--wheels', action='store_true')\
+        .exe(lambda a: sh(''.join([
+            (
+                'pip install wheel && '
+                'pip wheel -w ../wheels/ {requirements} &&'
+                'pip uninstall -y wheel &&'
+                .format(requirements=requirements)
+                if a.wheels else ''
+            ),
+            (
+                'rm -rf $VIRTUAL_ENV && '
+                'virtualenv $VIRTUAL_ENV && '
+                'pip install --no-index -f ../wheels {requirements} && '
+                'pip freeze | sort > requirements.txt'
+                .format(requirements=requirements)
+            )
+        ])))
+
+    cmd('lessc').exe(lambda a: sh(
+        'lessc {0}styles.less {0}styles.css && '
+        'autoprefixer {0}styles.css {0}styles.css && '
+        'csso {0}styles.css {0}styles.css'.format('mailur/theme/')
+    ))
+
+    cmd('test').exe(lambda a: (
+        sh('MAILUR_CONF=conf_test.json py.test %s' % ' '.join(a))
+    ))
+
+    cmd('deploy', help='deploy to server')\
+        .arg('-t', '--target', default='origin/master', help='checkout it')\
+        .exe(lambda a: ssh(
+            'cd /home/mailr/src'
+            '&& git fetch origin' +
+            '&& git checkout {}'.format(a.target) +
+            '&& touch ../reload'
+        ))
+    return parser, cmd
+
+
+def get_full(argv):
+    from mailur import db, syncer
+
+    parser, cmd = get_base(argv)
 
     cmd('sync')\
         .arg('-b', '--bodies', action='store_true')\
@@ -73,61 +136,27 @@ def main(argv=None):
         .arg('-r', '--reset', action='store_true')\
         .exe(lambda a: db.init(a.reset))
 
-    cmd('test').exe(lambda a: (
-        sh('MAILUR_CONF=conf_test.json py.test %s' % ' '.join(a))
-    ))
-
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
         .exe(run)
+    return parser
 
-    cmd('node', help='install node packages')\
-        .exe(lambda a: sh(
-            'npm install'
-            '   autoprefixer@5.1.0'
-            '   csso@1.3.11'
-            '   less@2.5.0'
-        ))
 
-    cmd('reqs', help='update requirements.txt file')\
-        .arg('-w', '--wheels', action='store_true')\
-        .exe(lambda a: sh(''.join([
-            (
-                'pip install wheel && '
-                'pip wheel -w ../wheels/ -r requirements.in && '
-                'pip uninstall -y wheel &&'
-                if a.wheels else ''
-            ),
-            (
-                'rm -rf $VIRTUAL_ENV && '
-                'virtualenv $VIRTUAL_ENV && '
-                'pip install --no-index -f ../wheels -r requirements.in && '
-                'pip freeze | sort > requirements.txt'
-            )
-        ])))
-
-    cmd('lessc').exe(lambda a: sh(
-        'lessc {0}styles.less {0}styles.css && '
-        'autoprefixer {0}styles.css {0}styles.css && '
-        'csso {0}styles.css {0}styles.css'.format('mailur/theme/')
-    ))
-
-    cmd('deploy', help='deploy to server')\
-        .arg('-t', '--target', default='origin/master', help='checkout it')\
-        .exe(lambda a: ssh(
-            'cd /home/mailr/src'
-            '&& git fetch origin' +
-            '&& git checkout {}'.format(a.target) +
-            '&& touch ../reload'
-        ))
+def main(argv=None):
+    try:
+        parser = get_full(argv)
+    except ImportError:
+        parser, _ = get_base(argv)
 
     args, extra = parser.parse_known_args(argv)
     if getattr(args, 'cmd', None) == 'test':
         args.exe(extra)
-    elif not hasattr(args, 'exe'):
-        parser.print_usage()
     else:
-        args.exe(args)
+        args = parser.parse_args(argv)
+        if not hasattr(args, 'exe'):
+            parser.print_usage()
+        else:
+            args.exe(args)
 
 
 if __name__ == '__main__':

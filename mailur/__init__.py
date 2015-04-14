@@ -6,7 +6,6 @@ import socket
 import time
 from contextlib import ContextDecorator
 from functools import wraps
-from importlib import import_module
 
 log = logging.getLogger(__name__)
 app_dir = os.path.abspath(os.path.dirname(__file__))
@@ -52,12 +51,6 @@ class _Conf:
     def attachments_dir(self):
         dir_ = self('attachments_dir')
         return os.path.join(base_dir, dir_)
-
-    def get_cache(self):
-        cache_type = self('cache_type')
-        module, name = cache_type.rsplit('.', 1)
-        cache = getattr(import_module(module), name)
-        return cache(**self('cache_params', {}))
 
     def setup_logging(self):
         conf = {
@@ -112,7 +105,6 @@ class _Conf:
         logging.config.dictConfig(conf)
 
 conf = _Conf()
-cache = conf.get_cache()
 
 
 def with_lock(func):

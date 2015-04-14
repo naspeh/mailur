@@ -13,6 +13,9 @@ OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
 re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
 _client = None
 
+# FIXME: Hack imaplib limit
+imaplib._MAXLINE = 100000
+
 
 class AuthError(Exception):
     pass
@@ -257,10 +260,12 @@ def _fetch(im, ids, query):
                 elif match[4]:
                     row[key] = value
                 elif match[5]:
-                    unesc = lambda v: re.sub(r'\\(.)', r'\1', v)
                     value_ = value[1:-1]
                     value_ = lexer_list.findall(value_)
-                    value_ = [unesc(v[1]) if v[1] else v[0] for v in value_]
+                    value_ = [
+                        re.sub(r'\\(.)', r'\1', v[1]) if v[1] else v[0]
+                        for v in value_
+                    ]
                     row[key] = value_
         return row
 
