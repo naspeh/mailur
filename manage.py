@@ -74,7 +74,7 @@ def main(argv=None):
         .exe(lambda a: db.init(a.reset))
 
     cmd('test').exe(lambda a: (
-        sh('MAILR_CONF=conf_test.json py.test %s' % ' '.join(a))
+        sh('MAILUR_CONF=conf_test.json py.test %s' % ' '.join(a))
     ))
 
     cmd('run')\
