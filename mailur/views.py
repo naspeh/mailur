@@ -59,15 +59,15 @@ def raw(cur, env, id):
     from tests import open_file
 
     try:
-        cur.execute('SELECT raw from emails WHERE id=%s LIMIT 1', [id])
+        cur.execute('SELECT raw, header FROM emails WHERE id=%s LIMIT 1', [id])
     except DataError:
         raw = None
     else:
         raw = cur.fetchone()
-        raw = raw[0] if raw else None
     if not raw:
         env.abort(404)
 
+    raw = raw[0] or raw[1]
     desc = env.request.args.get('desc')
     if env.is_logined and desc:
         name = '%s--%s.txt' % (id, desc)

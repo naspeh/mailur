@@ -159,18 +159,18 @@ def parse_part(part, msg_id, inner=False):
     return content
 
 
-key_map = {
-    'subject': ('subj', decode_header),
-    'from': ('fr', decode_addresses),
-    'to': ('to', decode_addresses),
-    'cc': ('cc', decode_addresses),
-    'bcc': ('bcc', decode_addresses),
-    'reply-to': ('reply_to', decode_addresses),
-    'sender': ('sender', decode_addresses),
-    'date': ('sender_time', decode_date),
-    'message-id': ('msgid', str),
-    'in-reply-to': ('in_reply_to', str),
-    # 'references': ('refs', )
+decoders = {
+    'subject': decode_header,
+    'from': decode_addresses,
+    'to': decode_addresses,
+    'cc': decode_addresses,
+    'bcc': decode_addresses,
+    'reply-to': decode_addresses,
+    'sender': decode_addresses,
+    'date': decode_date,
+    'message-id': str,
+    'in-reply-to': str,
+    'references': str.split,
 }
 
 
@@ -178,12 +178,11 @@ def parse(text, msg_id=None):
     msg = email.message_from_bytes(text)
 
     data = {}
-    for key in key_map:
-        field, decode = key_map[key]
+    for key, decode in decoders.items():
         value = msg.get(key)
-        data[field] = decode(value) if value else None
+        data[key] = decode(value) if value else None
 
-    files = parse_part(msg, msg_id or data['msgid'])
+    files = parse_part(msg, msg_id or data['message-id'])
     data['attachments'] = files['attachments']
     data['embedded'] = files['embedded']
     data['html'] = files.get('html', None)

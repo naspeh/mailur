@@ -90,6 +90,7 @@ class Email(Table):
     updated = 'timestamp NOT NULL DEFAULT current_timestamp'
     thrid = 'uuid REFERENCES emails(id)'
 
+    header = 'bytea'
     raw = 'bytea'
     size = 'integer'
     time = 'timestamp'

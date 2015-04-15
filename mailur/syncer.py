@@ -26,7 +26,9 @@ def sync_gmail(bodies=False, only_labels=None):
 
         q = 'BODY[HEADER.FIELDS (MESSAGE-ID)]'
         data = imap.fetch(uids, [q])
-        uids = OrderedDict((k, parser.parse(v[q])['msgid']) for k, v in data)
+        uids = OrderedDict(
+            (k, parser.parse(v[q])['message-id']) for k, v in data
+        )
 
         if bodies:
             fetch_bodies(uids)
@@ -45,6 +47,28 @@ def get_gids(cur, gids, where=None):
     return gids
 
 
+def get_parsed(data, msgid=None):
+    pairs = (
+        ('subject', 'subj'),
+        ('from', 'fr'),
+        ('to', 'to'),
+        ('cc', 'cc'),
+        ('bcc', 'bcc'),
+        ('reply-to', 'reply_to'),
+        ('sender', 'sender'),
+        ('date', 'sender_time'),
+        ('message-id', 'msgid'),
+        ('in-reply-to', 'in_reply_to'),
+        ('references', 'refs'),
+        ('html', 'html'),
+        ('text', 'text'),
+        ('attachments', 'attachments'),
+        ('embedded', 'embedded'),
+    )
+    msg = parser.parse(data, msgid)
+    return ((field, msg[key]) for key, field in pairs)
+
+
 @cursor()
 def fetch_headers(cur, map_uids):
     gids = get_gids(cur, map_uids.values())
@@ -59,11 +83,12 @@ def fetch_headers(cur, map_uids):
         for uid, row in data:
             fields = {
                 'id': uuid4(),
+                'header': row['BODY[HEADER]'],
                 'size': row['RFC822.SIZE'],
                 'time': row['INTERNALDATE'],
-                'extra': {'X-GM-MSGID': row['X-GM-MSGID']}
+                'extra': {'X-GM-MSGID': row['X-GM-MSGID']},
             }
-            fields.update(parser.parse(row['BODY[HEADER]'], fields['id']))
+            fields.update(get_parsed(row['BODY[HEADER]'], fields['id']))
             emails.append(fields)
         Email.insert(cur, emails)
         cur.connection.commit()
