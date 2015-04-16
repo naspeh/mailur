@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import requests
 
 from . import log, conf, Timer
+from .db import cursor, Account
 
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
@@ -24,8 +25,10 @@ class AuthError(Exception):
 def auth_url(redirect_uri):
     params = {
         'client_id': conf('google_id'),
-        'scope': 'https://mail.google.com/',
-        'login_hint': conf('email'),
+        'scope': (
+            'https://mail.google.com/ '
+            'https://www.googleapis.com/auth/userinfo.email'
+        ),
         'redirect_uri': redirect_uri,
         'access_type': 'offline',
         'response_type': 'code',
@@ -43,7 +46,18 @@ def auth_callback(redirect_uri, code):
         'grant_type': 'authorization_code'
     })
     if res.ok:
-        conf.update(google_response=res.json())
+        auth = res.json()
+        res = requests.get(
+            'https://www.googleapis.com/oauth2/v1/userinfo',
+            headers={'Authorization': 'Bearer %s' % auth['access_token']}
+        )
+        info = res.json()
+        with cursor() as cur:
+            Account.insert(cur, [{
+                'type': 'gmail',
+                'email': info['email'],
+                'data': {'auth': auth, 'info': info}
+            }])
         return
     raise AuthError('%s: %s' % (res.reason, res.text))
 

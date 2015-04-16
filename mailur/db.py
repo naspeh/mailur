@@ -73,6 +73,22 @@ class Table(metaclass=TableMeta):
         return cur
 
 
+class Account(Table):
+    __slots__ = ()
+
+    _name = 'accounts'
+    _post_table = '; '.join([
+        fill_updated(_name),
+    ])
+
+    email = 'varchar PRIMARY KEY'
+    type = 'varchar'
+    data = 'jsonb'
+
+    created = 'timestamp NOT NULL DEFAULT current_timestamp'
+    updated = 'timestamp NOT NULL DEFAULT current_timestamp'
+
+
 class Email(Table):
     __slots__ = ()
 
@@ -185,5 +201,9 @@ def init(reset=False):
                 cur.execute('DROP DATABASE IF EXISTS test')
                 cur.execute('CREATE DATABASE test')
 
+    tables = ';'.join(
+        create_table(t) for t in globals().values()
+        if hasattr(t, '_name') and issubclass(t, Table)
+    )
     with cursor() as cur:
-        cur.execute(pre + create_table(Email))
+        cur.execute(pre + tables)
