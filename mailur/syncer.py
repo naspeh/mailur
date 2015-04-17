@@ -1,9 +1,9 @@
 from collections import OrderedDict
 from contextlib import contextmanager
 from multiprocessing.dummy import Pool
-from uuid import uuid4
+from uuid import uuid5, NAMESPACE_URL
 
-from . import imap, imap_utf7, parser, log, Timer, with_lock
+from . import imap, imap_utf7, parser, log, conf, Timer, with_lock
 from .db import cursor, Email
 
 
@@ -81,8 +81,9 @@ def fetch_headers(cur, map_uids):
     for data in imap.fetch_batch(uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
+            gm_uid = '%s\r%s' % (conf('email'), row['X-GM-MSGID'])
             fields = {
-                'id': uuid4(),
+                'id': uuid5(NAMESPACE_URL, gm_uid),
                 'header': row['BODY[HEADER]'],
                 'size': row['RFC822.SIZE'],
                 'time': row['INTERNALDATE'],
