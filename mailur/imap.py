@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import requests
 
 from . import log, conf, Timer
+from .db import cursor, Account
 
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
@@ -28,6 +29,7 @@ def auth_url(redirect_uri):
             'https://mail.google.com/ '
             'https://www.googleapis.com/auth/userinfo.email'
         ),
+        'login_hint': conf('email'),
         'redirect_uri': redirect_uri,
         'access_type': 'offline',
         'response_type': 'code',
@@ -45,12 +47,19 @@ def auth_callback(redirect_uri, code):
         'grant_type': 'authorization_code'
     })
     if res.ok:
-        return res.json()
+        auth = res.json()
+        info = requests.get(
+            'https://www.googleapis.com/oauth2/v1/userinfo',
+            headers={'Authorization': 'Bearer %s' % auth['access_token']}
+        ).json()
+        with cursor() as cur:
+            return Account.add_or_update(cur, info['email'], auth)
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
-def auth_refresh():
-    refresh_token = conf('google_response', {}).get('refresh_token')
+@cursor()
+def auth_refresh(cur):
+    refresh_token = Account.get_key(cur, conf('email'), 'refresh_token')
     if not refresh_token:
         raise AuthError('refresh_token is empty')
 
@@ -61,38 +70,35 @@ def auth_refresh():
         'grant_type': 'refresh_token',
     })
     if res.ok:
-        new = dict(conf('google_response'), **res.json())
-        conf.update(google_response=new)
+        Account.update(cur, conf('email'), res.json())
         return
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
-def connect():
-    if conf('password'):
-        def login(im):
-            im.login(conf('email'), conf('password'))
-
-    elif conf('google_response', {}).get('access_token'):
+@cursor()
+def connect(cur):
+    token = Account.get_key(cur, conf('email'), 'access_token')
+    if token:
         def login(im, retry=False):
-            access_token = conf('google_response', {}).get('access_token')
+            header = 'user=%s\1auth=Bearer %s\1\1' % (conf('email'), token)
             try:
-                im.authenticate('XOAUTH2', lambda x: (
-                    'user=%s\1auth=Bearer %s\1\1'
-                    % (conf('email'), access_token)
-                ))
+                im.authenticate('XOAUTH2', lambda x: header)
             except im.error as e:
                 if retry:
                     raise AuthError(e)
 
                 auth_refresh()
                 login(im, True)
+    elif conf('password'):
+        def login(im):
+            im.login(conf('email'), conf('password'))
     else:
         raise AuthError('Fill access_token or password in config')
 
     try:
         client = imaplib.IMAP4_SSL
         im = client('imap.gmail.com')
-        # im.debug = 4
+        im.debug = conf('imap_debug')
         login(im)
     except IOError as e:
         raise AuthError(e)

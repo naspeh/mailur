@@ -5,22 +5,27 @@ from uuid import UUID
 import psycopg2
 import psycopg2.extras
 
+from . import conf
+
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extensions.register_adapter(UUID, psycopg2.extras.UUID_adapter)
-pre = '''
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE OR REPLACE FUNCTION fill_updated()
-RETURNS TRIGGER AS $$
-BEGIN
-   IF row(NEW.*) IS DISTINCT FROM row(OLD.*) THEN
-      NEW.updated = now();
-      RETURN NEW;
-   ELSE
-      RETURN OLD;
-   END IF;
-END;
-$$ language 'plpgsql';
-'''
+
+
+def pre():
+    return '''
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+    CREATE OR REPLACE FUNCTION fill_updated()
+    RETURNS TRIGGER AS $$
+    BEGIN
+       IF row(NEW.*) IS DISTINCT FROM row(OLD.*) THEN
+          NEW.updated = now();
+          RETURN NEW;
+       ELSE
+          RETURN OLD;
+       END IF;
+    END;
+    $$ language 'plpgsql';
+    '''
 
 
 def fill_updated(table, field='updated'):
@@ -38,6 +43,14 @@ def create_index(table, field, using=''):
     DROP INDEX IF EXISTS ix_{0}_{1};
     CREATE INDEX ix_{0}_{1} ON {0} {2}({1})
     '''.format(table, field, using)
+
+
+def create_seq(table, field):
+    return '''
+    DROP SEQUENCE IF EXISTS seq_{0}_{1};
+    CREATE SEQUENCE seq_{0}_{1};
+    ALTER TABLE {0} ALTER COLUMN {1} SET DEFAULT nextval('seq_{0}_{1}')
+    '''.format(table, field)
 
 
 class TableMeta(type):
@@ -79,14 +92,46 @@ class Account(Table):
     _name = 'accounts'
     _post_table = '; '.join([
         fill_updated(_name),
+        create_seq(_name, 'id')
     ])
 
-    email = 'varchar PRIMARY KEY'
+    id = "int PRIMARY KEY"
+    email = 'varchar UNIQUE'
     type = 'varchar'
     data = 'jsonb'
 
     created = 'timestamp NOT NULL DEFAULT current_timestamp'
     updated = 'timestamp NOT NULL DEFAULT current_timestamp'
+
+    @classmethod
+    def get(cls, cur, email):
+        cur.execute('SELECT id, data FROM accounts WHERE email=%s', (email,))
+        return cur.fetchone() or (None, {})
+
+    @classmethod
+    def get_key(cls, cur, email, key):
+        return cls.get(cur, email)[1].get(key)
+
+    @classmethod
+    def exists(cls, cur, email):
+        cur.execute('SELECT count(*) FROM accounts WHERE email=%s', (email,))
+        return cur.fetchone()[0]
+
+    @classmethod
+    def add_or_update(cls, cur, email, data):
+        if cls.exists(cur, email):
+            return cls.update(cur, email, data)
+
+        cls.insert(cur, [{'type': 'gmail', 'email': email, 'data': data}])
+        return cur.rowcount
+
+    @classmethod
+    def update(cls, cur, email, data):
+        cur.execute(
+            'UPDATE accounts SET data=%s  WHERE email=%s',
+            (data, email)
+        )
+        return cur.rowcount
 
 
 class Email(Table):
@@ -105,10 +150,11 @@ class Email(Table):
     created = 'timestamp NOT NULL DEFAULT current_timestamp'
     updated = 'timestamp NOT NULL DEFAULT current_timestamp'
     thrid = 'uuid REFERENCES emails(id)'
+    # account_id = 'int NOT NULL REFERENCES accounts(id)'
 
     header = 'bytea'
     raw = 'bytea'
-    size = 'integer'
+    size = 'int'
     time = 'timestamp'
     labels = "varchar[] DEFAULT '{}'"
 
@@ -162,8 +208,9 @@ class connect():
         params = dict(self.params)
         params = dict({
             'host': 'localhost',
-            'user': 'postgres',
-            'dbname': 'test'
+            'user': conf('pg_username'),
+            'password': conf('pg_password'),
+            'dbname': conf.dbname
         }, **params)
         self._conn[self.dbname] = conn = psycopg2.connect(**params)
         return conn
@@ -198,12 +245,10 @@ def init(reset=False):
         with connect(dbname='postgres') as conn:
             conn.set_isolation_level(0)
             with conn.cursor() as cur:
-                cur.execute('DROP DATABASE IF EXISTS test')
-                cur.execute('CREATE DATABASE test')
+                cur.execute('DROP DATABASE IF EXISTS %s' % conf.dbname)
+                cur.execute('CREATE DATABASE %s' % conf.dbname)
 
-    tables = ';'.join(
-        create_table(t) for t in globals().values()
-        if hasattr(t, '_name') and issubclass(t, Table)
-    )
     with cursor() as cur:
-        cur.execute(pre + tables)
+        cur.execute(';'.join(
+            [pre()] + [create_table(t) for t in [Account, Email]]
+        ))

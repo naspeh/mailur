@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import logging.config
@@ -22,9 +23,9 @@ class _Conf:
 
         defaults = {
             'attachments_dir': 'attachments',
-            'cache_type': 'werkzeug.contrib.cache.NullCache',
             'imap_body_maxsize': 50 * 1024 * 1024,
             'imap_batch_size': 2000,
+            'imap_debug': 0,
             'ui_ga_id': '',
             'ui_is_public': False,
             'ui_use_names': True,
@@ -32,16 +33,12 @@ class _Conf:
         self.data = dict(defaults, **conf)
         self.setup_logging()
 
-    def update(self, *args, **kwargs):
-        self.data.update(*args, **kwargs)
-        content = json.dumps(
-            self.data, sort_keys=True, indent=4, separators=(',', ': ')
-        )
-        with open(self.path, 'bw') as f:
-            f.write(content.encode())
-
     def __call__(self, key, default=None):
         return self.data.get(key, default)
+
+    @property
+    def dbname(self):
+        return 'mailur_%s' % hashlib.sha1(self('email').encode()).hexdigest()
 
     @property
     def theme_dir(self):
@@ -84,7 +81,7 @@ class _Conf:
             },
             'loggers': {
                 '': {
-                    'handlers': self('log_enabled', ['console_detail']),
+                    'handlers': self('log_handlers', ['console_detail']),
                     'level': self('log_level', 'INFO'),
                     'propagate': True
                 }

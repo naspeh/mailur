@@ -1,11 +1,10 @@
 from functools import wraps
 
-import requests
 from psycopg2 import DataError
 from werkzeug.routing import Map, Rule
 
 from . import imap
-from .db import cursor, Account
+from .db import cursor
 
 rules = [
     Rule('/auth/', endpoint='auth'),
@@ -24,27 +23,12 @@ def auth(env):
     return env.redirect(imap.auth_url(redirect_uri))
 
 
-@cursor()
-def auth_callback(cur, env):
+def auth_callback(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
     try:
-        auth = imap.auth_callback(redirect_uri, env.request.args['code'])
-        res = requests.get(
-            'https://www.googleapis.com/oauth2/v1/userinfo',
-            headers={'Authorization': 'Bearer %s' % auth['access_token']}
-        )
-        info = res.json()
-        email = info['email']
-        cur.execute('SELECT count(*) FROM accounts WHERE email=%s', (email,))
-        exists = cur.fetchone()[0]
-        if not exists:
-            Account.insert(cur, [{
-                'type': 'gmail',
-                'email': info['email'],
-                'data': {'auth': auth, 'info': info}
-            }])
-        env.login()
-        return env.redirect_for('index')
+        if imap.auth_callback(redirect_uri, env.request.args['code']):
+            env.login()
+            return env.redirect_for('index')
     except imap.AuthError as e:
         return str(e)
 
