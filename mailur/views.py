@@ -49,6 +49,14 @@ def auth_callback(cur, env):
         return str(e)
 
 
+def auth_refresh(env):
+    try:
+        imap.auth_refresh()
+        return 'OK'
+    except imap.AuthError as e:
+        return str(e)
+
+
 def login_required(func):
     @wraps(func)
     def inner(env, *a, **kw):
