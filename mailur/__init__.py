@@ -85,7 +85,7 @@ class _Conf:
             'loggers': {
                 '': {
                     'handlers': self('log_enabled', ['console_detail']),
-                    'level': 'INFO',
+                    'level': self('log_level', 'INFO'),
                     'propagate': True
                 }
             }

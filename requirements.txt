@@ -1,7 +1,6 @@
 Jinja2==2.7.3
 MarkupSafe==0.23
 Werkzeug==0.10.4
-chardet==2.3.0
 cssselect==0.9.1
 cssutils==1.0
 lxml==3.4.2

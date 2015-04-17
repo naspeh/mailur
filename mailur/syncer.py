@@ -89,7 +89,7 @@ def fetch_headers(cur, map_uids):
                 'time': row['INTERNALDATE'],
                 'extra': {'X-GM-MSGID': row['X-GM-MSGID']},
             }
-            fields.update(get_parsed(row['BODY[HEADER]'], fields['id']))
+            fields.update(get_parsed(fields['header'], str(fields['id'])))
             emails.append(fields)
         Email.insert(cur, emails)
         cur.connection.commit()

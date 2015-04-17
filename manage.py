@@ -65,7 +65,6 @@ def get_base(argv):
     requirements = (
         'Jinja2 '
         'Werkzeug '
-        'chardet '
         'lxml '
         'psycopg2 '
         'requests '

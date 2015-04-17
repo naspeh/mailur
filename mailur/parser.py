@@ -1,11 +1,11 @@
 import datetime as dt
 import email
+import email.header
 import os
 import re
 from collections import OrderedDict
 from html import escape as html_escape
 
-import chardet
 import toronado
 from lxml import html as lhtml
 from lxml.html.clean import Cleaner
@@ -13,31 +13,37 @@ from werkzeug.utils import secure_filename
 
 from . import log, conf
 
+CHARSET_ALIASES = {
+    'unknown-8bit': None,
+    'cp-1251': 'cp1251',
+    'gb2312': 'gbk',
+}
+
 
 def decode_str(text, charset=None, msg_id=None):
-    charset = charset if charset else 'utf8'
+    charset = charset if charset else 'utf-8'
     try:
         part = text.decode(charset)
-    except LookupError:
-        charset_ = chardet.detect(text)['encoding']
-        part = text.decode(charset_, 'ignore')
     except UnicodeDecodeError:
-        log.warn('DecodeError(%s) -- %s', charset, msg_id or text[:200])
+        log.debug('UnicodeDecodeError(%s) -- %s', charset, msg_id)
         part = text.decode(charset, 'ignore')
     return part
 
 
-def decode_header(text, default='utf-8', msg_id=None):
+def decode_header(text, charset, msg_id):
     if not text:
         return ''
+    if not charset:
+        charset = 'utf8'
 
     parts_ = email.header.decode_header(text)
     parts = []
-    for text, charset in parts_:
+    for text, charset_ in parts_:
         if isinstance(text, str):
             part = text
         else:
-            part = decode_str(text, charset or default, msg_id)
+            charset_ = CHARSET_ALIASES.get(charset_, charset_)
+            part = decode_str(text, charset_, msg_id)
         parts += [part]
 
     header = ''.join(parts)
@@ -45,24 +51,24 @@ def decode_header(text, default='utf-8', msg_id=None):
     return header
 
 
-def decode_addresses(text):
+def decode_addresses(text, charset, msg_id):
     if not isinstance(text, str):
         text = str(text)
     res = []
     for name, addr in email.utils.getaddresses([text]):
-        name, addr = [decode_header(r) for r in [name, addr]]
+        name, addr = [decode_header(r, charset, msg_id) for r in [name, addr]]
         if addr:
             res += ['"%s" <%s>' % (name if name else addr.split('@')[0], addr)]
     return res
 
 
-def decode_date(text):
+def decode_date(text, *args):
     tm_array = email.utils.parsedate_tz(text)
     tm = dt.datetime(*tm_array[:6]) - dt.timedelta(seconds=tm_array[-1])
     return tm
 
 
-def parse_part(part, msg_id, inner=False):
+def parse_part(part, charset, msg_id, inner=False):
     msg_id = str(msg_id)
     content = OrderedDict([
         ('files', []),
@@ -76,7 +82,7 @@ def parse_part(part, msg_id, inner=False):
     stype = part.get_content_subtype()
     if part.is_multipart():
         for m in part.get_payload():
-            child = parse_part(m, msg_id, inner=True)
+            child = parse_part(m, charset, msg_id, inner=True)
             child_html = child.pop('html', '')
             content.setdefault('html', '')
             if stype != 'alternative':
@@ -95,7 +101,7 @@ def parse_part(part, msg_id, inner=False):
             'maintype': mtype,
             'type': ctype,
             'id': part.get('Content-ID'),
-            'filename': decode_header(part.get_filename(), msg_id=msg_id),
+            'filename': decode_header(part.get_filename(), charset, msg_id),
             'payload': payload,
             'size': len(payload) if payload else None
         }
@@ -159,30 +165,30 @@ def parse_part(part, msg_id, inner=False):
     return content
 
 
-decoders = {
-    'subject': decode_header,
-    'from': decode_addresses,
-    'to': decode_addresses,
-    'cc': decode_addresses,
-    'bcc': decode_addresses,
-    'reply-to': decode_addresses,
-    'sender': decode_addresses,
-    'date': decode_date,
-    'message-id': str,
-    'in-reply-to': str,
-    'references': str.split,
-}
-
-
 def parse(text, msg_id=None):
     msg = email.message_from_bytes(text)
+    charset = [c for c in msg.get_charsets() if c]
+    charset = charset[0] if charset else None
 
+    decoders = {
+        'subject': decode_header,
+        'from': decode_addresses,
+        'to': decode_addresses,
+        'cc': decode_addresses,
+        'bcc': decode_addresses,
+        'reply-to': decode_addresses,
+        'sender': decode_addresses,
+        'date': decode_date,
+        'message-id': lambda t, *a: str(t),
+        'in-reply-to': lambda t, *a: str(t),
+        'references': lambda t, *a: str.split(t),
+    }
     data = {}
     for key, decode in decoders.items():
         value = msg.get(key)
-        data[key] = decode(value) if value else None
+        data[key] = decode(value, charset, msg_id) if value else None
 
-    files = parse_part(msg, msg_id or data['message-id'])
+    files = parse_part(msg, charset, msg_id or data['message-id'])
     data['attachments'] = files['attachments']
     data['embedded'] = files['embedded']
     data['html'] = files.get('html', None)
