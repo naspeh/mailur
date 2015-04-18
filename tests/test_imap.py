@@ -1,9 +1,18 @@
 from collections import namedtuple, OrderedDict
+from unittest.mock import patch
 
-from pytest import mark
+from pytest import mark, fixture
 
 from . import read_file
-from mailur import imap, imap_utf7
+from mailur import imap, imap_utf7, conf
+from mailur.env import Env
+
+
+@fixture
+@patch('imaplib.IMAP4_SSL')
+def client(mok):
+    env = Env(conf)
+    return imap.connect(env, env('email'))
 
 
 def gen_response(filename, query):
@@ -22,15 +31,15 @@ def gen_response(filename, query):
         f.write(pickle.dumps((ids, res)))
 
 
-def test_fetch_header_and_other():
+def test_fetch_header_and_other(client):
     filename = 'files_imap/fetch-header-and-other.pickle'
     query = 'UID X-GM-MSGID FLAGS X-GM-LABELS RFC822.HEADER RFC822.HEADER'
     # gen_response(filename, query)
 
     ids, data = read_file(filename)
 
-    im = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = OrderedDict(imap.fetch(im, ids, query))
+    client.uid = lambda *a, **kw: data
+    rows = OrderedDict(imap.fetch(client, ids, query))
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
     for id in ids:
@@ -39,15 +48,15 @@ def test_fetch_header_and_other():
             assert key in value
 
 
-def test_fetch_body():
+def test_fetch_body(client):
     filename = 'files_imap/fetch-header.pickle'
     query = 'RFC822.HEADER INTERNALDATE'
     # gen_response(filename, query)
 
     ids, data = read_file(filename)
 
-    im = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = OrderedDict(imap.fetch(im, ids, query))
+    client.uid = lambda *a, **kw: data
+    rows = OrderedDict(imap.fetch(client, ids, query))
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
 
@@ -93,9 +102,9 @@ def test_fetch_body():
         }}
     )
 ])
-def test_lexer(query, line, expected):
-    im = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
-    rows = imap.fetch(im, '1', query)
+def test_lexer(client, query, line, expected):
+    client.uid = lambda *a, **kw: ('OK', line)
+    rows = imap.fetch(client, '1', query)
     assert dict(rows) == expected
 
 
@@ -105,7 +114,7 @@ def test_imap_utf7():
     assert imap_utf7.encode(expect) == orig
 
 
-def test_list():
+def test_list(client):
     data = [
         b'(\\HasNoChildren) "/" "-job proposals"',
         b'(\\HasNoChildren) "/" "-social"',
@@ -126,8 +135,8 @@ def test_list():
         b'(\\HasNoChildren) "/" "&BEIENQRBBEI-"'
     ]
 
-    im = namedtuple('_', 'list')(lambda *a, **kw: ('OK', data))
-    rows = imap.folders(im)
+    client.list = lambda *a, **kw: ('OK', data)
+    rows = imap.folders(client)
     assert rows[0] == (('\\HasNoChildren',), '/', '-job proposals')
     assert rows[3] == (('\\HasNoChildren',), '/', 'INBOX')
     assert rows[5] == (('\\Noselect', '\\HasChildren'), '/', '[Gmail]')

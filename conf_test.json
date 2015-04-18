@@ -1,11 +1,8 @@
 {
     "cookie_secret": "blabla",
-    "email": "mailr@pusto.org",
-    "password": "",
-    "google_id": "FIXME",
-    "google_secret": "FIXME",
+    "email": "test@pusto.org",
+    "password": "test",
     "ui_is_public": true,
-    "pg_database": "mail_test",
     "pg_password": "test",
     "pg_username": "test",
     "log_level": "DEBUG"
