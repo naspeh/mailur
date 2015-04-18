@@ -12,7 +12,7 @@ def sh(cmd):
     return subprocess.call(cmd, shell=True)
 
 
-def run(conf, only_wsgi):
+def run(env, only_wsgi):
     from werkzeug.serving import run_simple
     from werkzeug.wsgi import SharedDataMiddleware
     from mailur import app
@@ -21,14 +21,14 @@ def run(conf, only_wsgi):
         main(['lessc'])
 
     extra_files = [
-        glob.glob(os.path.join(conf.theme_dir, fmask)) +
-        glob.glob(os.path.join(conf.theme_dir, '*', fmask))
+        glob.glob(os.path.join(env('theme_dir'), fmask)) +
+        glob.glob(os.path.join(env('theme_dir'), '*', fmask))
         for fmask in ['*.less', '*.css', '*.js']
     ]
     extra_files = sum(extra_files, [])
 
-    wsgi_app = SharedDataMiddleware(app.create_app(conf), {
-        '/theme': conf.theme_dir, '/attachments': conf.attachments_dir
+    wsgi_app = SharedDataMiddleware(app.create_app(env('path')), {
+        '/theme': env('theme_dir'), '/attachments': env('attachments_dir')
     })
     run_simple(
         '0.0.0.0', 5000, wsgi_app,
@@ -96,10 +96,10 @@ def get_base(argv):
 
 
 def get_full(argv):
-    from mailur import db, syncer, conf
+    from mailur import db, syncer
     from mailur.env import Env
 
-    env = Env(conf)
+    env = Env('conf.json')
 
     parser, cmd = get_base(argv)
     cmd('sync')\
@@ -113,7 +113,7 @@ def get_full(argv):
 
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
-        .exe(lambda a: run(conf, a.only_wsgi))
+        .exe(lambda a: run(env, a.only_wsgi))
     return parser
 
 

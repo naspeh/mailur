@@ -3,17 +3,17 @@ import time
 from contextlib import ContextDecorator
 from functools import wraps
 
-from . import conf, log
+from . import log
 
 
 def with_lock(func):
-    target = ':'.join([func.__module__, func.__name__, conf.path])
-
     @wraps(func)
-    def inner(*a, **kw):
+    def inner(env, *a, **kw):
+        target = ':'.join([func.__module__, func.__name__, env('path')])
+
         lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         lock_socket.bind('\0' + target)
-        return func(*a, **kw)
+        return func(env, *a, **kw)
     return inner
 
 

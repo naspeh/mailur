@@ -11,7 +11,7 @@ from lxml import html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
 
-from . import log, conf
+from . import log
 
 CHARSET_ALIASES = {
     'unknown-8bit': None,
@@ -69,8 +69,7 @@ def decode_date(text, *args):
     return tm
 
 
-def parse_part(part, charset, msg_id, inner=False):
-    msg_id = str(msg_id)
+def parse_part(part, charset, msg_id, attachments_dir, inner=False):
     content = OrderedDict([
         ('files', []),
         ('attachments', []),
@@ -83,7 +82,7 @@ def parse_part(part, charset, msg_id, inner=False):
     stype = part.get_content_subtype()
     if part.is_multipart():
         for m in part.get_payload():
-            child = parse_part(m, charset, msg_id, inner=True)
+            child = parse_part(m, charset, msg_id, attachments_dir, inner=True)
             child_html = child.pop('html', '')
             content.setdefault('html', '')
             if stype != 'alternative':
@@ -133,7 +132,7 @@ def parse_part(part, charset, msg_id, inner=False):
             else:
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue
-            path = os.path.join(conf.attachments_dir, url)
+            path = os.path.join(attachments_dir, url)
             if not os.path.exists(path):
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, 'bw') as f:
@@ -166,7 +165,9 @@ def parse_part(part, charset, msg_id, inner=False):
     return content
 
 
-def parse(text, msg_id=None):
+def parse(text, msg_id=None, attachments_dir=None):
+    attachments_dir = attachments_dir or '/tmp/mailur'
+
     msg = email.message_from_bytes(text)
     charset = [c for c in msg.get_charsets() if c]
     charset = charset[0] if charset else None
@@ -189,7 +190,8 @@ def parse(text, msg_id=None):
         value = msg.get(key)
         data[key] = decode(value, charset, msg_id) if value else None
 
-    files = parse_part(msg, charset, msg_id or data['message-id'])
+    msg_id = str(msg_id or data['message-id'])
+    files = parse_part(msg, charset, msg_id, attachments_dir)
     data['attachments'] = files['attachments']
     data['embedded'] = files['embedded']
     data['html'] = files.get('html', None)

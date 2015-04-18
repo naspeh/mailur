@@ -7,7 +7,7 @@ from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
 
-from . import conf, views, filters, env
+from . import views, filters, env
 
 
 class Request(_Request):
@@ -21,7 +21,7 @@ def create_app(conf):
     def app(request):
         env = WebEnv(conf, request)
         try:
-            response = env.run()
+            response = env.wsgi()
         except HTTPException as e:
             response = e
         env.session.save_cookie(response)
@@ -31,21 +31,21 @@ def create_app(conf):
 
 class WebEnv(env.Env):
     def __init__(self, conf, request):
-        super().__init__(conf)
+        env = super().__init__(conf)
 
         self.url_map = views.url_map
         self.request = request
         self.adapter = self.url_map.bind_to_environ(request.environ)
 
         self.jinja = jinja = Environment(
-            loader=FileSystemLoader(conf.theme_dir),
+            loader=FileSystemLoader(self('theme_dir')),
             extensions=[with_],
             lstrip_blocks=True, trim_blocks=True
         )
-        jinja.globals.update(url_for=self.url_for, conf=conf, env=self)
+        jinja.globals.update(url_for=self.url_for, env=env)
         jinja.filters.update(**filters.get_all())
 
-    def run(self):
+    def wsgi(self):
         endpoint, values = self.adapter.match()
         response = getattr(views, endpoint)(self, **values)
         if isinstance(response, str):
@@ -75,7 +75,7 @@ class WebEnv(env.Env):
 
     @cached_property
     def session(self):
-        secret_key = conf('cookie_secret').encode()
+        secret_key = self('cookie_secret').encode()
         return SecureCookie.load_cookie(self.request, secret_key=secret_key)
 
     def login(self):

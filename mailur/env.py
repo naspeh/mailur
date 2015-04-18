@@ -1,19 +1,50 @@
 import hashlib
+import json
+import logging.config
+import os
 
 import psycopg2
 from werkzeug.utils import cached_property
 
 from . import db
 
+app_dir = os.path.abspath(os.path.dirname(__file__))
+base_dir = os.path.abspath(os.path.join(app_dir, '..'))
 
-class Env():
-    def __init__(self, conf):
-        self.conf = conf
+
+def fetch_conf(path):
+    path = os.path.join(base_dir, path)
+    with open(path, 'br') as f:
+        conf = json.loads(f.read().decode())
+
+    defaults = {
+        'attachments_dir': 'attachments',
+        'imap_body_maxsize': 50 * 1024 * 1024,
+        'imap_batch_size': 2000,
+        'imap_debug': 0,
+        'ui_ga_id': '',
+        'ui_is_public': False,
+        'ui_use_names': True,
+    }
+    conf = dict(defaults, **conf)
+    conf.update({
+        'path': path,
+        'attachments_dir': os.path.join(base_dir, conf['attachments_dir']),
+        'theme_dir': os.path.join(app_dir, 'theme')
+    })
+    return conf
+
+
+class Env:
+    def __init__(self, conf='conf.json'):
+        self.conf = fetch_conf(conf)
+        setup_logging(self)
+
         self.accounts = db.Accounts(self)
         self.emails = db.Emails(self)
 
     def __call__(self, key, default=None):
-        return self.conf(key, default)
+        return self.conf.get(key, default)
 
     @property
     def db_name(self):
@@ -46,3 +77,56 @@ class Env():
 
     def sqlmany(self, *args, **kwargs):
         return self._sql('executemany', *args, **kwargs)
+
+
+def setup_logging(env):
+    conf = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'simple': {
+                'format': '%(levelname)s %(asctime)s  %(message)s',
+                'datefmt': '%H:%M:%S'
+            },
+            'detail': {
+                'format': (
+                    '%(asctime)s[%(threadName)-12.12s][%(levelname)-5.5s] '
+                    '%(name)s %(message)s'
+                )
+            }
+        },
+        'handlers': {
+            'console_simple': {
+                'class': 'logging.StreamHandler',
+                'level': 'DEBUG',
+                'formatter': 'simple',
+                'stream': 'ext://sys.stdout'
+            },
+            'console_detail': {
+                'class': 'logging.StreamHandler',
+                'level': 'DEBUG',
+                'formatter': 'detail',
+                'stream': 'ext://sys.stdout'
+            },
+        },
+        'loggers': {
+            '': {
+                'handlers': env('log_handlers', ['console_detail']),
+                'level': env('log_level', 'INFO'),
+                'propagate': True
+            }
+        }
+    }
+    log_file = env('log_file')
+    if log_file:
+        conf['handlers'].update(file={
+            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'INFO',
+            'formatter': 'detail',
+            'filename': log_file,
+            'maxBytes': 10485760,
+            'backupCount': 20,
+            'encoding': 'utf8'
+        })
+        conf['loggers']['']['handlers'].append('file')
+    logging.config.dictConfig(conf)

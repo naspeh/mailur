@@ -1,17 +1,17 @@
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 from unittest.mock import patch
 
 from pytest import mark, fixture
 
 from . import read_file
-from mailur import imap, imap_utf7, conf
+from mailur import imap, imap_utf7
 from mailur.env import Env
 
 
 @fixture
 @patch('imaplib.IMAP4_SSL')
 def client(mok):
-    env = Env(conf)
+    env = Env('conf_test.json')
     return imap.connect(env, env('email'))
 
 

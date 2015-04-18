@@ -47,7 +47,7 @@ def get_gids(env, gids, where=None):
     return [r[0] for r in env.sql(sql, {'gids': list(gids)})]
 
 
-def get_parsed(data, msgid=None):
+def get_parsed(env, data, msgid=None):
     pairs = (
         ('subject', 'subj'),
         ('from', 'fr'),
@@ -65,7 +65,7 @@ def get_parsed(data, msgid=None):
         ('attachments', 'attachments'),
         ('embedded', 'embedded'),
     )
-    msg = parser.parse(data, msgid)
+    msg = parser.parse(data, msgid, env('attachments_dir'))
     return ((field, msg[key]) for key, field in pairs)
 
 
@@ -88,7 +88,7 @@ def fetch_headers(env, imap, map_uids):
                 'time': row['INTERNALDATE'],
                 'extra': {'X-GM-MSGID': row['X-GM-MSGID']},
             }
-            fields.update(get_parsed(fields['header'], str(fields['id'])))
+            fields.update(get_parsed(env, fields['header'], str(fields['id'])))
             emails.append(fields)
         env.emails.insert(emails)
         env.db.commit()
