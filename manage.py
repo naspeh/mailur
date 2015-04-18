@@ -4,7 +4,7 @@ import glob
 import os
 import subprocess
 
-from mailur import log, conf
+from mailur import log
 
 
 def sh(cmd):
@@ -12,18 +12,12 @@ def sh(cmd):
     return subprocess.call(cmd, shell=True)
 
 
-def ssh(cmd):
-    return sh('ssh %s "%s"' % (
-        conf('server_host'), cmd.replace('"', '\"').replace('$', '\$')
-    ))
-
-
-def run(args):
+def run(conf, only_wsgi):
     from werkzeug.serving import run_simple
     from werkzeug.wsgi import SharedDataMiddleware
     from mailur import app
 
-    if not args.only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+    if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         main(['lessc'])
 
     extra_files = [
@@ -54,14 +48,6 @@ def get_base(argv):
         p.exe = lambda f: p.set_defaults(exe=f) and p
         return p
 
-    cmd('node', help='install node packages')\
-        .exe(lambda a: sh(
-            'npm install'
-            '   autoprefixer@5.1.0'
-            '   csso@1.3.11'
-            '   less@2.5.0'
-        ))
-
     requirements = (
         'Jinja2 '
         'Werkzeug '
@@ -89,6 +75,14 @@ def get_base(argv):
             )
         ])))
 
+    cmd('node', help='install node packages')\
+        .exe(lambda a: sh(
+            'npm install'
+            '   autoprefixer@5.1.0'
+            '   csso@1.3.11'
+            '   less@2.5.0'
+        ))
+
     cmd('lessc').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
         'autoprefixer {0}styles.css {0}styles.css && '
@@ -98,26 +92,16 @@ def get_base(argv):
     cmd('test').exe(lambda a: (
         sh('MAILUR_CONF=conf_test.json py.test %s' % ' '.join(a))
     ))
-
-    cmd('deploy', help='deploy to server')\
-        .arg('-t', '--target', default='origin/master', help='checkout it')\
-        .exe(lambda a: ssh(
-            'cd /home/mailr/src'
-            '&& git fetch origin' +
-            '&& git checkout {}'.format(a.target) +
-            '&& touch ../reload'
-        ))
     return parser, cmd
 
 
 def get_full(argv):
-    from mailur import db, syncer
+    from mailur import db, syncer, conf
     from mailur.env import Env
 
     env = Env(conf)
 
     parser, cmd = get_base(argv)
-
     cmd('sync')\
         .arg('-b', '--bodies', action='store_true')\
         .arg('-l', '--only-labels', nargs='+')\
@@ -129,7 +113,7 @@ def get_full(argv):
 
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
-        .exe(run)
+        .exe(lambda a: run(conf, a.only_wsgi))
     return parser
 
 
