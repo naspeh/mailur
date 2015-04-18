@@ -5,8 +5,9 @@ from urllib.parse import urlencode
 
 import requests
 
-from . import log, conf, Timer
+from . import log, conf
 from .db import cursor, Account
+from .helpers import Timer
 
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
@@ -77,9 +78,12 @@ def auth_refresh(cur):
 
 @cursor()
 def connect(cur):
-    token = Account.get_key(cur, conf('email'), 'access_token')
-    if token:
+    if conf('password'):
+        def login(im):
+            im.login(conf('email'), conf('password'))
+    elif Account.get_key(cur, conf('email'), 'access_token'):
         def login(im, retry=False):
+            token = Account.get_key(cur, conf('email'), 'access_token')
             header = 'user=%s\1auth=Bearer %s\1\1' % (conf('email'), token)
             try:
                 im.authenticate('XOAUTH2', lambda x: header)
@@ -89,9 +93,6 @@ def connect(cur):
 
                 auth_refresh()
                 login(im, True)
-    elif conf('password'):
-        def login(im):
-            im.login(conf('email'), conf('password'))
     else:
         raise AuthError('Fill access_token or password in config')
 

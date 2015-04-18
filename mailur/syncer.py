@@ -3,8 +3,9 @@ from contextlib import contextmanager
 from multiprocessing.dummy import Pool
 from uuid import uuid5, NAMESPACE_URL
 
-from . import imap, imap_utf7, parser, log, conf, Timer, with_lock
+from . import imap, imap_utf7, parser, log, conf
 from .db import cursor, Email
+from .helpers import Timer, with_lock
 
 
 @with_lock
