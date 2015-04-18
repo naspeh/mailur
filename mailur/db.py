@@ -127,6 +127,7 @@ class Account(Table):
 
     @classmethod
     def update(cls, cur, email, data):
+        data = dict(cls.get(cur, email)[1], **data)
         cur.execute(
             'UPDATE accounts SET data=%s  WHERE email=%s',
             (data, email)
