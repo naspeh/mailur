@@ -43,7 +43,7 @@ def decode_header(text, charset, msg_id):
             part = text
         else:
             charset_ = CHARSET_ALIASES.get(charset_, charset_)
-            part = decode_str(text, charset_, msg_id)
+            part = decode_str(text, charset_ or charset, msg_id)
         parts += [part]
 
     header = ''.join(parts)

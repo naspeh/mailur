@@ -7,5 +7,6 @@
     "ui_is_public": true,
     "pg_database": "mail_test",
     "pg_password": "test",
-    "pg_username": "test"
+    "pg_username": "test",
+    "log_level": "DEBUG"
 }
