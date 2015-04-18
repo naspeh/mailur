@@ -128,7 +128,7 @@ def fetch_bodies(env, imap, map_uids):
     with async_runner() as run:
         for data in imap.fetch_batch(uids, 'RFC822', 'add bodies'):
             items = ((row['RFC822'], map_uids[uid]) for uid, row in data)
-            run(update, items)
+            run(update, env, items)
 
 
 def fetch_labels(env, imap, map_uids, folder):

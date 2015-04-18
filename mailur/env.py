@@ -8,11 +8,10 @@ from werkzeug.utils import cached_property
 
 from . import db
 
-app_dir = os.path.abspath(os.path.dirname(__file__))
-base_dir = os.path.abspath(os.path.join(app_dir, '..'))
-
 
 def fetch_conf(path):
+    app_dir = os.path.abspath(os.path.dirname(__file__))
+    base_dir = os.path.abspath(os.path.join(app_dir, '..'))
     path = os.path.join(base_dir, path)
     with open(path, 'br') as f:
         conf = json.loads(f.read().decode())
@@ -36,7 +35,7 @@ def fetch_conf(path):
 
 
 class Env:
-    def __init__(self, conf='conf.json'):
+    def __init__(self, conf):
         self.conf = fetch_conf(conf)
         setup_logging(self)
 
