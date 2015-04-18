@@ -3,14 +3,15 @@ from contextlib import contextmanager
 from multiprocessing.dummy import Pool
 from uuid import uuid5, NAMESPACE_URL
 
-from . import imap, imap_utf7, parser, log, conf
-from .db import cursor, Email
+from . import imap_utf7, parser, log
 from .helpers import Timer, with_lock
+from .imap import Client
 
 
 @with_lock
-def sync_gmail(bodies=False, only_labels=None):
-    folders = imap.list_()
+def sync_gmail(env, bodies=False, only_labels=None):
+    imap = Client(env, env('email'))
+    folders = imap.folders()
     if not only_labels:
         # Only these folders exist unique emails
         only_labels = ('\\All', '\\Junk', '\\Trash')
@@ -32,20 +33,18 @@ def sync_gmail(bodies=False, only_labels=None):
         )
 
         if bodies:
-            fetch_bodies(uids)
+            fetch_bodies(env, imap, uids)
         else:
-            fetch_headers(uids)
-            fetch_labels(uids, label)
+            fetch_headers(env, imap, uids)
+            fetch_labels(env, imap, uids, label)
 
 
-def get_gids(cur, gids, where=None):
+def get_gids(env, gids, where=None):
     sql = 'SELECT msgid FROM emails WHERE msgid = ANY(%(gids)s)'
     if where:
         sql += ' AND %s' % where
 
-    cur.execute(sql, {'gids': list(gids)})
-    gids = [r[0] for r in cur.fetchall()]
-    return gids
+    return [r[0] for r in env.sql(sql, {'gids': list(gids)})]
 
 
 def get_parsed(data, msgid=None):
@@ -70,9 +69,8 @@ def get_parsed(data, msgid=None):
     return ((field, msg[key]) for key, field in pairs)
 
 
-@cursor()
-def fetch_headers(cur, map_uids):
-    gids = get_gids(cur, map_uids.values())
+def fetch_headers(env, imap, map_uids):
+    gids = get_gids(env, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
         log.info('  - no headers to fetch')
@@ -82,7 +80,7 @@ def fetch_headers(cur, map_uids):
     for data in imap.fetch_batch(uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
-            gm_uid = '%s\r%s' % (conf('email'), row['X-GM-MSGID'])
+            gm_uid = '%s\r%s' % (env('email'), row['X-GM-MSGID'])
             fields = {
                 'id': uuid5(NAMESPACE_URL, gm_uid),
                 'header': row['BODY[HEADER]'],
@@ -92,8 +90,8 @@ def fetch_headers(cur, map_uids):
             }
             fields.update(get_parsed(fields['header'], str(fields['id'])))
             emails.append(fields)
-        Email.insert(cur, emails)
-        cur.connection.commit()
+        env.emails.insert(emails)
+        env.db.commit()
 
 
 @contextmanager
@@ -111,24 +109,21 @@ def async_runner():
     pool.join()
 
 
-@cursor()
-def fetch_bodies(cur, map_uids):
+def fetch_bodies(env, imap, map_uids):
     sql = '''
     SELECT msgid, size FROM emails
       WHERE msgid = ANY(%(ids)s)
       AND raw IS NULL
     '''
-    cur.execute(sql, {'ids': list(map_uids.values())})
-    pairs = dict(cur.fetchall())
+    pairs = dict(env.sql(sql, {'ids': list(map_uids.values())}))
 
     uids = [(uid, pairs[mid]) for uid, mid in map_uids.items() if mid in pairs]
     if not uids:
         log.info('  - no bodies to fetch')
         return
 
-    @cursor()
-    def update(cur, items):
-        cur.executemany("UPDATE emails SET raw=%s WHERE msgid=%s", items)
+    def update(env, items):
+        env.sqlmany("UPDATE emails SET raw=%s WHERE msgid=%s", items)
 
     with async_runner() as run:
         for data in imap.fetch_batch(uids, 'RFC822', 'add bodies'):
@@ -136,10 +131,9 @@ def fetch_bodies(cur, map_uids):
             run(update, items)
 
 
-@cursor()
-def fetch_labels(cur, map_uids, folder):
-    gids = get_gids(cur, map_uids.values())
-    update_label(cur, gids, folder)
+def fetch_labels(env, imap, map_uids, folder):
+    gids = get_gids(env, map_uids.values())
+    update_label(env, gids, folder)
 
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
@@ -163,15 +157,15 @@ def fetch_labels(cur, map_uids, folder):
     ]
     for label, args, func in labels:
         gids = [map_uids[uid] for uid, row in data if func(row, *args)]
-        update_label(cur, gids, label, folder)
+        update_label(env, gids, label, folder)
 
 
-def update_label(cur, gids, label, folder=None):
+def update_label(env, gids, label, folder=None):
     def step(action, sql):
         t = Timer()
         sql += (' AND %(folder)s = ANY(labels)' if folder else '')
-        cur.execute(sql, {'label': label, 'gids': gids, 'folder': folder})
-        log.info('  - %s %d emails for %.2fs', action, cur.rowcount, t.time())
+        i = env.sql(sql, {'label': label, 'gids': gids, 'folder': folder})
+        log.info('  - %s %d emails for %.2fs', action, i.rowcount, t.time())
 
     log.info('  * Process %r...', label)
     step('remove from', '''

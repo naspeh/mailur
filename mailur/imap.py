@@ -1,19 +1,17 @@
 import imaplib
 import re
-from functools import wraps
+from functools import partial
 from urllib.parse import urlencode
 
 import requests
 
-from . import log, conf
-from .db import cursor, Account
+from . import log
 from .helpers import Timer
 
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
 
 re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
-_client = None
 
 # FIXME: Hack imaplib limit
 imaplib._MAXLINE = 100000
@@ -23,14 +21,14 @@ class AuthError(Exception):
     pass
 
 
-def auth_url(redirect_uri):
+def auth_url(env, redirect_uri, email=None):
     params = {
-        'client_id': conf('google_id'),
+        'client_id': env('google_id'),
         'scope': (
             'https://mail.google.com/ '
             'https://www.googleapis.com/auth/userinfo.email'
         ),
-        'login_hint': conf('email'),
+        'login_hint': email,
         'redirect_uri': redirect_uri,
         'access_type': 'offline',
         'response_type': 'code',
@@ -39,11 +37,11 @@ def auth_url(redirect_uri):
     return '?'.join([OAUTH_URL, urlencode(params)])
 
 
-def auth_callback(redirect_uri, code):
+def auth_callback(env, redirect_uri, code):
     res = requests.post(OAUTH_URL_TOKEN, data={
         'code': code,
-        'client_id': conf('google_id'),
-        'client_secret': conf('google_secret'),
+        'client_id': env('google_id'),
+        'client_secret': env('google_secret'),
         'redirect_uri': redirect_uri,
         'grant_type': 'authorization_code'
     })
@@ -53,45 +51,56 @@ def auth_callback(redirect_uri, code):
             'https://www.googleapis.com/oauth2/v1/userinfo',
             headers={'Authorization': 'Bearer %s' % auth['access_token']}
         ).json()
-        with cursor() as cur:
-            return Account.add_or_update(cur, info['email'], auth)
-    raise AuthError('%s: %s' % (res.reason, res.text))
-
-
-@cursor()
-def auth_refresh(cur):
-    refresh_token = Account.get_key(cur, conf('email'), 'refresh_token')
-    if not refresh_token:
-        raise AuthError('refresh_token is empty')
-
-    res = requests.post(OAUTH_URL_TOKEN, data={
-        'client_id': conf('google_id'),
-        'client_secret': conf('google_secret'),
-        'refresh_token': refresh_token,
-        'grant_type': 'refresh_token',
-    })
-    if res.ok:
-        Account.update(cur, conf('email'), res.json())
+        env.accounts.add_or_update(info['email'], auth)
+        env.db.commit()
         return
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
-@cursor()
-def connect(cur):
-    if conf('password'):
+def auth_refresh(env, email):
+    refresh_token = env.accounts.get_data(email).get('refresh_token')
+    if not refresh_token:
+        raise AuthError('refresh_token is empty')
+
+    res = requests.post(OAUTH_URL_TOKEN, data={
+        'client_id': env('google_id'),
+        'client_secret': env('google_secret'),
+        'refresh_token': refresh_token,
+        'grant_type': 'refresh_token',
+    })
+    if res.ok:
+        env.accounts.update(email, res.json())
+        env.db.commit()
+        return
+    raise AuthError('%s: %s' % (res.reason, res.text))
+
+
+class Client:
+    def __init__(self, env, email):
+        im = connect(env, email)
+
+        self.folders = partial(folders, im)
+        self.status = partial(status, im)
+        self.search = partial(search, im)
+        self.fetch_batch = partial(fetch_batch, im)
+        self.fetch = partial(fetch, im)
+
+
+def connect(env, email):
+    if env('password'):
         def login(im):
-            im.login(conf('email'), conf('password'))
-    elif Account.get_key(cur, conf('email'), 'access_token'):
+            im.login(email, env('password'))
+    elif env.accounts.get_data(email).get('access_token'):
         def login(im, retry=False):
-            token = Account.get_key(cur, conf('email'), 'access_token')
-            header = 'user=%s\1auth=Bearer %s\1\1' % (conf('email'), token)
+            token = env.accounts.get_data(email).get('access_token')
+            header = 'user=%s\1auth=Bearer %s\1\1' % (email, token)
             try:
                 im.authenticate('XOAUTH2', lambda x: header)
             except im.error as e:
                 if retry:
                     raise AuthError(e)
 
-                auth_refresh()
+                auth_refresh(env, email)
                 login(im, True)
     else:
         raise AuthError('Fill access_token or password in config')
@@ -99,25 +108,16 @@ def connect(cur):
     try:
         client = imaplib.IMAP4_SSL
         im = client('imap.gmail.com')
-        im.debug = conf('imap_debug')
+        im.debug = env('imap_debug')
+        im.conf_batch_size = env('imap_batch_size')
+        im.conf_body_maxsize = env('imap_body_maxsize')
+
         login(im)
     except IOError as e:
         raise AuthError(e)
     return im
 
 
-def client(func):
-    @wraps(func)
-    def inner(*a, **kw):
-        global _client
-        if not _client:
-            _client = connect()
-
-        return func(_client, *a, **kw)
-    return inner
-
-
-@client
 def store(im, uids, key, value):
     for uid in uids:
         _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
@@ -130,8 +130,7 @@ def store(im, uids, key, value):
     return
 
 
-@client
-def list_(im):
+def folders(im):
     _, data = im.list()
 
     re_line = r'^[(]([^)]+)[)] "([^"]+)" "(%s)"$' % re_noesc
@@ -145,7 +144,6 @@ def list_(im):
     return rows
 
 
-@client
 def status(im, name, readonly=True):
     name = '"%s"' % name
     im.select(name, readonly=readonly)
@@ -158,10 +156,9 @@ def status(im, name, readonly=True):
     return uid
 
 
-@client
 def search(im, name):
-    uid_next = status(name)
-    uids, step = [], conf('imap_batch_size')
+    uid_next = status(im, name)
+    uids, step = [], im.conf_batch_size
     for i in range(1, uid_next, step):
         _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
         if data[0]:
@@ -169,7 +166,6 @@ def search(im, name):
     return uids
 
 
-@client
 def fetch_batch(im, uids, query, label=None):
     '''Fetch data from IMAP server
 
@@ -188,9 +184,9 @@ def fetch_batch(im, uids, query, label=None):
     if not uids:
         return
 
-    batch_size = conf('imap_batch_size')
+    batch_size = im.conf_batch_size
     if isinstance(uids[0], (tuple, list)):
-        step_size, group_size = 0, conf('imap_body_maxsize')
+        step_size, group_size = 0, im.conf_body_maxsize
         step_uids, group_uids = [], []
         for uid, size in uids:
             if step_uids and step_size + size > group_size:
@@ -213,24 +209,22 @@ def fetch_batch(im, uids, query, label=None):
     for num, uids_ in enumerate(steps, 1):
         if not uids_:
             continue
-        data_ = _fetch(uids_, query)
+        data_ = _fetch(im, uids_, query)
         log_('  - (%d) %d ones for %.2fs', num, len(uids_), timer.time())
         yield data_
         log_('  - %s for %.2fs', label, timer.time())
 
 
-@client
 def fetch(im, uids, query, label=None):
     timer = Timer()
     num = 1
-    for data in fetch_batch(uids, query, label):
+    for data in fetch_batch(im, uids, query, label):
         for row in data:
             num += 1
             yield row
     log.info('  * Got %d %r for %.2fs', num, query, timer.time())
 
 
-@client
 def _fetch(im, ids, query):
     if not isinstance(query, str):
         keys = list(query)

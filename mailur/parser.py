@@ -22,11 +22,12 @@ CHARSET_ALIASES = {
 
 def decode_str(text, charset=None, msg_id=None):
     charset = charset if charset else 'utf-8'
+    charset_ = CHARSET_ALIASES.get(charset, charset)
     try:
-        part = text.decode(charset)
+        part = text.decode(charset_)
     except UnicodeDecodeError:
-        log.debug('UnicodeDecodeError(%s) -- %s', charset, msg_id)
-        part = text.decode(charset, 'ignore')
+        log.debug('UnicodeDecodeError(%s) -- %s', charset_, msg_id)
+        part = text.decode(charset_, 'ignore')
     return part
 
 

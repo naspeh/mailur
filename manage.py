@@ -33,7 +33,7 @@ def run(args):
     ]
     extra_files = sum(extra_files, [])
 
-    wsgi_app = SharedDataMiddleware(app.create_app(), {
+    wsgi_app = SharedDataMiddleware(app.create_app(conf), {
         '/theme': conf.theme_dir, '/attachments': conf.attachments_dir
     })
     run_simple(
@@ -112,17 +112,20 @@ def get_base(argv):
 
 def get_full(argv):
     from mailur import db, syncer
+    from mailur.env import Env
+
+    env = Env(conf)
 
     parser, cmd = get_base(argv)
 
     cmd('sync')\
         .arg('-b', '--bodies', action='store_true')\
         .arg('-l', '--only-labels', nargs='+')\
-        .exe(lambda a: (syncer.sync_gmail(a.bodies, a.only_labels)))
+        .exe(lambda a: (syncer.sync_gmail(env, a.bodies, a.only_labels)))
 
     cmd('db-init')\
         .arg('-r', '--reset', action='store_true')\
-        .exe(lambda a: db.init(a.reset))
+        .exe(lambda a: db.init(env, a.reset))
 
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
@@ -133,7 +136,8 @@ def get_full(argv):
 def main(argv=None):
     try:
         parser = get_full(argv)
-    except ImportError:
+    except ImportError as e:
+        log.exception(e)
         parser, _ = get_base(argv)
 
     args, extra = parser.parse_known_args(argv)

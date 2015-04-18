@@ -25,12 +25,12 @@ def gen_response(filename, query):
 def test_fetch_header_and_other():
     filename = 'files_imap/fetch-header-and-other.pickle'
     query = 'UID X-GM-MSGID FLAGS X-GM-LABELS RFC822.HEADER RFC822.HEADER'
-    #gen_response(filename, query)
+    # gen_response(filename, query)
 
     ids, data = read_file(filename)
 
-    imap._client = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = OrderedDict(imap.fetch(ids, query))
+    im = namedtuple('_', 'uid')(lambda *a, **kw: data)
+    rows = OrderedDict(imap.fetch(im, ids, query))
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
     for id in ids:
@@ -42,12 +42,12 @@ def test_fetch_header_and_other():
 def test_fetch_body():
     filename = 'files_imap/fetch-header.pickle'
     query = 'RFC822.HEADER INTERNALDATE'
-    #gen_response(filename, query)
+    # gen_response(filename, query)
 
     ids, data = read_file(filename)
 
-    imap._client = namedtuple('_', 'uid')(lambda *a, **kw: data)
-    rows = OrderedDict(imap.fetch(ids, query))
+    im = namedtuple('_', 'uid')(lambda *a, **kw: data)
+    rows = OrderedDict(imap.fetch(im, ids, query))
     assert len(ids) == len(rows)
     assert ids == list(str(k) for k in rows.keys())
 
@@ -94,8 +94,8 @@ def test_fetch_body():
     )
 ])
 def test_lexer(query, line, expected):
-    imap._client = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
-    rows = imap.fetch('1', query)
+    im = namedtuple('_', 'uid')(lambda *a, **kw: ('OK', line))
+    rows = imap.fetch(im, '1', query)
     assert dict(rows) == expected
 
 
@@ -126,8 +126,8 @@ def test_list():
         b'(\\HasNoChildren) "/" "&BEIENQRBBEI-"'
     ]
 
-    imap._client = namedtuple('_', 'list')(lambda *a, **kw: ('OK', data))
-    rows = imap.list_()
+    im = namedtuple('_', 'list')(lambda *a, **kw: ('OK', data))
+    rows = imap.folders(im)
     assert rows[0] == (('\\HasNoChildren',), '/', '-job proposals')
     assert rows[3] == (('\\HasNoChildren',), '/', 'INBOX')
     assert rows[5] == (('\\Noselect', '\\HasChildren'), '/', '[Gmail]')

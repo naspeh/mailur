@@ -7,7 +7,7 @@ from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
 
-from . import conf, views, filters
+from . import conf, views, filters, env
 
 
 class Request(_Request):
@@ -16,10 +16,10 @@ class Request(_Request):
         return json.loads(self.data.decode())
 
 
-def create_app():
+def create_app(conf):
     @Request.application
     def app(request):
-        env = Env(request)
+        env = WebEnv(conf, request)
         try:
             response = env.run()
         except HTTPException as e:
@@ -29,8 +29,10 @@ def create_app():
     return app
 
 
-class Env:
-    def __init__(self, request):
+class WebEnv(env.Env):
+    def __init__(self, conf, request):
+        super().__init__(conf)
+
         self.url_map = views.url_map
         self.request = request
         self.adapter = self.url_map.bind_to_environ(request.environ)

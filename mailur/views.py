@@ -4,7 +4,6 @@ from psycopg2 import DataError
 from werkzeug.routing import Map, Rule
 
 from . import imap
-from .db import cursor
 
 rules = [
     Rule('/auth/', endpoint='auth'),
@@ -20,22 +19,22 @@ url_map = Map(rules)
 
 def auth(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
-    return env.redirect(imap.auth_url(redirect_uri))
+    return env.redirect(imap.auth_url(env, redirect_uri))
 
 
 def auth_callback(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
     try:
-        if imap.auth_callback(redirect_uri, env.request.args['code']):
-            env.login()
-            return env.redirect_for('index')
+        imap.auth_callback(env, redirect_uri, env.request.args['code'])
+        env.login()
+        return env.redirect_for('index')
     except imap.AuthError as e:
         return str(e)
 
 
 def auth_refresh(env):
     try:
-        imap.auth_refresh()
+        imap.auth_refresh(env, env('email'))
         return 'OK'
     except imap.AuthError as e:
         return str(e)
@@ -62,16 +61,15 @@ def init(env):
 
 
 @login_required
-@cursor()
-def raw(cur, env, id):
+def raw(env, id):
     from tests import open_file
 
     try:
-        cur.execute('SELECT raw, header FROM emails WHERE id=%s LIMIT 1', [id])
+        i = env.sql('SELECT raw, header FROM emails WHERE id=%s LIMIT 1', [id])
     except DataError:
         raw = None
     else:
-        raw = cur.fetchone()
+        raw = i.fetchone()
     if not raw:
         env.abort(404)
 

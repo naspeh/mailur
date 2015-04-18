@@ -1,4 +1,3 @@
-import hashlib
 import json
 import logging
 import logging.config
@@ -31,10 +30,6 @@ class _Conf:
 
     def __call__(self, key, default=None):
         return self.data.get(key, default)
-
-    @property
-    def dbname(self):
-        return 'mailur_%s' % hashlib.sha1(self('email').encode()).hexdigest()
 
     @property
     def theme_dir(self):

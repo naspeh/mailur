@@ -1,11 +1,8 @@
 from collections import OrderedDict
-from functools import wraps
 from uuid import UUID
 
 import psycopg2
 import psycopg2.extras
-
-from . import conf
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extensions.register_adapter(UUID, psycopg2.extras.UUID_adapter)
@@ -68,17 +65,35 @@ class TableMeta(type):
 
 
 class Table(metaclass=TableMeta):
-    @classmethod
-    def insert(cls, cur, items):
+    pass
+
+
+class Manager():
+    def __init__(self, env):
+        self.env = env
+        self.sql = env.sql
+        self.sqlmany = env.sqlmany
+
+    @property
+    def _(self):
+        raise NotImplementedError()
+
+    @property
+    def db(self):
+        return self.env.db
+
+    def insert(self, items):
+        tbl, cur = self._, self.db.cursor()
+
         fields = sorted(f for f in items[0])
-        error = set(fields) - set(cls._fields)
+        error = set(fields) - set(tbl._fields)
         if error:
-            raise ValueError('Fields are not exists %s' % error)
+            raise ValueError('No fields: %s' % error)
 
         values = '(%s)' % (', '.join('%%(%s)s' % i for i in fields))
         values = ','.join([cur.mogrify(values, v).decode() for v in items])
         sql = 'INSERT INTO {table} ({fields}) VALUES '.format(
-            table=cls._name,
+            table=tbl._name,
             fields=', '.join('"%s"' % i for i in fields),
         )
         sql += values
@@ -86,96 +101,91 @@ class Table(metaclass=TableMeta):
         return cur
 
 
-class Account(Table):
-    __slots__ = ()
+class Accounts(Manager):
+    class _(Table):
+        __slots__ = ()
 
-    _name = 'accounts'
-    _post_table = '; '.join([
-        fill_updated(_name),
-        create_seq(_name, 'id')
-    ])
+        _name = 'accounts'
+        _post_table = '; '.join([
+            fill_updated(_name),
+            create_seq(_name, 'id')
+        ])
 
-    id = "int PRIMARY KEY"
-    email = 'varchar UNIQUE'
-    type = 'varchar'
-    data = 'jsonb'
+        id = "int PRIMARY KEY"
+        email = 'varchar UNIQUE'
+        type = 'varchar'
+        data = 'jsonb'
 
-    created = 'timestamp NOT NULL DEFAULT current_timestamp'
-    updated = 'timestamp NOT NULL DEFAULT current_timestamp'
+        created = 'timestamp NOT NULL DEFAULT current_timestamp'
+        updated = 'timestamp NOT NULL DEFAULT current_timestamp'
 
-    @classmethod
-    def get(cls, cur, email):
-        cur.execute('SELECT id, data FROM accounts WHERE email=%s', (email,))
-        return cur.fetchone() or (None, {})
+    def get_data(self, email):
+        i = self.sql('SELECT data FROM accounts WHERE email=%s', (email,))
+        data = i.fetchone()
+        return data['data'] if data else {}
 
-    @classmethod
-    def get_key(cls, cur, email, key):
-        return cls.get(cur, email)[1].get(key)
+    def exists(self, email):
+        i = self.sql('SELECT count(id) FROM accounts WHERE email=%s', (email,))
+        return i.fetchone()[0]
 
-    @classmethod
-    def exists(cls, cur, email):
-        cur.execute('SELECT count(*) FROM accounts WHERE email=%s', (email,))
-        return cur.fetchone()[0]
+    def add_or_update(self, email, data):
+        if self.exists(email):
+            return self.update(email, data)
 
-    @classmethod
-    def add_or_update(cls, cur, email, data):
-        if cls.exists(cur, email):
-            return cls.update(cur, email, data)
+        i = self.insert([{'type': 'gmail', 'email': email, 'data': data}])
+        return i.rowcount
 
-        cls.insert(cur, [{'type': 'gmail', 'email': email, 'data': data}])
-        return cur.rowcount
-
-    @classmethod
-    def update(cls, cur, email, data):
-        data = dict(cls.get(cur, email)[1], **data)
-        cur.execute(
+    def update(self, email, data):
+        data = dict(self.get_data(email), **data)
+        i = self.sql(
             'UPDATE accounts SET data=%s  WHERE email=%s',
             (data, email)
         )
-        return cur.rowcount
+        return i.rowcount
 
 
-class Email(Table):
-    __slots__ = ()
+class Emails(Manager):
+    class _(Table):
+        __slots__ = ()
 
-    _name = 'emails'
-    _post_table = '; '.join([
-        fill_updated(_name),
-        create_index(_name, 'size'),
-        create_index(_name, 'in_reply_to'),
-        create_index(_name, 'msgid'),
-        create_index(_name, 'labels', 'GIN'),
-    ])
+        _name = 'emails'
+        _post_table = '; '.join([
+            fill_updated(_name),
+            create_index(_name, 'size'),
+            create_index(_name, 'in_reply_to'),
+            create_index(_name, 'msgid'),
+            create_index(_name, 'labels', 'GIN'),
+        ])
 
-    id = 'uuid PRIMARY KEY DEFAULT gen_random_uuid()'
-    created = 'timestamp NOT NULL DEFAULT current_timestamp'
-    updated = 'timestamp NOT NULL DEFAULT current_timestamp'
-    thrid = 'uuid REFERENCES emails(id)'
-    # account_id = 'int NOT NULL REFERENCES accounts(id)'
+        id = 'uuid PRIMARY KEY DEFAULT gen_random_uuid()'
+        created = 'timestamp NOT NULL DEFAULT current_timestamp'
+        updated = 'timestamp NOT NULL DEFAULT current_timestamp'
+        thrid = 'uuid REFERENCES emails(id)'
+        # account_id = 'int NOT NULL REFERENCES accounts(id)'
 
-    header = 'bytea'
-    raw = 'bytea'
-    size = 'int'
-    time = 'timestamp'
-    labels = "varchar[] DEFAULT '{}'"
+        header = 'bytea'
+        raw = 'bytea'
+        size = 'int'
+        time = 'timestamp'
+        labels = "varchar[] DEFAULT '{}'"
 
-    subj = 'varchar'
-    fr = "varchar[] DEFAULT '{}'"
-    to = "varchar[] DEFAULT '{}'"
-    cc = "varchar[] DEFAULT '{}'"
-    bcc = "varchar[] DEFAULT '{}'"
-    reply_to = "varchar[] DEFAULT '{}'"
-    sender = 'varchar'
-    sender_time = 'timestamp'
-    msgid = 'varchar'
-    in_reply_to = 'varchar'
-    refs = "varchar[] DEFAULT '{}'"
+        subj = 'varchar'
+        fr = "varchar[] DEFAULT '{}'"
+        to = "varchar[] DEFAULT '{}'"
+        cc = "varchar[] DEFAULT '{}'"
+        bcc = "varchar[] DEFAULT '{}'"
+        reply_to = "varchar[] DEFAULT '{}'"
+        sender = 'varchar'
+        sender_time = 'timestamp'
+        msgid = 'varchar'
+        in_reply_to = 'varchar'
+        refs = "varchar[] DEFAULT '{}'"
 
-    text = 'text'
-    html = 'text'
-    attachments = "varchar[] DEFAULT '{}'"
-    embedded = 'jsonb'
-    extra = 'jsonb'
+        text = 'text'
+        html = 'text'
+        attachments = "varchar[] DEFAULT '{}'"
+        embedded = 'jsonb'
+        extra = 'jsonb'
 
 
 def create_table(tbl):
@@ -194,62 +204,15 @@ def create_table(tbl):
     return '; '.join(sql)
 
 
-class connect():
-    _conn = {}
-
-    def __init__(self, **params):
-        self.params = params
-        self.dbname = params.get('dbname')
-
-    @property
-    def conn(self):
-        return self._conn[self.dbname]
-
-    def __enter__(self):
-        params = dict(self.params)
-        params = dict({
-            'host': 'localhost',
-            'user': conf('pg_username'),
-            'password': conf('pg_password'),
-            'dbname': conf.dbname
-        }, **params)
-        self._conn[self.dbname] = conn = psycopg2.connect(**params)
-        return conn
-
-    def __exit__(self, type, value, traceback):
-        if type is None:
-            self.conn.commit()
-        else:
-            self.conn.rollback()
-
-    def __call__(self, func):
-        @wraps(func)
-        def inner(*a, **kw):
-            with self.__class__(**self.params) as c:
-                return func(c, *a, **kw)
-        return inner
-
-
-class cursor(connect):
-    def __enter__(self):
-        conn = super().__enter__()
-        self.cur = cur = conn.cursor()
-        return cur
-
-    def __exit__(self, type, value, traceback):
-        super().__exit__(type, value, traceback)
-        self.cur.close()
-
-
-def init(reset=False):
+def init(env, reset=False):
     if reset:
-        with connect(dbname='postgres') as conn:
+        with env.db_connect(dbname='postgres') as conn:
             conn.set_isolation_level(0)
             with conn.cursor() as cur:
-                cur.execute('DROP DATABASE IF EXISTS %s' % conf.dbname)
-                cur.execute('CREATE DATABASE %s' % conf.dbname)
+                cur.execute('DROP DATABASE IF EXISTS %s' % env.db_name)
+                cur.execute('CREATE DATABASE %s' % env.db_name)
 
-    with cursor() as cur:
-        cur.execute(';'.join(
-            [pre()] + [create_table(t) for t in [Account, Email]]
-        ))
+    env.sql(';'.join(
+        [pre()] + [create_table(t._) for t in [Accounts, Emails]]
+    ))
+    env.db.commit()
