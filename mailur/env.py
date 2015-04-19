@@ -3,7 +3,7 @@ import logging.config
 from pathlib import Path
 
 import psycopg2
-import voluptuous as v
+import valideer as v
 from werkzeug.utils import cached_property
 
 from . import db
@@ -18,30 +18,35 @@ def get_conf(conf):
     app_dir = Path(__file__).parent.resolve()
     base_dir = app_dir.parent
 
-    schema = v.Schema({
-        v.Required('pg_username'): str,
-        v.Required('pg_password'): str,
-        v.Required('google_id'): str,
-        v.Required('google_secret'): str,
-        v.Required('cookie_secret'): str,
-        v.Optional('log_handlers', default=['console_simple']):(
-            [v.Any('console_simple', 'console_detail')]
+    def exists(v):
+        return Path(v).exists()
+
+    schema_ = {
+        '+pg_username': str,
+        '+pg_password': str,
+        '+google_id': str,
+        '+google_secret': str,
+        '+cookie_secret': str,
+        'log_handlers': v.Nullable(
+            [v.Enum(['console_simple', 'console_detail'])], ['console_simple']
         ),
-        v.Optional('log_level', default='DEBUG'): str,
-        v.Optional('log_file', default=None): str,
-        v.Optional('path_attachments', default=str(base_dir / 'attachments')): (
-            v.IsFile()
-        ),
-        v.Optional('path_theme', default=str(app_dir / 'theme')): v.IsFile(),
-        v.Optional('imap_body_maxsize', default=50 * 1024 * 1024): int,
-        v.Optional('imap_batch_size', default=2000): int,
-        v.Optional('imap_debug', default=0): int,
-        v.Optional('ui_ga_id', default=None): str,
-        v.Optional('ui_is_public', default=False): bool,
-        v.Optional('ui_use_names', default=True): bool,
-    })
-    conf = schema(conf)
-    import pprint as _; _.pprint(conf)
+        'log_level': v.Nullable(str, 'DEBUG'),
+        'log_file': v.Nullable(str, ''),
+        'path_attachments': v.Nullable(exists, str(base_dir / 'attachments')),
+        'path_theme': v.Nullable(exists, str(app_dir / 'theme')),
+        'imap_body_maxsize': v.Nullable(int, 50 * 1024 * 1024),
+        'imap_batch_size': v.Nullable(int, 2000),
+        'imap_debug': v.Nullable(int, 0),
+        'ui_ga_id': str,
+        'ui_is_public': v.Nullable(bool, False),
+        'ui_use_names': v.Nullable(bool, True),
+    }
+    with v.parsing(additional_properties=False):
+        schema = v.parse(schema_)
+
+    # Validate two times to pass default values through the schema also
+    conf = schema.validate(conf)
+    conf = schema.validate(conf)
     return conf
 
 

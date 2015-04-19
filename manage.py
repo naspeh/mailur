@@ -57,6 +57,7 @@ def get_base(argv):
         'psycopg2 '
         'requests '
         'toronado '
+        'valideer '
     )
     cmd('reqs', help='update requirements.txt file')\
         .arg('-w', '--wheels', action='store_true')\
