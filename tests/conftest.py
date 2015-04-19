@@ -6,4 +6,10 @@ from mailur.env import Env
 @fixture
 def env():
     '''Test Environment'''
-    return Env({'password': 'test'})
+    return Env({
+        'pg_username': '',
+        'pg_password': '',
+        'google_id': '',
+        'google_secret': '',
+        'cookie_secret': 'secret'
+    })

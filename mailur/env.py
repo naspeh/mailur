@@ -1,8 +1,9 @@
 import hashlib
 import logging.config
-import os
+from pathlib import Path
 
 import psycopg2
+import voluptuous as v
 from werkzeug.utils import cached_property
 
 from . import db
@@ -14,28 +15,33 @@ class Missing:
 
 
 def get_conf(conf):
-    app_dir = os.path.abspath(os.path.dirname(__file__))
-    base_dir = os.path.abspath(os.path.join(app_dir, '..'))
+    app_dir = Path(__file__).parent.resolve()
+    base_dir = app_dir.parent
 
-    defaults = {
-        'pg_username': Missing(),
-        'pg_password': Missing(),
-        'google_id': Missing(),
-        'google_secret': Missing(),
-        'cookie_secret': Missing(),
-        'log_handlers': ['console_simple'],
-        'log_level': 'DEBUG',
-        'log_file': Missing(),
-        'path_attachments': os.path.join(base_dir, 'attachments'),
-        'path_theme': os.path.join(app_dir, 'theme'),
-        'imap_body_maxsize': 50 * 1024 * 1024,
-        'imap_batch_size': 2000,
-        'imap_debug': 0,
-        'ui_ga_id': '',
-        'ui_is_public': False,
-        'ui_use_names': True,
-    }
-    conf = dict(defaults, **conf)
+    schema = v.Schema({
+        v.Required('pg_username'): str,
+        v.Required('pg_password'): str,
+        v.Required('google_id'): str,
+        v.Required('google_secret'): str,
+        v.Required('cookie_secret'): str,
+        v.Optional('log_handlers', default=['console_simple']):(
+            [v.Any('console_simple', 'console_detail')]
+        ),
+        v.Optional('log_level', default='DEBUG'): str,
+        v.Optional('log_file', default=None): str,
+        v.Optional('path_attachments', default=str(base_dir / 'attachments')): (
+            v.IsFile()
+        ),
+        v.Optional('path_theme', default=str(app_dir / 'theme')): v.IsFile(),
+        v.Optional('imap_body_maxsize', default=50 * 1024 * 1024): int,
+        v.Optional('imap_batch_size', default=2000): int,
+        v.Optional('imap_debug', default=0): int,
+        v.Optional('ui_ga_id', default=None): str,
+        v.Optional('ui_is_public', default=False): bool,
+        v.Optional('ui_use_names', default=True): bool,
+    })
+    conf = schema(conf)
+    import pprint as _; _.pprint(conf)
     return conf
 
 
