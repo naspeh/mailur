@@ -82,17 +82,17 @@ class Manager():
         return self.env.db
 
     def insert(self, items):
-        tbl, cur = self._, self.db.cursor()
+        cur = self.db.cursor()
 
         fields = sorted(f for f in items[0])
-        error = set(fields) - set(tbl._fields)
+        error = set(fields) - set(self.field_names)
         if error:
             raise ValueError('No fields: %s' % error)
 
         values = '(%s)' % (', '.join('%%(%s)s' % i for i in fields))
         values = ','.join([cur.mogrify(values, v).decode() for v in items])
         sql = 'INSERT INTO {table} ({fields}) VALUES '.format(
-            table=tbl._name,
+            table=self.name,
             fields=', '.join('"%s"' % i for i in fields),
         )
         sql += values
