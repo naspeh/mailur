@@ -23,9 +23,9 @@ def get_conf(conf):
         'google_id': Missing(),
         'google_secret': Missing(),
         'cookie_secret': Missing(),
-        'password': Missing(),
         'log_handlers': ['console_simple'],
         'log_level': 'DEBUG',
+        'log_file': Missing(),
         'path_attachments': os.path.join(base_dir, 'attachments'),
         'path_theme': os.path.join(app_dir, 'theme'),
         'imap_body_maxsize': 50 * 1024 * 1024,
@@ -48,7 +48,8 @@ class Env:
         self.emails = db.Emails(self)
 
     def __call__(self, key, default=None):
-        return self.conf.get(key, default)
+        value = self.conf[key]
+        return default if isinstance(value, Missing) else value
 
     @property
     def db_name(self):

@@ -1,20 +1,18 @@
+import hashlib
 import socket
 import time
-from contextlib import ContextDecorator
-from functools import wraps
+from contextlib import ContextDecorator, contextmanager
 
 from . import log
 
 
-def with_lock(func):
-    @wraps(func)
-    def inner(env, *a, **kw):
-        target = ':'.join([func.__module__, func.__name__, env('path')])
-
-        lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-        lock_socket.bind('\0' + target)
-        return func(env, *a, **kw)
-    return inner
+@contextmanager
+def with_lock(target):
+    target = 'mailur:%s' % hashlib.md5(target.encode()).hexdigest()
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    sock.bind('\0' + target)
+    yield
+    sock.close()
 
 
 class Timer(ContextDecorator):

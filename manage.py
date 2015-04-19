@@ -28,7 +28,7 @@ def run(env, only_wsgi):
     ]
     extra_files = sum(extra_files, [])
 
-    wsgi_app = SharedDataMiddleware(app.create_app(env('path')), {
+    wsgi_app = SharedDataMiddleware(app.create_app(env.conf), {
         '/attachments': env('path_attachments'),
         '/theme': env('path_theme'),
     })
@@ -110,7 +110,10 @@ def get_full(argv):
     cmd('sync')\
         .arg('-b', '--bodies', action='store_true')\
         .arg('-l', '--only-labels', nargs='+')\
-        .exe(lambda a: (syncer.sync_gmail(env, a.bodies, a.only_labels)))
+        .arg('email')\
+        .exe(lambda a: (
+            syncer.sync_gmail(env, a.email, a.bodies, a.only_labels)
+        ))
 
     cmd('db-init')\
         .arg('-r', '--reset', action='store_true')\

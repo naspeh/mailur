@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from contextlib import contextmanager
+from functools import wraps
 from multiprocessing.dummy import Pool
 from uuid import uuid5, NAMESPACE_URL
 
@@ -8,9 +9,19 @@ from .helpers import Timer, with_lock
 from .imap import Client
 
 
-@with_lock
-def sync_gmail(env, bodies=False, only_labels=None):
-    imap = Client(env, env('email'))
+def lock_sync_gmail(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+        email = kwargs.get('email') or args[1]
+
+        with with_lock(email):
+            return func(*args, **kwargs)
+    return inner
+
+
+@lock_sync_gmail
+def sync_gmail(env, email, bodies=False, only_labels=None):
+    imap = Client(env, email)
     folders = imap.folders()
     if not only_labels:
         # Only these folders exist unique emails
