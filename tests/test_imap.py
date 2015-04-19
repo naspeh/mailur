@@ -5,14 +5,14 @@ from pytest import mark, fixture
 
 from . import read_file
 from mailur import imap, imap_utf7
-from mailur.env import Env
 
 
 @fixture
 @patch('imaplib.IMAP4_SSL')
-def client(mok):
-    env = Env('conf_test.json')
-    return imap.connect(env, env('email'))
+def client(mok, env):
+    '''IMAP client with some patches'''
+    with patch.object(env, 'accounts'):
+        return imap.connect(env, 'test@pusto.org')
 
 
 def gen_response(filename, query):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import glob
+import json
 import os
 import subprocess
 
@@ -21,14 +22,15 @@ def run(env, only_wsgi):
         main(['lessc'])
 
     extra_files = [
-        glob.glob(os.path.join(env('theme_dir'), fmask)) +
-        glob.glob(os.path.join(env('theme_dir'), '*', fmask))
+        glob.glob(os.path.join(env('path_theme'), fmask)) +
+        glob.glob(os.path.join(env('path_theme'), '*', fmask))
         for fmask in ['*.less', '*.css', '*.js']
     ]
     extra_files = sum(extra_files, [])
 
     wsgi_app = SharedDataMiddleware(app.create_app(env('path')), {
-        '/theme': env('theme_dir'), '/attachments': env('attachments_dir')
+        '/attachments': env('path_attachments'),
+        '/theme': env('path_theme'),
     })
     run_simple(
         '0.0.0.0', 5000, wsgi_app,
@@ -89,8 +91,8 @@ def get_base(argv):
         'csso {0}styles.css {0}styles.css'.format('mailur/theme/')
     ))
 
-    cmd('test').exe(lambda a: (
-        sh('MAILUR_CONF=conf_test.json py.test %s' % ' '.join(a))
+    cmd('test', add_help=False).exe(lambda a: (
+        sh('py.test --ignore=node_modules --confcutdir=tests %s' % ' '.join(a))
     ))
     return parser, cmd
 
@@ -99,7 +101,10 @@ def get_full(argv):
     from mailur import db, syncer
     from mailur.env import Env
 
-    env = Env('conf.json')
+    with open('conf.json', 'br') as f:
+        conf = json.loads(f.read().decode())
+
+    env = Env(conf)
 
     parser, cmd = get_base(argv)
     cmd('sync')\

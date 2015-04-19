@@ -38,7 +38,7 @@ class WebEnv(env.Env):
         self.adapter = self.url_map.bind_to_environ(request.environ)
 
         self.jinja = jinja = Environment(
-            loader=FileSystemLoader(self('theme_dir')),
+            loader=FileSystemLoader(self('path_theme')),
             extensions=[with_],
             lstrip_blocks=True, trim_blocks=True
         )

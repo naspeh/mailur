@@ -1,5 +1,4 @@
 import hashlib
-import json
 import logging.config
 import os
 
@@ -9,15 +8,26 @@ from werkzeug.utils import cached_property
 from . import db
 
 
-def fetch_conf(path):
+class Missing:
+    def __str__(self):
+        return 'No value'
+
+
+def get_conf(conf):
     app_dir = os.path.abspath(os.path.dirname(__file__))
     base_dir = os.path.abspath(os.path.join(app_dir, '..'))
-    path = os.path.join(base_dir, path)
-    with open(path, 'br') as f:
-        conf = json.loads(f.read().decode())
 
     defaults = {
-        'attachments_dir': 'attachments',
+        'pg_username': Missing(),
+        'pg_password': Missing(),
+        'google_id': Missing(),
+        'google_secret': Missing(),
+        'cookie_secret': Missing(),
+        'password': Missing(),
+        'log_handlers': ['console_simple'],
+        'log_level': 'DEBUG',
+        'path_attachments': os.path.join(base_dir, 'attachments'),
+        'path_theme': os.path.join(app_dir, 'theme'),
         'imap_body_maxsize': 50 * 1024 * 1024,
         'imap_batch_size': 2000,
         'imap_debug': 0,
@@ -26,17 +36,12 @@ def fetch_conf(path):
         'ui_use_names': True,
     }
     conf = dict(defaults, **conf)
-    conf.update({
-        'path': path,
-        'attachments_dir': os.path.join(base_dir, conf['attachments_dir']),
-        'theme_dir': os.path.join(app_dir, 'theme')
-    })
     return conf
 
 
 class Env:
     def __init__(self, conf):
-        self.conf = fetch_conf(conf)
+        self.conf = get_conf(conf)
         setup_logging(self)
 
         self.accounts = db.Accounts(self)

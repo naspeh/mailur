@@ -87,23 +87,20 @@ class Client:
 
 
 def connect(env, email):
-    if env('password'):
-        def login(im):
-            im.login(email, env('password'))
-    elif env.accounts.get_data(email).get('access_token'):
-        def login(im, retry=False):
-            token = env.accounts.get_data(email).get('access_token')
-            header = 'user=%s\1auth=Bearer %s\1\1' % (email, token)
-            try:
-                im.authenticate('XOAUTH2', lambda x: header)
-            except im.error as e:
-                if retry:
-                    raise AuthError(e)
+    def login(im, retry=False):
+        token = env.accounts.get_data(email).get('access_token')
+        if not token:
+            raise AuthError('No account for %r' % email)
 
-                auth_refresh(env, email)
-                login(im, True)
-    else:
-        raise AuthError('Fill access_token or password in config')
+        header = 'user=%s\1auth=Bearer %s\1\1' % (email, token)
+        try:
+            im.authenticate('XOAUTH2', lambda x: header)
+        except im.error as e:
+            if retry:
+                raise AuthError(e)
+
+            auth_refresh(env, email)
+            login(im, True)
 
     try:
         client = imaplib.IMAP4_SSL

@@ -1,9 +1,0 @@
-{
-    "cookie_secret": "blabla",
-    "email": "test@pusto.org",
-    "password": "test",
-    "ui_is_public": true,
-    "pg_password": "test",
-    "pg_username": "test",
-    "log_level": "DEBUG"
-}

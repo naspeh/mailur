@@ -1,5 +1,4 @@
 *.pyc
-conf*.json
-!conf_test.json
+conf.json
 attachments
 node_modules
