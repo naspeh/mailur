@@ -56,7 +56,8 @@ class Env:
         self.emails = db.Emails(self)
 
     def __call__(self, key, default=None):
-        return self.conf[key] or default
+        value = self.conf[key]
+        return default if value is None else value
 
     @property
     def db_name(self):

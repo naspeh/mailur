@@ -7,7 +7,7 @@ from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
 
-from . import views, filters, env
+from . import Env, views, filters
 
 
 class Request(_Request):
@@ -29,7 +29,7 @@ def create_app(conf):
     return app
 
 
-class WebEnv(env.Env):
+class WebEnv(Env):
     def __init__(self, conf, request):
         env = super().__init__(conf)
 

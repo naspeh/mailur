@@ -46,7 +46,7 @@ def sync_gmail(env, email, bodies=False, only_labels=None):
         if bodies:
             fetch_bodies(env, imap, uids)
         else:
-            fetch_headers(env, imap, uids)
+            fetch_headers(env, email, imap, uids)
             fetch_labels(env, imap, uids, label)
 
 
@@ -80,7 +80,7 @@ def get_parsed(env, data, msgid=None):
     return ((field, msg[key]) for key, field in pairs)
 
 
-def fetch_headers(env, imap, map_uids):
+def fetch_headers(env, email, imap, map_uids):
     gids = get_gids(env, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
@@ -91,7 +91,7 @@ def fetch_headers(env, imap, map_uids):
     for data in imap.fetch_batch(uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
-            gm_uid = '%s\r%s' % (env('email'), row['X-GM-MSGID'])
+            gm_uid = '%s\r%s' % (email, row['X-GM-MSGID'])
             fields = {
                 'id': uuid5(NAMESPACE_URL, gm_uid),
                 'header': row['BODY[HEADER]'],

@@ -8,7 +8,6 @@ from . import imap
 rules = [
     Rule('/auth/', endpoint='auth'),
     Rule('/auth-callback/', endpoint='auth_callback'),
-    Rule('/auth-refresh/', endpoint='auth_refresh'),
 
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
@@ -28,14 +27,6 @@ def auth_callback(env):
         imap.auth_callback(env, redirect_uri, env.request.args['code'])
         env.login()
         return env.redirect_for('index')
-    except imap.AuthError as e:
-        return str(e)
-
-
-def auth_refresh(env):
-    try:
-        imap.auth_refresh(env, env('email'))
-        return 'OK'
     except imap.AuthError as e:
         return str(e)
 
