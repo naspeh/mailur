@@ -1,6 +1,6 @@
 from pytest import fixture
 
-from mailur.env import Env
+from mailur import Env
 
 
 @fixture

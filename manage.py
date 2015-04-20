@@ -2,10 +2,11 @@
 import argparse
 import glob
 import json
+import logging
 import os
 import subprocess
 
-from mailur import log
+log = logging.getLogger(__name__)
 
 
 def sh(cmd):
@@ -99,8 +100,7 @@ def get_base(argv):
 
 
 def get_full(argv):
-    from mailur import db, syncer
-    from mailur.env import Env
+    from mailur import Env, db, syncer
 
     with open('conf.json', 'br') as f:
         conf = json.loads(f.read().decode())
