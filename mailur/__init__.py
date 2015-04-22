@@ -12,38 +12,38 @@ log = logging.getLogger(__name__)
 
 
 def get_conf(conf):
-    app_dir = Path(__file__).parent.resolve()
-    base_dir = app_dir.parent
-
     def exists(v):
         return Path(v).exists()
 
-    schema_ = {
-        '+pg_username': str,
-        '+pg_password': str,
-        '+google_id': str,
-        '+google_secret': str,
-        '+cookie_secret': str,
-        'log_handlers': v.Nullable(
-            [v.Enum(['console_simple', 'console_detail'])], ['console_simple']
-        ),
-        'log_level': v.Nullable(str, 'DEBUG'),
-        'log_file': v.Nullable(str, ''),
-        'path_attachments': v.Nullable(exists, str(base_dir / 'attachments')),
-        'path_theme': v.Nullable(exists, str(app_dir / 'theme')),
-        'imap_body_maxsize': v.Nullable(int, 50 * 1024 * 1024),
-        'imap_batch_size': v.Nullable(int, 2000),
-        'imap_debug': v.Nullable(int, 0),
-        'ui_ga_id': str,
-        'ui_is_public': v.Nullable(bool, False),
-        'ui_use_names': v.Nullable(bool, True),
-    }
+    app_dir = Path(__file__).parent.resolve()
+    base_dir = app_dir.parent
+    log_handlers = ['console_simple', 'console_detail']
     with v.parsing(additional_properties=False):
-        schema = v.parse(schema_)
+        schema = v.parse({
+            '+pg_username': str,
+            '+pg_password': str,
+            '+google_id': str,
+            '+google_secret': str,
+            '+cookie_secret': str,
+            'log_handlers': (
+                v.Nullable([v.Enum(log_handlers)], log_handlers[:1])
+            ),
+            'log_level': v.Nullable(str, 'DEBUG'),
+            'log_file': v.Nullable(str, ''),
+            'path_attachments': v.Nullable(str, str(base_dir / 'attachments')),
+            'path_theme': v.Nullable(exists, str(app_dir / 'theme')),
+            'imap_body_maxsize': v.Nullable(int, 50 * 1024 * 1024),
+            'imap_batch_size': v.Nullable(int, 2000),
+            'imap_debug': v.Nullable(int, 0),
+            'ui_ga_id': str,
+            'ui_is_public': v.Nullable(bool, False),
+            'ui_use_names': v.Nullable(bool, True),
+        })
+    conf = schema.validate(conf)
 
-    # Validate two times to pass default values through the schema also
-    conf = schema.validate(conf)
-    conf = schema.validate(conf)
+    path = Path(conf['path_attachments'])
+    if not path.exists():
+        path.mkdir()
     return conf
 
 
@@ -98,13 +98,19 @@ def setup_logging(env):
         'disable_existing_loggers': False,
         'formatters': {
             'simple': {
-                'format': '%(levelname)s %(asctime)s  %(message)s',
+                'format': (
+                    '%(asctime)s|'
+                    '%(module)-10.10s|'
+                    '%(levelname)-3.3s|%(message)s'
+                ),
                 'datefmt': '%H:%M:%S'
             },
             'detail': {
                 'format': (
-                    '%(asctime)s[%(threadName)-12.12s][%(levelname)-5.5s] '
-                    '%(name)s %(message)s'
+                    '%(asctime)s|'
+                    '%(process)d:%(thread)d|'
+                    '%(module)-10.10s|'
+                    '%(levelname)-3.3s|%(message)s'
                 )
             }
         },
