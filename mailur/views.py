@@ -12,6 +12,7 @@ rules = [
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
     Rule('/raw/<id>/', endpoint='raw'),
+    Rule('/emails/', endpoint='emails')
 ]
 url_map = Map(rules)
 
@@ -49,6 +50,12 @@ def index(env):
 def init(env):
     env.session['tz_offset'] = env.request.args.get('offset', type=int) or 0
     return 'OK'
+
+
+@login_required
+def emails(env):
+    i = env.sql('SELECT * FROM emails ORDER BY time DESC LIMIT 100')
+    return env.to_json([dict(email) for email in i])
 
 
 @login_required

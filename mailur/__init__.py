@@ -77,11 +77,9 @@ class Env:
     def db(self):
         return self.db_connect()
 
-    def _sql(self, method, sql, *args, **options):
-        options = dict({
-            'cursor_factory': psycopg2.extras.DictCursor,
-        }, **options)
-        cur = self.db.cursor(**options)
+    def _sql(self, method, sql, *args, **opts):
+        opts = dict({'cursor_factory': psycopg2.extras.DictCursor}, **opts)
+        cur = self.db.cursor(**opts)
         getattr(cur, method)(sql, *args)
         return cur
 

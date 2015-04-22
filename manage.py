@@ -52,7 +52,6 @@ def get_base(argv):
         return p
 
     requirements = (
-        'Jinja2 '
         'Werkzeug '
         'lxml '
         'psycopg2 '
