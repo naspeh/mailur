@@ -1,4 +1,5 @@
 import json
+import os
 
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import HTTPException, abort
@@ -42,14 +43,6 @@ class WebEnv(Env):
             return self.make_response(response)
         return response
 
-    def make_response(self, response, **kw):
-        kw.setdefault('content_type', 'text/html')
-        return Response(response, **kw)
-
-    def to_json(self, response, **kw):
-        kw.setdefault('content_type', 'application/json')
-        return Response(json.dumps(response, ensure_ascii=False, default=str, indent=2), **kw)
-
     def url_for(self, endpoint, _external=False, **values):
         return self.adapter.build(endpoint, values, force_external=_external)
 
@@ -73,3 +66,25 @@ class WebEnv(Env):
     @property
     def is_logined(self):
         return self.session.get('logined')
+
+    def make_response(self, response, **kw):
+        kw.setdefault('content_type', 'text/html')
+        return Response(response, **kw)
+
+    def to_json(self, response, **kw):
+        kw.setdefault('content_type', 'application/json')
+        r = json.dumps(response, ensure_ascii=False, default=str, indent=2)
+        return Response(r, **kw)
+
+    def render(self, name, ctx):
+        from Stache import Stache
+
+        stache = Stache()
+        with open(os.path.join(self('path_theme'), '%s.mustache' % name)) as f:
+            stache.add_template(name, f.read())
+
+        return stache.render_template(name, ctx)
+
+    def render_body(self, name, ctx):
+        body = self.render(name, ctx)
+        return self.render('base', {'body': body})

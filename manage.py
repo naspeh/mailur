@@ -22,11 +22,11 @@ def run(env, only_wsgi):
     if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         main(['lessc'])
 
-    extra_files = [
+    extra_files = (
         glob.glob(os.path.join(env('path_theme'), fmask)) +
         glob.glob(os.path.join(env('path_theme'), '*', fmask))
         for fmask in ['*.less', '*.css', '*.js']
-    ]
+    )
     extra_files = sum(extra_files, [])
 
     wsgi_app = SharedDataMiddleware(app.create_app(env.conf), {

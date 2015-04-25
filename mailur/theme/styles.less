@@ -1,0 +1,44 @@
+@import (inline) url(./reset.css);
+@import url(./font/fontello.less);
+
+body {
+    font-size: 14px;
+}
+.email-line {
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 1em;
+    line-height: 1.3em;
+    padding: 0.15em 0.3em;
+    background-color: #eee;
+    border-top: 1px solid #fff;
+    border-radius: 0.5em;
+
+    &> li {
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .email-pin {
+        .icon-star-empty;
+        color: #777;
+        font-size: 120%;
+        &:hover {
+            margin-top: 1px;
+            cursor: pointer;
+            margin-bottom: -1px;
+        }
+        &.email-pinned {
+            color: #f63;
+        }
+    }
+    .email-subj {
+        width: 100%;
+        color: #777;
+        cursor: pointer;
+
+        b {
+            color: #008000;
+        }
+    }
+}

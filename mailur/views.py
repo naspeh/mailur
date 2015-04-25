@@ -54,8 +54,12 @@ def init(env):
 
 @login_required
 def emails(env):
+    fmt = env.request.args.get('fmt', 'json')
     i = env.sql('SELECT * FROM emails ORDER BY time DESC LIMIT 100')
-    return env.to_json([dict(email) for email in i])
+    ctx = [dict(email) for email in i]
+    if fmt == 'json':
+        return env.to_json(ctx)
+    return env.render_body('emails', {'emails': ctx})
 
 
 @login_required
