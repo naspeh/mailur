@@ -1,10 +1,14 @@
 <ul class="emails">
 {{#emails}}
-<li class="email">
+<li class="email"
+    data-id="{{id}}"
+    data-body-url="{{body_url}}"
+>
     <ul class="email-line">
-        <li class="email-pin"></li>
+        <li class="email-pin{{#pinned?}} email-pinned{{/pinned?}}"></li>
         <li class="email-subj"><b>{{subj}}</b></li>
     </ul>
+    <div class="email-body"></div>
 </li>
 {{/emails}}
 </ul>

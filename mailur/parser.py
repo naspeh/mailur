@@ -144,21 +144,18 @@ def parse_part(part, charset, msg_id, attachments_dir, inner=False):
             content['html'] = htm
             return content
 
-        cleaner = Cleaner(links=False, safe_attrs_only=False)
+        cleaner = Cleaner(
+            links=False,
+            safe_attrs_only=False,
+            kill_tags=['head'],
+            remove_tags=['html', 'body']
+        )
         htm = cleaner.clean_html(htm)
-        embedded = content['embedded']
-        if embedded:
-            root = lhtml.fromstring(htm)
-            for img in root.findall('.//img'):
-                src = img.attrib.get('src')
-                if not src or not src.startswith('cid:'):
-                    continue
-                cid = '<%s>' % img.attrib.get('src')[4:]
-                if cid in embedded:
-                    img.attrib['src'] = '/attachments/' + embedded[cid]
-                else:
-                    log.warn('No embedded %s in %s', cid, msg_id)
-            htm = lhtml.tostring(root, encoding='utf8').decode()
+        for cid, path in content['embedded'].items():
+            cid = 'cid:%s' % cid.strip('<>')
+            path = '/attachments/%s' % path
+            htm = re.sub(re.escape(cid), path, htm)
+
         content['html'] = htm
         if 'text' not in content or not content['text']:
             content['text'] = lhtml.fromstring(htm).text_content()

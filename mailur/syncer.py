@@ -135,6 +135,7 @@ def fetch_bodies(env, imap, map_uids):
 
     def update(env, items):
         env.sqlmany("UPDATE emails SET raw=%s WHERE msgid=%s", items)
+        env.db.commit()
 
     with async_runner() as run:
         for data in imap.fetch_batch(uids, 'RFC822', 'add bodies'):

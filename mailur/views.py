@@ -3,7 +3,7 @@ from functools import wraps
 from psycopg2 import DataError
 from werkzeug.routing import Map, Rule
 
-from . import imap
+from . import imap, parser
 
 rules = [
     Rule('/auth/', endpoint='auth'),
@@ -12,6 +12,7 @@ rules = [
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
     Rule('/raw/<id>/', endpoint='raw'),
+    Rule('/body/<id>/', endpoint='body'),
     Rule('/emails/', endpoint='emails')
 ]
 url_map = Map(rules)
@@ -55,11 +56,29 @@ def init(env):
 @login_required
 def emails(env):
     fmt = env.request.args.get('fmt', 'json')
-    i = env.sql('SELECT * FROM emails ORDER BY time DESC LIMIT 100')
-    ctx = [dict(email) for email in i]
+    i = env.sql('''
+    SELECT id, subj, labels
+      FROM emails
+      ORDER BY time DESC
+      LIMIT 100
+    ''')
+    ctx = [{
+        'subj': e['subj'],
+        'pinned?': '\\Starred' in e['labels'],
+        'body_url': env.url_for('body', id=e['id'])
+    } for e in i]
     if fmt == 'json':
         return env.to_json(ctx)
     return env.render_body('emails', {'emails': ctx})
+
+
+@login_required
+def body(env, id):
+    i = env.sql('SELECT raw FROM emails WHERE id=%s LIMIT 1', [id])
+    raw = i.fetchone()[0].tobytes()
+    result = parser.parse(raw, id, env('path_attachments'))
+    result = parser.human_html(result['html'])
+    return result
 
 
 @login_required
