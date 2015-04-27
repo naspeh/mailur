@@ -4,6 +4,14 @@
 @size: 14px;
 @space: 16px;
 
+@colorA: #777;
+@colorB: #008000;
+@colorC: #f63;
+@color0bg: #fff;
+@color0b: #ccc;
+@color1bg: #eee;
+@color1b: #fff;
+
 body {
     font-size: @size;
 }
@@ -14,8 +22,9 @@ body {
         overflow: hidden;
         font-size: 1em;
         line-height: @size+@space*0.6;
-        background-color: #eee;
-        border-top: 1px solid #fff;
+        color: @colorA;
+        background-color: @color1bg;
+        border-top: 1px solid @color1b;
         border-radius: 0.5em;
 
         &> li {
@@ -24,23 +33,23 @@ body {
         }
         .email-pin {
             .icon-star-empty;
-            color: #777;
             font-size: @size+@space*0.2;
             &:hover {
                 cursor: pointer;
-                color: #f63;
+                color: @colorC;
             }
             &.email-pinned {
-                color: #f63;
+                color: @colorC;
             }
         }
         .email-subj {
             width: 100%;
-            color: #777;
-            cursor: pointer;
 
-            b {
-                color: #008000;
+            a {
+                display: inline-block;
+                width: 100%;
+                color: @colorB;
+                text-decoration: none;
             }
         }
     }
@@ -50,10 +59,13 @@ body {
 }
 .email-show {
     .email-line {
-        border-top: 2px solid #eee;
+        border-top: 2px solid @color0b;
         border-radius: 0.5em;
-        color: #777;
-        background-color: #fff;
+        background-color: @color0bg;
+
+        .email-subj a {
+            color: @colorA;
+        }
     }
     .email-body {
         display: block;
@@ -65,8 +77,8 @@ body {
 
     blockquote {
         padding-left: @space;
-        border-left: 1px solid #ccc;
-        color: #777;
+        border-left: 1px solid @color1b;
+        color: @colorA;
     }
     p, dl, hr, ol, ul, pre, blockquote,
     table, address, fieldset {
