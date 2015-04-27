@@ -36,7 +36,7 @@ def auth_callback(env):
 def login_required(func):
     @wraps(func)
     def inner(env, *a, **kw):
-        if not env.is_logined:
+        if not (env.is_logined or env('ui_is_public')):
             return env.redirect_for('auth')
         return func(env, *a, **kw)
     return inner
