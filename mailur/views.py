@@ -55,7 +55,7 @@ def init(env):
 
 @login_required
 def emails(env):
-    fmt = env.request.args.get('fmt', 'json')
+    fmt = env.request.args.get('fmt', 'html')
     i = env.sql('''
     SELECT id, subj, labels
       FROM emails

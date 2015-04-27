@@ -21,7 +21,7 @@ time, mark, audio, video {
     border: 0;
     font-size: 100%;
     font: inherit;
-    vertical-align: baseline;
+    /* vertical-align: baseline; FIXME: id=65edf20c-4d89-5a32-9689-2e0a34001893 */
 }
 /* HTML5 display-role reset for older browsers */
 article, aside, details, figcaption, figure,
