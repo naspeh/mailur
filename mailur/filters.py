@@ -3,8 +3,6 @@ from email.utils import getaddresses
 from hashlib import md5
 from urllib.parse import urlencode
 
-from jinja2 import contextfilter
-
 
 __all__ = [
     'get_all', 'get_addr', 'get_addr_name', 'get_gravatar',
@@ -27,21 +25,18 @@ def get_addr_name(addr):
 
 def get_gravatar(addr, size=16, default='identicon'):
     params = urlencode({'s': size, 'd': default})
-    gen_hash = lambda e: md5(e.strip().lower().encode()).hexdigest()
-    gen_url = lambda h: '//www.gravatar.com/avatar/%s?%s' % (h, params)
-    return addr and gen_url(gen_hash(get_addr(addr)))
+    hash = md5(get_addr(addr).strip().lower().encode()).hexdigest()
+    return '//www.gravatar.com/avatar/%s?%s' % (hash, params)
 
 
-@contextfilter
-def localize_dt(ctx, value):
-    tz_offset = ctx.get('env').session.get('tz_offset')
+def localize_dt(env, value):
+    tz_offset = env.session.get('tz_offset')
     return value + dt.timedelta(hours=-(tz_offset or 0))
 
 
-@contextfilter
-def humanize_dt(ctx, val):
-    val = localize_dt(ctx, val)
-    now = localize_dt(ctx, dt.datetime.utcnow())
+def humanize_dt(env, val):
+    val = localize_dt(env, val)
+    now = localize_dt(env, dt.datetime.utcnow())
     if (now - val).total_seconds() < 12 * 60 * 60:
         fmt = '%H:%M'
     elif now.year == val.year:
@@ -51,6 +46,5 @@ def humanize_dt(ctx, val):
     return val.strftime(fmt)
 
 
-@contextfilter
-def format_dt(ctx, value, fmt='%a, %d %b, %Y at %H:%M'):
-    return localize_dt(ctx, value).strftime(fmt)
+def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
+    return localize_dt(env, value).strftime(fmt)

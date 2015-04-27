@@ -3,7 +3,7 @@ from functools import wraps
 from psycopg2 import DataError
 from werkzeug.routing import Map, Rule
 
-from . import imap, parser
+from . import imap, parser, filters as f
 
 rules = [
     Rule('/auth/', endpoint='auth'),
@@ -57,7 +57,7 @@ def init(env):
 def emails(env):
     fmt = env.request.args.get('fmt', 'html')
     i = env.sql('''
-    SELECT id, subj, labels
+    SELECT id, subj, labels, time
       FROM emails
       ORDER BY time DESC
       LIMIT 100
@@ -65,7 +65,9 @@ def emails(env):
     ctx = [{
         'subj': e['subj'],
         'pinned?': '\\Starred' in e['labels'],
-        'body_url': env.url_for('body', id=e['id'])
+        'body_url': env.url_for('body', id=e['id']),
+        'time': f.format_dt(env, e['time']),
+        'time_human': f.humanize_dt(env, e['time'])
     } for e in i]
     if fmt == 'json':
         return env.to_json(ctx)
