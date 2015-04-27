@@ -57,17 +57,20 @@ def init(env):
 def emails(env):
     fmt = env.request.args.get('fmt', 'html')
     i = env.sql('''
-    SELECT id, subj, labels, time
+    SELECT id, subj, labels, time, fr
       FROM emails
       ORDER BY time DESC
       LIMIT 100
     ''')
+    fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
     ctx = [{
         'subj': e['subj'],
         'pinned?': '\\Starred' in e['labels'],
         'body_url': env.url_for('body', id=e['id']),
         'time': f.format_dt(env, e['time']),
-        'time_human': f.humanize_dt(env, e['time'])
+        'time_human': f.humanize_dt(env, e['time']),
+        'from': e['fr'][0],
+        'from_short': fmt_from(e['fr'])
     } for e in i]
     if fmt == 'json':
         return env.to_json(ctx)

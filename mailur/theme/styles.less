@@ -52,13 +52,14 @@ body {
                 text-decoration: none;
             }
         }
+        .email-time, .email-time-human {
+            position: absolute;
+            right: @space*0.3;
+        }
         .email-time {
             display: none;
         }
         .email-time-human {
-            display: inline-block;
-            position: absolute;
-            right: 0;
             background-color: @color1bg;
         }
     }
@@ -74,11 +75,10 @@ body {
 
         .email-subj a {
             color: @colorA;
+            font-weight: bold;
         }
         .email-time {
             display: inline-block;
-            position: absolute;
-            right: 0;
             background-color: @color0bg;
         }
         .email-time-human {
