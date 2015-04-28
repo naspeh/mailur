@@ -2,6 +2,7 @@
 @import url(./font/fontello.less);
 
 @size: 14px;
+@sizeIcon: @size+@space*0.2;
 @space: 16px;
 
 @colorA: #777;
@@ -33,7 +34,7 @@ body {
         }
         .email-pin {
             .icon-star-empty;
-            font-size: @size+@space*0.2;
+            font-size: @sizeIcon;
             &:hover {
                 cursor: pointer;
                 color: @colorC;
@@ -41,6 +42,12 @@ body {
             &.email-pinned {
                 color: @colorC;
             }
+        }
+        .email-pic {
+            display: inline-block;
+            height: @sizeIcon;
+            width: @sizeIcon;
+            background-size: @sizeIcon @sizeIcon;
         }
         .email-subj {
             width: 100%;

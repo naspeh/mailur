@@ -70,7 +70,8 @@ def emails(env):
         'time': f.format_dt(env, e['time']),
         'time_human': f.humanize_dt(env, e['time']),
         'from': e['fr'][0],
-        'from_short': fmt_from(e['fr'])
+        'from_short': fmt_from(e['fr']),
+        'gravatar': f.get_gravatar(e['fr'])
     } for e in i]
     if fmt == 'json':
         return env.to_json(ctx)
