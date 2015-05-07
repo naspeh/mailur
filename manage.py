@@ -135,12 +135,13 @@ def main(argv=None):
     args, extra = parser.parse_known_args(argv)
     if getattr(args, 'cmd', None) == 'test':
         args.exe(extra)
+        return
+
+    args = parser.parse_args(argv)
+    if not hasattr(args, 'exe'):
+        parser.print_usage()
     else:
-        args = parser.parse_args(argv)
-        if not hasattr(args, 'exe'):
-            parser.print_usage()
-        else:
-            args.exe(args)
+        args.exe(args)
 
 
 if __name__ == '__main__':
