@@ -15,6 +15,7 @@
 
 body {
     font-size: @Size;
+    max-width: 800px;
 }
 .email {
     .email-line {
@@ -61,7 +62,8 @@ body {
         }
         .email-time, .email-time-human {
             position: absolute;
-            right: @Space*0.3;
+            right: 0;
+            padding: 0 @Space*0.3;
         }
         .email-time {
             display: none;
