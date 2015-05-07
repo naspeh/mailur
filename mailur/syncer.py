@@ -43,11 +43,10 @@ def sync_gmail(env, email, bodies=False, only_labels=None):
             (k, parser.parse(v[q])['message-id']) for k, v in data
         )
 
+        fetch_headers(env, email, imap, uids)
+        fetch_labels(env, imap, uids, label)
         if bodies:
             fetch_bodies(env, imap, uids)
-        else:
-            fetch_headers(env, email, imap, uids)
-            fetch_labels(env, imap, uids, label)
 
 
 def get_gids(env, gids, where=None):
