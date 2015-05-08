@@ -13,6 +13,7 @@ rules = [
     Rule('/init/', endpoint='init'),
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
+    Rule('/thread/<id>/', endpoint='thread'),
     Rule('/emails/', endpoint='emails')
 ]
 url_map = Map(rules)
@@ -53,6 +54,35 @@ def init(env):
     return 'OK'
 
 
+def ctx_email(env, msg):
+    fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
+    return {
+        'subj': msg['subj'],
+        'pinned?': '\\Starred' in msg['labels'],
+        'body_url': env.url_for('body', id=msg['id']),
+        'time': f.format_dt(env, msg['time']),
+        'time_human': f.humanize_dt(env, msg['time']),
+        'from': msg['fr'][0],
+        'from_short': fmt_from(msg['fr']),
+        'gravatar': f.get_gravatar(msg['fr'])
+    }
+
+
+@login_required
+def thread(env, id):
+    fmt = env.request.args.get('fmt', 'html')
+    i = env.sql('''
+    SELECT id, subj, labels, time, fr
+      FROM emails
+      WHERE thrid = %s
+      ORDER BY time
+    ''', [id])
+    ctx = [ctx_email(env, e) for e in i]
+    if fmt == 'json':
+        return env.to_json(ctx)
+    return env.render_body('emails', {'emails': ctx})
+
+
 @login_required
 def emails(env):
     fmt = env.request.args.get('fmt', 'html')
@@ -62,17 +92,7 @@ def emails(env):
       ORDER BY time DESC
       LIMIT 100
     ''')
-    fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
-    ctx = [{
-        'subj': e['subj'],
-        'pinned?': '\\Starred' in e['labels'],
-        'body_url': env.url_for('body', id=e['id']),
-        'time': f.format_dt(env, e['time']),
-        'time_human': f.humanize_dt(env, e['time']),
-        'from': e['fr'][0],
-        'from_short': fmt_from(e['fr']),
-        'gravatar': f.get_gravatar(e['fr'])
-    } for e in i]
+    ctx = [ctx_email(env, e) for e in i]
     if fmt == 'json':
         return env.to_json(ctx)
     return env.render_body('emails', {'emails': ctx})
