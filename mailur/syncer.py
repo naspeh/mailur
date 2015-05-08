@@ -24,8 +24,9 @@ def sync_gmail(env, email, bodies=False, only_labels=None):
     imap = Client(env, email)
     folders = imap.folders()
     if not only_labels:
-        # Only these folders exist unique emails
+        # Only these folders contain unique emails
         only_labels = ('\\All', '\\Junk', '\\Trash')
+
     for attrs, delim, name in folders:
         label = set(only_labels) & set(attrs)
         label = label and label.pop()

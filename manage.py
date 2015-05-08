@@ -52,6 +52,7 @@ def get_base(argv):
         return p
 
     requirements = (
+        'Stache '
         'Werkzeug '
         'lxml '
         'psycopg2 '
