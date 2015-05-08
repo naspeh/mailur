@@ -49,6 +49,8 @@ def sync_gmail(env, email, bodies=False, only_labels=None):
         if bodies:
             fetch_bodies(env, imap, uids)
 
+    fill_thrid(env)
+
 
 def get_gids(env, gids, where=None):
     sql = 'SELECT msgid FROM emails WHERE msgid = ANY(%(gids)s)'
@@ -84,7 +86,7 @@ def fetch_headers(env, email, imap, map_uids):
     gids = get_gids(env, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
-        log.info('  - no headers to fetch')
+        log.info('  * No headers to fetch')
         return
 
     q = ['INTERNALDATE', 'RFC822.SIZE', 'BODY[HEADER]', 'X-GM-MSGID']
@@ -130,7 +132,7 @@ def fetch_bodies(env, imap, map_uids):
 
     uids = [(uid, pairs[mid]) for uid, mid in map_uids.items() if mid in pairs]
     if not uids:
-        log.info('  - no bodies to fetch')
+        log.info('  * No bodies to fetch')
         return
 
     def update(env, items):
@@ -191,3 +193,23 @@ def update_label(env, gids, label, folder=None):
       WHERE msgid = ANY(%(gids)s)
       AND NOT (%(label)s = ANY(labels))
     ''')
+
+
+def fill_thrid(env):
+    log.info('  * Fill thread ids')
+    i = env.sql('''
+    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
+      SELECT id, msgid, id, ARRAY[id], false
+        FROM emails
+        WHERE in_reply_to IS NULL
+        OR in_reply_to != ALL(SELECT msgid FROM emails)
+    UNION ALL
+      SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
+        FROM emails e, thrids t
+        WHERE e.in_reply_to = t.msgid AND NOT cycle
+    )
+    UPDATE emails e SET thrid=t.thrid
+      FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
+    ''')
+    env.db.commit()
+    log.info('  - for %s emails', i.rowcount)
