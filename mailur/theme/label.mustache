@@ -1,0 +1,17 @@
+<ul class="emails">
+{{#emails}}
+<li class="email"
+    data-id="{{id}}"
+    data-thread-url="{{thread_url}}"
+>
+    <ul class="email-line">
+        <li class="email-pin{{#pinned?}} email-pinned{{/pinned?}}"></li>
+        <li class="email-pic" style="background-image:url({{gravatar}})"></li>
+        <li class="email-from" title='{{from}}'>{{from_short}}</li>
+        <li class="email-subj"><a href="{{thread_url}}">{{subj}}</a></li>
+        <li class="email-time-human" title="{{time}}">{{time_human}}</li>
+        <li class="email-time">{{time}}</li>
+    </ul>
+</li>
+{{/emails}}
+</ul>

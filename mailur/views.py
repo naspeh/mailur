@@ -14,7 +14,7 @@ rules = [
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
-    Rule('/emails/', endpoint='emails')
+    Rule('/in/<name>/', endpoint='label')
 ]
 url_map = Map(rules)
 
@@ -60,6 +60,7 @@ def ctx_email(env, msg):
         'subj': msg['subj'],
         'pinned?': '\\Starred' in msg['labels'],
         'body_url': env.url_for('body', id=msg['id']),
+        'thread_url': env.url_for('thread', id=msg['thrid']),
         'time': f.format_dt(env, msg['time']),
         'time_human': f.humanize_dt(env, msg['time']),
         'from': msg['fr'][0],
@@ -72,7 +73,7 @@ def ctx_email(env, msg):
 def thread(env, id):
     fmt = env.request.args.get('fmt', 'html')
     i = env.sql('''
-    SELECT id, subj, labels, time, fr
+    SELECT id, thrid, subj, labels, time, fr
       FROM emails
       WHERE thrid = %s
       ORDER BY time
@@ -84,18 +85,23 @@ def thread(env, id):
 
 
 @login_required
-def emails(env):
+def label(env, name):
     fmt = env.request.args.get('fmt', 'html')
     i = env.sql('''
-    SELECT id, subj, labels, time, fr
+    SELECT id, thrid, subj, labels, time, fr
       FROM emails
+      WHERE id IN (
+        SELECT thrid FROM emails
+          WHERE %s=ANY(labels)
+          GROUP BY thrid
+          LIMIT 100
+      )
       ORDER BY time DESC
-      LIMIT 100
-    ''')
+    ''', [name])
     ctx = [ctx_email(env, e) for e in i]
     if fmt == 'json':
         return env.to_json(ctx)
-    return env.render_body('emails', {'emails': ctx})
+    return env.render_body('label', {'emails': ctx})
 
 
 @login_required
