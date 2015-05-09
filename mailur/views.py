@@ -53,39 +53,53 @@ def init(env):
     return 'OK'
 
 
-def ctx_email(env, msg):
+def adapt_fmt(tpl):
+    def w(func):
+        w.func = func
+        return wraps(func)(inner)
+
+    def inner(env, *a, **kw):
+        fmt = env.request.args.get('fmt', 'html')
+
+        ctx = w.func(env, *a, **kw)
+        if fmt == 'json':
+            return env.to_json(ctx)
+        return env.render_body(tpl, ctx)
+    return w
+
+
+def ctx_emails(env, items):
     fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
-    return {
-        'subj': msg['subj'],
-        'pinned?': '\\Starred' in msg['labels'],
-        'body_url': env.url_for('body', id=msg['id']),
-        'thread_url': env.url_for('thread', id=msg['thrid']),
-        'time': f.format_dt(env, msg['time']),
-        'time_human': f.humanize_dt(env, msg['time']),
-        'from': msg['fr'][0],
-        'from_short': fmt_from(msg['fr']),
-        'gravatar': f.get_gravatar(msg['fr'])
-    }
+    emails = [{
+        'subj': i['subj'],
+        'pinned?': '\\Starred' in i['labels'],
+        'body_url': env.url_for('body', id=i['id']),
+        'thread_url': env.url_for('thread', id=i['thrid']),
+        'time': f.format_dt(env, i['time']),
+        'time_human': f.humanize_dt(env, i['time']),
+        'from': i['fr'][0],
+        'from_short': fmt_from(i['fr']),
+        'gravatar': f.get_gravatar(i['fr'])
+    } for i in items]
+    emails[-1]['last?'] = True
+    return emails
 
 
 @login_required
+@adapt_fmt('emails')
 def thread(env, id):
-    fmt = env.request.args.get('fmt', 'html')
     i = env.sql('''
     SELECT id, thrid, subj, labels, time, fr
       FROM emails
       WHERE thrid = %s
       ORDER BY time
     ''', [id])
-    ctx = [ctx_email(env, e) for e in i]
-    if fmt == 'json':
-        return env.to_json(ctx)
-    return env.render_body('emails', {'emails': ctx})
+    return {'emails': ctx_emails(env, i), 'thread?': True}
 
 
 @login_required
+@adapt_fmt('emails')
 def label(env, name):
-    fmt = env.request.args.get('fmt', 'html')
     i = env.sql('''
     SELECT id, thrid, subj, labels, time, fr
       FROM emails
@@ -97,10 +111,7 @@ def label(env, name):
       )
       ORDER BY time DESC
     ''', [name])
-    ctx = [ctx_email(env, e) for e in i]
-    if fmt == 'json':
-        return env.to_json(ctx)
-    return env.render_body('label', {'emails': ctx})
+    return {'emails': ctx_emails(env, i)}
 
 
 @login_required
