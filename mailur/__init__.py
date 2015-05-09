@@ -20,6 +20,7 @@ def get_conf(conf):
     log_handlers = ['console_simple', 'console_detail']
     with v.parsing(additional_properties=False):
         schema = v.parse({
+            'debug': v.Nullable(bool, False),
             '+pg_username': str,
             '+pg_password': str,
             '+google_id': str,

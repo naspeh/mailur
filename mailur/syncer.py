@@ -89,14 +89,14 @@ def fetch_headers(env, email, imap, map_uids):
         log.info('  * No headers to fetch')
         return
 
-    q = ['INTERNALDATE', 'RFC822.SIZE', 'BODY[HEADER]', 'X-GM-MSGID']
+    q = ['INTERNALDATE', 'RFC822.SIZE', 'RFC822.HEADER', 'X-GM-MSGID']
     for data in imap.fetch_batch(uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
             gm_uid = '%s\r%s' % (email, row['X-GM-MSGID'])
             fields = {
                 'id': uuid5(NAMESPACE_URL, gm_uid),
-                'header': row['BODY[HEADER]'],
+                'header': row['RFC822.HEADER'],
                 'size': row['RFC822.SIZE'],
                 'time': row['INTERNALDATE'],
                 'extra': {'X-GM-MSGID': row['X-GM-MSGID']},

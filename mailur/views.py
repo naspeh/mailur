@@ -1,6 +1,5 @@
 from functools import wraps
 
-from psycopg2 import DataError
 from werkzeug.routing import Map, Rule
 
 from . import imap, parser, filters as f
@@ -117,19 +116,12 @@ def body(env, id):
 def raw(env, id):
     from tests import open_file
 
-    try:
-        i = env.sql('SELECT raw, header FROM emails WHERE id=%s LIMIT 1', [id])
-    except DataError:
-        raw = None
-    else:
-        raw = i.fetchone()
-    if not raw:
-        env.abort(404)
-
-    raw = raw[0] or raw[1]
-    desc = env.request.args.get('desc')
-    if env.is_logined and desc:
-        name = '%s--%s.txt' % (id, desc)
+    i = env.sql('SELECT raw, header FROM emails WHERE id=%s LIMIT 1', [id])
+    row = i.fetchone()
+    raw = row[0] or row[1]
+    if env('debug') and env.request.args.get('save'):
+        name = '%s--test.txt' % id
         with open_file('files_parser', name, mode='bw') as f:
             f.write(raw)
+    parser.parse(raw.tobytes())
     return env.make_response(raw, content_type='text/plain')
