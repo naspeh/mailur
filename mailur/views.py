@@ -42,17 +42,6 @@ def login_required(func):
     return inner
 
 
-@login_required
-def index(env):
-    return 'OK'
-
-
-@login_required
-def init(env):
-    env.session['tz_offset'] = env.request.args.get('offset', type=int) or 0
-    return 'OK'
-
-
 def adapt_fmt(tpl):
     def w(func):
         w.func = func
@@ -66,6 +55,20 @@ def adapt_fmt(tpl):
             return env.to_json(ctx)
         return env.render_body(tpl, ctx)
     return w
+
+
+@login_required
+@adapt_fmt('index')
+def index(env):
+    i = env.sql(' select distinct unnest(labels) from emails;')
+    labels = sorted(r[0] for r in i.fetchall())
+    labels = [{'name': l, 'url': env.url_for('label', name=l)} for l in labels]
+    return {'labels': labels}
+
+
+def init(env):
+    env.session['tz_offset'] = env.request.args.get('offset', type=int) or 0
+    return 'OK'
 
 
 def ctx_emails(env, items):
