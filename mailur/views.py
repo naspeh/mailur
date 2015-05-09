@@ -78,6 +78,7 @@ def ctx_emails(env, items):
         'subj': i['subj'],
         'pinned?': '\\Starred' in i['labels'],
         'body_url': env.url_for('body', id=i['id']),
+        'raw_url': env.url_for('raw', id=i['id']),
         'thread_url': env.url_for('thread', id=i['thrid']),
         'time': f.format_dt(env, i['time']),
         'time_human': f.humanize_dt(env, i['time']),

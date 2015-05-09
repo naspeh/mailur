@@ -13,7 +13,12 @@
         <li class="email-time">{{time}}</li>
     </ul>
     {{#thread?}}
-    <div class="email-body">{{#last?}}{{&body}}{{/last?}}</div>
+    <ul class="email-detail">
+        <li><a href="{{raw_url}}">Raw</a></li>
+    </ul>
+    <div class="email-body">
+        {{#last?}}{{&body}}{{/last?}}
+    </div>
     {{/thread?}}
 </li>
 {{/emails}}

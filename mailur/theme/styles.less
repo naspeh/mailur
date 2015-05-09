@@ -72,7 +72,7 @@ body {
             background-color: @Color1bg;
         }
     }
-    .email-body {
+    .email-body, .email-detail {
         display: none;
     }
 }
@@ -97,6 +97,13 @@ body {
     .email-body {
         display: block;
     }
+    .email-detail {
+        display: block;
+        li {
+            display: inline-block;
+        }
+    }
+
 }
 .email-body {
     padding: @Space;
