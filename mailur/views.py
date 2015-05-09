@@ -123,5 +123,4 @@ def raw(env, id):
         name = '%s--test.txt' % id
         with open_file('files_parser', name, mode='bw') as f:
             f.write(raw)
-    parser.parse(raw.tobytes())
     return env.make_response(raw, content_type='text/plain')
