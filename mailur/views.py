@@ -71,6 +71,7 @@ def adapt_fmt(tpl):
 def ctx_emails(env, items):
     fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
     emails = [{
+        'id': i['id'],
         'subj': i['subj'],
         'pinned?': '\\Starred' in i['labels'],
         'body_url': env.url_for('body', id=i['id']),
@@ -81,7 +82,6 @@ def ctx_emails(env, items):
         'from_short': fmt_from(i['fr']),
         'gravatar': f.get_gravatar(i['fr'])
     } for i in items]
-    emails[-1]['last?'] = True
     return emails
 
 
@@ -94,7 +94,12 @@ def thread(env, id):
       WHERE thrid = %s
       ORDER BY time
     ''', [id])
-    return {'emails': ctx_emails(env, i), 'thread?': True}
+
+    emails = ctx_emails(env, i)
+    last = emails[-1]
+    last['last?'] = True
+    last['body'] = body(env, last['id'])
+    return {'emails': emails, 'thread?': True}
 
 
 @login_required
