@@ -126,9 +126,12 @@ def label(env, name):
 @login_required
 def body(env, id):
     i = env.sql('SELECT raw FROM emails WHERE id=%s LIMIT 1', [id])
-    raw = i.fetchone()[0].tobytes()
-    result = parser.parse(raw, id, env('path_attachments'))
-    result = parser.human_html(result['html'])
+    raw = i.fetchone()[0]
+    if raw:
+        result = parser.parse(raw.tobytes(), id, env('path_attachments'))
+        result = parser.human_html(result['html'])
+    else:
+        result = ''
     return result
 
 

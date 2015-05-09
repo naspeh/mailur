@@ -199,7 +199,8 @@ class Emails(Manager):
     table = create_table(name, fields, after=(
         fill_updated(name),
         create_index(name, 'size'),
-        create_index(name, 'in_reply_to'),
         create_index(name, 'msgid'),
+        create_index(name, 'in_reply_to'),
+        create_index(name, 'refs', 'GIN'),
         create_index(name, 'labels', 'GIN'),
     ))

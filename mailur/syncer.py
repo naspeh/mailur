@@ -205,17 +205,25 @@ def update_label(env, gids, label, folder=None):
 
 
 def fill_thrid(env):
-    log.info('  * Fill thread ids')
+    log.info('Fill thread ids')
     i = env.sql('''
     WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
       SELECT id, msgid, id, ARRAY[id], false
         FROM emails
-        WHERE in_reply_to IS NULL
-        OR in_reply_to != ALL(SELECT msgid FROM emails)
+        WHERE (
+          in_reply_to IS NULL
+          OR in_reply_to != ALL(SELECT msgid FROM emails)
+        ) AND (
+          refs IS NULL
+          OR refs[array_upper(refs, 1)] != ALL(SELECT msgid FROM emails)
+        )
     UNION ALL
       SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
         FROM emails e, thrids t
-        WHERE e.in_reply_to = t.msgid AND NOT cycle
+        WHERE NOT cycle AND (
+          e.in_reply_to = t.msgid
+          OR t.msgid = e.refs[array_upper(e.refs, 1)]
+        )
     )
     UPDATE emails e SET thrid=t.thrid
       FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
