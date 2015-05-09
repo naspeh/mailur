@@ -99,6 +99,28 @@ class Manager():
         cur.execute(sql)
         return cur
 
+    def update(self, values, where, params=None):
+        cur = self.db.cursor()
+
+        fields = sorted(f for f in values)
+        error = set(fields) - set(self.field_names)
+        if error:
+            raise ValueError('No fields: %s' % error)
+        values_ = ', '.join('%%(%s)s' % i for i in fields)
+        values_ = cur.mogrify(values_, values).decode()
+        where_ = cur.mogrify(where, params).decode()
+        sql = (
+            "UPDATE {table} SET ({fields}) = ({values}) WHERE {where}"
+            .format(
+                table=self.name,
+                fields=', '.join('"%s"' % i for i in fields),
+                values=values_,
+                where=where_
+            )
+        )
+        cur.execute(sql)
+        return cur
+
 
 class Accounts(Manager):
     name = 'accounts'

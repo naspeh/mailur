@@ -44,10 +44,11 @@ def sync_gmail(env, email, bodies=False, only_labels=None):
             (k, parser.parse(v[q])['message-id']) for k, v in data
         )
 
-        fetch_headers(env, email, imap, uids)
-        fetch_labels(env, imap, uids, label)
         if bodies:
             fetch_bodies(env, imap, uids)
+        else:
+            fetch_headers(env, email, imap, uids)
+            fetch_labels(env, imap, uids, label)
 
     fill_thrid(env)
 
@@ -108,18 +109,24 @@ def fetch_headers(env, email, imap, map_uids):
 
 
 @contextmanager
-def async_runner():
-    pool = Pool(4)
-    results = []
+def async_runner(count=0):
+    if count:
+        pool = Pool(count)
+        results = []
 
-    def run(func, *a, **kw):
-        results.append(pool.apply_async(func, a, kw))
+        def run(func, *a, **kw):
+            results.append(pool.apply_async(func, a, kw))
 
-    yield run
+        yield run
 
-    [r.get() for r in results]
-    pool.close()
-    pool.join()
+        [r.get() for r in results]
+        pool.close()
+        pool.join()
+    else:
+        def run(func, *a, **kw):
+            func(*a, **kw)
+
+        yield run
 
 
 def fetch_bodies(env, imap, map_uids):
@@ -136,10 +143,12 @@ def fetch_bodies(env, imap, map_uids):
         return
 
     def update(env, items):
-        env.sqlmany("UPDATE emails SET raw=%s WHERE msgid=%s", items)
+        for data, msgid in items:
+            data_ = dict(get_parsed(env, data, msgid), raw=data)
+            env.emails.update(data_, 'msgid=%s', [msgid])
         env.db.commit()
 
-    with async_runner() as run:
+    with async_runner(env('async_pool')) as run:
         for data in imap.fetch_batch(uids, 'RFC822', 'add bodies'):
             items = ((row['RFC822'], map_uids[uid]) for uid, row in data)
             run(update, env, items)
