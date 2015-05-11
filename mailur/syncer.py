@@ -50,8 +50,6 @@ def sync_gmail(env, email, bodies=False, only_labels=None):
             fetch_headers(env, email, imap, uids)
             fetch_labels(env, imap, uids, label)
 
-    fill_thrid(env)
-
 
 def get_gids(env, gids, where=None):
     sql = 'SELECT msgid FROM emails WHERE msgid = ANY(%(gids)s)'
@@ -204,8 +202,8 @@ def update_label(env, gids, label, folder=None):
     ''')
 
 
-def fill_thrid(env):
-    log.info('Fill thread ids')
+def update_thrids(env):
+    log.info('Update thread ids')
     i = env.sql('''
     WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
       SELECT id, msgid, id, ARRAY[id], false

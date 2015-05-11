@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import functools
 import glob
 import json
 import logging
@@ -12,6 +13,22 @@ log = logging.getLogger(__name__)
 def sh(cmd):
     log.info(cmd)
     return subprocess.call(cmd, shell=True)
+
+
+def sync(env, email, target=None, **kwargs):
+    from mailur import syncer
+
+    func = functools.partial(syncer.sync_gmail, env, email, **kwargs)
+    if target in (None, 'fast'):
+        func()
+    elif target == 'bodies':
+        func(bodies=True)
+    elif target == 'thrids':
+        syncer.update_thrids(env)
+    elif target == 'full':
+        for target in sync.choices[:-1]:
+            sync(env, email, target)
+sync.choices = ['fast', 'bodies', 'thrids', 'full']
 
 
 def run(env, only_wsgi):
@@ -38,6 +55,18 @@ def run(env, only_wsgi):
         use_debugger=True, use_reloader=True,
         extra_files=extra_files
     )
+
+
+def shell(env):
+    '''Start a new interactive python session'''
+    namespace = {'env': env}
+    banner = 'Interactive shell'
+    try:
+        import bpython
+        bpython.embed(locals_=namespace, banner=banner)
+    except ImportError:
+        from code import interact
+        interact(banner, local=namespace)
 
 
 def get_base(argv):
@@ -100,7 +129,7 @@ def get_base(argv):
 
 
 def get_full(argv):
-    from mailur import Env, db, syncer
+    from mailur import Env, db
 
     with open('conf.json', 'br') as f:
         conf = json.loads(f.read().decode())
@@ -109,12 +138,10 @@ def get_full(argv):
 
     parser, cmd = get_base(argv)
     cmd('sync')\
-        .arg('-b', '--bodies', action='store_true')\
+        .arg('-t', '--target', choices=sync.choices)\
         .arg('-l', '--only-labels', nargs='+')\
         .arg('email')\
-        .exe(lambda a: (
-            syncer.sync_gmail(env, a.email, a.bodies, a.only_labels)
-        ))
+        .exe(lambda a: sync(env, a.email, a.target, only_labels=a.only_labels))
 
     cmd('db-init')\
         .arg('-r', '--reset', action='store_true')\
@@ -123,6 +150,9 @@ def get_full(argv):
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
         .exe(lambda a: run(env, a.only_wsgi))
+
+    cmd('shell')\
+        .exe(lambda a: shell(env))
     return parser
 
 

@@ -1,0 +1,64 @@
+Delivered-To: naspeh@gmail.com
+Received: by 10.100.8.6 with SMTP id 6cs265338anh;
+        Fri, 11 Jul 2008 21:53:42 -0700 (PDT)
+Received: by 10.187.226.1 with SMTP id d1mr138558far.97.1215838421055;
+        Fri, 11 Jul 2008 21:53:41 -0700 (PDT)
+Return-Path: <root@master2.fastbighost.com>
+Received: from forwards2.yandex.ru (forwards2.yandex.ru [213.180.200.23])
+        by mx.google.com with ESMTP id k29si3999202fkk.2.2008.07.11.21.53.39;
+        Fri, 11 Jul 2008 21:53:41 -0700 (PDT)
+Received-SPF: neutral (google.com: 213.180.200.23 is neither permitted nor denied by best guess record for domain of root@master2.fastbighost.com) client-ip=213.180.200.23;
+Authentication-Results: mx.google.com; spf=neutral (google.com: 213.180.200.23 is neither permitted nor denied by best guess record for domain of root@master2.fastbighost.com) smtp.mail=root@master2.fastbighost.com
+Received: from mxfront19.yandex.ru ([213.180.200.57]:29373 "EHLO
+	mxfront19.yandex.ru") by forwards.yandex.ru with ESMTP
+	id S5020248AbYGLExj (ORCPT
+	<rfc822;naspeh%gmail.com@tofwd.yandex.ru>);
+	Sat, 12 Jul 2008 08:53:39 +0400
+Received: from YAMAIL (mxfront19) by mail.yandex.ru id S381000AbYGLEx2 for
+        <naspeh%gmail.com@tofwd.yandex.ru>; Sat, 12 Jul 2008 08:53:28 +0400
+X-yamail-forward: 96426816
+Received: from master2.fastbighost.com ([65.98.8.253]:49123 "EHLO master2.fastbighost.com"
+        smtp-auth: <none> TLS-CHIPER: <none> TLS-PEER-CN1: <none>)
+        by mxfront19.yandex.ru with ESMTP id S381129AbYGLEx2;
+        Sat, 12 Jul 2008 08:53:28 +0400
+X-BornDate: 1208289600
+X-Yandex-TimeMark: 1215838408
+X-Yandex-Spam: 1 
+X-Yandex-Front:	mxfront19
+Received-SPF: none (mxfront19: 65.98.8.253 is neither permitted nor denied by domain of master2.fastbighost.com; fakespf=pass) client-ip=65.98.8.253; envelope-from=root@master2.fastbighost.com; helo=master2.fastbighost.com;, fakespf=pass
+Received: from master2.fastbighost.com (master2.fastbighost.com [127.0.0.1])
+        by master2.fastbighost.com (8.12.11.20060308/8.12.11) with ESMTP id m6C4aaFO010431
+        for <naspeh@ya.ru>; Sat, 12 Jul 2008 00:36:36 -0400
+Received: (from root@localhost)
+        by master2.fastbighost.com (8.12.11.20060308/8.12.11/Submit) id m6C4aaf3010423;
+        Sat, 12 Jul 2008 00:36:36 -0400
+Date:	Sat, 12 Jul 2008 00:36:36 -0400
+Message-Id: <200807120436.m6C4aaf3010423@master2.fastbighost.com>
+To:	naspeh@ya.ru
+Subject: Оплатите, пожалуйста, счет
+From:	"hostpro.com.ua" <sales@hostpro.com.ua>
+
+
+
+Уважаемый Гриша  !
+
+Данным письмом уведомляем, что компанией HOSTPRO Вам выставлен счет  [234792]
+от [2008-07-12 00:30:32] на сумму  $13.95.
+
+Пожалуйста, перейдите по этой ссылке для того, чтобы оплатить счет
+кредитной карточкой: http://billing.hostpro.com.ua/pay/extpay.php?Doc_ID=234792.
+
+Для просмотра выставленных счетов зайдите в свою панель управления
+счетами : http://billing.hostpro.com.ua/pay/user.php
+
+Просим произвести оплату до 2008-07-14 00:30:32.
+
+Если у Вас возникли вопросы, пожалуйста, свяжитесь с отделом продаж:
+sales@hostpro.com.ua.
+
+
+С наилучшими пожеланиями
+
+отдел продаж HOSTPRO
+
+
