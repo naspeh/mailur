@@ -6,7 +6,7 @@ import re
 from collections import OrderedDict
 from html import escape as html_escape
 
-import toronado
+import premailer
 from lxml import html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
@@ -148,7 +148,7 @@ def parse_part(part, charset, msg_id, attachments_dir, inner=False):
             links=False,
             safe_attrs_only=False,
             kill_tags=['head'],
-            remove_tags=['html', 'body']
+            remove_tags=['html', 'body', 'base']
         )
         htm = cleaner.clean_html(htm)
         for cid, path in content['embedded'].items():
@@ -243,7 +243,7 @@ def human_html(htm, parent=None, class_='email-quote'):
     if htm and parent:
         htm = hide_quote(htm, parent, class_)
     if htm:
-        htm = toronado.from_string(htm).decode()
+        htm = premailer.transform(htm)
     return htm
 
 

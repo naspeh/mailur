@@ -104,7 +104,7 @@ def thread(env, id):
     last = emails[-1]
     last['last?'] = True
     last['body'] = body(env, last['id'])
-    return {'emails': emails, 'thread?': True}
+    return {'emails': emails, 'thread?': True, 'subj': emails[0]['subj']}
 
 
 @login_required

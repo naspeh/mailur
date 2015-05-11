@@ -55,9 +55,9 @@ def get_base(argv):
         'Stache '
         'Werkzeug '
         'lxml '
+        'premailer '
         'psycopg2 '
         'requests '
-        'toronado '
         'valideer '
     )
     cmd('reqs', help='update requirements.txt file')\
