@@ -1,6 +1,6 @@
 <ul class="{{#thread?}}thread{{/thread?}}">
 {{#emails}}
-<li class="email {{#last?}}email-show{{/last?}}"
+<li class="email{{#last?}} email-show{{/last?}}{{#unread?}} email-unread{{/unread?}}"
     data-id="{{id}}"
     data-body-url="{{body_url}}"
 >
