@@ -83,6 +83,7 @@ def get_base(argv):
     requirements = (
         'Stache '
         'Werkzeug '
+        'cchardet '
         'lxml '
         'premailer '
         'psycopg2 '
