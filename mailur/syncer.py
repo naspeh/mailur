@@ -28,7 +28,7 @@ def sync_gmail(env, email, bodies=False, only_labels=None):
         only_labels = ('\\All', '\\Junk', '\\Trash')
 
     for attrs, delim, name in folders:
-        label = set(only_labels) & set(attrs)
+        label = set(only_labels) & set(attrs + (name,))
         label = label and label.pop()
         if not label:
             continue
@@ -179,6 +179,7 @@ def fetch_labels(env, imap, map_uids, folder):
     for label, args, func in labels:
         gids = [map_uids[uid] for uid, row in data if func(row, *args)]
         update_label(env, gids, label, folder)
+    env.db.commit()
 
 
 def update_label(env, gids, label, folder=None):

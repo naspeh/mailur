@@ -27,7 +27,7 @@ def sync(env, email, target=None, **kwargs):
         syncer.update_thrids(env)
     elif target == 'full':
         for target in sync.choices[:-1]:
-            sync(env, email, target)
+            sync(env, email, target, **kwargs)
 sync.choices = ['fast', 'bodies', 'thrids', 'full']
 
 

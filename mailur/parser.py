@@ -6,17 +6,13 @@ import re
 from collections import OrderedDict
 from html import escape as html_escape
 
-import chardet
+import chardet as chardet
 import premailer
 from lxml import html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
 
 from . import log
-
-
-def detect_charset(text):
-    return chardet.detect(text)['encoding']
 
 
 def get_charset(name):
@@ -28,17 +24,35 @@ def get_charset(name):
     return aliases.get(name, name)
 
 
-def decode_str(text, charsets=None, msg_id=None):
+def guess_charsets(text, extra=None):
+    extra = get_charset(extra)
+    detected = chardet.detect(text)
+    detected, confidence = detected['encoding'], detected['confidence']
+    if confidence > 0.9 and not extra:
+        return [detected]
+    charsets = [extra, detected]
+    return [c for c in charsets if c]
+
+
+def decode_str(text, charset, msg_id=None):
     if not text:
         return ''
-    charsets = [get_charset(c) for c in charsets or []] + ['utf8']
-    charsets = [c for c in charsets if c]
+
+    def guess_charsets():
+        guess = getattr(decode_str, 'guess_charsets')
+        if guess:
+            return guess()
+        return ['utf8']
+
+    charset = get_charset(charset)
+    charsets = [charset] if charset else guess_charsets()
     for charset_ in charsets:
         try:
             part = text.decode(charset_)
             break
         except UnicodeDecodeError:
             part = None
+
     if not part:
         charset_ = charsets[0]
         log.debug('UnicodeDecodeError(%s) -- %s', charset_, msg_id)
@@ -46,17 +60,17 @@ def decode_str(text, charsets=None, msg_id=None):
     return part
 
 
-def decode_header(text, charsets, msg_id):
+def decode_header(text, msg_id):
     if not text:
         return ''
 
     parts_ = email.header.decode_header(text)
     parts = []
-    for text, charset_ in parts_:
+    for text, charset in parts_:
         if isinstance(text, str):
             part = text
         else:
-            part = decode_str(text, [charset_] + charsets, msg_id)
+            part = decode_str(text, charset, msg_id=msg_id)
         parts += [part]
 
     header = ''.join(parts)
@@ -64,12 +78,12 @@ def decode_header(text, charsets, msg_id):
     return header
 
 
-def decode_addresses(text, charsets, msg_id):
+def decode_addresses(text, msg_id):
     if not isinstance(text, str):
         text = str(text)
     res = []
     for name, addr in email.utils.getaddresses([text]):
-        name, addr = [decode_header(r, charsets, msg_id) for r in [name, addr]]
+        name, addr = (decode_header(r, msg_id) for r in [name, addr])
         if addr:
             res += ['"%s" <%s>' % (name if name else addr.split('@')[0], addr)]
     return res
@@ -81,7 +95,7 @@ def decode_date(text, *args):
     return tm
 
 
-def parse_part(part, charsets, msg_id, attachments_dir, inner=False):
+def parse_part(part, msg_id, attachments_dir, inner=False):
     content = OrderedDict([
         ('files', []),
         ('attachments', []),
@@ -94,7 +108,7 @@ def parse_part(part, charsets, msg_id, attachments_dir, inner=False):
     stype = part.get_content_subtype()
     if part.is_multipart():
         for m in part.get_payload():
-            child = parse_part(m, charsets, msg_id, attachments_dir, True)
+            child = parse_part(m, msg_id, attachments_dir, True)
             child_html = child.pop('html', '')
             content.setdefault('html', '')
             if stype != 'alternative':
@@ -105,8 +119,7 @@ def parse_part(part, charsets, msg_id, attachments_dir, inner=False):
             content.update(child)
     elif mtype == 'multipart':
         text = part.get_payload(decode=True)
-        charsets_ = [part.get_content_charset()] + charsets
-        text = decode_str(text, charsets_, msg_id=msg_id)
+        text = decode_str(text, part.get_content_charset(), msg_id=msg_id)
         content['html'] = text
     elif part.get_filename() or mtype == 'image':
         payload = part.get_payload(decode=True)
@@ -114,15 +127,14 @@ def parse_part(part, charsets, msg_id, attachments_dir, inner=False):
             'maintype': mtype,
             'type': ctype,
             'id': part.get('Content-ID'),
-            'filename': decode_header(part.get_filename(), charsets, msg_id),
+            'filename': decode_header(part.get_filename(), msg_id),
             'payload': payload,
             'size': len(payload) if payload else None
         }
         content['files'] += [attachment]
     elif ctype in ['text/html', 'text/plain']:
         text = part.get_payload(decode=True)
-        charsets_ = [part.get_content_charset()] + charsets
-        text = decode_str(text, charsets_, msg_id=msg_id)
+        text = decode_str(text, part.get_content_charset(), msg_id=msg_id)
         if ctype == 'text/plain':
             text = text2html(text)
         content['html'] = text
@@ -182,8 +194,7 @@ def parse(text, msg_id=None, attachments_dir=None):
     msg = email.message_from_bytes(text)
     charset = [c for c in msg.get_charsets() if c]
     charset = charset[0] if charset else None
-
-    charsets = [c for c in [detect_charset(text[:4096]), charset]]
+    decode_str.guess_charsets = lambda: guess_charsets(text[:4096], charset)
 
     decoders = {
         'subject': decode_header,
@@ -201,10 +212,10 @@ def parse(text, msg_id=None, attachments_dir=None):
     data = {}
     for key, decode in decoders.items():
         value = msg.get(key)
-        data[key] = decode(value, charsets, msg_id) if value else None
+        data[key] = decode(value, msg_id) if value else None
 
     msg_id = str(msg_id or data['message-id'])
-    files = parse_part(msg, charsets, msg_id, attachments_dir)
+    files = parse_part(msg, msg_id, attachments_dir)
     data['attachments'] = files['attachments']
     data['embedded'] = files['embedded']
     data['html'] = files.get('html', None)
