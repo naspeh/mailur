@@ -7,7 +7,7 @@ from collections import OrderedDict
 from html import escape as html_escape
 
 import cchardet
-import premailer
+import toronado
 from lxml import html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
@@ -270,7 +270,7 @@ def human_html(htm, parent=None, class_='email-quote'):
     if htm and parent:
         htm = hide_quote(htm, parent, class_)
     if htm:
-        htm = premailer.transform(htm)
+        htm = toronado.from_string(htm).decode()
     return htm
 
 

@@ -5,7 +5,7 @@ cssselect==0.9.1
 cssutils==1.0
 decorator==3.4.2
 lxml==3.4.4
-premailer==2.9.0
 psycopg2==2.6
 requests==2.7.0
+toronado==0.0.5
 valideer==0.4.1

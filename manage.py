@@ -85,7 +85,7 @@ def get_base(argv):
         'Werkzeug '
         'cchardet '
         'lxml '
-        'premailer '
+        'https://github.com/naskoro/toronado/archive/master.zip '
         'psycopg2 '
         'requests '
         'valideer '
