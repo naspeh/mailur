@@ -265,7 +265,7 @@ def t2h_repl(match):
         raise ValueError(groups)
 
 
-def human_html(htm, parent=None, class_='email-quote'):
+def humanize_html(htm, parent=None, class_='email-quote'):
     htm = re.sub(r'(<br[ ]?[/]?>\s*)$', '', htm).strip()
     if htm and parent:
         htm = hide_quote(htm, parent, class_)

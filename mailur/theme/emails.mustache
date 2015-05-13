@@ -11,7 +11,12 @@
         <li class="email-pin{{#pinned?}} email-pinned{{/pinned?}}"></li>
         <li class="email-pic" style="background-image:url({{gravatar}})"></li>
         <li class="email-from" title='{{from}}'>{{from_short}}</li>
-        <li class="email-subj"><a href="{{thread_url}}">{{subj}}</a></li>
+        <li class="email-text"><a href="{{thread_url}}">
+            <b class="email-subj{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
+                {{subj_human}}
+            </b>
+            <i class="email-preview">{{preview}}</i>
+        </a></li>
         <li class="email-time-human" title="{{time}}">{{time_human}}</li>
         <li class="email-time">{{time}}</li>
     </ul>

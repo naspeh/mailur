@@ -1,6 +1,8 @@
 import datetime as dt
+import re
 from email.utils import getaddresses
 from hashlib import md5
+from html.parser import HTMLParser
 from urllib.parse import urlencode
 
 
@@ -11,7 +13,8 @@ __all__ = [
 
 
 def get_all():
-    return dict((n, globals()[n]) for n in __all__)
+    names = globals()
+    return dict((n, names[n]) for n in __all__)
 
 
 def get_addr(addr):
@@ -49,3 +52,20 @@ def humanize_dt(env, val):
 
 def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
     return localize_dt(env, value).strftime(fmt)
+
+
+def get_preview(msg):
+    text = re.sub('<[^>]*?>', '', msg['text'] or msg['html'] or '')
+    text = HTMLParser().unescape(text)
+    return text.strip() or '>'
+
+
+def humanize_subj(subj):
+    return subj.strip() or '(no subject)'
+
+
+def is_subj_changed(msg, subj):
+    index = msg['subj'].index(subj)
+    if index == 0 or index and msg['subj'][:index].strip().endswith(':'):
+        return False
+    return True

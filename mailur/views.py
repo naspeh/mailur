@@ -1,4 +1,4 @@
-from functools import wraps
+import functools as ft
 
 from werkzeug.routing import Map, Rule
 
@@ -34,7 +34,7 @@ def auth_callback(env):
 
 
 def login_required(func):
-    @wraps(func)
+    @ft.wraps(func)
     def inner(env, *a, **kw):
         if not (env.is_logined or env('ui_is_public')):
             return env.redirect_for('auth')
@@ -45,7 +45,7 @@ def login_required(func):
 def adapt_fmt(tpl):
     def w(func):
         w.func = func
-        return wraps(func)(inner)
+        return ft.wraps(func)(inner)
 
     def inner(env, *a, **kw):
         fmt = env.request.args.get('fmt', 'html')
@@ -76,6 +76,8 @@ def ctx_emails(env, items):
     emails = [{
         'id': i['id'],
         'subj': i['subj'],
+        'subj_human': f.humanize_subj(i['subj']),
+        'preview': f.get_preview(i),
         'pinned?': '\\Starred' in i['labels'],
         'unread?': '\\Unread' in i['labels'],
         'body_url': env.url_for('body', id=i['id']),
@@ -94,7 +96,7 @@ def ctx_emails(env, items):
 @adapt_fmt('emails')
 def thread(env, id):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr
+    SELECT id, thrid, subj, labels, time, fr, text, html
       FROM emails
       WHERE thrid = %s
       ORDER BY time
@@ -104,14 +106,17 @@ def thread(env, id):
     last = emails[-1]
     last['last?'] = True
     last['body'] = body(env, last['id'])
-    return {'emails': emails, 'thread?': True, 'subj': emails[0]['subj']}
+    subj = emails[0]['subj']
+    for msg in emails:
+        msg['subj_changed?'] = f.is_subj_changed(msg, subj)
+    return {'emails': emails, 'thread?': True, 'subj': subj}
 
 
 @login_required
 @adapt_fmt('emails')
 def label(env, name):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr
+    SELECT id, thrid, subj, labels, time, fr, text, html
       FROM emails
       WHERE id IN (
         SELECT thrid FROM emails
@@ -130,7 +135,7 @@ def body(env, id):
     raw = i.fetchone()[0]
     if raw:
         result = parser.parse(raw.tobytes(), id, env('path_attachments'))
-        result = parser.human_html(result['html'])
+        result = parser.humanize_html(result['html'])
     else:
         result = ''
     return result

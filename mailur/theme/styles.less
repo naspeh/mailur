@@ -50,15 +50,22 @@ body {
             width: @SizeIcon;
             background-size: @SizeIcon @SizeIcon;
         }
-        .email-subj {
+        .email-text {
             width: 100%;
 
             a {
-                display: inline-block;
+                display: block;
                 width: 100%;
-                color: @ColorB;
+                color: @ColorA;
                 text-decoration: none;
             }
+        }
+        .email-from {
+            max-width: 120px;
+            overflow: hidden;
+        }
+        .email-subj {
+            color: @ColorB;
         }
         .email-time, .email-time-human {
             position: absolute;
@@ -87,9 +94,8 @@ body {
         border-radius: 0.5em;
         background-color: @Color0bg;
 
-        .email-subj a {
-            color: @ColorA;
-            font-weight: bold;
+        .email-from {
+            max-width: none;
         }
         .email-time {
             display: inline-block;
@@ -134,4 +140,24 @@ body {
     margin: 10px;
     font-size: 120%;
     font-weight: bold;
+}
+.thread {
+    .email-subj {
+        display: none;
+
+        &.email-subj-changed {
+            display: inline;
+        }
+    }
+    .email-from {
+        font-weight: bold;
+    }
+    .email-show {
+        .email-subj {
+            display: inline;
+        }
+        .email-preview {
+            display: none;
+        }
+    }
 }

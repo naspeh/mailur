@@ -8,7 +8,7 @@
 {{&body}}
 <script src="/theme/jquery.min.js"></script>
 <script>
-$('.thread .email-subj').click(function() {
+$('.thread .email-text').click(function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
     if (email.hasClass('email-show')) {
