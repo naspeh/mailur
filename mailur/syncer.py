@@ -206,31 +206,47 @@ def update_label(env, gids, label, folder=None):
 def update_thrids(env):
     log.info('Update thread ids')
 
-    def step(sql):
+    def step(label, sql):
         i = env.sql(sql)
         env.db.commit()
-        log.info('  - for %s emails', i.rowcount)
+        log.info('  - for %s emails (%s)', i.rowcount, label)
 
-    # step('UPDATE emails SET thrid = NULL')
-    step('''
-    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
-      SELECT id, msgid, id, ARRAY[id], false
-        FROM emails
-        WHERE (
+    # step('clear', 'UPDATE emails SET thrid = NULL')
+    step('empty "in_reply_to" or "references"', '''
+      UPDATE emails SET thrid = id
+        WHERE thrid IS NULL AND (
           in_reply_to IS NULL
           OR in_reply_to != ALL(SELECT msgid FROM emails)
         ) AND (
           refs IS NULL
-          OR refs[array_upper(refs, 1)] != ALL(SELECT msgid FROM emails)
+          OR NOT (refs && (SELECT array_agg(msgid) FROM emails))
         )
+    ''')
+
+    step('by "in_reply_to"', '''
+    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
+      SELECT id, msgid, thrid, ARRAY[id], false
+        FROM emails WHERE thrid IS NOT NULL
     UNION ALL
       SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
         FROM emails e, thrids t
-        WHERE NOT cycle AND (
-          e.in_reply_to = t.msgid
-          OR t.msgid = e.refs[array_upper(e.refs, 1)]
-        )
+        WHERE NOT cycle AND t.thrid IS NOT NULL AND e.in_reply_to = t.msgid
     )
     UPDATE emails e SET thrid=t.thrid
       FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     ''')
+
+    step('by "references"', '''
+    WITH RECURSIVE thrids(id, msgid, thrid) AS (
+      SELECT id, msgid, thrid
+        FROM emails WHERE thrid IS NOT NULL
+    UNION ALL
+      SELECT e.id, e.msgid, t.thrid
+        FROM emails e, thrids t
+        WHERE e.thrid IS NULL AND t.msgid = ANY(e.refs) AND t.thrid IS NOT NULL
+    )
+    UPDATE emails e SET thrid=t.thrid
+      FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
+    ''')
+
+    step('other thrid=id', 'UPDATE emails SET thrid = id WHERE thrid IS NULL')
