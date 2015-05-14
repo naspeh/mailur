@@ -60,13 +60,12 @@ def run(env, only_wsgi):
 def shell(env):
     '''Start a new interactive python session'''
     namespace = {'env': env}
-    banner = 'Interactive shell'
     try:
-        import bpython
-        bpython.embed(locals_=namespace, banner=banner)
+        from ptpython.repl import embed
+        embed(namespace, history_filename=os.path.expanduser('~/.ptpython'))
     except ImportError:
         from code import interact
-        interact(banner, local=namespace)
+        interact('', local=namespace)
 
 
 def get_base(argv):
