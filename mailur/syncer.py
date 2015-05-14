@@ -205,7 +205,14 @@ def update_label(env, gids, label, folder=None):
 
 def update_thrids(env):
     log.info('Update thread ids')
-    i = env.sql('''
+
+    def step(sql):
+        i = env.sql(sql)
+        env.db.commit()
+        log.info('  - for %s emails', i.rowcount)
+
+    # step('UPDATE emails SET thrid = NULL')
+    step('''
     WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
       SELECT id, msgid, id, ARRAY[id], false
         FROM emails
@@ -227,5 +234,3 @@ def update_thrids(env):
     UPDATE emails e SET thrid=t.thrid
       FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     ''')
-    env.db.commit()
-    log.info('  - for %s emails', i.rowcount)
