@@ -7,8 +7,7 @@ from collections import OrderedDict
 from html import escape as html_escape
 
 import cchardet
-import toronado
-from lxml import html as lhtml
+from lxml import etree, html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
 
@@ -184,7 +183,12 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
 
         content['html'] = htm
         if 'text' not in content or not content['text']:
-            content['text'] = lhtml.fromstring(htm).text_content()
+            htm = lhtml.fromstring(htm)
+            htm = Cleaner(links=False, style=True).clean_html(htm)
+            text = "\n".join(etree.XPath("//text()")(htm))
+            content['text'] = text.strip()
+
+    content['text'] = content.get('text') or ''
     return content
 
 
@@ -263,34 +267,3 @@ def t2h_repl(match):
         return '<br/>'
     else:
         raise ValueError(groups)
-
-
-def humanize_html(htm, parent=None, class_='email-quote'):
-    htm = re.sub(r'(<br[ ]?[/]?>\s*)$', '', htm).strip()
-    if htm and parent:
-        htm = hide_quote(htm, parent, class_)
-    if htm:
-        htm = toronado.from_string(htm).decode()
-    return htm
-
-
-def hide_quote(mail1, mail0, class_):
-    if not mail0 or not mail1:
-        return mail1
-
-    def clean(v):
-        v = re.sub('[\s]+', '', v.text_content())
-        return v.rstrip()
-
-    t0 = clean(lhtml.fromstring(mail0))
-    root1 = lhtml.fromstring(mail1)
-    for block in root1.xpath('//blockquote'):
-        t1 = clean(block)
-        if t0 and t1 and (t0.startswith(t1) or t0.endswith(t1) or t0 in t1):
-            block.attrib['class'] = class_
-            parent = block.getparent()
-            switch = lhtml.fromstring('<div class="%s-switch"/>' % class_)
-            block.attrib['class'] = class_
-            parent.insert(parent.index(block), switch)
-            return lhtml.tostring(root1, encoding='utf8').decode()
-    return mail1

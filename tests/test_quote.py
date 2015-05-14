@@ -2,7 +2,7 @@ from lxml import etree
 from pytest import mark
 
 from . import open_file
-from mailur.parser import hide_quote
+from mailur.filters import hide_quote
 
 
 @mark.parametrize('id', [1457489417718057053, 1456781505677497494])

@@ -2,19 +2,10 @@ import datetime as dt
 import re
 from email.utils import getaddresses
 from hashlib import md5
-from html.parser import HTMLParser
 from urllib.parse import urlencode
 
-
-__all__ = [
-    'get_all', 'get_addr', 'get_addr_name', 'get_gravatar',
-    'localize_dt', 'humanize_dt', 'format_dt'
-]
-
-
-def get_all():
-    names = globals()
-    return dict((n, names[n]) for n in __all__)
+import toronado
+import lxml.html as lhtml
 
 
 def get_addr(addr):
@@ -55,13 +46,7 @@ def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
 
 
 def get_preview(msg):
-    text = re.sub('<[^>]*?>', '', msg['text'] or msg['html'] or '')
-    text = HTMLParser().unescape(text)
-    return text.strip() or '>'
-
-
-def humanize_subj(subj):
-    return subj.strip() or '(no subject)'
+    return msg['text'][:200].strip() or '>'
 
 
 def is_subj_changed(msg, subj):
@@ -69,3 +54,39 @@ def is_subj_changed(msg, subj):
     if index == 0 or index and msg['subj'][:index].strip().endswith(':'):
         return False
     return True
+
+
+def humanize_subj(subj):
+    return subj.strip() or '(no subject)'
+
+
+def humanize_html(htm, parent=None, class_='email-quote'):
+    htm = re.sub(r'(<br[ ]?[/]?>\s*)$', '', htm).strip()
+    if htm and parent:
+        htm = hide_quote(htm, parent, class_)
+    if htm:
+        htm = toronado.from_string(htm).decode()
+    return htm
+
+
+def hide_quote(mail1, mail0, class_):
+    # TODO: need reworking
+    if not mail0 or not mail1:
+        return mail1
+
+    def clean(v):
+        v = re.sub('[\s]+', '', v.text_content())
+        return v.rstrip()
+
+    t0 = clean(lhtml.fromstring(mail0))
+    root1 = lhtml.fromstring(mail1)
+    for block in root1.xpath('//blockquote'):
+        t1 = clean(block)
+        if t0 and t1 and (t0.startswith(t1) or t0.endswith(t1) or t0 in t1):
+            block.attrib['class'] = class_
+            parent = block.getparent()
+            switch = lhtml.fromstring('<div class="%s-switch"/>' % class_)
+            block.attrib['class'] = class_
+            parent.insert(parent.index(block), switch)
+            return lhtml.tostring(root1, encoding='utf8').decode()
+    return mail1

@@ -135,7 +135,7 @@ def body(env, id):
     raw = i.fetchone()[0]
     if raw:
         result = parser.parse(raw.tobytes(), id, env('path_attachments'))
-        result = parser.humanize_html(result['html'])
+        result = f.humanize_html(result['html'])
     else:
         result = ''
     return result

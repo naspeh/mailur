@@ -31,7 +31,7 @@ def sync(env, email, target=None, **kwargs):
 sync.choices = ['fast', 'bodies', 'thrids', 'full']
 
 
-def run(env, only_wsgi):
+def run(env, only_wsgi, use_reloader=True):
     from werkzeug.serving import run_simple
     from werkzeug.wsgi import SharedDataMiddleware
     from mailur import app
@@ -42,7 +42,7 @@ def run(env, only_wsgi):
     extra_files = (
         glob.glob(os.path.join(env('path_theme'), fmask)) +
         glob.glob(os.path.join(env('path_theme'), '*', fmask))
-        for fmask in ['*.less', '*.css', '*.js']
+        for fmask in ['*.less', '*.css', '*.js', '*.mustache']
     )
     extra_files = sum(extra_files, [])
 
@@ -52,7 +52,7 @@ def run(env, only_wsgi):
     })
     run_simple(
         '0.0.0.0', 5000, wsgi_app,
-        use_debugger=True, use_reloader=True,
+        use_debugger=True, use_reloader=use_reloader,
         extra_files=extra_files
     )
 
@@ -149,7 +149,8 @@ def get_full(argv):
 
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
-        .exe(lambda a: run(env, a.only_wsgi))
+        .arg('--wo-reloader', action='store_true')\
+        .exe(lambda a: run(env, a.only_wsgi, not a.wo_reloader))
 
     cmd('shell')\
         .exe(lambda a: shell(env))
