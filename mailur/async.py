@@ -11,16 +11,17 @@ def wshandler(request):
     ws = web.WebSocketResponse()
     ws.start(request)
 
-    params = {'cookies': request.cookies.items()}
+    cookies = request.cookies
 
     while True:
         msg = yield from ws.receive()
         if msg.tp == web.MsgType.text:
             log.debug(msg.data)
             data = json.loads(msg.data)
-            resp = yield from http('GET', data['url'], **params)
+            resp = yield from http('GET', data['url'], cookies=cookies.items())
             log.debug('%s %s', resp.status, msg.data)
             if resp.status == 200:
+                cookies = dict(cookies, **resp.cookies)
                 resp = (yield from resp.read()).decode()
                 ws.send_str(json.dumps({'uid': data['uid'], 'data': resp}))
         elif msg.tp == web.MsgType.close:
