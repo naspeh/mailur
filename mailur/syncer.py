@@ -213,24 +213,20 @@ def update_thrids(env):
 
     # step('clear', 'UPDATE emails SET thrid = NULL')
     step('no "in_reply_to" and "references"', '''
-      UPDATE emails SET thrid = id
-        WHERE thrid IS NULL AND (
-          in_reply_to IS NULL
-          OR in_reply_to != ALL(SELECT msgid FROM emails)
-        ) AND (
-          refs IS NULL
-          OR NOT (refs && (SELECT array_agg(msgid) FROM emails))
-        )
+    UPDATE emails SET thrid = id
+    WHERE thrid IS NULL
+      AND (in_reply_to IS NULL OR in_reply_to != ALL(SELECT msgid FROM emails))
+      AND (refs IS NULL OR NOT (refs && (SELECT array_agg(msgid) FROM emails)))
     ''')
 
     step('by "in_reply_to"', '''
-    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
-      SELECT id, msgid, thrid, ARRAY[id], false
+    WITH RECURSIVE thrids(id, msgid, thrid) AS (
+      SELECT id, msgid, thrid
         FROM emails WHERE thrid IS NOT NULL
     UNION ALL
-      SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
+      SELECT e.id, e.msgid, t.thrid
         FROM emails e, thrids t
-        WHERE NOT cycle AND t.thrid IS NOT NULL AND e.in_reply_to = t.msgid
+        WHERE t.thrid IS NOT NULL AND e.in_reply_to = t.msgid
     )
     UPDATE emails e SET thrid=t.thrid
       FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
@@ -249,4 +245,7 @@ def update_thrids(env):
       FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     ''')
 
-    step('other thrid=id', 'UPDATE emails SET thrid = id WHERE thrid IS NULL')
+    step('other as thrid=id', '''
+    UPDATE emails SET thrid = id
+    WHERE thrid IS NULL
+    ''')
