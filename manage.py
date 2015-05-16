@@ -32,12 +32,14 @@ sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
 def run(env, only_wsgi, use_reloader=True):
+    from multiprocessing import Process
     from werkzeug.serving import run_simple
     from werkzeug.wsgi import SharedDataMiddleware
-    from mailur import app
+    from mailur import app, async
 
     if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         main(['lessc'])
+        Process(target=async.run, args=('127.0.0.1', 5001)).start()
 
     extra_files = (
         glob.glob(os.path.join(env('path_theme'), fmask)) +
@@ -82,11 +84,12 @@ def get_base(argv):
     requirements = (
         'Stache '
         'Werkzeug '
-        'cchardet '
+        'aiohttp '
+        'chardet '
         'lxml '
-        'toronado '
         'psycopg2 '
         'requests '
+        'toronado '
         'valideer '
     )
     cmd('reqs', help='update requirements.txt file')\
@@ -129,7 +132,7 @@ def get_base(argv):
 
 
 def get_full(argv):
-    from mailur import Env, db
+    from mailur import Env, db, async
 
     with open('conf.json', 'br') as f:
         conf = json.loads(f.read().decode())
@@ -151,6 +154,11 @@ def get_full(argv):
         .arg('-w', '--only-wsgi', action='store_true')\
         .arg('--wo-reloader', action='store_true')\
         .exe(lambda a: run(env, a.only_wsgi, not a.wo_reloader))
+
+    cmd('async')\
+        .arg('-H', '--host', default='127.0.0.1')\
+        .arg('-P', '--port', type=int, default=5001)\
+        .exe(lambda a: async.run(a.host, a.port))
 
     cmd('shell')\
         .exe(lambda a: shell(env))

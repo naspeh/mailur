@@ -6,7 +6,7 @@ import re
 from collections import OrderedDict
 from html import escape as html_escape
 
-import cchardet
+import chardet
 from lxml import etree, html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
@@ -31,7 +31,7 @@ def get_charset(name):
 
 def guess_charsets(text, extra=None):
     extra = get_charset(extra)
-    detected = cchardet.detect(text)
+    detected = chardet.detect(text)
     detected, confidence = detected['encoding'], detected['confidence']
     if confidence > 0.9 and not extra:
         return [detected]

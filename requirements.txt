@@ -1,6 +1,7 @@
 Stache==0.0.9
 Werkzeug==0.10.4
-cchardet==0.3.5
+aiohttp==0.15.3
+chardet==2.3.0
 cssselect==0.9.1
 cssutils==1.0
 decorator==3.4.2
