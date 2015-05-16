@@ -46,7 +46,7 @@ def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
 
 
 def get_preview(msg):
-    return msg['text'][:200].strip() or '>'
+    return (msg['text']or '')[:200].strip() or '>'
 
 
 def is_subj_changed(msg, subj):

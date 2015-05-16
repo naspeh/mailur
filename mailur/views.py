@@ -34,27 +34,27 @@ def auth_callback(env):
 
 
 def login_required(func):
-    @ft.wraps(func)
     def inner(env, *a, **kw):
         if not (env.is_logined or env('ui_is_public')):
             return env.redirect_for('auth')
         return func(env, *a, **kw)
-    return inner
+
+    return ft.wraps(func)(inner)
 
 
 def adapt_fmt(tpl):
-    def w(func):
-        w.func = func
-        return ft.wraps(func)(inner)
-
     def inner(env, *a, **kw):
         fmt = env.request.args.get('fmt', 'html')
 
-        ctx = w.func(env, *a, **kw)
+        ctx = inner.func(env, *a, **kw)
         if fmt == 'json':
             return env.to_json(ctx)
         return env.render_body(tpl, ctx)
-    return w
+
+    def wrapper(func):
+        inner.func = func
+        return ft.wraps(func)(inner)
+    return wrapper
 
 
 @login_required
