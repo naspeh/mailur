@@ -57,7 +57,7 @@ def is_subj_changed(msg, subj):
 
 
 def humanize_subj(subj):
-    return subj.strip() or '(no subject)'
+    return (subj and subj.strip()) or '(no subject)'
 
 
 def humanize_html(htm, parent=None, class_='email-quote'):

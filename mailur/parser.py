@@ -15,10 +15,16 @@ from . import log
 
 
 def get_charset(name):
+    # TODO: http://w3lib.readthedocs.org/en/latest/_modules/w3lib/encoding.html
     aliases = {
         'unknown-8bit': None,
         'cp-1251': 'cp1251',
         'gb2312': 'gbk',
+        # Was taken at https://github.com/SimonSapin/python-webencodings/
+        'iso-8859-8-i': 'iso-8859-8',
+        'x-mac-cyrillic': 'mac-cyrillic',
+        'macintosh': 'mac-roman',
+        'windows-874': 'cp874'
     }
     return aliases.get(name, name)
 
@@ -47,7 +53,7 @@ def decode_str(text, charset, msg_id=None):
     charsets = [charset] if charset else guess_charsets()
     for charset_ in charsets:
         try:
-            part = text.decode(charset_)
+            part = text.decode(get_charset(charset_))
             break
         except UnicodeDecodeError:
             part = None

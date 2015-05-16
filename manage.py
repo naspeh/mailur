@@ -28,7 +28,7 @@ def sync(env, email, target=None, **kwargs):
     elif target == 'full':
         for target in sync.choices[:-1]:
             sync(env, email, target, **kwargs)
-sync.choices = ['fast', 'bodies', 'thrids', 'full']
+sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
 def run(env, only_wsgi, use_reloader=True):

@@ -212,7 +212,7 @@ def update_thrids(env):
         log.info('  - for %s emails (%s)', i.rowcount, label)
 
     # step('clear', 'UPDATE emails SET thrid = NULL')
-    step('empty "in_reply_to" or "references"', '''
+    step('no "in_reply_to" and "references"', '''
       UPDATE emails SET thrid = id
         WHERE thrid IS NULL AND (
           in_reply_to IS NULL
