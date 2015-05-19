@@ -60,7 +60,7 @@ def adapt_fmt(tpl):
 @login_required
 @adapt_fmt('index')
 def index(env):
-    i = env.sql(' select distinct unnest(labels) from emails;')
+    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
     labels = sorted(r[0] for r in i.fetchall())
     labels = [{'name': l, 'url': env.url_for('label', name=l)} for l in labels]
     return {'labels': labels}
