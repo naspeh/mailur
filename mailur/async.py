@@ -38,7 +38,7 @@ def wshandler(request):
 
 def notify(request):
     for ws in request.app['sockets']:
-        ws.send_str(json.dumps({'notify': 'empty'}))
+        ws.send_str(json.dumps({'update': True}))
     return web.Response(body=b'OK')
 
 

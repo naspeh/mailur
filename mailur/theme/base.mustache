@@ -20,7 +20,7 @@ function guid(){
     return uuid;
 }
 function connect() {
-    ws = new WebSocket('ws://' + window.location.hostname + ':5001');
+    ws = new WebSocket('ws://localhost:5001');
     ws.onopen = function() {
         send('/init/', function(data) {
             console.log('init done');
@@ -34,8 +34,11 @@ function connect() {
             if (handler) {
                 handler(data.payload);
             }
-        } else if (data.notify) {
-            console.log('notify from server: ' + data.notify);
+        } else if (data.update) {
+            console.log(data);
+            send(window.location.pathname + '?fmt=body', null, function(data) {
+                $('body').html(data);
+            })
         }
     };
     ws.onclose = function() {

@@ -49,6 +49,8 @@ def adapt_fmt(tpl):
         ctx = inner.func(env, *a, **kw)
         if fmt == 'json':
             return env.to_json(ctx)
+        elif fmt == 'body':
+            return env.render(tpl, ctx)
         return env.render_body(tpl, ctx)
 
     def wrapper(func):

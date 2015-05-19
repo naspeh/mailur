@@ -4,6 +4,8 @@ from functools import wraps
 from multiprocessing.dummy import Pool
 from uuid import uuid5, NAMESPACE_URL
 
+import requests
+
 from . import imap_utf7, parser, log
 from .helpers import Timer, with_lock
 from .imap import Client
@@ -145,6 +147,9 @@ def fetch_bodies(env, imap, map_uids):
             data_ = dict(get_parsed(env, data, msgid), raw=data)
             env.emails.update(data_, 'msgid=%s', [msgid])
         env.db.commit()
+        if items:
+            # TODO: use right notification
+            requests.get('http://localhost:5001/notify/')
 
     with async_runner(env('async_pool')) as run:
         for data in imap.fetch_batch(uids, 'RFC822', 'add bodies'):
@@ -220,26 +225,28 @@ def update_thrids(env):
     ''')
 
     step('by "in_reply_to"', '''
-    WITH RECURSIVE thrids(id, msgid, thrid) AS (
-      SELECT id, msgid, thrid
+    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
+      SELECT id, msgid, thrid, ARRAY[id], false
         FROM emails WHERE thrid IS NOT NULL
     UNION ALL
-      SELECT e.id, e.msgid, t.thrid
+      SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
         FROM emails e, thrids t
-        WHERE t.thrid IS NOT NULL AND e.in_reply_to = t.msgid
+        WHERE NOT cycle AND t.thrid IS NOT NULL AND e.in_reply_to = t.msgid
     )
     UPDATE emails e SET thrid=t.thrid
       FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     ''')
 
     step('by "references"', '''
-    WITH RECURSIVE thrids(id, msgid, thrid) AS (
-      SELECT id, msgid, thrid
+    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
+      SELECT id, msgid, thrid, ARRAY[id], false
         FROM emails WHERE thrid IS NOT NULL
     UNION ALL
-      SELECT e.id, e.msgid, t.thrid
+      SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
         FROM emails e, thrids t
-        WHERE e.thrid IS NULL AND t.msgid = ANY(e.refs) AND t.thrid IS NOT NULL
+        WHERE NOT cycle
+          AND e.thrid IS NULL AND t.thrid IS NOT NULL
+          AND t.msgid = ANY(e.refs)
     )
     UPDATE emails e SET thrid=t.thrid
       FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
