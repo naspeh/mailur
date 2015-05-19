@@ -11,6 +11,7 @@ def wshandler(request):
     ws = web.WebSocketResponse()
     ws.start(request)
 
+    request.app['sockets'].append(ws)
     cookies = request.cookies
 
     while True:
@@ -23,20 +24,30 @@ def wshandler(request):
             if resp.status == 200:
                 cookies = dict(cookies, **resp.cookies)
                 resp = (yield from resp.read()).decode()
-                ws.send_str(json.dumps({'uid': data['uid'], 'data': resp}))
+                ws.send_str(json.dumps({'uid': data['uid'], 'payload': resp}))
         elif msg.tp == web.MsgType.close:
             log.info('websocket connection closed')
             yield from ws.close()
             break
         elif msg.tp == web.MsgType.error:
             log.exception(ws.exception())
+
+    request.app['sockets'].remove(ws)
     return ws
+
+
+def notify(request):
+    for ws in request.app['sockets']:
+        ws.send_str(json.dumps({'notify': 'empty'}))
+    return web.Response(body=b'OK')
 
 
 @asyncio.coroutine
 def init(loop, host, port):
     app = web.Application(loop=loop)
+    app['sockets'] = []
     app.router.add_route('GET', '/', wshandler)
+    app.router.add_route('GET', '/notify/', notify)
 
     handler = app.make_handler()
     srv = yield from loop.create_server(handler, host, port)
@@ -46,6 +57,10 @@ def init(loop, host, port):
 
 @asyncio.coroutine
 def finish(app, srv, handler):
+    for ws in app['sockets']:
+        ws.close()
+    app['sockets'].clear()
+    yield from asyncio.sleep(0.1)
     srv.close()
     yield from handler.finish_connections()
     yield from srv.wait_closed()

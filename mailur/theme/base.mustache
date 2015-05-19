@@ -28,10 +28,14 @@ function connect() {
     };
     ws.onmessage = function(e) {
         data = JSON.parse(e.data)
-        console.log('response for ' + data['uid']);
-        var handler = handlers[data['uid']];
-        if (handler) {
-            handler(data['data']);
+        if (data.uid) {
+            console.log('response for ' + data.uid);
+            var handler = handlers[data.uid];
+            if (handler) {
+                handler(data.payload);
+            }
+        } else if (data.notify) {
+            console.log('notify from server: ' + data.notify);
         }
     };
     ws.onclose = function() {
@@ -54,9 +58,10 @@ connect();
 $('.thread .email-text').click(function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
-    if (email.hasClass('email-show')) {
+    if (email.hasClass('email-show') && !email.hasClass('email-loaded')) {
         send(email.data('body-url'), null, function(data) {
             email.find('.email-body').html(data);
+            email.addClass('email-loaded');
         });
     }
     return false;
