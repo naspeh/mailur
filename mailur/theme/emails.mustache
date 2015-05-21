@@ -1,9 +1,10 @@
 {{#thread?}}
 <h3 class="thread-subj">{{subj}}</h3>
 {{/thread?}}
+{{#emails?}}
 <ul class="{{#thread?}}thread{{/thread?}}">
-{{#emails}}
-<li class="email{{#last?}} email-show{{/last?}}{{#unread?}} email-unread{{/unread?}}"
+{{#items}}
+<li class="email{{#body?}} email-show{{/body?}}{{#unread?}} email-unread{{/unread?}}"
     data-id="{{id}}"
     data-body-url="{{body_url}}"
 >
@@ -25,9 +26,10 @@
         <li><a href="{{raw_url}}">Raw</a></li>
     </ul>
     <div class="email-body">
-        {{#last?}}{{&body}}{{/last?}}
+        {{#body?}}{{&text}}{{/body?}}
     </div>
     {{/thread?}}
 </li>
-{{/emails}}
+{{/items}}
 </ul>
+{{/emails?}}

@@ -91,7 +91,8 @@ def ctx_emails(env, items):
         'from_short': fmt_from(i['fr']),
         'gravatar': f.get_gravatar(i['fr'])
     } for i in items]
-    return emails
+    emails = {'items': emails, 'length': len(emails)} if emails else None
+    return {'emails?': emails}
 
 
 @login_required
@@ -104,14 +105,19 @@ def thread(env, id):
       ORDER BY time
     ''', [id])
 
-    emails = ctx_emails(env, i)
-    last = emails[-1]
-    last['last?'] = True
-    last['body'] = body(env, last['id'])
-    subj = emails[0]['subj']
-    for msg in emails:
-        msg['subj_changed?'] = f.is_subj_changed(msg, subj)
-    return {'emails': emails, 'thread?': True, 'subj': subj}
+    ctx = ctx_emails(env, i)
+    if ctx['emails?']:
+        emails = ctx['emails?']['items']
+        subj = emails[0]['subj']
+        for i, msg in enumerate(emails):
+            msg['subj_changed?'] = f.is_subj_changed(msg, subj)
+            msg['body?'] = (
+                (msg['unread?'] or i == len(emails) - 1) and
+                {'text': body(env, msg['id'])}
+            )
+
+    ctx['thread?'] = {'subj': subj}
+    return ctx
 
 
 @login_required
@@ -128,7 +134,7 @@ def label(env, name):
       )
       ORDER BY time DESC
     ''', [name])
-    return {'emails': ctx_emails(env, i)}
+    return ctx_emails(env, i)
 
 
 @login_required
