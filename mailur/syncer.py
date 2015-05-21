@@ -22,35 +22,47 @@ def lock_sync_gmail(func):
 
 
 @lock_sync_gmail
-def sync_gmail(env, email, bodies=False, only_labels=None):
+def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
     imap = Client(env, email)
     folders = imap.folders()
     if not only_labels:
         # Only these folders contain unique emails
         only_labels = ('\\All', '\\Junk', '\\Trash')
 
+    labels_ = labels or {}
     for attrs, delim, name in folders:
         label = set(only_labels) & set(attrs + (name,))
         label = label and label.pop()
         if not label:
             continue
 
-        uids = imap.search(name)
-        log.info('"%s" has %i messages' % (imap_utf7.decode(name), len(uids)))
-        if not uids:
-            continue
+        if not labels:
+            labels_[name] = get_label_uids(imap, name)
+        else:
+            imap.status(name)
+            log.info('"%s"' % imap_utf7.decode(name))
 
-        q = 'BODY[HEADER.FIELDS (MESSAGE-ID)]'
-        data = imap.fetch(uids, [q])
-        uids = OrderedDict(
-            (k, parser.parse(v[q])['message-id']) for k, v in data
-        )
-
+        uids = labels_[name]
         if bodies:
             fetch_bodies(env, imap, uids)
         else:
             fetch_headers(env, email, imap, uids)
             fetch_labels(env, imap, uids, label)
+    return labels_
+
+
+def get_label_uids(imap, name):
+    uids = imap.search(name)
+    log.info('"%s" has %i messages' % (imap_utf7.decode(name), len(uids)))
+    if not uids:
+        return None
+
+    q = 'BODY[HEADER.FIELDS (MESSAGE-ID)]'
+    data = imap.fetch(uids, [q])
+    uids = OrderedDict(
+        (k, parser.parse(v[q])['message-id']) for k, v in data
+    )
+    return uids
 
 
 def get_gids(env, gids, where=None):

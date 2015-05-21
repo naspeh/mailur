@@ -20,14 +20,17 @@ def sync(env, email, target=None, **kwargs):
 
     func = functools.partial(syncer.sync_gmail, env, email, **kwargs)
     if target in (None, 'fast'):
-        func()
+        return func()
     elif target == 'bodies':
-        func(bodies=True)
+        return func(bodies=True)
     elif target == 'thrids':
         syncer.update_thrids(env)
     elif target == 'full':
-        for target in sync.choices[:-1]:
-            sync(env, email, target, **kwargs)
+        s = functools.partial(sync, env, email, **kwargs)
+
+        labels = s(target='fast')
+        s(target='thrids')
+        s(target='bodies', labels=labels)
 sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
