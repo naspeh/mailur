@@ -2,10 +2,13 @@
 <h3 class="thread-subj">{{subj}}</h3>
 {{/thread?}}
 {{#emails?}}
-<ul class="{{#thread?}}thread{{/thread?}}">
+<ul class="emails{{#thread?}} thread{{/thread?}}">
 {{#items}}
 <li class="email{{#body?}} email-show{{/body?}}{{#unread?}} email-unread{{/unread?}}"
+    id="{{#thread?}}{{id}}{{/thread?}}{{^thread?}}{{thrid}}{{/thread?}}"
     data-id="{{id}}"
+    data-thrid="{{thrid}}"
+    data-hash="{{hash}}"
     data-body-url="{{body_url}}"
 >
     <ul class="email-line">

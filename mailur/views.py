@@ -75,22 +75,28 @@ def init(env):
 
 def ctx_emails(env, items):
     fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
-    emails = [{
-        'id': i['id'],
-        'subj': i['subj'],
-        'subj_human': f.humanize_subj(i['subj']),
-        'preview': f.get_preview(i),
-        'pinned?': '\\Starred' in i['labels'],
-        'unread?': '\\Unread' in i['labels'],
-        'body_url': env.url_for('body', id=i['id']),
-        'raw_url': env.url_for('raw', id=i['id']),
-        'thread_url': env.url_for('thread', id=i['thrid']),
-        'time': f.format_dt(env, i['time']),
-        'time_human': f.humanize_dt(env, i['time']),
-        'from': i['fr'][0],
-        'from_short': fmt_from(i['fr']),
-        'gravatar': f.get_gravatar(i['fr'])
-    } for i in items]
+    emails = []
+    for i in items:
+        email = {
+            'id': i['id'],
+            'thrid': i['thrid'],
+            'subj': i['subj'],
+            'subj_human': f.humanize_subj(i['subj']),
+            'preview': f.get_preview(i),
+            'pinned?': '\\Starred' in i['labels'],
+            'unread?': '\\Unread' in i['labels'],
+            'body_url': env.url_for('body', id=i['id']),
+            'raw_url': env.url_for('raw', id=i['id']),
+            'thread_url': env.url_for('thread', id=i['thrid']),
+            'time': f.format_dt(env, i['time']),
+            'time_human': f.humanize_dt(env, i['time']),
+            'from': i['fr'][0],
+            'from_short': fmt_from(i['fr']),
+            'gravatar': f.get_gravatar(i['fr'])
+        }
+        email['hash'] = f.get_hash(email)
+        emails.append(email)
+
     emails = {'items': emails, 'length': len(emails)} if emails else None
     return {'emails?': emails}
 

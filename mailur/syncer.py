@@ -205,6 +205,9 @@ def update_label(env, gids, label, folder=None):
         sql += (' AND %(folder)s = ANY(labels)' if folder else '')
         i = env.sql(sql, {'label': label, 'gids': gids, 'folder': folder})
         log.info('  - %s %d emails for %.2fs', action, i.rowcount, t.time())
+        if i.rowcount:
+            # TODO: use right notification
+            requests.get('http://localhost:5001/notify/')
 
     log.info('  * Process %r...', label)
     step('remove from', '''

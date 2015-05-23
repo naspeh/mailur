@@ -22,11 +22,7 @@ function guid(){
 }
 function connect() {
     ws = new WebSocket('ws://localhost:5001');
-    ws.onopen = function() {
-        send('/init/', function(data) {
-            console.log('init done');
-        });
-    };
+    ws.onopen = function() {};
     ws.onmessage = function(e) {
         data = JSON.parse(e.data)
         if (data.uid) {
@@ -37,9 +33,16 @@ function connect() {
             }
         } else if (data.update) {
             console.log(data);
-            send(window.location.pathname + '?fmt=body', null, function(data) {
-                $('body').html(data);
-            })
+            var path = window.location.pathname;
+            send(path + '?fmt=body', null, function(data) {
+                if (path.search("^/thread/") != -1) {
+                    updateEmails(data, true);
+                } else if (path.search("^/in/") != -1) {
+                    updateEmails(data);
+                } else {
+                    $('body').html(data);
+                }
+            });
         }
     };
     ws.onclose = function() {
@@ -56,6 +59,22 @@ function send(url, data, callback) {
         ws.send(JSON.stringify(resp));
         handlers[resp.uid] = callback;
     }
+}
+function updateEmails(data, thread) {
+    var container = $('.emails');
+    $(data).find('.email').each(function() {
+        var $this = $(this);
+        var exists = $('#' + $this.attr('id'));
+        if (exists.length && $this.data('hash') != exists.data('hash')) {
+            exists.replaceWith(this);
+        } else if (!exists.length) {
+            if (thread) {
+                container.append(this);
+            } else {
+                container.prepend(this);
+            }
+        }
+    });
 }
 
 connect();

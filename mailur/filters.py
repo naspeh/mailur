@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 import re
 from email.utils import getaddresses
 from hashlib import md5
@@ -90,3 +91,7 @@ def hide_quote(mail1, mail0, class_):
             parent.insert(parent.index(block), switch)
             return lhtml.tostring(root1, encoding='utf8').decode()
     return mail1
+
+
+def get_hash(value):
+    return md5(json.dumps(value).encode()).hexdigest()
