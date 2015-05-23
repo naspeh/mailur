@@ -36,9 +36,12 @@ def wshandler(request):
     return ws
 
 
+@asyncio.coroutine
 def notify(request):
+    yield from request.post()
+    msg = json.dumps({'updated': request.POST.getall('ids')})
     for ws in request.app['sockets']:
-        ws.send_str(json.dumps({'update': True}))
+        ws.send_str(msg)
     return web.Response(body=b'OK')
 
 
@@ -47,7 +50,7 @@ def init(loop, host, port):
     app = web.Application(loop=loop)
     app['sockets'] = []
     app.router.add_route('GET', '/', wshandler)
-    app.router.add_route('GET', '/notify/', notify)
+    app.router.add_route('POST', '/notify/', notify)
 
     handler = app.make_handler()
     srv = yield from loop.create_server(handler, host, port)

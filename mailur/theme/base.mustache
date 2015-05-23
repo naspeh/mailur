@@ -31,7 +31,7 @@ function connect() {
             if (handler) {
                 handler(data.payload);
             }
-        } else if (data.update) {
+        } else if (data.updated) {
             console.log(data);
             var path = window.location.pathname;
             send(path + '?fmt=body', null, function(data) {

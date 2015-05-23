@@ -95,9 +95,9 @@ class Manager():
             table=self.name,
             fields=', '.join('"%s"' % i for i in fields),
         )
-        sql += values
+        sql += values + 'RETURNING id'
         cur.execute(sql)
-        return cur
+        return (r[id] for r in cur)
 
     def update(self, values, where, params=None):
         cur = self.db.cursor()
@@ -109,17 +109,18 @@ class Manager():
         values_ = ', '.join('%%(%s)s' % i for i in fields)
         values_ = cur.mogrify(values_, values).decode()
         where_ = cur.mogrify(where, params).decode()
-        sql = (
-            "UPDATE {table} SET ({fields}) = ({values}) WHERE {where}"
-            .format(
-                table=self.name,
-                fields=', '.join('"%s"' % i for i in fields),
-                values=values_,
-                where=where_
-            )
+        sql = '''
+        UPDATE {table} SET ({fields}) = ({values})
+          WHERE {where}
+          RETURNING id
+        '''.format(
+            table=self.name,
+            fields=', '.join('"%s"' % i for i in fields),
+            values=values_,
+            where=where_
         )
         cur.execute(sql)
-        return cur
+        return (r[0] for r in cur)
 
 
 class Accounts(Manager):
