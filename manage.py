@@ -45,8 +45,7 @@ def reqs(dev=False):
         'pip install --no-index -f ../wheels {requirements}'
         .format(requirements=requirements)
     )
-    if not dev:
-        sh('pip freeze | sort > requirements.txt')
+    not dev and sh('pip freeze | sort > requirements.txt')
 
 
 def sync(env, email, target=None, **kwargs):
@@ -180,7 +179,7 @@ def main(argv=None):
     try:
         parser = get_full(argv)
     except ImportError as e:
-        # log.exception(e)
+        log.error(e, exc_info=0)
         parser, _ = get_base(argv)
 
     args, extra = parser.parse_known_args(argv)
