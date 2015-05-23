@@ -12,7 +12,10 @@ log = logging.getLogger(__name__)
 
 def sh(cmd):
     log.info(cmd)
-    return subprocess.call(cmd, shell=True)
+    code = subprocess.call(cmd, shell=True)
+    if code:
+        raise SystemExit(code)
+    return 0
 
 
 def reqs(dev=False):
@@ -32,6 +35,7 @@ def reqs(dev=False):
         'ptpdb '
     ) if dev else ''
 
+    sh('[ -d "$VIRTUAL_ENV" ] || (echo "ERROR: no virtualenv" && exit 1)')
     sh(
         'rm -rf $VIRTUAL_ENV && '
         'virtualenv $VIRTUAL_ENV && '
@@ -176,7 +180,7 @@ def main(argv=None):
     try:
         parser = get_full(argv)
     except ImportError as e:
-        log.exception(e)
+        # log.exception(e)
         parser, _ = get_base(argv)
 
     args, extra = parser.parse_known_args(argv)
