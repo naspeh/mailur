@@ -22,7 +22,9 @@ function guid(){
 }
 function connect() {
     ws = new WebSocket('ws://localhost:5001');
-    ws.onopen = function() {};
+    ws.onopen = function() {
+        console.log('ws opened');
+    };
     ws.onmessage = function(e) {
         data = JSON.parse(e.data)
         if (data.uid) {
@@ -46,7 +48,8 @@ function connect() {
         }
     };
     ws.onclose = function() {
-        console.log('closed');
+        console.log('ws closed');
+        setTimeout(connect, 5000);
     };
 };
 function send(url, data, callback) {
