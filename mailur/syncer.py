@@ -198,7 +198,7 @@ def fetch_labels(env, imap, map_uids, folder):
         updated += update_label(env, gids, label, folder)
 
     cur = env.db.cursor()
-    # Array intersection
+    # Sorted array intersection
     new_labels = cur.mogrify('''
     SELECT ARRAY(
       SELECT i FROM (
@@ -208,7 +208,7 @@ def fetch_labels(env, imap, map_uids, folder):
       ) as dt(i)
       ORDER BY 1
     )
-    ''', [sorted(glabels | {'\\Answered', '\\Unread', folder})])
+    ''', [list(glabels | {'\\Answered', '\\Unread', folder})])
     sql = '''
     UPDATE emails SET labels=({0})
     WHERE (SELECT ARRAY(SELECT unnest(labels) ORDER BY 1)) != ({0})
@@ -217,7 +217,7 @@ def fetch_labels(env, imap, map_uids, folder):
     '''.format(new_labels.decode())
     i = env.sql(sql, [folder])
     updated += tuple(r[0] for r in i)
-    log.info('  - clean %d emails', i.rowcount)
+    log.info('  * Clean %d emails', i.rowcount)
 
     env.db.commit()
     notify(updated)

@@ -49,7 +49,7 @@ function connect() {
     };
     ws.onclose = function() {
         console.log('ws closed');
-        setTimeout(connect, 5000);
+        setTimeout(connect, 10000);
     };
 };
 function send(url, data, callback) {

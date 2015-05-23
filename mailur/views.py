@@ -75,8 +75,9 @@ def init(env):
 
 def ctx_emails(env, items):
     fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
-    emails = []
+    emails, last = [], None
     for i in items:
+        last = i['updated'] if not last or i['updated'] > last else last
         email = {
             'id': i['id'],
             'thrid': i['thrid'],
@@ -97,7 +98,11 @@ def ctx_emails(env, items):
         email['hash'] = f.get_hash(email)
         emails.append(email)
 
-    emails = {'items': emails, 'length': len(emails)} if emails else None
+    emails = emails and {
+        'items': emails,
+        'length': len(emails),
+        'last': str(last)
+    }
     return {'emails?': emails}
 
 
@@ -105,7 +110,7 @@ def ctx_emails(env, items):
 @adapt_fmt('emails')
 def thread(env, id):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr, text, html
+    SELECT id, thrid, subj, labels, time, fr, text, html, updated
       FROM emails
       WHERE thrid = %s
       ORDER BY time
@@ -130,7 +135,7 @@ def thread(env, id):
 @adapt_fmt('emails')
 def label(env, name):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr, text, html
+    SELECT id, thrid, subj, labels, time, fr, text, html, updated
       FROM emails
       WHERE id IN (
         SELECT thrid FROM emails
