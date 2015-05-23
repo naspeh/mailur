@@ -50,7 +50,7 @@ def get_preview(msg):
 
 
 def is_subj_changed(msg, subj):
-    index = msg['subj'].index(subj)
+    index = msg['subj'].find(subj)
     if index == 0 or index and msg['subj'][:index].strip().endswith(':'):
         return False
     return True
