@@ -15,6 +15,36 @@ def sh(cmd):
     return subprocess.call(cmd, shell=True)
 
 
+def reqs(dev=False):
+    requirements = (
+        'Stache '
+        'Werkzeug '
+        'aiohttp '
+        'chardet '
+        'lxml '
+        'psycopg2 '
+        'requests '
+        'toronado '
+        'valideer '
+    )
+    requirements += (
+        'pytest '
+        'ptpdb '
+    ) if dev else ''
+
+    sh(
+        'rm -rf $VIRTUAL_ENV && '
+        'virtualenv $VIRTUAL_ENV && '
+        'pip install wheel && '
+        'pip wheel -w ../wheels/ -f ../wheels/ {requirements} &&'
+        'pip uninstall -y wheel &&'
+        'pip install --no-index -f ../wheels {requirements}'
+        .format(requirements=requirements)
+    )
+    if not dev:
+        sh('pip freeze | sort > requirements.txt')
+
+
 def sync(env, email, target=None, **kwargs):
     from mailur import syncer
 
@@ -84,35 +114,9 @@ def get_base(argv):
         p.exe = lambda f: p.set_defaults(exe=f) and p
         return p
 
-    requirements = (
-        'Stache '
-        'Werkzeug '
-        'aiohttp '
-        'chardet '
-        'lxml '
-        'psycopg2 '
-        'requests '
-        'toronado '
-        'valideer '
-    )
-    cmd('reqs', help='update requirements.txt file')\
-        .arg('-w', '--wheels', action='store_true')\
-        .exe(lambda a: sh(''.join([
-            (
-                'pip install wheel && '
-                'pip wheel -w ../wheels/ {requirements} &&'
-                'pip uninstall -y wheel &&'
-                .format(requirements=requirements)
-                if a.wheels else ''
-            ),
-            (
-                'rm -rf $VIRTUAL_ENV && '
-                'virtualenv $VIRTUAL_ENV && '
-                'pip install --no-index -f ../wheels {requirements} && '
-                'pip freeze | sort > requirements.txt'
-                .format(requirements=requirements)
-            )
-        ])))
+    cmd('reqs', help='update requirements')\
+        .arg('-d', '--dev', action='store_true')\
+        .exe(lambda a: reqs(a.dev))
 
     cmd('node', help='install node packages')\
         .exe(lambda a: sh(
