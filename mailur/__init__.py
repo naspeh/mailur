@@ -23,6 +23,7 @@ def get_conf(conf):
             'debug': v.Nullable(bool, False),
             '+pg_username': str,
             '+pg_password': str,
+            'pg_dbname': v.Nullable(str, 'mailur_dev'),
             '+google_id': str,
             '+google_secret': str,
             '+cookie_secret': str,
@@ -63,7 +64,7 @@ class Env:
 
     @property
     def db_name(self):
-        return 'mailur_dev'
+        return self('pg_dbname')
 
     def db_connect(self, **params):
         params = dict({

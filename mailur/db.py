@@ -97,7 +97,7 @@ class Manager():
         )
         sql += values + 'RETURNING id'
         cur.execute(sql)
-        return (r[id] for r in cur)
+        return [r[0] for r in cur]
 
     def update(self, values, where, params=None):
         cur = self.db.cursor()
@@ -120,7 +120,7 @@ class Manager():
             where=where_
         )
         cur.execute(sql)
-        return (r[0] for r in cur)
+        return [r[0] for r in cur]
 
 
 class Accounts(Manager):
@@ -152,8 +152,7 @@ class Accounts(Manager):
         if self.exists(email):
             return self.update(email, data)
 
-        i = self.insert([{'type': 'gmail', 'email': email, 'data': data}])
-        return i.rowcount
+        return self.insert([{'type': 'gmail', 'email': email, 'data': data}])
 
     def update(self, email, data):
         data = dict(self.get_data(email), **data)

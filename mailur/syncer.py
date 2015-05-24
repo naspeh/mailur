@@ -43,7 +43,9 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
             log.info('"%s"' % imap_utf7.decode(name))
 
         uids = labels_[name]
-        if bodies:
+        if not uids:
+            continue
+        elif bodies:
             fetch_bodies(env, imap, uids)
         else:
             fetch_headers(env, email, imap, uids)
@@ -227,7 +229,10 @@ def notify(ids):
     if not ids:
         return
 
-    requests.post('http://localhost:5001/notify/', data={'ids': ids})
+    try:
+        requests.post('http://localhost:5001/notify/', data={'ids': ids})
+    except IOError as e:
+        log.error(e)
 
 
 def update_label(env, gids, label, folder=None):
@@ -258,13 +263,18 @@ def update_label(env, gids, label, folder=None):
 def update_thrids(env):
     log.info('Update thread ids')
 
-    def step(label, sql):
+    def step(label, sql, log_ids=False):
         i = env.sql(sql)
         log.info('  - for %s emails (%s)', i.rowcount, label)
-        step.ids += tuple(r[0] for r in i)
-    step.ids = ()
+        env.db.commit()
 
-    # step('clear', 'UPDATE emails SET thrid = NULL')
+        ids = tuple(r[0] for r in i)
+        notify(ids)
+        if log_ids and ids:
+            log.info('  - ids: %s', ids)
+        return ids
+
+    # step('clear', 'UPDATE emails SET thrid = NULL RETURNING id')
     step('no "in_reply_to" and "references"', '''
     UPDATE emails SET thrid = id
     WHERE thrid IS NULL
@@ -273,41 +283,31 @@ def update_thrids(env):
     RETURNING id
     ''')
 
-    step('by "in_reply_to"', '''
-    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
-      SELECT id, msgid, thrid, ARRAY[id], false
+    step('flat query by "in_reply_to" and "references"', '''
+    UPDATE emails e SET thrid=t.thrid
+      FROM emails t
+      WHERE (e.in_reply_to = t.msgid OR t.msgid = ANY(e.refs))
+        AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      RETURNING e.id;
+    ''')
+
+    step('reqursive query by "in_reply_to" and "references"', '''
+    WITH RECURSIVE thrids(id, msgid, thrid) AS (
+      SELECT id, msgid, thrid
       FROM emails WHERE thrid IS NOT NULL
-    UNION ALL
-      SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
+    UNION
+      SELECT e.id, e.msgid, t.thrid
       FROM emails e, thrids t
-      WHERE NOT cycle AND t.thrid IS NOT NULL AND e.in_reply_to = t.msgid
+      WHERE (e.in_reply_to = t.msgid OR t.msgid = ANY(e.refs))
+        AND e.thrid IS NULL AND t.thrid IS NOT NULL
     )
     UPDATE emails e SET thrid=t.thrid
     FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     RETURNING e.id
     ''')
 
-    step('by "references"', '''
-    WITH RECURSIVE thrids(id, msgid, thrid, path, cycle) AS (
-      SELECT id, msgid, thrid, ARRAY[id], false
-      FROM emails WHERE thrid IS NOT NULL
-    UNION ALL
-      SELECT e.id, e.msgid, t.thrid, path || e.id, e.id = ANY(path)
-      FROM emails e, thrids t
-      WHERE NOT cycle
-        AND e.thrid IS NULL AND t.thrid IS NOT NULL
-        AND t.msgid = ANY(e.refs)
-    )
-    UPDATE emails e SET thrid=t.thrid
-      FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
-      RETURNING e.id
-    ''')
-
     step('other as thrid=id', '''
     UPDATE emails SET thrid = id
     WHERE thrid IS NULL
     RETURNING id
-    ''')
-
-    env.db.commit()
-    notify(step.ids)
+    ''', log_ids=True)

@@ -26,7 +26,7 @@ def wshandler(request):
                 resp = (yield from resp.read()).decode()
                 ws.send_str(json.dumps({'uid': data['uid'], 'payload': resp}))
         elif msg.tp == web.MsgType.close:
-            log.info('ws closed')
+            log.debug('ws closed')
             yield from ws.close()
             break
         elif msg.tp == web.MsgType.error:
