@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 import argparse
-import functools
+import functools as ft
 import glob
 import json
 import logging
 import os
-import subprocess
+import subprocess as sp
 
 log = logging.getLogger(__name__)
 
 
 def sh(cmd):
     log.info(cmd)
-    code = subprocess.call(cmd, shell=True)
+    code = sp.call(cmd, shell=True)
     if code:
         raise SystemExit(code)
     return 0
@@ -51,7 +51,7 @@ def reqs(dev=False):
 def sync(env, email, target=None, **kwargs):
     from mailur import syncer
 
-    func = functools.partial(syncer.sync_gmail, env, email, **kwargs)
+    func = ft.partial(syncer.sync_gmail, env, email, **kwargs)
     if target in (None, 'fast'):
         return func()
     elif target == 'bodies':
@@ -59,7 +59,7 @@ def sync(env, email, target=None, **kwargs):
     elif target == 'thrids':
         syncer.update_thrids(env)
     elif target == 'full':
-        s = functools.partial(sync, env, email, **kwargs)
+        s = ft.partial(sync, env, email, **kwargs)
 
         labels = s(target='fast')
         s(target='thrids')
@@ -74,7 +74,7 @@ def run(env, only_wsgi, use_reloader=True):
     from mailur import app, async
 
     if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        main(['lessc'])
+        main(['css'])
         Process(target=async.run, args=('127.0.0.1', 5001)).start()
 
     extra_files = (
@@ -117,19 +117,19 @@ def get_base(argv):
         p.exe = lambda f: p.set_defaults(exe=f) and p
         return p
 
-    cmd('reqs', help='update requirements')\
+    cmd('reqs', help='update python requirements')\
         .arg('-d', '--dev', action='store_true')\
         .exe(lambda a: reqs(a.dev))
 
-    cmd('node', help='install node packages')\
+    cmd('node', help='update nodejs packages')\
         .exe(lambda a: sh(
-            'npm install'
-            '   autoprefixer@5.1.0'
-            '   csso@1.3.11'
-            '   less@2.5.0'
+            'npm install --save --save-exact'
+            '   autoprefixer'
+            '   csso'
+            '   less'
         ))
 
-    cmd('lessc').exe(lambda a: sh(
+    cmd('css').exe(lambda a: sh(
         'lessc {0}styles.less {0}styles.css && '
         'autoprefixer {0}styles.css {0}styles.css && '
         'csso {0}styles.css {0}styles.css'.format('mailur/theme/')

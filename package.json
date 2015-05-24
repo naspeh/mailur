@@ -1,0 +1,10 @@
+{
+  "author": "naspeh",
+  "dependencies": {
+    "autoprefixer": "5.1.1",
+    "csso": "1.3.11",
+    "less": "2.5.1"
+  },
+  "repository": {},
+  "license": "MIT"
+}
