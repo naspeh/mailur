@@ -66,6 +66,17 @@ body {
         }
         .email-subj {
             color: @ColorB;
+
+            &.email-subj-changed {
+                display: inline;
+            }
+        }
+        .email-count {
+            padding: 0 3px;
+            color: @ColorA;
+            background-color: @Color0bg;
+            border-radius: 0.4em;
+            font-weight: normal;
         }
         .email-time, .email-time-human {
             position: absolute;
@@ -142,20 +153,13 @@ body {
     font-weight: bold;
 }
 .thread {
-    .email-subj {
-        display: none;
-
-        &.email-subj-changed {
-            display: inline;
-        }
-    }
     .email-from {
         font-weight: bold;
     }
+    .email-subj {
+        display: none;
+    }
     .email-show {
-        .email-subj {
-            display: inline;
-        }
         .email-preview {
             display: none;
         }

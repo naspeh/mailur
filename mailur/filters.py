@@ -50,15 +50,20 @@ def get_preview(msg):
     return (msg['text']or '')[:200].strip() or '>'
 
 
-def is_subj_changed(msg, subj):
-    index = msg['subj'].find(subj)
-    if index == 0 or index and msg['subj'][:index].strip().endswith(':'):
-        return False
-    return True
+def is_subj_changed(subj, base):
+    base = humanize_subj(base, None, None)
+    subj = humanize_subj(subj, base, None)
+    return subj != base
 
 
-def humanize_subj(subj):
-    return (subj and subj.strip()) or '(no subject)'
+def humanize_subj(subj, base=None, empty='(no subject)'):
+    base = base and humanize_subj(base, None, None)
+    subj = subj and subj.strip()
+    pattern = r'(?i)^(\w{2,3}(\[\d*\])?:\ ?)+' + (
+        '(?=%s)' % re.escape(base) if base else ''
+    )
+    subj = re.sub(pattern, '', subj)
+    return subj or empty
 
 
 def humanize_html(htm, parent=None, class_='email-quote'):

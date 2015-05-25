@@ -16,10 +16,12 @@
         <li class="email-pic" style="background-image:url({{gravatar}})"></li>
         <li class="email-from" title='{{from}}'>{{from_short}}</li>
         <li class="email-text"><a href="{{thread_url}}">
-            <b class="email-subj{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
+            {{#count}}<i class="email-count">{{count}}</i>{{/count}}
+            <i class="email-subj{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
                 {{subj_human}}
-            </b>
+            </i>
             <i class="email-preview">{{preview}}</i>
+            &nbsp;
         </a></li>
         <li class="email-time-human" title="{{time}}">{{time_human}}</li>
         <li class="email-time">{{time}}</li>
@@ -27,6 +29,7 @@
     {{#thread?}}
     <ul class="email-detail">
         <li><a href="{{raw_url}}">Raw</a></li>
+        <li>{{subj}}</li>
     </ul>
     <div class="email-body">
         {{#body?}}{{&text}}{{/body?}}

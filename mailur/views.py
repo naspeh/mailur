@@ -73,7 +73,7 @@ def init(env):
     return 'OK'
 
 
-def ctx_emails(env, items):
+def ctx_emails(env, items, extra=None):
     fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
     emails, last = [], None
     for i in items:
@@ -96,6 +96,9 @@ def ctx_emails(env, items):
             'gravatar': f.get_gravatar(i['fr'])
         }
         email['hash'] = f.get_hash(email)
+        if extra:
+            for k in extra:
+                email[k] = i[k]
         emails.append(email)
 
     emails = emails and {
@@ -111,9 +114,9 @@ def ctx_emails(env, items):
 def thread(env, id):
     i = env.sql('''
     SELECT id, thrid, subj, labels, time, fr, text, html, updated
-      FROM emails
-      WHERE thrid = %s
-      ORDER BY time
+    FROM emails
+    WHERE thrid = %s
+    ORDER BY time
     ''', [id])
 
     ctx = ctx_emails(env, i)
@@ -121,13 +124,15 @@ def thread(env, id):
         emails = ctx['emails?']['items']
         subj = emails[0]['subj']
         for i, msg in enumerate(emails):
-            msg['subj_changed?'] = f.is_subj_changed(msg, subj)
+            msg['subj_changed?'] = f.is_subj_changed(msg['subj'], subj)
+            msg['subj_human'] = f.humanize_subj(msg['subj'], subj)
             msg['body?'] = (
                 (msg['unread?'] or i == len(emails) - 1) and
                 {'text': body(env, msg['id'])}
             )
 
-    ctx['thread?'] = {'subj': subj}
+    ctx['thread?'] = True
+    ctx['subj'] = subj
     return ctx
 
 
@@ -135,17 +140,48 @@ def thread(env, id):
 @adapt_fmt('emails')
 def label(env, name):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr, text, html, updated
-      FROM emails
-      WHERE id IN (
-        SELECT thrid FROM emails
-          WHERE %s=ANY(labels)
-          GROUP BY thrid
-          LIMIT 100
-      )
-      ORDER BY time DESC
+    WITH
+    thread_ids AS (
+        SELECT thrid
+        FROM emails
+        WHERE %s=ANY(labels)
+        GROUP BY thrid
+        LIMIT 100
+    ),
+    threads  AS (
+        SELECT
+            t.thrid,
+            json_agg(e.labels) AS labels,
+            array_agg(id) AS id_list,
+            count(id) AS count,
+            json_object_agg(e.time, e.subj) AS subj_list
+        FROM thread_ids t
+        JOIN emails e ON e.thrid = t.thrid
+        GROUP BY t.thrid
+    )
+    SELECT
+        id, t.thrid, subj, t.labels, time, fr, text, html, updated,
+        count, subj_list
+    FROM emails e
+    JOIN threads t ON e.thrid = t.thrid
+    WHERE id IN (
+        SELECT id FROM emails
+        WHERE id = ANY(t.id_list)
+        ORDER BY time DESC LIMIT 1
+    )
+    ORDER BY time DESC
     ''', [name])
-    return ctx_emails(env, i)
+    emails = []
+    for msg in i:
+        base_subj = dict(msg["subj_list"])
+        base_subj = base_subj[sorted(base_subj)[0]]
+        msg = dict(msg)
+        msg['labels'] = sum(msg['labels'], [])
+        msg['count'] = msg['count'] > 1 and msg['count']
+        msg['subj_human'] = f.humanize_subj(msg['subj'], base_subj)
+        emails.append(msg)
+    ctx = ctx_emails(env, emails, ['count', 'subj_human'])
+    return ctx
 
 
 @login_required

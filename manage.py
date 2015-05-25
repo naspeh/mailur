@@ -73,7 +73,8 @@ def run(env, only_wsgi, use_reloader=True):
     from werkzeug.wsgi import SharedDataMiddleware
     from mailur import app, async
 
-    if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+    if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        log.debug('Re-run "css" target and async process')
         main(['css'])
         Process(target=async.run, args=('127.0.0.1', 5001)).start()
 
