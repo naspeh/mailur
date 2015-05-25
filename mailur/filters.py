@@ -75,27 +75,28 @@ def humanize_html(htm, parent=None, class_='email-quote'):
     return htm
 
 
-def hide_quote(mail1, mail0, class_):
+def hide_quote(msg, msgs, class_):
     # TODO: need reworking
-    if not mail0 or not mail1:
-        return mail1
+    if not msg or not msgs:
+        return msg
 
     def clean(v):
         v = re.sub('[\s]+', '', v.text_content())
         return v.rstrip()
 
-    t0 = clean(lhtml.fromstring(mail0))
-    root1 = lhtml.fromstring(mail1)
-    for block in root1.xpath('//blockquote'):
-        t1 = clean(block)
-        if t0 and t1 and (t0.startswith(t1) or t0.endswith(t1) or t0 in t1):
-            block.attrib['class'] = class_
-            parent = block.getparent()
-            switch = lhtml.fromstring('<div class="%s-switch"/>' % class_)
-            block.attrib['class'] = class_
-            parent.insert(parent.index(block), switch)
-            return lhtml.tostring(root1, encoding='utf8').decode()
-    return mail1
+    lmsg = lhtml.fromstring(msg)
+    for parent in msgs:
+        cp = clean(lhtml.fromstring(parent))
+        for block in lmsg.xpath('//blockquote'):
+            cb = clean(block)
+            if cp and cb and (cp.startswith(cb) or cp.endswith(cb)):
+                block.attrib['class'] = class_
+                parent = block.getparent()
+                switch = lhtml.fromstring('<div class="%s-switch"/>' % class_)
+                block.attrib['class'] = class_
+                parent.insert(parent.index(block), switch)
+                return lhtml.tostring(lmsg, encoding='utf8').decode()
+    return msg
 
 
 def get_hash(value):

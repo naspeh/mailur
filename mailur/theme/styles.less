@@ -13,6 +13,21 @@
 @Color1bg: #eee;
 @Color1b: #fff;
 
+/* Mixins */
+.button() {
+    color: @ColorA;
+    border: 1px solid @Color0b;
+    background-color: @Color0bg;
+    border-radius: 3px;
+    padding: 0 0.4em;
+    margin: 0.4em 0;
+    &:hover {
+        cursor: pointer;
+        background-color: @Color1bg;
+    }
+}
+
+/* General */
 body {
     font-size: @Size;
     max-width: 800px;
@@ -145,6 +160,14 @@ body {
     }
     table {
         margin: auto;
+    }
+    .email-quote {
+        display: none;
+    }
+    .email-quote-switch {
+        .icon-dot-3;
+        .button;
+        display: inline-block;
     }
 }
 .thread-subj {

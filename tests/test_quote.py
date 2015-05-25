@@ -19,5 +19,5 @@ def test_thread_with_quotes(id):
 
     class_ = 'email_quote'
     for i in range(1, len(mails)):
-        res = hide_quote(mails[i]['html'], mails[i - 1]['html'], class_)
+        res = hide_quote(mails[i]['html'], [mails[i - 1]['html']], class_)
         assert 'class="%s"' % class_ in res

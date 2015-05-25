@@ -186,11 +186,15 @@ def label(env, name):
 
 @login_required
 def body(env, id):
-    i = env.sql('SELECT raw FROM emails WHERE id=%s LIMIT 1', [id])
-    raw = i.fetchone()[0]
-    if raw:
-        result = parser.parse(raw.tobytes(), id, env('path_attachments'))
-        result = f.humanize_html(result['html'])
+    i = env.sql('SELECT raw, thrid FROM emails WHERE id=%s LIMIT 1', [id])
+    row = i.fetchone()
+    if row:
+        i = env.sql('''
+        SELECT html FROM emails WHERE thrid=%s AND id!=%s ORDER BY time DESC
+        ''', [row[1], id])
+        msgs = [p[0] for p in i]
+        result = parser.parse(row[0].tobytes(), id, env('path_attachments'))
+        result = f.humanize_html(result['html'], msgs)
     else:
         result = ''
     return result

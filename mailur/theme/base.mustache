@@ -92,6 +92,10 @@ $('.thread .email-text').click(function() {
     }
     return false;
 });
+$('.email').on('click', '.email-quote-switch', function() {
+    $(this).next('.email-quote').toggle();
+    return false;
+});
 </script>
 </body>
 </html>
