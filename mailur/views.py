@@ -121,7 +121,7 @@ def thread(env, id):
     WHERE thrid = %s
     ORDER BY time
     ''', [id])
-    subj, msgs = None, []
+    msgs = []
 
     def emails():
         for n, msg in enumerate(i):
@@ -140,10 +140,11 @@ def thread(env, id):
 
     ctx = ctx_emails(env, emails(), ('subj_changed?', 'subj_human', 'body?'))
     if ctx['emails?']:
-        msg = ctx['emails?']['items'][-1]
+        emails = ctx['emails?']['items']
+        ctx['subj'] = emails[0]['subj']
+        ctx['thread?'] = True
+        msg = emails[-1]
         msg['body?'] = {'text': f.humanize_html(msgs[-1], reversed(msgs[:-1]))}
-    ctx['thread?'] = True
-    ctx['subj'] = subj
     return ctx
 
 
