@@ -62,7 +62,7 @@ def humanize_subj(subj, base=None, empty='(no subject)'):
     pattern = r'(?i)^(\w{2,3}(\[\d*\])?:\ ?)+' + (
         '(?=%s)' % re.escape(base) if base else ''
     )
-    subj = re.sub(pattern, '', subj)
+    subj = subj and re.sub(pattern, '', subj)
     return subj or empty
 
 

@@ -142,10 +142,11 @@ def label(env, name):
     i = env.sql('''
     WITH
     thread_ids AS (
-        SELECT thrid
+        SELECT thrid, max(time)
         FROM emails
         WHERE %s=ANY(labels)
         GROUP BY thrid
+        ORDER BY 2 DESC
         LIMIT 100
     ),
     threads  AS (
