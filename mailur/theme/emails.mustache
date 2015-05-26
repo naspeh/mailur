@@ -4,7 +4,7 @@
 {{#emails?}}
 <ul class="emails{{#thread?}} thread{{/thread?}}" data-last="{{last}}">
 {{#items}}
-<li class="email{{#body?}} email-show{{/body?}}{{#unread?}} email-unread{{/unread?}}"
+<li class="email{{#body?}} email-show email-loaded{{/body?}}{{#unread?}} email-unread{{/unread?}}"
     id="{{#thread?}}{{id}}{{/thread?}}{{^thread?}}{{thrid}}{{/thread?}}"
     data-id="{{id}}"
     data-thrid="{{thrid}}"

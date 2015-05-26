@@ -46,8 +46,8 @@ def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
     return localize_dt(env, value).strftime(fmt)
 
 
-def get_preview(msg):
-    return (msg['text']or '')[:200].strip() or '>'
+def get_preview(text):
+    return (text or '')[:200].strip() or '>'
 
 
 def is_subj_changed(subj, base):
@@ -66,10 +66,10 @@ def humanize_subj(subj, base=None, empty='(no subject)'):
     return subj or empty
 
 
-def humanize_html(htm, parent=None, class_='email-quote'):
+def humanize_html(htm, parents=None, class_='email-quote'):
     htm = re.sub(r'(<br[ ]?[/]?>\s*)$', '', htm).strip()
-    if htm and parent:
-        htm = hide_quote(htm, parent, class_)
+    if htm and parents:
+        htm = hide_quote(htm, parents, class_)
     if htm:
         htm = toronado.from_string(htm).decode()
     return htm

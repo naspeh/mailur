@@ -2,7 +2,7 @@ import functools as ft
 
 from werkzeug.routing import Map, Rule
 
-from . import imap, parser, filters as f
+from . import parser, imap, filters as f
 
 rules = [
     Rule('/auth/', endpoint='auth'),
@@ -85,7 +85,7 @@ def ctx_emails(env, items, extra=None):
             'subj': i['subj'],
             'subj_search': env.url_for('search', q=i['subj']),
             'subj_human': f.humanize_subj(i['subj']),
-            'preview': f.get_preview(i),
+            'preview': f.get_preview(i['text']),
             'pinned?': '\\Starred' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
             'body_url': env.url_for('body', id=i['id']),
@@ -116,24 +116,32 @@ def ctx_emails(env, items, extra=None):
 @adapt_fmt('emails')
 def thread(env, id):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr, text, html, updated
+    SELECT id, thrid, subj, labels, time, fr, text, updated, html
     FROM emails
     WHERE thrid = %s
     ORDER BY time
     ''', [id])
+    subj, msgs = None, []
 
-    ctx = ctx_emails(env, i)
-    if ctx['emails?']:
-        emails = ctx['emails?']['items']
-        subj = emails[0]['subj']
-        for i, msg in enumerate(emails):
+    def emails():
+        for n, msg in enumerate(i):
+            msg = dict(msg)
+            if n == 0:
+                subj = msg['subj']
             msg['subj_changed?'] = f.is_subj_changed(msg['subj'], subj)
             msg['subj_human'] = f.humanize_subj(msg['subj'], subj)
+            msg['unread?'] = '\\Unread' in msg['labels']
             msg['body?'] = (
-                (msg['unread?'] or i == len(emails) - 1) and
-                {'text': body(env, msg['id'])}
+                msg['unread?'] and
+                {'text': f.humanize_html(msg['html'], msgs)}
             )
+            yield msg
+            msgs.append(msg['html'])
 
+    ctx = ctx_emails(env, emails(), ('subj_changed?', 'subj_human', 'body?'))
+    if ctx['emails?']:
+        msg = ctx['emails?']['items'][-1]
+        msg['body?'] = {'text': f.humanize_html(msgs[-1], reversed(msgs[:-1]))}
     ctx['thread?'] = True
     ctx['subj'] = subj
     return ctx
@@ -164,7 +172,7 @@ def label(env, name):
         GROUP BY t.thrid
     )
     SELECT
-        id, t.thrid, subj, t.labels, time, fr, text, html, updated,
+        id, t.thrid, subj, t.labels, time, fr, text, updated,
         count, subj_list
     FROM emails e
     JOIN threads t ON e.thrid = t.thrid
@@ -186,7 +194,7 @@ def label(env, name):
             msg['subj_human'] = f.humanize_subj(msg['subj'], base_subj)
             yield msg
 
-    ctx = ctx_emails(env, emails(), ['count', 'subj_human'])
+    ctx = ctx_emails(env, emails(), ('count', 'subj_human'))
     return ctx
 
 
@@ -202,7 +210,7 @@ def search(env, q):
         ORDER BY ts_rank(document, plainto_tsquery('simple', %(query)s)) DESC
         LIMIT 100
     )
-    SELECT e.id, thrid, subj, labels, time, fr, text, html, updated
+    SELECT e.id, thrid, subj, labels, time, fr, text, updated, html
     FROM emails e, search s
     WHERE e.id = s.id
     ''', {'query': q})
@@ -210,26 +218,30 @@ def search(env, q):
     def emails():
         for msg in i:
             msg = dict(msg)
-            msg['body'] = msg['html']
             msg['subj_changed?'] = True
             yield msg
 
-    ctx = ctx_emails(env, emails(), ['body', 'subj_changed?'])
+    ctx = ctx_emails(env, emails(), ['subj_changed?'])
     ctx['thread?'] = True
     return ctx
 
 
 @login_required
 def body(env, id):
+    def get_html(raw, parents=None):
+        def parse(raw):
+            res = parser.parse(raw.tobytes(), id, env('path_attachments'))
+            return res['html']
+
+        return f.humanize_html(parse(raw), (parse(r) for r in parents or []))
+
     i = env.sql('SELECT raw, thrid FROM emails WHERE id=%s LIMIT 1', [id])
     row = i.fetchone()
     if row:
         i = env.sql('''
-        SELECT html FROM emails WHERE thrid=%s AND id!=%s ORDER BY time DESC
+        SELECT raw FROM emails WHERE thrid=%s AND id!=%s ORDER BY time DESC
         ''', [row[1], id])
-        msgs = [p[0] for p in i]
-        result = parser.parse(row[0].tobytes(), id, env('path_attachments'))
-        result = f.humanize_html(result['html'], msgs)
+        result = get_html(row[0], (p[0] for p in i))
     else:
         result = ''
     return result
