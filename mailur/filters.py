@@ -86,6 +86,8 @@ def hide_quote(msg, msgs, class_):
 
     lmsg = lhtml.fromstring(msg)
     for parent in msgs:
+        if not parent:
+            continue
         cp = clean(lhtml.fromstring(parent))
         for block in lmsg.xpath('//blockquote'):
             cb = clean(block)

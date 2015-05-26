@@ -35,6 +35,7 @@
     </ul>
     <div class="email-body">
         {{#body?}}{{&text}}{{/body?}}
+        {{^body?}}<b>Loading...</b>{{/body?}}
     </div>
     {{/thread?}}
 </li>
