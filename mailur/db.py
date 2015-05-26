@@ -53,9 +53,13 @@ def create_index(table, field, using=''):
 
 def create_seq(table, field):
     return '''
-    DROP SEQUENCE IF EXISTS seq_{0}_{1};
-    CREATE SEQUENCE seq_{0}_{1};
-    ALTER TABLE {0} ALTER COLUMN {1} SET DEFAULT nextval('seq_{0}_{1}')
+    DO $$
+    BEGIN
+    IF NOT EXISTS (SELECT to_regclass('seq_{0}_{1}')) THEN
+        CREATE SEQUENCE seq_{0}_{1};
+        ALTER TABLE {0} ALTER COLUMN {1} SET DEFAULT nextval('seq_{0}_{1}');
+    END IF;
+    END$$;
     '''.format(table, field)
 
 
@@ -203,4 +207,24 @@ class Emails(Manager):
         create_index(name, 'in_reply_to'),
         create_index(name, 'refs', 'GIN'),
         create_index(name, 'labels', 'GIN'),
+        '''
+        DROP MATERIALIZED VIEW IF EXISTS emails_search;
+
+        CREATE MATERIALIZED VIEW emails_search AS
+        SELECT id, thrid,
+            setweight(to_tsvector('simple', subj), 'A') ||
+            setweight(to_tsvector('simple', text), 'C') ||
+            setweight(to_tsvector('simple', {fr}), 'C') ||
+            setweight(to_tsvector('simple', {to}), 'C') ||
+            setweight(to_tsvector('simple', {cc}), 'C') ||
+            setweight(to_tsvector('simple', {bcc}), 'C')
+            AS document
+        FROM emails;
+
+        DROP INDEX IF EXISTS ix_emails_search;
+        CREATE INDEX ix_emails_search ON emails_search USING gin(document);
+        '''.format(**{
+            i: '''coalesce(array_to_string("%s", ','), '')''' % i
+            for i in ('fr', 'to', 'cc', 'bcc')
+        })
     ))

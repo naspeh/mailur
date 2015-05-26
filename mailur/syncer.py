@@ -50,6 +50,10 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
         else:
             fetch_headers(env, email, imap, uids)
             fetch_labels(env, imap, uids, label)
+
+    # Refresh search index
+    env.sql('REFRESH MATERIALIZED VIEW emails_search')
+    env.db.commit()
     return labels_
 
 

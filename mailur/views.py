@@ -13,7 +13,8 @@ rules = [
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
-    Rule('/in/<name>/', endpoint='label')
+    Rule('/in/<name>/', endpoint='label'),
+    Rule('/search/<q>/', endpoint='search'),
 ]
 url_map = Map(rules)
 
@@ -82,6 +83,7 @@ def ctx_emails(env, items, extra=None):
             'id': i['id'],
             'thrid': i['thrid'],
             'subj': i['subj'],
+            'subj_search': env.url_for('search', q=i['subj']),
             'subj_human': f.humanize_subj(i['subj']),
             'preview': f.get_preview(i),
             'pinned?': '\\Starred' in i['labels'],
@@ -93,6 +95,7 @@ def ctx_emails(env, items, extra=None):
             'time_human': f.humanize_dt(env, i['time']),
             'from': i['fr'][0],
             'from_short': fmt_from(i['fr']),
+            'from_search': env.url_for('search', q=i['fr']),
             'gravatar': f.get_gravatar(i['fr'])
         }
         email['hash'] = f.get_hash(email)
@@ -172,16 +175,47 @@ def label(env, name):
     )
     ORDER BY time DESC
     ''', [name])
-    emails = []
-    for msg in i:
-        base_subj = dict(msg["subj_list"])
-        base_subj = base_subj[sorted(base_subj)[0]]
-        msg = dict(msg)
-        msg['labels'] = sum(msg['labels'], [])
-        msg['count'] = msg['count'] > 1 and msg['count']
-        msg['subj_human'] = f.humanize_subj(msg['subj'], base_subj)
-        emails.append(msg)
-    ctx = ctx_emails(env, emails, ['count', 'subj_human'])
+
+    def emails():
+        for msg in i:
+            base_subj = dict(msg["subj_list"])
+            base_subj = base_subj[sorted(base_subj)[0]]
+            msg = dict(msg)
+            msg['labels'] = sum(msg['labels'], [])
+            msg['count'] = msg['count'] > 1 and msg['count']
+            msg['subj_human'] = f.humanize_subj(msg['subj'], base_subj)
+            yield msg
+
+    ctx = ctx_emails(env, emails(), ['count', 'subj_human'])
+    return ctx
+
+
+@login_required
+@adapt_fmt('emails')
+def search(env, q):
+    q = '"%s"' % q
+    i = env.sql('''
+    WITH search AS (
+        SELECT id
+        FROM emails_search
+        WHERE document @@ plainto_tsquery('simple', %(query)s)
+        ORDER BY ts_rank(document, plainto_tsquery('simple', %(query)s)) DESC
+        LIMIT 100
+    )
+    SELECT e.id, thrid, subj, labels, time, fr, text, html, updated
+    FROM emails e, search s
+    WHERE e.id = s.id
+    ''', {'query': q})
+
+    def emails():
+        for msg in i:
+            msg = dict(msg)
+            msg['body'] = msg['html']
+            msg['subj_changed?'] = True
+            yield msg
+
+    ctx = ctx_emails(env, emails(), ['body', 'subj_changed?'])
+    ctx['thread?'] = True
     return ctx
 
 

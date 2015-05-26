@@ -29,7 +29,9 @@
     {{#thread?}}
     <ul class="email-detail">
         <li><a href="{{raw_url}}">Raw</a></li>
-        <li>{{subj}}</li>
+        <li><a href="{{from_search}}">Search by from</a></li>
+        <li><a href="{{subj_search}}">Search by subject</a></li>
+        <li><a href="{{thread_url}}">View full thread</a></li>
     </ul>
     <div class="email-body">
         {{#body?}}{{&text}}{{/body?}}
