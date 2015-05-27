@@ -12,7 +12,8 @@
     data-body-url="{{body_url}}"
 >
     <ul class="email-line">
-        <li class="email-pin{{#pinned?}} email-pinned{{/pinned?}}"></li>
+        <li class="email-pin{{#pinned?}} email-pinned{{/pinned?}}"></li><!--
+        --><li class="email-details-toggle" title="Details"></li>
         <li class="email-info"><a href="{{thread_url}}"><ul>
             <li class="email-pic" style="background-image:url({{gravatar}})"></li>
             <li class="email-from" title='{{from}}'>{{from_short}}</li>
@@ -27,7 +28,7 @@
         </ul></a></li>
     </ul>
     {{#thread?}}
-    <ul class="email-detail">
+    <ul class="email-details">
         <li><a href="{{raw_url}}">Raw</a></li>
         <li><a href="{{from_url}}">Filter by from</a></li>
         <li><a href="{{subj_url}}">Filter by subject</a></li>

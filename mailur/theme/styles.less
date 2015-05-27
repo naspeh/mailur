@@ -20,7 +20,7 @@
     background-color: @Color0bg;
     border-radius: 3px;
     padding: 0 0.4em;
-    margin: 0.4em 0;
+    margin: 0.2em 0;
     &:hover {
         cursor: pointer;
         background-color: @Color1bg;
@@ -44,6 +44,7 @@ body {
         border-top: 1px solid @Color1b;
         border-radius: 0.5em;
         width: 100%;
+        word-spacing: 0;
 
         & li {
             display: inline-block;
@@ -59,7 +60,7 @@ body {
             }
         }
         .email-pin {
-            .icon-star-empty;
+            .icon-pin;
             font-size: @SizeIcon;
             &:hover {
                 cursor: pointer;
@@ -67,6 +68,15 @@ body {
             }
             &.email-pinned {
                 color: @ColorC;
+            }
+        }
+        .email-details-toggle {
+            .icon-details;
+            display: none;
+            font-size: @SizeIcon;
+            &:hover {
+                cursor: pointer;
+                color: @ColorB;
             }
         }
         .email-pic {
@@ -108,12 +118,8 @@ body {
             background-color: @Color1bg;
         }
     }
-    .email-body, .email-detail {
+    .email-body, .email-details, .email-attachments {
         display: none;
-    }
-    .email-attachments {
-        border-top: 1px dotted @Color0b;
-        padding: @Space;
     }
 }
 .email-unread {
@@ -137,25 +143,38 @@ body {
         .email-time-human {
             display: none;
         }
+        .email-details-toggle {
+            display: inline-block;
+        }
     }
     .email-body {
         display: block;
     }
-    .email-detail {
-        display: block;
+    .email-details {
+        font-size: 0.85em;
+        padding: @Space/2;
+        margin: 0 @Space/2;
+        border-bottom: 1px solid @Color1bg;
+
         li {
             display: inline-block;
         }
     }
-
+    .email-attachments {
+        display: block;
+        font-size: 0.85em;
+        padding: @Space/2;
+        margin: 0 @Space/2;
+        border-top: 1px solid @Color1bg;
+    }
 }
 .email-body {
-    padding: @Space;
+    padding: @Space/2 @Space;
     position: relative;
 
     blockquote {
         padding-left: @Space;
-        border-left: 1px solid @Color1b;
+        border-left: 1px solid @Color0b;
         color: @ColorA;
     }
     b, strong {
@@ -171,9 +190,10 @@ body {
         display: none;
     }
     .email-quote-switch {
-        .icon-dot-3;
+        .icon-ellipsis;
         .button;
         display: inline-block;
+        font-size: 0.85em;
     }
 }
 .thread-subj {

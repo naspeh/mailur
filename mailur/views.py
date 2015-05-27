@@ -107,7 +107,7 @@ def ctx_emails(env, items, extra=None):
             'attachments?': {'items': [
                 {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
                 for a in i['attachments']
-            ]} if i['attachments'] else False
+            ]} if i.get('attachments') else False
 
         }
         email['hash'] = f.get_hash(email)

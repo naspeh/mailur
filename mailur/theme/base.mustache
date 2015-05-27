@@ -92,6 +92,10 @@ $('.thread .email-info').click(function() {
     }
     return false;
 });
+$('.thread .email-details-toggle').click(function() {
+    $(this).parents('.email').find('.email-details').toggle();
+    return false;
+});
 $('.email').on('click', '.email-quote-switch', function() {
     $(this).next('.email-quote').toggle();
     return false;
