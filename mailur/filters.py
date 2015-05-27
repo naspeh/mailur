@@ -76,7 +76,6 @@ def humanize_html(htm, parents=None, class_='email-quote'):
 
 
 def hide_quote(msg, msgs, class_):
-    # TODO: need reworking
     if not msg or not msgs:
         return msg
 
@@ -91,7 +90,7 @@ def hide_quote(msg, msgs, class_):
         cp = clean(lhtml.fromstring(parent))
         for block in lmsg.xpath('//blockquote'):
             cb = clean(block)
-            if cp and cb and (cp.startswith(cb) or cp.endswith(cb)):
+            if cp and cb and cp.endswith(cb):
                 block.attrib['class'] = class_
                 parent = block.getparent()
                 switch = lhtml.fromstring('<div class="%s-switch"/>' % class_)

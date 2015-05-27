@@ -13,7 +13,7 @@ rules = [
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
-    Rule('/in/<name>/', endpoint='label'),
+    Rule('/in/<path:name>/', endpoint='label'),
     Rule('/search/<q>/', endpoint='search'),
 ]
 url_map = Map(rules)
