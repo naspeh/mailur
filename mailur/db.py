@@ -55,10 +55,10 @@ def create_seq(table, field):
     return '''
     DO $$
     BEGIN
-    IF NOT EXISTS (SELECT to_regclass('seq_{0}_{1}')) THEN
         CREATE SEQUENCE seq_{0}_{1};
         ALTER TABLE {0} ALTER COLUMN {1} SET DEFAULT nextval('seq_{0}_{1}');
-    END IF;
+    EXCEPTION WHEN duplicate_table THEN
+        -- already exists
     END$$;
     '''.format(table, field)
 
@@ -183,10 +183,10 @@ class Emails(Manager):
         "labels varchar[] DEFAULT '{}'",
 
         'subj varchar',
-        "fr varchar[] DEFAULT '{}'",
-        '"to" varchar[] DEFAULT \'{}\'',
-        "cc varchar[] DEFAULT '{}'",
-        "bcc varchar[] DEFAULT '{}'",
+        "fr varchar[][] DEFAULT '{}'",
+        '"to" varchar[][] DEFAULT \'{}\'',
+        "cc varchar[][] DEFAULT '{}'",
+        "bcc varchar[][] DEFAULT '{}'",
         "reply_to varchar[] DEFAULT '{}'",
         'sender varchar',
         'sender_time timestamp',

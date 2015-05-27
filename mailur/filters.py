@@ -1,7 +1,6 @@
 import datetime as dt
 import json
 import re
-from email.utils import getaddresses
 from hashlib import md5
 from urllib.parse import urlencode
 
@@ -9,19 +8,15 @@ import toronado
 import lxml.html as lhtml
 
 
-def get_addr(addr):
-    addr = [addr] if isinstance(addr, str) else addr
-    return addr and getaddresses(addr)[0][1]
-
-
-def get_addr_name(addr):
-    addr = [addr] if isinstance(addr, str) else addr
-    return addr and getaddresses(addr)[0][0]
+def format_from(env, v, short=False):
+    if short:
+        return v[0] if env('ui_use_names') else v[1]
+    return '"{}" <{}>'.format(*v)
 
 
 def get_gravatar(addr, size=20, default='identicon'):
     params = urlencode({'s': size, 'd': default})
-    hash = md5(get_addr(addr).strip().lower().encode()).hexdigest()
+    hash = md5(addr.strip().lower().encode()).hexdigest()
     return '//www.gravatar.com/avatar/%s?%s' % (hash, params)
 
 

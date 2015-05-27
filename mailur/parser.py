@@ -69,9 +69,8 @@ def decode_header(text, msg_id):
     if not text:
         return ''
 
-    parts_ = email.header.decode_header(text)
     parts = []
-    for text, charset in parts_:
+    for text, charset in email.header.decode_header(text):
         if isinstance(text, str):
             part = text
         else:
@@ -86,12 +85,8 @@ def decode_header(text, msg_id):
 def decode_addresses(text, msg_id):
     if not isinstance(text, str):
         text = str(text)
-    res = []
-    for name, addr in email.utils.getaddresses([text]):
-        name, addr = (decode_header(r, msg_id) for r in [name, addr])
-        if addr:
-            res += ['"%s" <%s>' % (name if name else addr.split('@')[0], addr)]
-    return res
+    text = decode_header(text, msg_id)
+    return [[name, addr] for name, addr in email.utils.getaddresses([text])]
 
 
 def decode_date(text, *args):

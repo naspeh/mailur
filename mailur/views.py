@@ -82,7 +82,6 @@ def init(env):
 
 
 def ctx_emails(env, items, extra=None):
-    fmt_from = f.get_addr_name if env('ui_use_names') else f.get_addr
     emails, last = [], None
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
@@ -100,10 +99,10 @@ def ctx_emails(env, items, extra=None):
             'thread_url': env.url_for('thread', id=i['thrid']),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
-            'from': i['fr'][0],
-            'from_short': fmt_from(i['fr']),
-            'from_url': env.url_for('emails', {'from': i['fr'][0]}),
-            'gravatar': f.get_gravatar(i['fr']),
+            'from': f.format_from(env, i['fr'][0]),
+            'from_short': f.format_from(env, i['fr'][0], short=True),
+            'from_url': env.url_for('emails', {'from': i['fr'][0][1]}),
+            'gravatar': f.get_gravatar(i['fr'][0][1]),
             'attachments?': {'items': [
                 {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
                 for a in i['attachments']
@@ -128,7 +127,9 @@ def ctx_emails(env, items, extra=None):
 @adapt_fmt('emails')
 def thread(env, id):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr, text, updated, html, attachments
+    SELECT
+        id, thrid, subj, labels, time, fr, text, updated,
+        html, attachments
     FROM emails
     WHERE thrid = %s
     ORDER BY time
@@ -175,7 +176,7 @@ def emails(env):
     elif args.get('subj'):
         where = cur.mogrify('%s = subj', [args['subj']])
     elif args.get('from'):
-        where = cur.mogrify('%s = ANY(fr)', [args['from']])
+        where = cur.mogrify('%s IN (SELECT fr[1][2])', [args['from']])
     else:
         return env.abort(400)
 
@@ -240,7 +241,8 @@ def search(env, q):
         LIMIT 100
     )
     SELECT
-        e.id, thrid, subj, labels, time, fr, text, updated, html, attachments
+        e.id, thrid, subj, labels, time, fr, text, updated,
+        html, attachments
     FROM emails e, search s
     WHERE e.id = s.id
     ''', {'query': q})
