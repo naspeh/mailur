@@ -1,5 +1,6 @@
 import functools as ft
 
+import valideer as v
 from werkzeug.routing import Map, Rule
 
 from . import parser, imap, filters as f
@@ -13,7 +14,7 @@ rules = [
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
-    Rule('/in/<path:name>/', endpoint='label'),
+    Rule('/emails/', endpoint='emails'),
     Rule('/search/<q>/', endpoint='search'),
 ]
 url_map = Map(rules)
@@ -65,12 +66,17 @@ def adapt_fmt(tpl):
 def index(env):
     i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
     labels = sorted(r[0] for r in i.fetchall())
-    labels = [{'name': l, 'url': env.url_for('label', name=l)} for l in labels]
+    labels = [
+        {'name': l, 'url': env.url_for('emails', {'in': l})}
+        for l in labels
+    ]
     return {'labels': labels}
 
 
 def init(env):
-    env.session['tz_offset'] = env.request.args.get('offset', type=int) or 0
+    schema = v.parse({'+offset': v.Range(v.AdaptTo(int), min_value=0)})
+    args = schema.validate(env.request.args)
+    env.session['tz_offset'] = args['offset']
     return 'OK'
 
 
@@ -83,8 +89,8 @@ def ctx_emails(env, items, extra=None):
             'id': i['id'],
             'thrid': i['thrid'],
             'subj': i['subj'],
-            'subj_search': env.url_for('search', q=i['subj']),
             'subj_human': f.humanize_subj(i['subj']),
+            'subj_url': env.url_for('emails', {'subj': i['subj']}),
             'preview': f.get_preview(i['text']),
             'pinned?': '\\Starred' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
@@ -95,7 +101,7 @@ def ctx_emails(env, items, extra=None):
             'time_human': f.humanize_dt(env, i['time']),
             'from': i['fr'][0],
             'from_short': fmt_from(i['fr']),
-            'from_search': env.url_for('search', q=i['fr']),
+            'from_url': env.url_for('emails', {'from': i['fr'][0]}),
             'gravatar': f.get_gravatar(i['fr'])
         }
         email['hash'] = f.get_hash(email)
@@ -150,13 +156,29 @@ def thread(env, id):
 
 @login_required
 @adapt_fmt('emails')
-def label(env, name):
+def emails(env):
+    schema = v.parse({
+        'from': str,
+        'subj': str,
+        'in': str
+    })
+    args = schema.validate(env.request.args)
+    cur = env.db.cursor()
+    if args.get('in'):
+        where = cur.mogrify('%s = ANY(labels)', [args['in']])
+    elif args.get('subj'):
+        where = cur.mogrify('%s = subj', [args['subj']])
+    elif args.get('from'):
+        where = cur.mogrify('%s = ANY(fr)', [args['from']])
+    else:
+        return env.abort(400)
+
     i = env.sql('''
     WITH
     thread_ids AS (
         SELECT thrid, max(time)
         FROM emails
-        WHERE %s=ANY(labels)
+        WHERE {where}
         GROUP BY thrid
         ORDER BY 2 DESC
         LIMIT 100
@@ -183,7 +205,7 @@ def label(env, name):
         ORDER BY time DESC LIMIT 1
     )
     ORDER BY time DESC
-    ''', [name])
+    '''.format(where=where.decode()))
 
     def emails():
         for msg in i:

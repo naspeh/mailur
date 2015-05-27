@@ -1,5 +1,6 @@
 import json
 import os
+from urllib.parse import urlencode
 
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import HTTPException, abort
@@ -43,8 +44,10 @@ class WebEnv(Env):
             return self.make_response(response)
         return response
 
-    def url_for(self, endpoint, _external=False, **values):
-        return self.adapter.build(endpoint, values, force_external=_external)
+    def url_for(self, endpoint, _args=None, _external=False, **values):
+        url = self.adapter.build(endpoint, values, force_external=_external)
+        url = '%s?%s' % (url, urlencode(_args)) if _args else url
+        return url
 
     def redirect(self, location, code=302):
         return redirect(location, code)
