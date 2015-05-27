@@ -13,18 +13,18 @@
 >
     <ul class="email-line">
         <li class="email-pin{{#pinned?}} email-pinned{{/pinned?}}"></li>
-        <li class="email-pic" style="background-image:url({{gravatar}})"></li>
-        <li class="email-from" title='{{from}}'>{{from_short}}</li>
-        <li class="email-text"><a href="{{thread_url}}">
-            {{#count}}<i class="email-count">{{count}}</i>{{/count}}
-            <i class="email-subj{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
+        <li class="email-info"><a href="{{thread_url}}"><ul>
+            <li class="email-pic" style="background-image:url({{gravatar}})"></li>
+            <li class="email-from" title='{{from}}'>{{from_short}}</li>
+            {{#count}}<li class="email-count">{{count}}</li>{{/count}}
+            <li class="email-subj{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
                 {{subj_human}}
-            </i>
-            <i class="email-preview">{{preview}}</i>
-            &nbsp;
-        </a></li>
-        <li class="email-time-human" title="{{time}}">{{time_human}}</li>
-        <li class="email-time">{{time}}</li>
+            </li>
+            <li class="email-preview">{{preview}}</li>
+            <li class="email-expander">&nbsp;</li>
+            <li class="email-time-human" title="{{time}}">{{time_human}}</li>
+            <li class="email-time">{{time}}</li>
+        </ul></a></li>
     </ul>
     {{#thread?}}
     <ul class="email-detail">

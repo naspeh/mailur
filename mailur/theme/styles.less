@@ -43,10 +43,20 @@ body {
         background-color: @Color1bg;
         border-top: 1px solid @Color1b;
         border-radius: 0.5em;
+        width: 100%;
 
-        &> li {
+        & li {
             display: inline-block;
             vertical-align: middle;
+        }
+        & .email-info {
+            width: 100%;
+            a {
+                display: block;
+                width: 100%;
+                color: @ColorA;
+                text-decoration: none;
+            }
         }
         .email-pin {
             .icon-star-empty;
@@ -65,19 +75,16 @@ body {
             width: @SizeIcon;
             background-size: @SizeIcon @SizeIcon;
         }
-        .email-text {
-            width: 100%;
-
-            a {
-                display: block;
-                width: 100%;
-                color: @ColorA;
-                text-decoration: none;
-            }
-        }
         .email-from {
             max-width: 120px;
             overflow: hidden;
+        }
+        .email-count {
+            padding: 0 3px;
+            color: @ColorA;
+            background-color: @Color0bg;
+            border-radius: 0.4em;
+            font-weight: normal;
         }
         .email-subj {
             color: @ColorB;
@@ -86,12 +93,8 @@ body {
                 display: inline;
             }
         }
-        .email-count {
-            padding: 0 3px;
-            color: @ColorA;
-            background-color: @Color0bg;
-            border-radius: 0.4em;
-            font-weight: normal;
+        .email-expander {
+            width: 100%;
         }
         .email-time, .email-time-human {
             position: absolute;
@@ -175,11 +178,13 @@ body {
     font-weight: bold;
 }
 .thread {
-    .email-from {
-        font-weight: bold;
-    }
-    .email-subj {
-        display: none;
+    .email-line {
+        .email-from {
+            font-weight: bold;
+        }
+        .email-subj {
+            display: none;
+        }
     }
     .email-show {
         .email-preview {

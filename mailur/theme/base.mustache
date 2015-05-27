@@ -81,7 +81,7 @@ function updateEmails(data, thread) {
 }
 
 connect();
-$('.thread .email-text').click(function() {
+$('.thread .email-info').click(function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
     if (email.hasClass('email-show') && !email.hasClass('email-loaded')) {
