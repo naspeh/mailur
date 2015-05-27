@@ -37,6 +37,15 @@
         {{#body?}}{{&text}}{{/body?}}
         {{^body?}}<b>Loading...</b>{{/body?}}
     </div>
+    {{#attachments?}}
+    <div class="email-attachments">
+        <ul>
+            {{#items}}
+            <li><a href="{{url}}" target="_blank">{{name}}</a></li>
+            {{/items}}
+        </ul>
+    </div>
+    {{/attachments?}}
     {{/thread?}}
 </li>
 {{/items}}

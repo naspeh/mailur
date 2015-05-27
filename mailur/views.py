@@ -1,3 +1,4 @@
+import os
 import functools as ft
 
 import valideer as v
@@ -102,7 +103,12 @@ def ctx_emails(env, items, extra=None):
             'from': i['fr'][0],
             'from_short': fmt_from(i['fr']),
             'from_url': env.url_for('emails', {'from': i['fr'][0]}),
-            'gravatar': f.get_gravatar(i['fr'])
+            'gravatar': f.get_gravatar(i['fr']),
+            'attachments?': {'items': [
+                {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
+                for a in i['attachments']
+            ]} if i['attachments'] else False
+
         }
         email['hash'] = f.get_hash(email)
         if extra:
@@ -122,7 +128,7 @@ def ctx_emails(env, items, extra=None):
 @adapt_fmt('emails')
 def thread(env, id):
     i = env.sql('''
-    SELECT id, thrid, subj, labels, time, fr, text, updated, html
+    SELECT id, thrid, subj, labels, time, fr, text, updated, html, attachments
     FROM emails
     WHERE thrid = %s
     ORDER BY time
@@ -233,7 +239,8 @@ def search(env, q):
         ORDER BY ts_rank(document, plainto_tsquery('simple', %(query)s)) DESC
         LIMIT 100
     )
-    SELECT e.id, thrid, subj, labels, time, fr, text, updated, html
+    SELECT
+        e.id, thrid, subj, labels, time, fr, text, updated, html, attachments
     FROM emails e, search s
     WHERE e.id = s.id
     ''', {'query': q})
