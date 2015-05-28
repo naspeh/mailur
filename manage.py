@@ -166,7 +166,7 @@ def get_full(argv):
             '   autoprefixer'
             '   csso'
             '   less'
-            '   uglifyjs'
+            '   uglify-js'
             # js libs
             '   jquery'
         ))
@@ -176,13 +176,18 @@ def get_full(argv):
         'autoprefixer {0}styles.css {0}styles.css && '
         'csso {0}styles.css {0}styles.css &&'
         # js stuff
-        'uglifyjs '
-        '   -o {0}app.min.js '
-        '   --source-map={0}app.min.map '
-        '   --source-map-url=/theme/app.min.map '
+        'cat '
         '   node_modules/jquery/dist/jquery.js '
-        '   {0}app.js'
-        .format('%s/' % env('path_theme'))
+        '   {0}app.js '
+        '   > {0}all.js &&'
+        'uglifyjs -v '
+        '   -o {0}all.min.js '
+        '   -p {1} '
+        '   --source-map={0}all.min.map '
+        '   --source-map-url=all.min.map '
+        '   --source-map-root=/theme/ '
+        '   {0}all.js '
+        .format(env('path_theme') + os.path.sep, env('path_theme').count('/'))
     ))
 
     return parser
