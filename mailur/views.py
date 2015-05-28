@@ -81,13 +81,12 @@ def init(env):
     return 'OK'
 
 
-def ctx_emails(env, items, extra=None):
+def ctx_emails(env, items, extra=None, thread=False):
     emails, last = [], None
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
         email = {
-            'id': i['id'],
-            'thrid': i['thrid'],
+            'id': i['thrid'] if thread else i['id'],
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
@@ -120,7 +119,7 @@ def ctx_emails(env, items, extra=None):
         'length': len(emails),
         'last': str(last)
     }
-    return {'emails?': emails}
+    return {'emails?': emails, 'thread?': thread}
 
 
 @login_required
@@ -143,21 +142,20 @@ def thread(env, id):
                 subj = msg['subj']
             msg['subj_changed?'] = f.is_subj_changed(msg['subj'], subj)
             msg['subj_human'] = f.humanize_subj(msg['subj'], subj)
-            msg['unread?'] = '\\Unread' in msg['labels']
             msg['body?'] = (
-                msg['unread?'] and
+                '\\Unread' in msg['labels'] and
                 {'text': f.humanize_html(msg['html'], msgs)}
             )
             yield msg
             msgs.append(msg['html'])
 
-    ctx = ctx_emails(env, emails(), ('subj_changed?', 'subj_human', 'body?'))
+    extra = ('subj_changed?', 'subj_human', 'body?')
+    ctx = ctx_emails(env, emails(), extra, thread=True)
     if ctx['emails?']:
         emails = ctx['emails?']['items']
-        ctx['subj'] = emails[0]['subj']
-        ctx['thread?'] = True
         msg = emails[-1]
         msg['body?'] = {'text': f.humanize_html(msgs[-1], reversed(msgs[:-1]))}
+        ctx['subj'] = emails[0]['subj']
     return ctx
 
 
@@ -253,7 +251,7 @@ def search(env, q):
             msg['subj_changed?'] = True
             yield msg
 
-    ctx = ctx_emails(env, emails(), ['subj_changed?'])
+    ctx = ctx_emails(env, emails(), ['subj_changed?'], thread=True)
     ctx['thread?'] = True
     return ctx
 
