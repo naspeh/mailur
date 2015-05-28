@@ -75,7 +75,7 @@ def run(env, only_wsgi, use_reloader=True):
 
     if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         log.debug('Re-run "css" target and async process')
-        main(['css'])
+        main(['static'])
         Process(target=async.run, args=('127.0.0.1', 5001)).start()
 
     extra_files = (
@@ -121,24 +121,6 @@ def get_base(argv):
     cmd('reqs', help='update python requirements')\
         .arg('-d', '--dev', action='store_true')\
         .exe(lambda a: reqs(a.dev))
-
-    cmd('node', help='update nodejs packages')\
-        .exe(lambda a: sh(
-            'npm install --save --save-exact'
-            '   autoprefixer'
-            '   csso'
-            '   less'
-        ))
-
-    cmd('css').exe(lambda a: sh(
-        'lessc {0}styles.less {0}styles.css && '
-        'autoprefixer {0}styles.css {0}styles.css && '
-        'csso {0}styles.css {0}styles.css'.format('mailur/theme/')
-    ))
-
-    cmd('test', add_help=False).exe(lambda a: (
-        sh('py.test --ignore=node_modules --confcutdir=tests %s' % ' '.join(a))
-    ))
     return parser, cmd
 
 
@@ -173,6 +155,36 @@ def get_full(argv):
 
     cmd('shell')\
         .exe(lambda a: shell(env))
+
+    cmd('test', add_help=False).exe(lambda a: (
+        sh('py.test --ignore=node_modules --confcutdir=tests %s' % ' '.join(a))
+    ))
+
+    cmd('node', help='update nodejs packages')\
+        .exe(lambda a: sh(
+            'npm install --save --save-exact'
+            '   autoprefixer'
+            '   csso'
+            '   less'
+            '   uglifyjs'
+            # js libs
+            '   jquery'
+        ))
+
+    cmd('static').exe(lambda a: sh(
+        'lessc {0}styles.less {0}styles.css && '
+        'autoprefixer {0}styles.css {0}styles.css && '
+        'csso {0}styles.css {0}styles.css &&'
+        # js stuff
+        'uglifyjs '
+        '   -o {0}app.min.js '
+        '   --source-map={0}app.min.map '
+        '   --source-map-url=/theme/app.min.map '
+        '   node_modules/jquery/dist/jquery.js '
+        '   {0}app.js'
+        .format('%s/' % env('path_theme'))
+    ))
+
     return parser
 
 

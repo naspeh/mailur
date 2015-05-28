@@ -3,7 +3,9 @@
   "dependencies": {
     "autoprefixer": "5.1.1",
     "csso": "1.3.11",
-    "less": "2.5.1"
+    "jquery": "2.1.4",
+    "less": "2.5.1",
+    "uglifyjs": "2.4.10"
   },
   "repository": {},
   "license": "GPL-2.0"
