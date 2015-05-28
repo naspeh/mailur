@@ -88,9 +88,9 @@ def hide_quote(msg, msgs, class_):
             if cp and cb and cp.endswith(cb):
                 block.attrib['class'] = class_
                 parent = block.getparent()
-                switch = lhtml.fromstring('<div class="%s-switch"/>' % class_)
+                toggle = lhtml.fromstring('<div class="%s-toggle"/>' % class_)
                 block.attrib['class'] = class_
-                parent.insert(parent.index(block), switch)
+                parent.insert(parent.index(block), toggle)
                 return lhtml.tostring(lmsg, encoding='utf8').decode()
     return msg
 

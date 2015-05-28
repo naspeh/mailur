@@ -92,15 +92,15 @@ $('.thread .email-info').click(function() {
     }
     return false;
 });
-$('.thread .email-details-toggle').click(function() {
+$('.thread').on('click', ' .email-details-toggle', function() {
     $(this).parents('.email').find('.email-details').toggle();
     return false;
 });
-$('.email').on('click', '.email-quote-switch', function() {
+$('.email').on('click', '.email-quote-toggle', function() {
     $(this).next('.email-quote').toggle();
     return false;
 });
-$('.email .email-pin').click(function() {
+$('.email').on('click', '.email-pin', function() {
     var email = $(this).parents('.email');
     var id = email.data('id');
     var action = email.hasClass('email-pinned') ? 'rm': 'add';
