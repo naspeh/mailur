@@ -58,7 +58,7 @@ function send(url, data, callback) {
         send(url, data, callback);
     } else {
         url = 'http://localhost:5000' + url;
-        var resp = {url: url, data: data, uid: guid()}
+        var resp = {url: url, payload: data, uid: guid()}
         ws.send(JSON.stringify(resp));
         handlers[resp.uid] = callback;
     }
@@ -100,6 +100,13 @@ $('.email').on('click', '.email-quote-switch', function() {
     $(this).next('.email-quote').toggle();
     return false;
 });
+$('.email .email-pin').click(function() {
+    var email = $(this).parents('.email');
+    var id = email.data('id');
+    var action = email.hasClass('email-pinned') ? 'rm': 'add';
+    send('/mark/', {ids: [id], name: '\\Starred', action: action});
+    return false;
+})
 </script>
 </body>
 </html>

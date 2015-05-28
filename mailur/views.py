@@ -4,7 +4,7 @@ import functools as ft
 import valideer as v
 from werkzeug.routing import Map, Rule
 
-from . import parser, imap, filters as f
+from . import parser, syncer, imap, filters as f
 
 rules = [
     Rule('/auth/', endpoint='auth'),
@@ -17,6 +17,7 @@ rules = [
     Rule('/thread/<id>/', endpoint='thread'),
     Rule('/emails/', endpoint='emails'),
     Rule('/search/<q>/', endpoint='search'),
+    Rule('/mark/', endpoint='mark'),
 ]
 url_map = Map(rules)
 
@@ -86,7 +87,9 @@ def ctx_emails(env, items, extra=None, thread=False):
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
         email = {
-            'id': i['thrid'] if thread else i['id'],
+            'id': i['id'],
+            'thrid': i['thrid'],
+            'domid': i['thrid'] if thread else i['id'],
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
@@ -289,3 +292,41 @@ def raw(env, id):
         with open_file('files_parser', name, mode='bw') as f:
             f.write(raw)
     return env.make_response(raw, content_type='text/plain')
+
+
+@login_required
+def mark(env):
+    schema = v.parse({
+        '+action': v.Enum(('add', 'rm')),
+        '+name': v.Enum(('\\Starred', '\\Unread')),
+        '+ids': [str],
+        'thread': v.Nullable(bool, False)
+    })
+    data = schema.validate(env.request.json)
+
+    cur = env.db.cursor()
+    where = 'thrid IN %s' if data['thread'] else 'id IN %s'
+    where = cur.mogrify(where, [tuple(data['ids'])]).decode()
+    actions = {
+        'rm': (
+            '''
+            UPDATE emails SET labels = array_remove(labels, %(name)s)
+            WHERE {} AND %(name)s=ANY(labels)
+            RETURNING id
+            '''
+        ),
+        'add': (
+            '''
+            UPDATE emails SET labels = (labels || %(name)s::varchar)
+            WHERE {} AND NOT(%(name)s=ANY(labels))
+            RETURNING id
+            '''
+        ),
+    }
+    sql = actions[data['action']].format(where)
+    sql = cur.mogrify(sql, {'name': data['name']}).decode()
+    i = env.sql(sql)
+    env.db.commit()
+
+    syncer.notify([r[0] for r in i])
+    return 'OK'

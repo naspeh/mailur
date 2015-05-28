@@ -19,7 +19,15 @@ def wshandler(request):
         if msg.tp == web.MsgType.text:
             log.debug(msg.data)
             data = json.loads(msg.data)
-            resp = yield from http('GET', data['url'], cookies=cookies.items())
+            payload = data.get('payload')
+            if payload:
+                payload = json.dumps(payload)
+            resp = yield from http(
+                'POST' if payload else 'GET',
+                data['url'],
+                data=payload,
+                cookies=cookies.items()
+            )
             log.debug('%s %s', resp.status, msg.data)
             if resp.status == 200:
                 cookies = dict(cookies, **resp.cookies)

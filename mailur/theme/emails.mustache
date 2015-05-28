@@ -4,16 +4,25 @@
 {{#emails?}}
 <ul class="emails{{#thread?}} thread{{/thread?}}" data-last="{{last}}">
 {{#items}}
-<li class="email{{#body?}} email-show email-loaded{{/body?}}{{#unread?}} email-unread{{/unread?}}"
-    id="{{#thread?}}{{id}}{{/thread?}}{{^thread?}}{{thrid}}{{/thread?}}"
+<li class="
+        email
+        {{#body?}} email-show email-loaded{{/body?}}
+        {{#unread?}} email-unread{{/unread?}}
+        {{#pinned?}} email-pinned{{/pinned?}}
+    "
+    id="{{domid}}"
     data-id="{{id}}"
-    data-thrid="{{thrid}}"
+    data-thrid="{{id}}"
     data-hash="{{hash}}"
     data-body-url="{{body_url}}"
 >
     <ul class="email-line">
-        <li class="email-pin{{#pinned?}} email-pinned{{/pinned?}}"></li><!--
-        --><li class="email-details-toggle" title="Details"></li>
+        <li class="email-pin"></li><!--
+        Trick: https://css-tricks.com/fighting-the-space-between-inline-block-elements/
+        --><li class="email-details-toggle" title="Details"></li><!--
+        --><li class="email-pick">
+            <input type="checkbox" name="ids" value="{{id}}">
+        </li>
         <li class="email-info"><a href="{{thread_url}}"><ul>
             <li class="email-pic" style="background-image:url({{gravatar}})"></li>
             <li class="email-from" title='{{from}}'>{{from_short}}</li>

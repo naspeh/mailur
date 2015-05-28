@@ -228,3 +228,19 @@ class Emails(Manager):
             for i in ('fr', 'to', 'cc', 'bcc')
         })
     ))
+
+
+class Tasks(Manager):
+    name = 'tasks'
+    fields = (
+        'id int PRIMARY KEY',
+        'name varchar NOT NULL',
+        'data json NOT NULL',
+
+        'created timestamp NOT NULL DEFAULT current_timestamp',
+        'updated timestamp NOT NULL DEFAULT current_timestamp'
+    )
+    table = create_table(name, fields, after=(
+        fill_updated(name),
+        create_seq(name, 'id')
+    ))
