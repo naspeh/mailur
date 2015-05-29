@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import functools as ft
-import glob
 import json
 import logging
 import os
@@ -67,33 +66,35 @@ def sync(env, email, target=None, **kwargs):
 sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
-def run(env, only_wsgi, use_reloader=True):
+def run(env, no_reloader, only_wsgi):
+    import sys
     from multiprocessing import Process
     from werkzeug.serving import run_simple
     from werkzeug.wsgi import SharedDataMiddleware
     from mailur import app, async
 
-    if not only_wsgi and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
-        log.debug('Re-run "css" target and async process')
+    def run_wsgi():
+        wsgi_app = SharedDataMiddleware(app.create_app(env.conf), {
+            '/attachments': env('path_attachments'),
+            '/theme': env('path_theme'),
+        })
+        run_simple('0.0.0.0', 5000, wsgi_app, use_debugger=True)
+
+    ps = [Process(target=run_wsgi)]
+    if not only_wsgi:
         main(['static'])
-        Process(target=async.run, args=('127.0.0.1', 5001)).start()
+        ps += [Process(target=async.run, args=('127.0.0.1', 5001))]
 
-    extra_files = (
-        glob.glob(os.path.join(env('path_theme'), fmask)) +
-        glob.glob(os.path.join(env('path_theme'), '*', fmask))
-        for fmask in ['*.less', '*.css', '*.js', '*.mustache']
-    )
-    extra_files = sum(extra_files, [])
+    for p in ps:
+        p.start()
+    pids = ' '.join(str(p.pid) for p in ps)
+    log.info('Pids: %s', pids)
 
-    wsgi_app = SharedDataMiddleware(app.create_app(env.conf), {
-        '/attachments': env('path_attachments'),
-        '/theme': env('path_theme'),
-    })
-    run_simple(
-        '0.0.0.0', 5000, wsgi_app,
-        use_debugger=True, use_reloader=use_reloader,
-        extra_files=extra_files
-    )
+    if not no_reloader:
+        sh(
+            'while inotifywait -e modify -r .;do kill {pids};{cmd};done'
+            .format(pids=pids, cmd=' '.join(sys.argv))
+        )
 
 
 def shell(env):
@@ -145,8 +146,8 @@ def get_full(argv):
 
     cmd('run')\
         .arg('-w', '--only-wsgi', action='store_true')\
-        .arg('--wo-reloader', action='store_true')\
-        .exe(lambda a: run(env, a.only_wsgi, not a.wo_reloader))
+        .arg('--no-reloader', action='store_true')\
+        .exe(lambda a: run(env, a.no_reloader, only_wsgi=a.only_wsgi))
 
     cmd('async')\
         .arg('-H', '--host', default='127.0.0.1')\
@@ -180,13 +181,7 @@ def get_full(argv):
         '   node_modules/jquery/dist/jquery.js '
         '   {0}app.js '
         '   > {0}all.js &&'
-        'uglifyjs -v '
-        '   -o {0}all.min.js '
-        '   -p {1} '
-        '   --source-map={0}all.min.map '
-        '   --source-map-url=all.min.map '
-        '   --source-map-root=/theme/ '
-        '   {0}all.js '
+        'uglifyjs -v -o {0}all.min.js {0}all.js'
         .format(env('path_theme') + os.path.sep, env('path_theme').count('/'))
     ))
 

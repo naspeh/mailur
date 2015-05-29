@@ -24,11 +24,17 @@ function connect() {
             var handler = handlers[data.uid];
             if (handler) {
                 handler(data.payload);
+                delete handlers[data.uid];
             }
         } else if (data.updated) {
             console.log(data);
-            var path = window.location.pathname;
-            send(path + '?fmt=body', null, function(data) {
+            var path = (
+                location.pathname +
+                location.search +
+                (location.search ? '&' : '?') +
+                'fmt=body'
+            );
+            send(path, null, function(data) {
                 if (path.search('^/thread/') != -1) {
                     updateEmails(data, true);
                 } else if (path.search('^/in/') != -1) {
@@ -90,14 +96,20 @@ $('.thread').on('click', ' .email-details-toggle', function() {
     $(this).parents('.email').find('.email-details').toggle();
     return false;
 });
-$('.email').on('click', '.email-quote-toggle', function() {
+$('.thread').on('click', '.email-quote-toggle', function() {
     $(this).next('.email-quote').toggle();
     return false;
 });
-$('.email').on('click', '.email-pin', function() {
-    var email = $(this).parents('.email');
-    var id = email.data('id');
-    var action = email.hasClass('email-pinned') ? 'rm' : 'add';
-    send('/mark/', {ids: [id], name: '\\Starred', action: action});
+$('.emails').on('click', '.email-pin', function() {
+    var email = $(this).parents('.email'),
+        data = {action: 'add', name: '\\Starred', ids: [email.data('id')]};
+    if (email.hasClass('email-pinned')) {
+        data.action = 'rm';
+        if (email.parents('.thread').length == 0) {
+            data.ids = [email.data('thrid')];
+            data.thread = true;
+        }
+    }
+    send('/mark/', data);
     return false;
 });
