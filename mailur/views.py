@@ -231,7 +231,6 @@ def emails(env):
 @login_required
 @adapt_fmt('emails')
 def search(env, q):
-    q = '"%s"' % q
     i = env.sql('''
     WITH search AS (
         SELECT id

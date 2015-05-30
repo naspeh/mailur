@@ -9291,7 +9291,7 @@ function updateEmails(data, thread) {
 }
 
 connect();
-$('.thread .email-info').click(function() {
+$('.thread').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
     if (email.hasClass('email-show') && !email.hasClass('email-loaded')) {
