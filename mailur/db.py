@@ -80,39 +80,35 @@ class Manager():
         # bind sql functions directly to obj
         self.sql = env.sql
         self.sqlmany = env.sqlmany
+        self.mogrify = env.mogrify
 
     @property
     def db(self):
         return self.env.db
 
     def insert(self, items):
-        cur = self.db.cursor()
-
         fields = sorted(f for f in items[0])
         error = set(fields) - set(self.field_names)
         if error:
             raise ValueError('No fields: %s' % error)
 
         values = '(%s)' % (', '.join('%%(%s)s' % i for i in fields))
-        values = ','.join([cur.mogrify(values, v).decode() for v in items])
+        values = ','.join([self.mogrify(values, v) for v in items])
         sql = 'INSERT INTO {table} ({fields}) VALUES '.format(
             table=self.name,
             fields=', '.join('"%s"' % i for i in fields),
         )
         sql += values + 'RETURNING id'
-        cur.execute(sql)
-        return [r[0] for r in cur]
+        return [r[0] for r in self.sql(sql)]
 
     def update(self, values, where, params=None):
-        cur = self.db.cursor()
-
         fields = sorted(f for f in values)
         error = set(fields) - set(self.field_names)
         if error:
             raise ValueError('No fields: %s' % error)
         values_ = ', '.join('%%(%s)s' % i for i in fields)
-        values_ = cur.mogrify(values_, values).decode()
-        where_ = cur.mogrify(where, params).decode()
+        values_ = self.mogrify(values_, values)
+        where_ = self.mogrify(where, params)
         sql = '''
         UPDATE {table} SET ({fields}) = ({values})
           WHERE {where}
@@ -123,8 +119,7 @@ class Manager():
             values=values_,
             where=where_
         )
-        cur.execute(sql)
-        return [r[0] for r in cur]
+        return [r[0] for r in self.sql(sql)]
 
 
 class Accounts(Manager):
@@ -204,6 +199,7 @@ class Emails(Manager):
         fill_updated(name),
         create_index(name, 'size'),
         create_index(name, 'msgid'),
+        create_index(name, 'thrid'),
         create_index(name, 'in_reply_to'),
         create_index(name, 'refs', 'GIN'),
         create_index(name, 'labels', 'GIN'),

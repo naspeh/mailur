@@ -92,6 +92,10 @@ class Env:
     def sqlmany(self, *args, **kwargs):
         return self._sql('executemany', *args, **kwargs)
 
+    def mogrify(self, sql, params):
+        result = self.db.cursor().mogrify(sql, params)
+        return result.decode()
+
 
 def setup_logging(env):
     conf = {

@@ -171,13 +171,12 @@ def emails(env):
         'in': str
     })
     args = schema.validate(env.request.args)
-    cur = env.db.cursor()
     if args.get('in'):
-        where = cur.mogrify('%s = ANY(labels)', [args['in']])
+        where = env.mogrify('%s = ANY(labels)', [args['in']])
     elif args.get('subj'):
-        where = cur.mogrify('%s = subj', [args['subj']])
+        where = env.mogrify('%s = subj', [args['subj']])
     elif args.get('from'):
-        where = cur.mogrify('%s IN (SELECT fr[1][2])', [args['from']])
+        where = env.mogrify('%s IN (SELECT fr[1][2])', [args['from']])
     else:
         return env.abort(400)
 
@@ -213,7 +212,7 @@ def emails(env):
         ORDER BY time DESC LIMIT 1
     )
     ORDER BY time DESC
-    '''.format(where=where.decode()))
+    '''.format(where=where))
 
     def emails():
         for msg in i:
@@ -263,6 +262,8 @@ def search(env, q):
 def body(env, id):
     def get_html(raw, parents=None):
         def parse(raw):
+            if not raw:
+                return ''
             res = parser.parse(raw.tobytes(), id, env('path_attachments'))
             return res['html']
 
@@ -304,27 +305,25 @@ def mark(env):
     })
     data = schema.validate(env.request.json)
 
-    cur = env.db.cursor()
     where = 'thrid IN %s' if data['thread'] else 'id IN %s'
-    where = cur.mogrify(where, [tuple(data['ids'])]).decode()
+    where = env.mogrify(where, [tuple(data['ids'])])
     actions = {
         'rm': (
             '''
             UPDATE emails SET labels = array_remove(labels, %(name)s)
             WHERE {} AND %(name)s=ANY(labels)
             RETURNING id
-            '''
+            '''.format(where)
         ),
         'add': (
             '''
             UPDATE emails SET labels = (labels || %(name)s::varchar)
             WHERE {} AND NOT(%(name)s=ANY(labels))
             RETURNING id
-            '''
+            '''.format(where)
         ),
     }
-    sql = actions[data['action']].format(where)
-    sql = cur.mogrify(sql, {'name': data['name']}).decode()
+    sql = env.mogrify(actions[data['action']], {'name': data['name']})
     i = env.sql(sql)
     env.db.commit()
 
