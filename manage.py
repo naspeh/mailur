@@ -102,7 +102,8 @@ def shell(env):
     namespace = {'env': env}
     try:
         from ptpython.repl import embed
-        embed(namespace, history_filename=os.path.expanduser('~/.ptpython'))
+        opts = {'history_filename': os.path.expanduser('~/.ptpython_history')}
+        embed(namespace, **opts)
     except ImportError:
         from code import interact
         interact('', local=namespace)
