@@ -113,3 +113,6 @@ $('.emails').on('click', '.email-pin', function() {
     send('/mark/', data);
     return false;
 });
+$('.thread').on('click', '.email-body a', function() {
+    $(this).attr('target', '_blank');
+});

@@ -251,20 +251,3 @@ def text2html(txt):
     htm = link_re.sub(fill_link, htm)
     htm = '<pre>%s</pre>' % htm
     return htm
-
-
-def t2h_repl(match):
-    groups = match.groupdict()
-    blockquote = groups.get('blockquote')
-    if blockquote is not None:
-        inner = re.sub(r'(?m)^ *> ?', '', blockquote)
-        inner = text2html(inner)
-        return '<blockquote>%s</blockquote>' % inner
-    elif groups.get('p') is not None:
-        inner = groups.get('p').strip()
-        inner = text2html(inner)
-        return '<p>%s</p>' % inner
-    elif groups.get('br') is not None:
-        return '<br/>'
-    else:
-        raise ValueError(groups)
