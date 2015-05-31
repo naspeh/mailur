@@ -116,3 +116,32 @@ $('.emails').on('click', '.email-pin', function() {
 $('.thread').on('click', '.email-body a', function() {
     $(this).attr('target', '_blank');
 });
+function getChecked() {
+    return $('.email .email-pick input:checked')
+        .map(function() {return $(this).parents('.email').attr('id');}).get();
+}
+Mousetrap
+    .bind('* a', function() {
+        $('.email .email-pick input').prop('checked', true);
+    })
+    .bind('* n', function() {
+        $('.email .email-pick input').prop('checked', false);
+    })
+    .bind('* r', function() {
+        $('.email:not(.email-unread) .email-pick input').prop('checked', true);
+    })
+    .bind('* u', function() {
+        $('.email.email-unread .email-pick input').prop('checked', true);
+    })
+    .bind('* s', function() {
+        $('.email.email-pinned .email-pick input').prop('checked', true);
+    })
+    .bind('* t', function() {
+        $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
+    })
+    .bind('shift+i', function() {
+        send('/mark/', {action: 'rm', name: '\\Unread', ids: getChecked()});
+    })
+    .bind('shift+u', function() {
+        send('/mark/', {action: 'add', name: '\\Unread', ids: getChecked()});
+    });

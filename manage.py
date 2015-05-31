@@ -171,6 +171,7 @@ def get_full(argv):
             '   uglify-js'
             # js libs
             '   jquery'
+            '   mousetrap'
         ))
 
     cmd('static').exe(lambda a: sh(
@@ -180,6 +181,7 @@ def get_full(argv):
         # js stuff
         'cat '
         '   node_modules/jquery/dist/jquery.js '
+        '   node_modules/mousetrap/mousetrap.js '
         '   {0}app.js '
         '   > {0}all.js &&'
         'uglifyjs -v -o {0}all.min.js {0}all.js'

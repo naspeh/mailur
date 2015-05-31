@@ -303,6 +303,8 @@ def mark(env):
         'thread': v.Nullable(bool, False)
     })
     data = schema.validate(env.request.json)
+    if not data['ids']:
+        return 'OK'
 
     where = 'thrid IN %s' if data['thread'] else 'id IN %s'
     where = env.mogrify(where, [tuple(data['ids'])])

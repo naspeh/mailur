@@ -68,6 +68,11 @@ body {
                 color: @ColorC;
             }
         }
+        .email-pick {
+            &> input {
+                display: block;
+            }
+        }
         .email-details-toggle {
             .icon-details;
             display: none;
@@ -204,6 +209,9 @@ body {
 }
 .thread {
     .email-line {
+        .email-pick {
+            display: none;
+        }
         .email-from {
             font-weight: bold;
         }
