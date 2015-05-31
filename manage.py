@@ -169,6 +169,7 @@ def get_full(argv):
             '   csso'
             '   less'
             '   uglify-js'
+            '   jshint'
             # js libs
             '   jquery'
             '   mousetrap'

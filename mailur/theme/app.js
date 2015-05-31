@@ -105,7 +105,7 @@ $('.emails').on('click', '.email-pin', function() {
         data = {action: 'add', name: '\\Starred', ids: [email.data('id')]};
     if (email.hasClass('email-pinned')) {
         data.action = 'rm';
-        if (email.parents('.thread').length == 0) {
+        if (email.parents('.emails.thread').length === 0) {
             data.ids = [email.data('thrid')];
             data.thread = true;
         }
@@ -116,9 +116,21 @@ $('.emails').on('click', '.email-pin', function() {
 $('.thread').on('click', '.email-body a', function() {
     $(this).attr('target', '_blank');
 });
-function getChecked() {
-    return $('.email .email-pick input:checked')
-        .map(function() {return $(this).parents('.email').attr('id');}).get();
+function mark(params) {
+    if ($('.emails').hasClass('thread')) {
+        params.ids = [$('.email').first().data('thrid')];
+        params.thread = true;
+    } else {
+        params.thread = true;
+        params.ids = (
+            $('.email .email-pick input:checked')
+            .map(function() {
+                return $(this).parents('.email').data('thrid');
+            })
+            .get()
+        );
+    }
+    send('/mark/', params);
 }
 Mousetrap
     .bind('* a', function() {
@@ -140,8 +152,8 @@ Mousetrap
         $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
     })
     .bind('shift+i', function() {
-        send('/mark/', {action: 'rm', name: '\\Unread', ids: getChecked()});
+        mark({action: 'rm', name: '\\Unread'});
     })
     .bind('shift+u', function() {
-        send('/mark/', {action: 'add', name: '\\Unread', ids: getChecked()});
+        mark({action: 'add', name: '\\Unread'});
     });

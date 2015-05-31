@@ -89,7 +89,7 @@ def ctx_emails(env, items, extra=None, thread=False):
         email = {
             'id': i['id'],
             'thrid': i['thrid'],
-            'domid': i['thrid'] if thread else i['id'],
+            'domid': i['id'] if thread else i['thrid'],
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
