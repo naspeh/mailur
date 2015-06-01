@@ -182,16 +182,18 @@ def get_full(argv):
         ))
 
     cmd('static').exe(lambda a: sh(
+        # all.css
         'lessc {0}styles.less {0}build/all.css &&'
         'autoprefixer {0}build/all.css {0}build/all.css &&'
         'csso {0}build/all.css {0}build/all.min.css &&'
-        # js stuff
+        # all.js
         'cat'
         '   node_modules/jquery/dist/jquery.js'
         '   node_modules/mousetrap/mousetrap.js'
         '   {0}app.js'
         '   > {0}build/all.js &&'
         'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'
+        # theme version
         'cat mailur/theme/build/all.min.* | md5sum - | cut -c-32'
         '   > {0}build/version'
         .format(env('path_theme') + os.path.sep)
