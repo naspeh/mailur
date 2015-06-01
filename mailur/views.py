@@ -103,7 +103,7 @@ def ctx_emails(env, items, extra=None, thread=False):
             'time_human': f.humanize_dt(env, i['time']),
             'from': f.format_from(env, i['fr'][0]),
             'from_short': f.format_from(env, i['fr'][0], short=True),
-            'from_url': env.url_for('emails', {'from': i['fr'][0][1]}),
+            'from_url': env.url_for('emails', {'person': i['fr'][0][1]}),
             'gravatar': f.get_gravatar(i['fr'][0][1]),
             'attachments?': {'items': [
                 {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
@@ -166,7 +166,7 @@ def thread(env, id):
 @adapt_fmt('emails')
 def emails(env):
     schema = v.parse({
-        'from': str,
+        'person': str,
         'subj': str,
         'in': str
     })
@@ -175,8 +175,11 @@ def emails(env):
         where = env.mogrify('%s = ANY(labels)', [args['in']])
     elif args.get('subj'):
         where = env.mogrify('%s = subj', [args['subj']])
-    elif args.get('from'):
-        where = env.mogrify('%s IN (SELECT fr[1][2])', [args['from']])
+    elif args.get('person'):
+        where = env.mogrify(
+            '(%(fr)s IN (SELECT fr[1][2]) OR %(fr)s IN (SELECT "to"[1][2]))',
+            {'fr': args['person']}
+        )
     else:
         return env.abort(400)
 
