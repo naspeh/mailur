@@ -90,10 +90,10 @@ connect();
 $('.thread').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
-    if (email.hasClass('email-show') && !email.hasClass('email-loaded')) {
+    if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
         send(email.data('body-url'), null, function(data) {
             email.find('.email-body').html(data);
-            email.addClass('email-loaded');
+            email.addClass('email-showed');
         });
     }
     return false;
