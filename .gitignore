@@ -1,4 +1,5 @@
 *.pyc
 conf.json
-attachments
-node_modules
+/attachments
+/node_modules
+/mailur/theme/build

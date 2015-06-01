@@ -92,9 +92,9 @@ class WebEnv(Env):
 
     def render_body(self, name, ctx):
         body = self.render(name, ctx)
-        jsfile = 'all.js' if self('debug') else ''
+        name = 'all' if self('debug') else 'all.min'
         return self.render('base', {
             'body': body,
-            'cssfile': '/theme/styles.css?%s' % self.started,
-            'jsfile': '/theme/%s?%s' % (jsfile, self.started)
+            'cssfile': '/theme/build/%s.css?%s' % (name, self.started),
+            'jsfile': '/theme/build/%s.js?%s' % (name, self.started)
         })

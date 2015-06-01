@@ -176,17 +176,17 @@ def get_full(argv):
         ))
 
     cmd('static').exe(lambda a: sh(
-        'lessc {0}styles.less {0}styles.css && '
-        'autoprefixer {0}styles.css {0}styles.css && '
-        'csso {0}styles.css {0}styles.css &&'
+        'lessc {0}styles.less {0}build/all.css &&'
+        'autoprefixer {0}build/all.css {0}build/all.css &&'
+        'csso {0}build/all.css {0}build/all.min.css &&'
         # js stuff
-        'cat '
-        '   node_modules/jquery/dist/jquery.js '
-        '   node_modules/mousetrap/mousetrap.js '
-        '   {0}app.js '
-        '   > {0}all.js &&'
-        'uglifyjs -v -o {0}all.min.js {0}all.js'
-        .format(env('path_theme') + os.path.sep, env('path_theme').count('/'))
+        'cat'
+        '   node_modules/jquery/dist/jquery.js'
+        '   node_modules/mousetrap/mousetrap.js'
+        '   {0}app.js'
+        '   > {0}build/all.js &&'
+        'uglifyjs -v -o {0}build/all.min.js {0}build/all.js'
+        .format(env('path_theme') + os.path.sep)
     ))
 
     return parser
