@@ -203,9 +203,8 @@ def fetch_labels(env, imap, map_uids, folder):
         gids = [map_uids[uid] for uid, row in data if func(row, *args)]
         updated += update_label(env, gids, label, folder)
 
-    cur = env.db.cursor()
     # Sorted array intersection
-    new_labels = cur.mogrify('''
+    new_labels = env.mogrify('''
     SELECT ARRAY(
       SELECT i FROM (
         SELECT unnest(labels)
@@ -220,19 +219,66 @@ def fetch_labels(env, imap, map_uids, folder):
     WHERE (SELECT ARRAY(SELECT unnest(labels) ORDER BY 1)) != ({0})
     AND %s = ANY(labels)
     RETURNING id
-    '''.format(new_labels.decode())
+    '''.format(new_labels)
     i = env.sql(sql, [folder])
     updated += tuple(r[0] for r in i)
     log.info('  * Clean %d emails', i.rowcount)
 
+    updated += process_tasks(env)
+
     env.db.commit()
     notify(updated)
+
+
+def process_tasks(env):
+    updated = []
+    tasks = env.sql('''
+    SELECT data
+    FROM tasks WHERE name='sync'
+    ORDER BY created
+    ''').fetchall()
+
+    log.info('  * Process %s tasks', len(tasks))
+    for row in tasks:
+        data = row['data']
+        updated += mark(env, data)
+        log.info('  - done %s', data)
+    return updated
+
+
+def mark(env, data, new=False):
+    where = 'thrid IN %s' if data['thread'] else 'id IN %s'
+    where = env.mogrify(where, [tuple(data['ids'])])
+    actions = {
+        'rm': (
+            '''
+            UPDATE emails SET labels = array_remove(labels, %(name)s)
+            WHERE {} AND %(name)s=ANY(labels)
+            RETURNING id
+            '''.format(where)
+        ),
+        'add': (
+            '''
+            UPDATE emails SET labels = (labels || %(name)s::varchar)
+            WHERE {} AND NOT(%(name)s=ANY(labels))
+            RETURNING id
+            '''.format(where)
+        ),
+    }
+    sql = env.mogrify(actions[data['action']], {'name': data['name']})
+    updated = [r[0] for r in env.sql(sql)]
+    if new:
+        env.tasks.insert({'name': 'sync', 'data': data})
+        env.db.commit()
+        notify(updated)
+    return updated
 
 
 def notify(ids):
     if not ids:
         return
 
+    ids = set(ids)
     try:
         requests.post('http://localhost:5001/notify/', data={'ids': ids})
     except IOError as e:

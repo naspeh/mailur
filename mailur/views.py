@@ -306,28 +306,5 @@ def mark(env):
     if not data['ids']:
         return 'OK'
 
-    where = 'thrid IN %s' if data['thread'] else 'id IN %s'
-    where = env.mogrify(where, [tuple(data['ids'])])
-    actions = {
-        'rm': (
-            '''
-            UPDATE emails SET labels = array_remove(labels, %(name)s)
-            WHERE {} AND %(name)s=ANY(labels)
-            RETURNING id
-            '''.format(where)
-        ),
-        'add': (
-            '''
-            UPDATE emails SET labels = (labels || %(name)s::varchar)
-            WHERE {} AND NOT(%(name)s=ANY(labels))
-            RETURNING id
-            '''.format(where)
-        ),
-    }
-    sql = env.mogrify(actions[data['action']], {'name': data['name']})
-    updated = [r[0] for r in env.sql(sql)]
-    env.tasks.insert({'name': 'sync', 'data': data})
-    env.db.commit()
-
-    syncer.notify(updated)
+    syncer.mark(env, data, new=True)
     return 'OK'
