@@ -20,7 +20,7 @@ def get_charset(name):
         'unknown-8bit': None,
         'cp-1251': 'cp1251',
         'gb2312': 'gbk',
-        # Was taken at https://github.com/SimonSapin/python-webencodings/
+        # Aliases from: https://github.com/SimonSapin/python-webencodings/
         'iso-8859-8-i': 'iso-8859-8',
         'x-mac-cyrillic': 'mac-cyrillic',
         'macintosh': 'mac-roman',
@@ -33,7 +33,7 @@ def guess_charsets(text, extra=None):
     extra = get_charset(extra)
     detected = chardet.detect(text)
     detected, confidence = detected['encoding'], detected['confidence']
-    if confidence > 0.9 and not extra:
+    if confidence > 0.9 or not extra:
         return [detected]
     charsets = [extra, detected]
     return [c for c in charsets if c]
