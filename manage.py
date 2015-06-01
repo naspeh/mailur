@@ -191,7 +191,9 @@ def get_full(argv):
         '   node_modules/mousetrap/mousetrap.js'
         '   {0}app.js'
         '   > {0}build/all.js &&'
-        'uglifyjs -v -o {0}build/all.min.js {0}build/all.js'
+        'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'
+        'cat mailur/theme/build/all.min.* | md5sum - | cut -c-32'
+        '   > {0}build/version'
         .format(env('path_theme') + os.path.sep)
     ))
 

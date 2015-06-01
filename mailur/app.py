@@ -1,6 +1,5 @@
 import json
 import os
-import time
 from urllib.parse import urlencode
 
 from werkzeug.contrib.securecookie import SecureCookie
@@ -37,7 +36,9 @@ class WebEnv(Env):
         self.url_map = views.url_map
         self.request = request
         self.adapter = self.url_map.bind_to_environ(request.environ)
-        self.started = time.time()
+
+        with open(os.path.join(self('path_theme'), 'build/version')) as f:
+            self.theme_version = f.read()
 
     def wsgi(self):
         endpoint, values = self.adapter.match()
@@ -95,6 +96,6 @@ class WebEnv(Env):
         name = 'all' if self('debug') else 'all.min'
         return self.render('base', {
             'body': body,
-            'cssfile': '/theme/build/%s.css?%s' % (name, self.started),
-            'jsfile': '/theme/build/%s.js?%s' % (name, self.started)
+            'cssfile': '/theme/build/%s.css?%s' % (name, self.theme_version),
+            'jsfile': '/theme/build/%s.js?%s' % (name, self.theme_version)
         })
