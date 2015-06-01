@@ -67,6 +67,7 @@ sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
 def run(env, no_reloader, only_wsgi):
+    import signal
     import sys
     from multiprocessing import Process
     from werkzeug.serving import run_simple
@@ -90,7 +91,12 @@ def run(env, no_reloader, only_wsgi):
     pids = ' '.join(str(p.pid) for p in ps)
     log.info('Pids: %s', pids)
 
-    if not no_reloader:
+    if no_reloader:
+        def close(signal, frame):
+            for p in ps:
+                p.terminate()
+        signal.signal(signal.SIGINT, close)
+    else:
         sh(
             'while inotifywait -e modify -r .;do kill {pids};{cmd};done'
             .format(pids=pids, cmd=' '.join(sys.argv))

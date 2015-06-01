@@ -325,8 +325,9 @@ def mark(env):
         ),
     }
     sql = env.mogrify(actions[data['action']], {'name': data['name']})
-    i = env.sql(sql)
+    updated = [r[0] for r in env.sql(sql)]
+    env.tasks.insert({'name': 'sync', 'data': data})
     env.db.commit()
 
-    syncer.notify([r[0] for r in i])
+    syncer.notify(updated)
     return 'OK'

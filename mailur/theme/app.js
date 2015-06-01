@@ -1,4 +1,4 @@
-var ws = null, handlers = {};
+var ws = null, handlers = {}, messages = [];
 
 // Ref: http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
 function guid() {
@@ -16,6 +16,12 @@ function connect() {
     ws = new WebSocket('ws://localhost:5001');
     ws.onopen = function() {
         console.log('ws opened');
+        while (messages.length > 0) {
+            messages.pop()();
+        }
+    };
+    ws.onerror = function(error) {
+        console.log('ws error', error);
     };
     ws.onmessage = function(e) {
         data = JSON.parse(e.data);
@@ -37,7 +43,7 @@ function connect() {
             send(path, null, function(data) {
                 if (path.search('^/thread/') != -1) {
                     updateEmails(data, true);
-                } else if (path.search('^/in/') != -1) {
+                } else if (path.search('^/emails/') != -1) {
                     updateEmails(data);
                 } else {
                     $('body').html(data);
@@ -45,22 +51,22 @@ function connect() {
             });
         }
     };
-    ws.onclose = function() {
-        console.log('ws closed');
+    ws.onclose = function(event) {
+        ws = null;
+        console.log('ws closed', event);
         setTimeout(connect, 10000);
     };
 }
 function send(url, data, callback) {
-    if (ws === null) {
-        connect();
-        send(url, data, callback);
-    } else {
+    if (ws && ws.readyState === ws.OPEN) {
         url = 'http://localhost:5000' + url;
         var resp = {url: url, payload: data, uid: guid()};
         ws.send(JSON.stringify(resp));
         if (callback) {
             handlers[resp.uid] = callback;
         }
+    } else {
+        messages = [function() {send(url, data, callback);}].concat(messages);
     }
 }
 function updateEmails(data, thread) {

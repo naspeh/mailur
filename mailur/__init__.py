@@ -57,6 +57,7 @@ class Env:
 
         self.accounts = db.Accounts(self)
         self.emails = db.Emails(self)
+        self.tasks = db.Tasks(self)
 
     def __call__(self, key, default=None):
         value = self.conf[key]

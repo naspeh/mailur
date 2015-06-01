@@ -29,7 +29,7 @@ def init(env, reset=False):
     END;
     $$ language 'plpgsql';
     '''
-    sql += ';'.join(t.table for t in [Accounts, Emails])
+    sql += ';'.join(t.table for t in [Accounts, Emails, Tasks])
     env.sql(sql)
     env.db.commit()
 
@@ -87,6 +87,9 @@ class Manager():
         return self.env.db
 
     def insert(self, items):
+        if isinstance(items, dict):
+            items = [items]
+
         fields = sorted(f for f in items[0])
         error = set(fields) - set(self.field_names)
         if error:
