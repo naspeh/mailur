@@ -77,7 +77,7 @@ def auth_refresh(env, email):
 
 class Client:
     def __init__(self, env, email):
-        im = connect(env, email)
+        self.c = im = connect(env, email)
 
         self.folders = partial(folders, im)
         self.status = partial(status, im)
@@ -113,18 +113,6 @@ def connect(env, email):
     except IOError as e:
         raise AuthError(e)
     return im
-
-
-def store(im, uids, key, value):
-    for uid in uids:
-        _, data = im.uid('SEARCH', None, '(X-GM-MSGID %s)' % uid)
-        uid_ = data[0].decode().split(' ')[0]
-        if not uid_:
-            log.warn('%s is not found' % uid)
-            continue
-        res = im.uid('STORE', uid_, key, value)
-        log.info('imap.store(%r, %r): %s', key, value, res)
-    return
 
 
 def folders(im):

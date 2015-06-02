@@ -37,6 +37,7 @@ def get_conf(conf):
             'imap_body_maxsize': v.Nullable(int, 50 * 1024 * 1024),
             'imap_batch_size': v.Nullable(int, 2000),
             'imap_debug': v.Nullable(int, 0),
+            'imap_readonly': v.Nullable(bool, True),
             'async_pool': v.Nullable(int, 0),
             'ui_ga_id': str,
             'ui_is_public': v.Nullable(bool, False),

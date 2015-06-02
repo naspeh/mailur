@@ -233,7 +233,6 @@ class Tasks(Manager):
     name = 'tasks'
     fields = (
         'id int PRIMARY KEY',
-        'name varchar NOT NULL',
         'data json NOT NULL',
 
         'created timestamp NOT NULL DEFAULT current_timestamp',

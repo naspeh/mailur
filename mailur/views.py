@@ -299,15 +299,5 @@ def raw(env, id):
 
 @login_required
 def mark(env):
-    schema = v.parse({
-        '+action': v.Enum(('add', 'rm')),
-        '+name': v.Enum(('\\Starred', '\\Unread')),
-        '+ids': [str],
-        'thread': v.Nullable(bool, False)
-    })
-    data = schema.validate(env.request.json)
-    if not data['ids']:
-        return 'OK'
-
-    syncer.mark(env, data, new=True)
+    syncer.mark(env, env.request.json, new=True)
     return 'OK'

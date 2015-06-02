@@ -5,6 +5,7 @@ from multiprocessing.dummy import Pool
 from uuid import uuid5, NAMESPACE_URL
 
 import requests
+import valideer as v
 
 from . import imap_utf7, parser, log
 from .helpers import Timer, with_lock
@@ -49,8 +50,12 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
             fetch_bodies(env, imap, uids)
         else:
             fetch_headers(env, email, imap, uids)
-            fetch_labels(env, imap, uids, label)
 
+            imap.status(name, env('imap_readonly'))
+            sync_marks(env, imap, uids)
+            imap.status(name)
+
+            fetch_labels(env, imap, uids, label)
     # Refresh search index
     env.sql('REFRESH MATERIALIZED VIEW emails_search')
     env.db.commit()
@@ -233,8 +238,7 @@ def fetch_labels(env, imap, map_uids, folder):
 def process_tasks(env):
     updated = []
     tasks = env.sql('''
-    SELECT data
-    FROM tasks WHERE name='sync'
+    SELECT data FROM tasks
     ORDER BY created
     ''').fetchall()
 
@@ -247,6 +251,16 @@ def process_tasks(env):
 
 
 def mark(env, data, new=False):
+    schema = v.parse({
+        '+action': v.Enum(('add', 'rm')),
+        '+name': v.Enum(('\\Starred', '\\Unread')),
+        '+ids': [str],
+        'thread': v.Nullable(bool, False)
+    })
+    data = schema.validate(data)
+    if not data['ids']:
+        return []
+
     where = 'thrid IN %s' if data['thread'] else 'id IN %s'
     where = env.mogrify(where, [tuple(data['ids'])])
     actions = {
@@ -268,10 +282,61 @@ def mark(env, data, new=False):
     sql = env.mogrify(actions[data['action']], {'name': data['name']})
     updated = [r[0] for r in env.sql(sql)]
     if new:
-        env.tasks.insert({'name': 'sync', 'data': data})
+        env.tasks.insert({'data': data})
         env.db.commit()
         notify(updated)
     return updated
+
+
+def sync_marks(env, imap, map_uids):
+    log.info('  * Sync marks')
+    store = {
+        ('add', '\\Starred'): ('+FLAGS', '\\Flagged'),
+        ('rm', '\\Starred'): ('-FLAGS', '\\Flagged'),
+        ('add', '\\Unread'): ('-FLAGS', '\\Seen'),
+        ('rm', '\\Unread'): ('+FLAGS', '\\Seen'),
+    }
+    tasks = env.sql('''
+    SELECT
+        data->>'name' AS name,
+        data->>'action' AS action,
+        (data->>'thread')::bool AS thread,
+        json_agg((data->>'ids')::json) AS ids,
+        array_agg(id) AS task_ids
+    FROM tasks
+    WHERE data->>'name' IN ('\\Starred', '\\Unread')
+    GROUP BY name, action, thread
+    ''', ).fetchall()
+
+    msgids = tuple(map_uids.values())
+    for t in tasks:
+        ids = sum(t['ids'], [])
+        where = 'thrid IN %s' if t['thread'] else 'id IN %s'
+        where = env.mogrify(where, [tuple(ids)])
+        emails = env.sql('''
+        SELECT id, thrid, msgid FROM emails WHERE msgid IN %s AND {}
+        '''.format(where), [msgids]).fetchall()
+        msgids_ = [r[2] for r in emails]
+        uids = [uid for uid, gid in map_uids.items() if gid in msgids_]
+        if uids:
+            key, value = store[(t['action'], t['name'])]
+            imap.c.uid('STORE', ','.join(uids), key, value)
+            log.info('  - store (%s %s) for %s ones', key, value, len(uids))
+
+            ids_ = set(r['thrid'] if t['thread'] else r['id'] for r in emails)
+            diff = set(ids) - ids_
+            if diff:
+                log.info('  - add task for %s others', len(diff))
+                env.tasks.insert({'data': {
+                    'name': t['name'],
+                    'action': t['action'],
+                    'thread': t['thread'],
+                    'ids': list(diff)
+                }})
+            env.sql(
+                'DELETE FROM tasks WHERE id IN %s',
+                [tuple(t['task_ids'])]
+            )
 
 
 def notify(ids):
