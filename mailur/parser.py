@@ -33,7 +33,7 @@ def guess_charsets(text, extra=None):
     extra = get_charset(extra)
     detected = chardet.detect(text)
     detected, confidence = detected['encoding'], detected['confidence']
-    if confidence > 0.9 or not extra:
+    if confidence > 0.9:
         return [detected]
     charsets = [extra, detected]
     return [c for c in charsets if c]
