@@ -18,12 +18,8 @@ imaplib._MAXLINE = 100000
 
 
 class Error(Exception):
-    def __str__(self):
+    def __repr__(self):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
-
-
-class NoError(Error):
-    pass
 
 
 class AuthError(Error):
@@ -85,7 +81,7 @@ def auth_refresh(env, email):
 
 
 class Client:
-    NoError = NoError
+    Error = Error
 
     def __init__(self, env, email):
         im = connect(env, email)
@@ -106,10 +102,10 @@ class Client:
 
     def wraps(self, func):
         def inner(*a, **kw):
-            ok, res = func(*a, **kw)
-            if ok == 'NO':
-                raise NoError(res)
-            return ok, res
+            res = func(*a, **kw)
+            if res[0] != 'OK':
+                raise Error(*res)
+            return res
         return ft.wraps(func)(inner)
 
 

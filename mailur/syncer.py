@@ -324,8 +324,8 @@ def sync_marks(env, imap, map_uids):
             log.info('  - store (%s %s) for %s ones', key, value, len(uids))
             try:
                 imap.uid('STORE', ','.join(uids), key, value)
-            except imap.NoError as e:
-                log.warn('  ! %s', e)
+            except imap.Error as e:
+                log.warn('  ! %r', e)
                 return
 
             diff = set(ids) - set(r['id'] for r in emails)
