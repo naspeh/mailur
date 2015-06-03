@@ -153,11 +153,11 @@ def async_runner(count=0):
 
 
 def fetch_bodies(env, imap, map_uids):
-    sql = '''
+    i = env.sql('''
     SELECT msgid, size FROM emails
     WHERE msgid = ANY(%(ids)s) AND raw IS NULL
-    '''
-    pairs = dict(env.sql(sql, {'ids': list(map_uids.values())}))
+    ''', {'ids': list(map_uids.values())})
+    pairs = dict(i)
 
     uids = [(uid, pairs[mid]) for uid, mid in map_uids.items() if mid in pairs]
     if not uids:
@@ -261,28 +261,35 @@ def mark(env, data, new=False):
     if not data['ids']:
         return []
 
-    where = 'thrid IN %s' if data['thread'] else 'id IN %s'
-    where = env.mogrify(where, [tuple(data['ids'])])
+    ids = tuple(data['ids'])
+    if data['thread']:
+        i = env.sql('SELECT id FROM emails WHERE thrid IN %s', [ids])
+        ids = tuple(r[0] for r in i)
+
     actions = {
         'rm': (
             '''
             UPDATE emails SET labels = array_remove(labels, %(name)s)
-            WHERE {} AND %(name)s=ANY(labels)
+            WHERE id IN %(ids)s AND %(name)s=ANY(labels)
             RETURNING id
-            '''.format(where)
+            '''
         ),
         'add': (
             '''
             UPDATE emails SET labels = (labels || %(name)s::varchar)
-            WHERE {} AND NOT(%(name)s=ANY(labels))
+            WHERE id IN %(ids)s AND NOT(%(name)s=ANY(labels))
             RETURNING id
-            '''.format(where)
+            '''
         ),
     }
-    sql = env.mogrify(actions[data['action']], {'name': data['name']})
-    updated = [r[0] for r in env.sql(sql)]
+    i = env.sql(actions[data['action']], {'name': data['name'], 'ids': ids})
+    updated = [r[0] for r in i]
     if new:
-        env.tasks.insert({'data': data})
+        env.tasks.insert({'data': {
+            'action': data['action'],
+            'name': data['name'],
+            'ids': ids
+        }})
         env.db.commit()
         notify(updated)
     return updated
@@ -300,37 +307,32 @@ def sync_marks(env, imap, map_uids):
     SELECT
         data->>'name' AS name,
         data->>'action' AS action,
-        (data->>'thread')::bool AS thread,
         json_agg((data->>'ids')::json) AS ids,
         array_agg(id) AS task_ids
     FROM tasks
     WHERE data->>'name' IN ('\\Starred', '\\Unread')
-    GROUP BY name, action, thread
-    ''', ).fetchall()
+    GROUP BY name, action
+    ''').fetchall()
 
     msgids = tuple(map_uids.values())
     for t in tasks:
-        ids = sum(t['ids'], [])
-        where = 'thrid IN %s' if t['thread'] else 'id IN %s'
-        where = env.mogrify(where, [tuple(ids)])
+        ids = tuple(sum(t['ids'], []))
         emails = env.sql('''
-        SELECT id, thrid, msgid FROM emails WHERE msgid IN %s AND {}
-        '''.format(where), [msgids]).fetchall()
-        msgids_ = [r[2] for r in emails]
+        SELECT id, msgid FROM emails WHERE msgid IN %s AND id IN %s
+        ''', [msgids, ids]).fetchall()
+        msgids_ = [r['msgid'] for r in emails]
         uids = [uid for uid, gid in map_uids.items() if gid in msgids_]
         if uids:
             key, value = store[(t['action'], t['name'])]
             imap.c.uid('STORE', ','.join(uids), key, value)
             log.info('  - store (%s %s) for %s ones', key, value, len(uids))
 
-            ids_ = set(r['thrid'] if t['thread'] else r['id'] for r in emails)
-            diff = set(ids) - ids_
+            diff = set(ids) - set(r['id'] for r in emails)
             if diff:
                 log.info('  - add task for %s others', len(diff))
                 env.tasks.insert({'data': {
                     'name': t['name'],
                     'action': t['action'],
-                    'thread': t['thread'],
                     'ids': list(diff)
                 }})
             env.sql(
