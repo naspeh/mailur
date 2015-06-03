@@ -1,0 +1,46 @@
+Delivered-To: naspeh@gmail.com
+Received: by 10.202.45.4 with SMTP id t4csp1766190oit;
+        Mon, 11 May 2015 14:59:23 -0700 (PDT)
+X-Received: by 10.152.2.38 with SMTP id 6mr9729159lar.80.1431381562550;
+        Mon, 11 May 2015 14:59:22 -0700 (PDT)
+Return-Path: <zkrook777@inetnebr.com>
+Received: from mx98.mail.ru (mx98.mail.ru. [94.100.176.116])
+        by mx.google.com with ESMTPS id au9si9066639lbc.168.2015.05.11.14.59.21
+        for <naspeh@gmail.com>
+        (version=TLSv1 cipher=RC4-SHA bits=128/128);
+        Mon, 11 May 2015 14:59:22 -0700 (PDT)
+Received-SPF: none (google.com: zkrook777@inetnebr.com does not designate permitted sender hosts) client-ip=94.100.176.116;
+Authentication-Results: mx.google.com;
+       spf=none (google.com: zkrook777@inetnebr.com does not designate permitted sender hosts) smtp.mail=zkrook777@inetnebr.com
+Received: from [46.191.122.70] (ident=mail)
+	by mx98.mail.ru with local (envelope-from <zkrook777@inetnebr.com>)
+	id 1YrvWM-0004Ei-Mp
+	for naspeh@gmail.com; Tue, 12 May 2015 00:45:59 +0300
+X-ResentFrom: <drkin@mail.ru>
+X-MailRu-Forward: 1
+Authentication-Results: mxs.mail.ru; spf=none () smtp.mailfrom=zkrook777@inetnebr.com smtp.helo=inetnebr.com
+Received-SPF: none
+Received: from [46.191.122.70] (port=38167 helo=inetnebr.com)
+	by mx98.mail.ru with esmtp (envelope-from <zkrook777@inetnebr.com>)
+	id 1YrvKd-00038N-Vq; Tue, 12 May 2015 00:33:48 +0300
+X-Mru-BL: 4_11:0
+X-Mru-BadRcptsCount: 0
+X-Mru-PTR: error
+X-Mru-NR: 15
+X-Mru-OF: Windows (generic tunnel or VPN)
+X-Mru-RC: BY
+Message-ID: <B5903BD4.CAC6FFE9@inetnebr.com>
+Date: Mon, 11 May 2015 22:33:43 +0200
+From: "Admin" <zkrook777@inetnebr.com>
+MIME-Version: 1.0
+To: <tatb9lhawu9lhoba@mail.ru>
+Subject: јзбука денег
+Content-Type: text/plain;
+Content-Transfer-Encoding: 8bit
+X-Mras: Ok
+X-Mras: Ok
+X-Mras: Ok
+
+ƒеньги нельз€ рисовать, но их можно заработать быстро! http://talkid.ru/
+
+
