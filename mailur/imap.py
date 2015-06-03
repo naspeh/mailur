@@ -1,6 +1,6 @@
+import functools as ft
 import imaplib
 import re
-from functools import partial
 from urllib.parse import urlencode
 
 import requests
@@ -17,7 +17,16 @@ re_noesc = r'(?:(?:(?<=[^\\][\\])(?:\\\\)*")|[^"])*'
 imaplib._MAXLINE = 100000
 
 
-class AuthError(Exception):
+class Error(Exception):
+    def __str__(self):
+        return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
+
+
+class NoError(Error):
+    pass
+
+
+class AuthError(Error):
     pass
 
 
@@ -76,14 +85,32 @@ def auth_refresh(env, email):
 
 
 class Client:
-    def __init__(self, env, email):
-        self.c = im = connect(env, email)
+    NoError = NoError
 
-        self.folders = partial(folders, im)
-        self.status = partial(status, im)
-        self.search = partial(search, im)
-        self.fetch_batch = partial(fetch_batch, im)
-        self.fetch = partial(fetch, im)
+    def __init__(self, env, email):
+        im = connect(env, email)
+
+        im.list = self.wraps(im.list)
+        im.select = self.wraps(im.select)
+        im.status = self.wraps(im.status)
+        im.uid = self.wraps(im.uid)
+
+        self.folders = ft.partial(folders, im)
+        self.select = ft.partial(select, im)
+        self.status = ft.partial(status, im)
+        self.search = ft.partial(search, im)
+        self.fetch_batch = ft.partial(fetch_batch, im)
+        self.fetch = ft.partial(fetch, im)
+
+        self.uid = im.uid
+
+    def wraps(self, func):
+        def inner(*a, **kw):
+            ok, res = func(*a, **kw)
+            if ok == 'NO':
+                raise NoError(res)
+            return ok, res
+        return ft.wraps(func)(inner)
 
 
 def connect(env, email):
@@ -129,12 +156,13 @@ def folders(im):
     return rows
 
 
-def status(im, name, readonly=True):
-    name = '"%s"' % name
-    im.select(name, readonly=readonly)
+def select(im, name, readonly=True):
+    return im.select('"%s"' % name, readonly=readonly)
 
+
+def status(im, name):
     uid_next = 'UIDNEXT'
-    _, data = im.status(name, '(%s)' % uid_next)
+    _, data = im.status('"%s"' % name, '(%s)' % uid_next)
     lexer_uid = re.compile(r'[(]%s (\d+)[)]' % uid_next)
     matches = lexer_uid.search(data[0].decode())
     uid = int(matches.groups()[0])
@@ -217,7 +245,7 @@ def _fetch(im, ids, query):
     else:
         keys = query.split()
 
-    status, data_ = im.uid('fetch', ','.join(ids), '(%s)' % query)
+    _, data_ = im.uid('fetch', ','.join(ids), '(%s)' % query)
     data = iter(data_)
     if 'UID' not in keys:
         keys.append('UID')

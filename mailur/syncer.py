@@ -37,6 +37,7 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
         if not label:
             continue
 
+        imap.select(name, env('imap_readonly'))
         if not labels:
             labels_[name] = get_label_uids(imap, name)
         else:
@@ -50,11 +51,7 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
             fetch_bodies(env, imap, uids)
         else:
             fetch_headers(env, email, imap, uids)
-
-            imap.status(name, env('imap_readonly'))
             sync_marks(env, imap, uids)
-            imap.status(name)
-
             fetch_labels(env, imap, uids, label)
     # Refresh search index
     env.sql('REFRESH MATERIALIZED VIEW emails_search')
@@ -324,8 +321,12 @@ def sync_marks(env, imap, map_uids):
         uids = [uid for uid, gid in map_uids.items() if gid in msgids_]
         if uids:
             key, value = store[(t['action'], t['name'])]
-            imap.c.uid('STORE', ','.join(uids), key, value)
             log.info('  - store (%s %s) for %s ones', key, value, len(uids))
+            try:
+                imap.uid('STORE', ','.join(uids), key, value)
+            except imap.NoError as e:
+                log.warn('  ! %s', e)
+                return
 
             diff = set(ids) - set(r['id'] for r in emails)
             if diff:
