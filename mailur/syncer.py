@@ -65,7 +65,7 @@ def get_label_uids(imap, name):
     if not uids:
         return None
 
-    q = 'BODY[HEADER.FIELDS (MESSAGE-ID)]'
+    q = 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]'
     data = imap.fetch(uids, [q])
     uids = OrderedDict(
         (k, parser.parse(v[q])['message-id']) for k, v in data

@@ -246,7 +246,8 @@ def _fetch(im, ids, query):
     if 'UID' not in keys:
         keys.append('UID')
 
-    re_keys = r'|'.join([re.escape(k) for k in keys])
+    keys_map = {re.sub('(?i)(?<=body)\.peek', '', k): k for k in keys}
+    re_keys = r'|'.join([re.escape(k) for k in keys_map])
     re_list = r'("(%s)"|[^ )"]+)' % re_noesc
     lexer_list = re.compile(re_list)
     lexer_line = re.compile(
@@ -262,7 +263,8 @@ def _fetch(im, ids, query):
         matches = lexer_line.findall(line.decode())
         if matches:
             for match in matches:
-                key, value = match[0:2]
+                key_, value = match[0:2]
+                key = keys_map[key_]
                 if match[2]:
                     row[key] = int(value)
                 elif match[3]:
