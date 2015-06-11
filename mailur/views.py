@@ -147,7 +147,7 @@ def thread(env, id):
             msg['subj_human'] = f.humanize_subj(msg['subj'], subj)
             msg['body?'] = (
                 '\\Unread' in msg['labels'] and
-                {'text': f.humanize_html(msg['html'], msgs)}
+                {'text': f.humanize_html(msg['html'], reversed(msgs))}
             )
             yield msg
             msgs.append(msg['html'])
@@ -271,13 +271,16 @@ def body(env, id):
 
         return f.humanize_html(parse(raw), (parse(r) for r in parents or []))
 
-    i = env.sql('SELECT raw, thrid FROM emails WHERE id=%s LIMIT 1', [id])
-    row = i.fetchone()
+    row = env.sql('''
+    SELECT raw, thrid, time FROM emails WHERE id=%s LIMIT 1
+    ''', [id]).fetchone()
     if row:
         i = env.sql('''
-        SELECT raw FROM emails WHERE thrid=%s AND id!=%s ORDER BY time DESC
-        ''', [row[1], id])
-        result = get_html(row[0], (p[0] for p in i))
+        SELECT raw FROM emails
+        WHERE thrid=%s AND id!=%s AND time<%s
+        ORDER BY time DESC
+        ''', [row['thrid'], id, row['time']])
+        result = get_html(row['raw'], (p['raw'] for p in i))
     else:
         result = ''
     return result
