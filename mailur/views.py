@@ -108,10 +108,10 @@ def ctx_emails(env, items, extra=None, thread=False):
             'attachments?': {'items': [
                 {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
                 for a in i['attachments']
-            ]} if i.get('attachments') else False
-
+            ]} if i.get('attachments') else False,
         }
         email['hash'] = f.get_hash(email)
+        email.update(**ctx_labels(env, i['labels']))
         if extra:
             for k in extra:
                 email[k] = i[k]
@@ -125,6 +125,18 @@ def ctx_emails(env, items, extra=None, thread=False):
     return {'emails?': emails, 'thread?': thread}
 
 
+def ctx_labels(env, labels, ignore=None):
+    ignore = ignore or []
+    return {'labels?': {'items': [
+        {'name': l, 'url': env.url_for('emails', {'in': l})}
+        for l in sorted(set(labels))
+        if (
+            l not in ignore and
+            (not l.startswith('\\') or l in ('\\Inbox', '\\Junk', '\\Trash'))
+        )
+    ]} if labels else False}
+
+
 @login_required
 @adapt_fmt('emails')
 def thread(env, id):
@@ -136,11 +148,12 @@ def thread(env, id):
     WHERE thrid = %s
     ORDER BY time
     ''', [id])
-    msgs = []
+    msgs, labels = [], set()
 
     def emails():
         for n, msg in enumerate(i):
             msg = dict(msg)
+            labels.update(msg['labels'])
             if n == 0:
                 subj = msg['subj']
             msg['subj_changed?'] = f.is_subj_changed(msg['subj'], subj)
@@ -159,6 +172,7 @@ def thread(env, id):
         msg = emails[-1]
         msg['body?'] = {'text': f.humanize_html(msgs[-1], reversed(msgs[:-1]))}
         ctx['subj'] = emails[0]['subj']
+        ctx.update(**ctx_labels(env, labels))
     return ctx
 
 
@@ -222,7 +236,7 @@ def emails(env):
             base_subj = dict(msg["subj_list"])
             base_subj = base_subj[sorted(base_subj)[0]]
             msg = dict(msg)
-            msg['labels'] = sum(msg['labels'], [])
+            msg['labels'] = set(sum(msg['labels'], [])) - {args.get('in')}
             msg['count'] = msg['count'] > 1 and msg['count']
             msg['subj_human'] = f.humanize_subj(msg['subj'], base_subj)
             yield msg

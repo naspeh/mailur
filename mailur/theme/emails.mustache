@@ -1,5 +1,10 @@
 {{#thread?}}
-<h3 class="thread-subj">{{subj}}</h3>
+<h3 class="thread-subj">
+    {{subj}}
+    {{#labels?}}
+    {{#items}}<a href="{{url}}">{{name}}</a> {{/items}}
+    {{/labels?}}
+</h3>
 {{/thread?}}
 {{#emails?}}
 <ul class="emails{{#thread?}} thread{{/thread?}}" data-last="{{last}}">
@@ -21,18 +26,21 @@
         Ref: https://css-tricks.com/fighting-the-space-between-inline-block-elements/
         --><li class="email-details-toggle" title="Details"></li><!--
         --><li class="email-pick"><input type="checkbox" class="mousetrap"></li>
-        <li class="email-info"><a href="{{thread_url}}"><ul>
-            <li class="email-pic" style="background-image:url({{gravatar}})"></li>
-            <li class="email-from" title='{{from}}'>{{from_short}}</li>
-            {{#count}}<li class="email-count">{{count}}</li>{{/count}}
-            <li class="email-subj{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
-                {{subj_human}}
-            </li>
-            <li class="email-preview">{{preview}}</li>
-            <li class="email-expander">&nbsp;</li>
-            <li class="email-time-human" title="{{time}}">{{time_human}}</li>
-            <li class="email-time">{{time}}</li>
-        </ul></a></li>
+        <li class="email-pic email-info" style="background-image:url({{gravatar}})"></li>
+        <li class="email-from email-info" title='{{from}}'>{{from_short}}</li>
+        {{#count}}<li class="email-count email-info">{{count}}</li>{{/count}}
+        <li class="email-subj email-info{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
+            <a href="{{thread_url}}">{{subj_human}}</a>
+        </li>
+        {{^thread?}}
+        {{#labels?}}
+        <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
+        {{/labels?}}
+        {{/thread?}}
+        <li class="email-preview email-info">{{preview}}</li>
+        <li class="email-expander email-info">&nbsp;</li>
+        <li class="email-time-human" title="{{time}}">{{time_human}}</li>
+        <li class="email-time">{{time}}</li>
     </ul>
     {{#thread?}}
     <ul class="email-details">

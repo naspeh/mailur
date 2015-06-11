@@ -50,16 +50,6 @@ body {
             display: inline-block;
             vertical-align: middle;
         }
-        & .email-info {
-            width: 100%;
-            a {
-                display: block;
-                width: 100%;
-                color: @ColorA;
-                text-decoration: none;
-                outline: none;
-            }
-        }
         .email-pin {
             .icon-pin;
             font-size: @SizeIcon;
@@ -100,10 +90,14 @@ body {
             font-weight: normal;
         }
         .email-subj {
-            color: @ColorB;
-
             &.email-subj-changed {
                 display: inline;
+            }
+            &> a {
+                display: block;
+                color: @ColorB;
+                text-decoration: none;
+                outline: none;
             }
         }
         .email-expander {
