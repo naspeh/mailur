@@ -169,9 +169,10 @@ def fetch_bodies(env, imap, map_uids):
         env.db.commit()
         notify(ids)
 
+    q = 'BODY.PEEK[]'
     with async_runner(env('async_pool')) as run:
-        for data in imap.fetch_batch(uids, 'RFC822', 'add bodies'):
-            items = ((row['RFC822'], map_uids[uid]) for uid, row in data)
+        for data in imap.fetch_batch(uids, q, 'add bodies'):
+            items = ((row[q], map_uids[uid]) for uid, row in data)
             run(update, env, items)
 
 
