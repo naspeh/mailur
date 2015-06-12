@@ -34,13 +34,7 @@ function connect() {
             }
         } else if (data.updated) {
             console.log(data);
-            var path = (
-                location.pathname +
-                location.search +
-                (location.search ? '&' : '?') +
-                'fmt=body'
-            );
-            send(path, null, function(data) {
+            send(location.pathname + location.search, null, function(data) {
                 if (path.search('^/thread/') != -1) {
                     updateEmails(data, true);
                 } else if (path.search('^/emails/') != -1) {
@@ -91,17 +85,17 @@ $('.thread').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
     if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
-        send(email.data('body-url') + '?fmt=body', null, function(data) {
+        send(email.data('body-url'), null, function(data) {
             email.replaceWith($(data).find('#' + email.attr('id')));
         });
     }
     return false;
 });
-$('.emails').on('click', ' .email-details-toggle', function() {
+$('.thread').on('click', ' .email-details-toggle', function() {
     $(this).parents('.email').find('.email-details').toggle();
     return false;
 });
-$('.emails').on('click', '.email-quote-toggle', function() {
+$('.thread').on('click', '.email-quote-toggle', function() {
     $(this).next('.email-quote').toggle();
     return false;
 });

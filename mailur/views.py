@@ -49,7 +49,8 @@ def login_required(func):
 
 def adapt_fmt(tpl):
     def inner(env, *a, **kw):
-        fmt = env.request.args.get('fmt', 'html')
+        default = 'body' if env.request.is_xhr else 'html'
+        fmt = env.request.args.get('fmt', default)
 
         ctx = inner.func(env, *a, **kw)
         if fmt == 'json':
@@ -83,10 +84,12 @@ def init(env):
     return 'OK'
 
 
-def ctx_emails(env, items, extra=None, domid='id'):
+def ctx_emails(env, items, domid='id'):
     emails, last = [], None
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
+        extra = i.get('_extra', {})
+        body_args = {'subj_changed': 1} if extra.get('subj_changed?') else {}
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
@@ -97,7 +100,7 @@ def ctx_emails(env, items, extra=None, domid='id'):
             'preview': f.get_preview(i['text']),
             'pinned?': '\\Starred' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
-            'body_url': env.url_for('body', id=i['id']),
+            'body_url': env.url_for('body', body_args, id=i['id']),
             'raw_url': env.url_for('raw', id=i['id']),
             'thread_url': env.url_for('thread', id=i['thrid']),
             'time': f.format_dt(env, i['time']),
@@ -108,11 +111,8 @@ def ctx_emails(env, items, extra=None, domid='id'):
             'gravatar': f.get_gravatar(i['fr'][0][1]),
             'labels': i['labels'],
             'labels?': ctx_labels(env, i['labels'])
-        }, **i.get('_extra', {}))
+        }, **extra)
         email['hash'] = f.get_hash(email)
-        if extra:
-            for k in extra:
-                email[k] = i[k]
         emails.append(email)
 
     emails = emails and {
@@ -181,7 +181,7 @@ def thread(env, id):
 
         last = emails[-1]
         last['html'] = msgs[-1]
-        last['body?'] = ctx_body(env, last, msgs[:-1])
+        last['body?'] = ctx_body(env, last, msgs[:-1], show=True)
 
         ctx['thread?'] = {
             'subj': emails[0]['subj'],
@@ -286,7 +286,9 @@ def search(env, q):
             msg['_extra'] = {'subj_changed?': True}
             yield msg
 
-    return ctx_emails(env, emails())
+    ctx = ctx_emails(env, emails())
+    ctx['thread?'] = True
+    return ctx
 
 
 @login_required
@@ -317,7 +319,8 @@ def body(env, id):
                 msg['html'] = parse(msg['raw'], msg['id'])
                 msgs = [parse(p['raw'], p['id']) for p in i]
                 msg['_extra'] = {
-                    'body?': ctx_body(env, msg, msgs, show=True)
+                    'body?': ctx_body(env, msg, msgs, show=True),
+                    'subj_changed?': env.request.args.get('subj_changed')
                 }
                 yield msg
 
