@@ -1,5 +1,6 @@
-import os
 import functools as ft
+import os
+import re
 
 import valideer as v
 from werkzeug.routing import Map, Rule
@@ -127,12 +128,13 @@ def ctx_emails(env, items, extra=None, thread=False):
 
 def ctx_labels(env, labels, ignore=None):
     ignore = ignore or []
+    noslash = re.compile(r'(?:\\\\)*(?![\\]).*')
     return {'labels?': {'items': [
         {'name': l, 'url': env.url_for('emails', {'in': l})}
         for l in sorted(set(labels))
         if (
             l not in ignore and
-            (not l.startswith('\\') or l in ('\\Inbox', '\\Junk', '\\Trash'))
+            (noslash.match(l) or l in ('\\Inbox', '\\Junk', '\\Trash'))
         )
     ]} if labels else False}
 
