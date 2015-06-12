@@ -112,15 +112,14 @@ $('.emails').on('click', '.email-pin', function() {
     send('/mark/', data);
     return false;
 });
-$('.thread').on('click', '.email-body a', function() {
+$('.thread').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
 function mark(params) {
+    params.thread = true;
     if ($('.emails').hasClass('thread')) {
         params.ids = [$('.email').first().data('thrid')];
-        params.thread = true;
     } else {
-        params.thread = true;
         params.ids = (
             $('.email .email-pick input:checked')
             .map(function() {
