@@ -32,37 +32,39 @@
         <li class="email-subj email-info{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
             <a href="{{thread_url}}">{{subj_human}}</a>
         </li>
-        {{^thread?}}
         {{#labels?}}
         <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
         {{/labels?}}
-        {{/thread?}}
         <li class="email-preview email-info">{{preview}}</li>
         <li class="email-expander email-info">&nbsp;</li>
         <li class="email-time-human" title="{{time}}">{{time_human}}</li>
         <li class="email-time">{{time}}</li>
     </ul>
-    {{#thread?}}
-    <ul class="email-details">
-        <li><a href="{{raw_url}}" target="_blank">Raw</a></li>
-        <li><a href="{{from_url}}">Filter by person</a></li>
-        <li><a href="{{subj_url}}">Filter by subject</a></li>
-        <li><a href="{{thread_url}}">View full thread</a></li>
-    </ul>
     <div class="email-body">
-        {{#body?}}{{&text}}{{/body?}}
-        {{^body?}}<b>Loading...</b>{{/body?}}
-    </div>
-    {{#attachments?}}
-    <div class="email-attachments">
-        <ul>
-            {{#items}}
-            <li><a href="{{url}}" target="_blank">{{name}}</a></li>
-            {{/items}}
+        <ul class="email-details">
+            <li><a href="{{raw_url}}" target="_blank">Raw</a></li>
+            <li><a href="{{from_url}}">Filter by person</a></li>
+            <li><a href="{{subj_url}}">Filter by subject</a></li>
+            <li><a href="{{thread_url}}">View full thread</a></li>
         </ul>
+        {{#body?}}
+        <div class="email-text">{{&text}}</div>
+        {{#attachments?}}
+        <div class="email-attachments">
+            <ul>
+                {{#items}}
+                <li><a href="{{url}}" target="_blank">{{name}}</a></li>
+                {{/items}}
+            </ul>
+        </div>
+        {{/attachments?}}
+        {{/body?}}
+        {{^body?}}
+        <div class="email-text">
+            <b>Loading...</b>
+        </div>
+        {{/body?}}
     </div>
-    {{/attachments?}}
-    {{/thread?}}
 </li>
 {{/items}}
 </ul>

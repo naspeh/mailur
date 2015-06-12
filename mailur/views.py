@@ -83,14 +83,14 @@ def init(env):
     return 'OK'
 
 
-def ctx_emails(env, items, extra=None, thread=False):
+def ctx_emails(env, items, extra=None, domid='id'):
     emails, last = [], None
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
-        email = {
+        email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
-            'domid': i['id'] if thread else i['thrid'],
+            'domid': i[domid],
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
@@ -106,13 +106,10 @@ def ctx_emails(env, items, extra=None, thread=False):
             'from_short': f.format_from(env, i['fr'][0], short=True),
             'from_url': env.url_for('emails', {'person': i['fr'][0][1]}),
             'gravatar': f.get_gravatar(i['fr'][0][1]),
-            'attachments?': {'items': [
-                {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
-                for a in i['attachments']
-            ]} if i.get('attachments') else False,
-        }
+            'labels': i['labels'],
+            'labels?': ctx_labels(env, i['labels'])
+        }, **i.get('_extra', {}))
         email['hash'] = f.get_hash(email)
-        email.update(**ctx_labels(env, i['labels']))
         if extra:
             for k in extra:
                 email[k] = i[k]
@@ -123,20 +120,32 @@ def ctx_emails(env, items, extra=None, thread=False):
         'length': len(emails),
         'last': str(last)
     }
-    return {'emails?': emails, 'thread?': thread}
+    return {'emails?': emails}
 
 
 def ctx_labels(env, labels, ignore=None):
+    if not labels:
+        return False
     ignore = ignore or []
     noslash = re.compile(r'(?:\\\\)*(?![\\]).*')
-    return {'labels?': {'items': [
+    return {'items': [
         {'name': l, 'url': env.url_for('emails', {'in': l})}
         for l in sorted(set(labels))
         if (
             l not in ignore and
             (noslash.match(l) or l in ('\\Inbox', '\\Junk', '\\Trash'))
         )
-    ]} if labels else False}
+    ]}
+
+
+def ctx_body(env, msg, msgs, show=False):
+    return (show or '\\Unread' in msg['labels']) and {
+        'text': f.humanize_html(msg['html'], reversed(msgs)),
+        'attachments?': {'items': [
+            {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
+            for a in msg['attachments']
+        ]} if msg.get('attachments') else False,
+    }
 
 
 @login_required
@@ -158,23 +167,26 @@ def thread(env, id):
             labels.update(msg['labels'])
             if n == 0:
                 subj = msg['subj']
-            msg['subj_changed?'] = f.is_subj_changed(msg['subj'], subj)
-            msg['subj_human'] = f.humanize_subj(msg['subj'], subj)
-            msg['body?'] = (
-                '\\Unread' in msg['labels'] and
-                {'text': f.humanize_html(msg['html'], reversed(msgs))}
-            )
+            msg['_extra'] = {
+                'subj_changed?': f.is_subj_changed(msg['subj'], subj),
+                'subj_human': f.humanize_subj(msg['subj'], subj),
+                'body?': ctx_body(env, msg, msgs)
+            }
             yield msg
             msgs.append(msg['html'])
 
-    extra = ('subj_changed?', 'subj_human', 'body?')
-    ctx = ctx_emails(env, emails(), extra, thread=True)
+    ctx = ctx_emails(env, emails())
     if ctx['emails?']:
         emails = ctx['emails?']['items']
-        msg = emails[-1]
-        msg['body?'] = {'text': f.humanize_html(msgs[-1], reversed(msgs[:-1]))}
-        ctx['subj'] = emails[0]['subj']
-        ctx.update(**ctx_labels(env, labels))
+
+        last = emails[-1]
+        last['html'] = msgs[-1]
+        last['body?'] = ctx_body(env, last, msgs[:-1])
+
+        ctx['thread?'] = {
+            'subj': emails[0]['subj'],
+            'labels?': ctx_labels(env, labels)
+        }
     return ctx
 
 
@@ -237,13 +249,16 @@ def emails(env):
         for msg in i:
             base_subj = dict(msg["subj_list"])
             base_subj = base_subj[sorted(base_subj)[0]]
-            msg = dict(msg)
-            msg['labels'] = set(sum(msg['labels'], [])) - {args.get('in')}
-            msg['count'] = msg['count'] > 1 and msg['count']
-            msg['subj_human'] = f.humanize_subj(msg['subj'], base_subj)
+            msg = dict(msg, **{
+                'labels': list(set(sum(msg['labels'], [])) - {args.get('in')}),
+                '_extra': {
+                    'count': msg['count'] > 1 and msg['count'],
+                    'subj_human': f.humanize_subj(msg['subj'], base_subj)
+                }
+            })
             yield msg
 
-    ctx = ctx_emails(env, emails(), ('count', 'subj_human'))
+    ctx = ctx_emails(env, emails(), domid='thrid')
     return ctx
 
 
@@ -268,38 +283,47 @@ def search(env, q):
     def emails():
         for msg in i:
             msg = dict(msg)
-            msg['subj_changed?'] = True
+            msg['_extra'] = {'subj_changed?': True}
             yield msg
 
-    ctx = ctx_emails(env, emails(), ['subj_changed?'], thread=True)
-    ctx['thread?'] = True
-    return ctx
+    return ctx_emails(env, emails())
 
 
 @login_required
+@adapt_fmt('emails')
 def body(env, id):
-    def get_html(raw, parents=None):
-        def parse(raw):
-            if not raw:
-                return ''
-            res = parser.parse(raw.tobytes(), id, env('path_attachments'))
-            return res['html']
-
-        return f.humanize_html(parse(raw), (parse(r) for r in parents or []))
+    def parse(raw, id):
+        if not raw:
+            return ''
+        res = parser.parse(raw.tobytes(), id, env('path_attachments'))
+        return res['html']
 
     row = env.sql('''
-    SELECT raw, thrid, time FROM emails WHERE id=%s LIMIT 1
+    SELECT
+        id, thrid, subj, labels, time, fr, text, updated,
+        raw, attachments
+    FROM emails WHERE id=%s LIMIT 1
     ''', [id]).fetchone()
     if row:
         i = env.sql('''
-        SELECT raw FROM emails
+        SELECT id, raw FROM emails
         WHERE thrid=%s AND id!=%s AND time<%s
         ORDER BY time DESC
         ''', [row['thrid'], id, row['time']])
-        result = get_html(row['raw'], (p['raw'] for p in i))
-    else:
-        result = ''
-    return result
+
+        def emails():
+            for msg in [row]:
+                msg = dict(msg)
+                msg['html'] = parse(msg['raw'], msg['id'])
+                msgs = [parse(p['raw'], p['id']) for p in i]
+                msg['_extra'] = {
+                    'body?': ctx_body(env, msg, msgs, show=True)
+                }
+                yield msg
+
+        return ctx_emails(env, emails())
+
+    env.abort(404)
 
 
 @login_required

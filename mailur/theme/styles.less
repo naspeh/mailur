@@ -115,7 +115,7 @@ body {
             background-color: @Color1bg;
         }
     }
-    .email-body, .email-details, .email-attachments {
+    .email-body {
         display: none;
     }
 }
@@ -151,6 +151,7 @@ body {
         display: block;
     }
     .email-details {
+        display: none;
         font-size: 80%;
         padding: @Space/2;
         margin: 0 @Space/2;
@@ -161,14 +162,13 @@ body {
         }
     }
     .email-attachments {
-        display: block;
         font-size: 80%;
         padding: @Space/2;
         margin: 0 @Space/2;
         border-top: 1px solid @Color1bg;
     }
 }
-.email-body {
+.email-text {
     padding: @Space/2 @Space;
     position: relative;
 
@@ -210,6 +210,9 @@ body {
             font-weight: bold;
         }
         .email-subj {
+            display: none;
+        }
+        .email-labels {
             display: none;
         }
     }

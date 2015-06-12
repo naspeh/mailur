@@ -91,18 +91,17 @@ $('.thread').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
     if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
-        send(email.data('body-url'), null, function(data) {
-            email.find('.email-body').html(data);
-            email.addClass('email-showed');
+        send(email.data('body-url') + '?fmt=body', null, function(data) {
+            email.replaceWith($(data).find('#' + email.attr('id')));
         });
     }
     return false;
 });
-$('.thread').on('click', ' .email-details-toggle', function() {
+$('.emails').on('click', ' .email-details-toggle', function() {
     $(this).parents('.email').find('.email-details').toggle();
     return false;
 });
-$('.thread').on('click', '.email-quote-toggle', function() {
+$('.emails').on('click', '.email-quote-toggle', function() {
     $(this).next('.email-quote').toggle();
     return false;
 });
