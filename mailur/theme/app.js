@@ -116,7 +116,7 @@ $('.thread').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
 $('.email-labels-edit').selectize({
-    plugins: ['remove_button', 'restore_on_backspace'],
+    plugins: ['remove_button'],
     delimiter: ',',
     persist: false,
     options: $('.email-labels-edit').data('value').items,
