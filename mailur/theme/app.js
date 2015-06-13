@@ -126,9 +126,7 @@ $('.email-labels-edit').selectize({
     render: {
         item: function(i, e) {
             return (
-                '<div><span class="item" data-url="' + e(i.url) + '">' +
-                e(i.name) +
-                '</span></div>'
+                '<div><a href="' + e(i.url) + '">' + e(i.name) + '</a></div>'
             );
         },
         option: function(i, e) {
@@ -141,9 +139,6 @@ $('.email-labels-edit').selectize({
             url: input
         };
     }
-});
-$('.email-labels-edit span.item').click(function() {
-    window.location = $(this).data('url');
 });
 function mark(params) {
     params.thread = true;
