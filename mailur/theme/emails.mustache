@@ -2,7 +2,11 @@
 <h3 class="thread-subj">
     {{subj}}
     {{#labels?}}
-    {{#items}}<a href="{{url}}">{{name}}</a> {{/items}}
+    <input
+        class="email-labels-edit"
+        value="{{#items}}{{name}},{{/items}}"
+        data-value='{{all_labels}}'
+    >
     {{/labels?}}
 </h3>
 {{/thread?}}

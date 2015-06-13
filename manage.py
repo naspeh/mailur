@@ -168,7 +168,7 @@ def get_full(argv):
         sh('py.test --ignore=node_modules --confcutdir=tests %s' % ' '.join(a))
     ))
 
-    cmd('node', help='update nodejs packages')\
+    cmd('npm', help='update nodejs packages')\
         .exe(lambda a: sh(
             'npm install --save --save-exact'
             '   autoprefixer'
@@ -179,17 +179,23 @@ def get_full(argv):
             # js libs
             '   jquery'
             '   mousetrap'
+            '   selectize'
         ))
 
     cmd('static').exe(lambda a: sh(
         # all.css
-        'lessc {0}styles.less {0}build/all.css &&'
-        'autoprefixer {0}build/all.css {0}build/all.css &&'
+        'lessc {0}styles.less {0}build/styles.css &&'
+        'autoprefixer {0}build/styles.css {0}build/styles.css &&'
+        'cat'
+        '   node_modules/selectize/dist/css/selectize.css'
+        '   {0}build/styles.css'
+        '   > {0}build/all.css &&'
         'csso {0}build/all.css {0}build/all.min.css &&'
         # all.js
         'cat'
         '   node_modules/jquery/dist/jquery.js'
         '   node_modules/mousetrap/mousetrap.js'
+        '   node_modules/selectize/dist/js/standalone/selectize.js'
         '   {0}app.js'
         '   > {0}build/all.js &&'
         'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'

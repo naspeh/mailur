@@ -115,6 +115,36 @@ $('.emails').on('click', '.email-pin', function() {
 $('.thread').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
+$('.email-labels-edit').selectize({
+    plugins: ['remove_button', 'restore_on_backspace'],
+    delimiter: ',',
+    persist: false,
+    options: $('.email-labels-edit').data('value').items,
+    valueField: 'name',
+    labelField: 'name',
+    searchField: ['name'],
+    render: {
+        item: function(i, e) {
+            return (
+                '<div><span class="item" data-url="' + e(i.url) + '">' +
+                e(i.name) +
+                '</span></div>'
+            );
+        },
+        option: function(i, e) {
+            return '<div>' + e(i.name) + '</div>';
+        }
+    },
+    create: function(input) {
+        return {
+            name: input,
+            url: input
+        };
+    }
+});
+$('.email-labels-edit span.item').click(function() {
+    window.location = $(this).data('url');
+});
 function mark(params) {
     params.thread = true;
     if ($('.emails').hasClass('thread')) {

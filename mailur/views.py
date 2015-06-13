@@ -1,4 +1,5 @@
 import functools as ft
+import json
 import os
 import re
 
@@ -68,13 +69,7 @@ def adapt_fmt(tpl):
 @login_required
 @adapt_fmt('index')
 def index(env):
-    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
-    labels = sorted(r[0] for r in i.fetchall())
-    labels = [
-        {'name': l, 'url': env.url_for('emails', {'in': l})}
-        for l in labels
-    ]
-    return {'labels': labels}
+    return {'labels': ctx_all_labels(env)}
 
 
 def init(env):
@@ -138,6 +133,12 @@ def ctx_labels(env, labels, ignore=None):
     ]}
 
 
+def ctx_all_labels(env):
+    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
+    items = sorted(r[0] for r in i.fetchall())
+    return ctx_labels(env, items)
+
+
 def ctx_body(env, msg, msgs, show=False):
     return (show or '\\Unread' in msg['labels']) and {
         'text': f.humanize_html(msg['html'], reversed(msgs)),
@@ -185,7 +186,8 @@ def thread(env, id):
 
         ctx['thread?'] = {
             'subj': emails[0]['subj'],
-            'labels?': ctx_labels(env, labels)
+            'labels?': ctx_labels(env, labels),
+            'all_labels': json.dumps(ctx_all_labels(env))
         }
     return ctx
 
