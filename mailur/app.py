@@ -83,13 +83,11 @@ class WebEnv(Env):
         return Response(r, **kw)
 
     def render(self, name, ctx):
-        from Stache import Stache
+        from pystache import render
 
-        stache = Stache()
         with open(os.path.join(self('path_theme'), '%s.mustache' % name)) as f:
-            stache.add_template(name, f.read())
-
-        return stache.render_template(name, ctx)
+            tpl = f.read()
+        return render(tpl, ctx)
 
     def render_body(self, name, ctx):
         body = self.render(name, ctx)

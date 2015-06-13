@@ -135,6 +135,7 @@ body {
 
         .email-from {
             max-width: none;
+            font-weight: bold;
         }
         .email-time {
             display: inline-block;
@@ -145,6 +146,9 @@ body {
         }
         .email-details-toggle {
             display: inline-block;
+        }
+        .email-preview {
+            display: none;
         }
     }
     .email-body {
@@ -207,9 +211,6 @@ body {
         .email-pick {
             display: none;
         }
-        .email-from {
-            font-weight: bold;
-        }
         .email-subj {
             display: none;
         }
@@ -217,9 +218,11 @@ body {
             display: none;
         }
     }
-    .email-show {
-        .email-preview {
-            display: none;
+}
+.thread, .search {
+    .email-line {
+        .email-from {
+            font-weight: bold;
         }
     }
 }

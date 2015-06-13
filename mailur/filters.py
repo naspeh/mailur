@@ -9,6 +9,8 @@ import lxml.html as lhtml
 
 
 def format_from(env, v, short=False):
+    if not v[0]:
+        v[0] = v[1].split('@')[0]
     if short:
         return v[0] if env('ui_use_names') else v[1]
     return '"{}" <{}>'.format(*v)

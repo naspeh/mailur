@@ -19,12 +19,12 @@ def sh(cmd):
 
 def reqs(dev=False):
     requirements = (
-        'Stache '
         'Werkzeug '
         'aiohttp '
         'chardet '
         'lxml '
         'psycopg2 '
+        'pystache '
         'requests '
         'toronado '
         'valideer '

@@ -34,7 +34,8 @@ function connect() {
             }
         } else if (data.updated) {
             console.log(data);
-            send(location.pathname + location.search, null, function(data) {
+            var path = location.pathname + location.search;
+            send(path, null, function(data) {
                 if (path.search('^/thread/') != -1) {
                     updateEmails(data, true);
                 } else if (path.search('^/emails/') != -1) {
@@ -81,21 +82,23 @@ function updateEmails(data, thread) {
 }
 
 connect();
-$('.thread').on('click', '.email-info', function() {
+$('.thread, .search').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
     if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
         send(email.data('body-url'), null, function(data) {
-            email.replaceWith($(data).find('#' + email.attr('id')));
+            email.find('.email-body').replaceWith(
+                $(data).find('#' + email.attr('id') + ' .email-body')
+            );
         });
     }
     return false;
 });
-$('.thread').on('click', ' .email-details-toggle', function() {
+$('.emails').on('click', ' .email-details-toggle', function() {
     $(this).parents('.email').find('.email-details').toggle();
     return false;
 });
-$('.thread').on('click', '.email-quote-toggle', function() {
+$('.emails').on('click', '.email-quote-toggle', function() {
     $(this).next('.email-quote').toggle();
     return false;
 });
@@ -119,7 +122,7 @@ $('.email-labels-edit').selectize({
     plugins: ['remove_button'],
     delimiter: ',',
     persist: false,
-    options: $('.email-labels-edit').data('value').items,
+    options: $('.email-labels-edit').data('value'),
     valueField: 'name',
     labelField: 'name',
     searchField: ['name'],

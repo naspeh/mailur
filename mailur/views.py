@@ -84,7 +84,6 @@ def ctx_emails(env, items, domid='id'):
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
         extra = i.get('_extra', {})
-        body_args = {'subj_changed': 1} if extra.get('subj_changed?') else {}
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
@@ -95,7 +94,7 @@ def ctx_emails(env, items, domid='id'):
             'preview': f.get_preview(i['text']),
             'pinned?': '\\Starred' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
-            'body_url': env.url_for('body', body_args, id=i['id']),
+            'body_url': env.url_for('body', id=i['id']),
             'raw_url': env.url_for('raw', id=i['id']),
             'thread_url': env.url_for('thread', id=i['thrid']),
             'time': f.format_dt(env, i['time']),
@@ -187,8 +186,9 @@ def thread(env, id):
         ctx['thread?'] = {
             'subj': emails[0]['subj'],
             'labels?': ctx_labels(env, labels),
-            'all_labels': json.dumps(ctx_all_labels(env))
+            'all_labels': json.dumps((ctx_all_labels(env) or {}).get('items'))
         }
+        ctx['emails_class'] = 'thread'
     return ctx
 
 
@@ -282,14 +282,8 @@ def search(env, q):
     WHERE e.id = s.id
     ''', {'query': q})
 
-    def emails():
-        for msg in i:
-            msg = dict(msg)
-            msg['_extra'] = {'subj_changed?': True}
-            yield msg
-
-    ctx = ctx_emails(env, emails())
-    ctx['thread?'] = True
+    ctx = ctx_emails(env, i)
+    ctx['emails_class'] = 'search'
     return ctx
 
 
@@ -322,7 +316,6 @@ def body(env, id):
                 msgs = [parse(p['raw'], p['id']) for p in i]
                 msg['_extra'] = {
                     'body?': ctx_body(env, msg, msgs, show=True),
-                    'subj_changed?': env.request.args.get('subj_changed')
                 }
                 yield msg
 

@@ -5,13 +5,13 @@
     <input
         class="email-labels-edit"
         value="{{#items}}{{name}},{{/items}}"
-        data-value='{{all_labels}}'
+        data-value="{{all_labels}}"
     >
     {{/labels?}}
 </h3>
 {{/thread?}}
 {{#emails?}}
-<ul class="emails{{#thread?}} thread{{/thread?}}" data-last="{{last}}">
+<ul class="emails {{emails_class}}" data-last="{{last}}">
 {{#items}}
 <li class="
         email
@@ -31,7 +31,7 @@
         --><li class="email-details-toggle" title="Details"></li><!--
         --><li class="email-pick"><input type="checkbox" class="mousetrap"></li>
         <li class="email-pic email-info" style="background-image:url({{gravatar}})"></li>
-        <li class="email-from email-info" title='{{from}}'>{{from_short}}</li>
+        <li class="email-from email-info" title="{{from}}">{{from_short}}</li>
         {{#count}}<li class="email-count email-info">{{count}}</li>{{/count}}
         <li class="email-subj email-info{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
             <a href="{{thread_url}}">{{subj_human}}</a>

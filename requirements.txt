@@ -1,12 +1,12 @@
-Stache==0.0.9
 Werkzeug==0.10.4
-aiohttp==0.16.3
+aiohttp==0.16.5
 chardet==2.3.0
 cssselect==0.9.1
 cssutils==1.0
 decorator==3.4.2
 lxml==3.4.4
 psycopg2==2.6
+pystache==0.5.4
 requests==2.7.0
 toronado==0.0.7
 valideer==0.4.1
