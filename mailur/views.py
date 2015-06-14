@@ -114,7 +114,10 @@ def ctx_emails(env, items, domid='id'):
         'length': len(emails),
         'last': str(last)
     }
-    return {'emails?': emails}
+    return {
+        'emails?': emails,
+        'emails_class': 'emails-byid' if domid == 'id' else ''
+    }
 
 
 def ctx_labels(env, labels, ignore=None):
@@ -186,7 +189,7 @@ def thread(env, id):
             'labels?': ctx_labels(env, labels),
             'all_labels': json.dumps((ctx_all_labels(env) or {}).get('items'))
         }
-        ctx['emails_class'] = 'thread'
+        ctx['emails_class'] = ctx['emails_class'] + ' thread'
     return ctx
 
 
@@ -280,9 +283,7 @@ def search(env, q):
     WHERE e.id = s.id
     ''', {'query': q})
 
-    ctx = ctx_emails(env, i)
-    ctx['emails_class'] = 'search'
-    return ctx
+    return ctx_emails(env, i)
 
 
 @login_required

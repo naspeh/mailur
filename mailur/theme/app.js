@@ -82,7 +82,7 @@ function updateEmails(data, thread) {
 }
 
 connect();
-$('.thread, .search').on('click', '.email-info', function() {
+$('.emails-byid').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
     if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
@@ -107,7 +107,7 @@ $('.emails').on('click', '.email-pin', function() {
         data = {action: 'add', name: '\\Starred', ids: [email.data('id')]};
     if (email.hasClass('email-pinned')) {
         data.action = 'rm';
-        if (email.parents('.emails.thread').length === 0) {
+        if (email.parents('.emails-byid').length === 0) {
             data.ids = [email.data('thrid')];
             data.thread = true;
         }
@@ -115,7 +115,7 @@ $('.emails').on('click', '.email-pin', function() {
     send('/mark/', data);
     return false;
 });
-$('.thread').on('click', '.email-text a', function() {
+$('.emails-byid').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
 $('.email-labels-edit').selectize({
@@ -151,14 +151,16 @@ $('.email-labels-edit').selectize({
     }
 });
 function mark(params) {
-    params.thread = true;
     if ($('.emails').hasClass('thread')) {
         params.ids = [$('.email').first().data('thrid')];
+        params.thread = true;
     } else {
+        var field = $('.emails-byid').length > 0 ? 'id' : 'thrid';
+        params.thread = field == 'thrid';
         params.ids = (
             $('.email .email-pick input:checked')
             .map(function() {
-                return $(this).parents('.email').data('thrid');
+                return $(this).parents('.email').data(field);
             })
             .get()
         );

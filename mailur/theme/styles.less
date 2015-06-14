@@ -44,7 +44,6 @@ body {
         border-top: 1px solid @Color1b;
         border-radius: 0.5em;
         width: 100%;
-        word-spacing: 0;
 
         & li {
             display: inline-block;
@@ -52,15 +51,14 @@ body {
         }
         .email-pin {
             .icon-pin;
+            margin-left: @Space*0.3;
             font-size: @SizeIcon;
             &:hover {
                 cursor: pointer;
                 color: @ColorC;
             }
-        }
-        .email-pick {
-            &> input {
-                display: block;
+            &:before {
+                margin: 0;
             }
         }
         .email-details-toggle {
@@ -71,6 +69,13 @@ body {
                 cursor: pointer;
                 color: @ColorB;
             }
+            &:before {
+                margin: 0;
+            }
+        }
+        .email-pick {
+            width: 1em;
+            text-align: center;
         }
         .email-pic {
             display: inline-block;
@@ -106,7 +111,7 @@ body {
         .email-time, .email-time-human {
             position: absolute;
             right: 0;
-            padding: 0 @Space*0.3;
+            padding: 0 @Space*0.3 0 @Space;
         }
         .email-time {
             display: none;
@@ -217,10 +222,6 @@ body {
         .email-labels {
             display: none;
         }
-    }
-}
-.thread, .search {
-    .email-line {
         .email-from {
             font-weight: bold;
         }
