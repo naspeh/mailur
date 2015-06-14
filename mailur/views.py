@@ -133,9 +133,7 @@ def ctx_labels(env, labels, ignore=None):
 
 
 def ctx_all_labels(env):
-    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
-    items = sorted(r[0] for r in i.fetchall())
-    return ctx_labels(env, items)
+    return ctx_labels(env, syncer.get_all_labels(env))
 
 
 def ctx_body(env, msg, msgs, show=False):

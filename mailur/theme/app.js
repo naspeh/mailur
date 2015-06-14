@@ -121,11 +121,12 @@ $('.thread').on('click', '.email-text a', function() {
 $('.email-labels-edit').selectize({
     plugins: ['remove_button'],
     delimiter: ',',
-    persist: false,
+    persist: true,
     options: $('.email-labels-edit').data('value'),
     valueField: 'name',
     labelField: 'name',
     searchField: ['name'],
+    hideSelected: true,
     render: {
         item: function(i, e) {
             return (
@@ -141,6 +142,12 @@ $('.email-labels-edit').selectize({
             name: input,
             url: input
         };
+    },
+    onItemAdd: function(value) {
+        mark({action: 'add', name: value});
+    },
+    onItemRemove: function(value) {
+        mark({action: 'rm', name: value});
     }
 });
 function mark(params) {
