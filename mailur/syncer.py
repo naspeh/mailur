@@ -296,10 +296,8 @@ def mark(env, data, new=False):
 def sync_marks(env, imap, map_uids):
     log.info('  * Sync marks')
     store = {
-        ('add', '\\Starred'): ('+FLAGS', '\\Flagged'),
-        ('rm', '\\Starred'): ('-FLAGS', '\\Flagged'),
-        ('add', '\\Unread'): ('-FLAGS', '\\Seen'),
-        ('rm', '\\Unread'): ('+FLAGS', '\\Seen'),
+        '\\Starred': ('FLAGS', '\\Flagged'),
+        '\\Unread': ('FLAGS', '\\Seen'),
     }
     tasks = env.sql('''
     SELECT
@@ -308,7 +306,6 @@ def sync_marks(env, imap, map_uids):
         json_agg((data->>'ids')::json) AS ids,
         array_agg(id) AS task_ids
     FROM tasks
-    WHERE data->>'name' IN ('\\Starred', '\\Unread')
     GROUP BY name, action
     ''').fetchall()
 
@@ -321,7 +318,11 @@ def sync_marks(env, imap, map_uids):
         msgids_ = [r['msgid'] for r in emails]
         uids = [uid for uid, gid in map_uids.items() if gid in msgids_]
         if uids:
-            key, value = store[(t['action'], t['name'])]
+            key, value = store.get(t['name'], (None, None))
+            if not key:
+                key, value = 'X-GM-LABELS', t['name']
+            key = {'rm': '-', 'add': '+'}[t['action']] + key
+
             log.info('  - store (%s %s) for %s ones', key, value, len(uids))
             try:
                 imap.uid('STORE', ','.join(uids), key, value)
@@ -348,8 +349,9 @@ def notify(ids):
         return
 
     ids = set(ids)
+    url = 'http://localhost:5001/notify/'
     try:
-        requests.post('http://localhost:5001/notify/', data={'ids': ids})
+        requests.post(url, data={'ids': ids}, timeout=5)
     except IOError as e:
         log.error(e)
 
