@@ -69,7 +69,7 @@ def adapt_fmt(tpl):
 @login_required
 @adapt_fmt('index')
 def index(env):
-    return {'labels': ctx_all_labels(env)}
+    return {'labels?': ctx_all_labels(env)}
 
 
 def init(env):
@@ -121,14 +121,14 @@ def ctx_labels(env, labels, ignore=None):
     if not labels:
         return False
     ignore = ignore or []
-    noslash = re.compile(r'(?:\\\\)*(?![\\]).*')
+    pattern = re.compile('(%s)' % '|'.join(
+        [r'(?:\\\\)*(?![\\]).*'] +
+        [re.escape(i) for i in ('\\Inbox', '\\Junk', '\\Trash')]
+    ))
     return {'items': [
         {'name': l, 'url': env.url_for('emails', {'in': l})}
         for l in sorted(set(labels))
-        if (
-            l not in ignore and
-            (noslash.match(l) or l in ('\\Inbox', '\\Junk', '\\Trash'))
-        )
+        if l not in ignore and pattern.match(l)
     ]}
 
 
