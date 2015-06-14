@@ -128,15 +128,20 @@ def ctx_labels(env, labels, ignore=None):
         [r'(?:\\\\)*(?![\\]).*'] +
         [re.escape(i) for i in ('\\Inbox', '\\Junk', '\\Trash')]
     ))
-    return {'items': [
-        {'name': l, 'url': env.url_for('emails', {'in': l})}
-        for l in sorted(set(labels))
-        if l not in ignore and pattern.match(l)
-    ]}
+    return {
+        'items': [
+            {'name': l, 'url': env.url_for('emails', {'in': l})}
+            for l in sorted(set(labels))
+            if l not in ignore and pattern.match(l)
+        ],
+        'base_url': env.url_for('emails', {'in': ''})
+    }
 
 
 def ctx_all_labels(env):
-    return ctx_labels(env, syncer.get_all_labels(env))
+    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
+    items = sorted(r[0] for r in i.fetchall())
+    return ctx_labels(env, items)
 
 
 def ctx_body(env, msg, msgs, show=False):

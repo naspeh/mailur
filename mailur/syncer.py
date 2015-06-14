@@ -248,15 +248,10 @@ def process_tasks(env):
     return updated
 
 
-def get_all_labels(env):
-    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
-    return sorted(r[0] for r in i.fetchall())
-
-
 def mark(env, data, new=False):
     schema = v.parse({
         '+action': v.Enum(('add', 'rm')),
-        '+name': v.Enum(get_all_labels(env)),
+        '+name': str,
         '+ids': [str],
         'thread': v.Nullable(bool, False)
     })

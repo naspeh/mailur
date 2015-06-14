@@ -118,15 +118,19 @@ $('.emails').on('click', '.email-pin', function() {
 $('.emails-byid').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
+(function() {
+var box = $('.email-labels-edit');
+var url = box.data('baseUrl')
 $('.email-labels-edit').selectize({
     plugins: ['remove_button'],
+    options: box.data('all'),
     delimiter: ',',
     persist: true,
-    options: $('.email-labels-edit').data('value'),
     valueField: 'name',
     labelField: 'name',
     searchField: ['name'],
     hideSelected: true,
+    openOnFocus: true,
     render: {
         item: function(i, e) {
             return (
@@ -140,7 +144,7 @@ $('.email-labels-edit').selectize({
     create: function(input) {
         return {
             name: input,
-            url: input
+            url: url + input
         };
     },
     onItemAdd: function(value) {
@@ -150,6 +154,7 @@ $('.email-labels-edit').selectize({
         mark({action: 'rm', name: value});
     }
 });
+})();
 function mark(params) {
     if ($('.emails').hasClass('thread')) {
         params.ids = [$('.email').first().data('thrid')];
