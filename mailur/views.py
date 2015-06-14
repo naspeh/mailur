@@ -146,10 +146,12 @@ def ctx_all_labels(env):
 def ctx_body(env, msg, msgs, show=False):
     return (show or '\\Unread' in msg['labels']) and {
         'text': f.humanize_html(msg['html'], reversed(msgs)),
-        'attachments?': {'items': [
-            {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
-            for a in msg['attachments']
-        ]} if msg.get('attachments') else False,
+        'attachments?': bool(msg.get('attachments')) and {
+            'items': [
+                {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
+                for a in msg['attachments']
+            ]
+        }
     }
 
 
