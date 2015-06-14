@@ -103,7 +103,6 @@ def ctx_emails(env, items, domid='id'):
             'from_short': f.format_from(env, i['fr'][0], short=True),
             'from_url': env.url_for('emails', {'person': i['fr'][0][1]}),
             'gravatar': f.get_gravatar(i['fr'][0][1]),
-            'labels': i['labels'],
             'labels?': ctx_labels(env, i['labels'])
         }, **extra)
         email['hash'] = f.get_hash(email)
@@ -179,15 +178,15 @@ def thread(env, id):
                 'body?': ctx_body(env, msg, msgs)
             }
             yield msg
-            msgs.append(msg['html'])
+            msgs.append(msg)
 
     ctx = ctx_emails(env, emails())
     if ctx['emails?']:
         emails = ctx['emails?']['items']
 
         last = emails[-1]
-        last['html'] = msgs[-1]
-        last['body?'] = ctx_body(env, last, msgs[:-1], show=True)
+        parents = [p['html'] for p in msgs[:-1]]
+        last['body?'] = ctx_body(env, msgs[-1], parents, show=True)
 
         ctx['thread?'] = {
             'subj': emails[0]['subj'],
