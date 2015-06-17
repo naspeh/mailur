@@ -53,8 +53,8 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
             fetch_bodies(env, imap, uids)
         else:
             fetch_headers(env, email, imap, uids)
-            sync_marks(env, imap, uids)
             fetch_labels(env, imap, uids, label)
+            sync_marks(env, imap, uids)
     # Refresh search index
     env.sql('REFRESH MATERIALIZED VIEW emails_search')
     env.db.commit()
@@ -237,11 +237,7 @@ def fetch_labels(env, imap, map_uids, folder):
 
 def process_tasks(env):
     updated = []
-    tasks = env.sql('''
-    SELECT data FROM tasks
-    ORDER BY created
-    ''').fetchall()
-
+    tasks = env.sql('SELECT data FROM tasks ORDER BY created').fetchall()
     log.info('  * Process %s tasks', len(tasks))
     for row in tasks:
         data = row['data']
@@ -289,8 +285,7 @@ def mark(env, data, new=False, inner=False):
         ('-', '\\Trash'): [('+', ['\\All', '\\Inbox'])],
         ('+', '\\Junk'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
         ('-', '\\Junk'): [('+', ['\\All', '\\Inbox'])],
-        ('+', '\\All'): [('-', ['\\Trash', '\\Junk'])],
-        ('-', '\\All'): [('+', ['\\Trash']), ('-', 'Inbox')],
+        ('-', '\\Inbox'): [('+', ['\\Trash']), ('-', '\\All')],
         ('+', '\\Inbox'): [('-', ['\\Trash', '\\Junk']), ('+', '\\All')],
     }
 
@@ -320,61 +315,33 @@ def mark(env, data, new=False, inner=False):
 def sync_marks(env, imap, map_uids):
     log.info('  * Sync marks')
     store = {
-        ('+', '\\All'): [('+X-GM-LABELS', '\\Inbox')],
-        ('-', '\\All'): [('+X-GM-LABELS', '\\Trash')],
-        '\\Starred': [('FLAGS', '\\Flagged')],
-        '\\Unread': [('FLAGS', '\\Seen')],
-        '\\Junk': [('X-GM-LABELS', '\\Spam')],
+        '\\Starred': ('FLAGS', '\\Flagged'),
+        '\\Unread': ('FLAGS', '\\Seen'),
+        '\\Junk': ('X-GM-LABELS', '\\Spam'),
     }
-    tasks = env.sql('''
-    SELECT
-        data->>'name' AS name,
-        data->>'action' AS action,
-        json_agg((data->>'ids')::json) AS ids,
-        array_agg(id) AS task_ids
-    FROM tasks
-    GROUP BY name, action
-    ''').fetchall()
-
+    tasks = env.sql('SELECT id, data FROM tasks ORDER BY created').fetchall()
     msgids = tuple(map_uids.values())
-    for t in tasks:
-        ids = tuple(sum(t['ids'], []))
+    for task_id, t in tasks:
         emails = env.sql('''
         SELECT id, msgid FROM emails WHERE msgid IN %s AND id IN %s
-        ''', [msgids, ids]).fetchall()
+        ''', [msgids, tuple(t['ids'])]).fetchall()
         msgids_ = [r['msgid'] for r in emails]
         uids = [uid for uid, gid in map_uids.items() if gid in msgids_]
         if not uids:
             return
 
-        values = store.get((t['action'], t['name']))
-        if not values:
-            default = [('X-GM-LABELS', t['name'])]
-            values = store.get(t['name'], default)
-            values = [(t['action'] + k, v) for k, v in values]
+        default = ('X-GM-LABELS', t['name'])
+        key, value = store.get(t['name'], default)
+        value = [value] if isinstance(value, str) else value
+        value = ' '.join([imap_utf7.decode(v) for v in value])
+        log.info('  - store (%s %s) for %s ones', key, value, len(uids))
+        try:
+            imap.uid('STORE', ','.join(uids), key, value)
+        except imap.Error as e:
+            log.warn('  ! %r', e)
+            return
 
-        for key, value in values:
-            value = [value] if isinstance(value, str) else value
-            value = ' '.join([imap_utf7.decode(v) for v in value])
-            log.info('  - store (%s %s) for %s ones', key, value, len(uids))
-            try:
-                imap.uid('STORE', ','.join(uids), key, value)
-            except imap.Error as e:
-                log.warn('  ! %r', e)
-                return
-
-        diff = set(ids) - set(r['id'] for r in emails)
-        if diff:
-            log.info('  - add task for %s others', len(diff))
-            env.tasks.insert({'data': {
-                'name': t['name'],
-                'action': t['action'],
-                'ids': list(diff)
-            }})
-        env.sql(
-            'DELETE FROM tasks WHERE id IN %s',
-            [tuple(t['task_ids'])]
-        )
+        env.sql('DELETE FROM tasks WHERE id = %s', [task_id])
 
 
 def notify(ids):

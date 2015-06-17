@@ -204,8 +204,8 @@ Mousetrap
     .bind('#', function() {
         mark({action: '+', name: '\\Trash'});
     })
-    .bind('a', function() {
-        mark({action: '+', name: '\\All'});
+    .bind('i', function() {
+        mark({action: '+', name: '\\Inbox'});
     });
 
 $([
