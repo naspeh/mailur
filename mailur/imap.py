@@ -260,6 +260,8 @@ def _fetch(im, ids, query):
             line = item[0]
         else:
             line = item
+        if not line:
+            return row
         matches = lexer_line.findall(line.decode())
         if matches:
             for match in matches:
@@ -283,5 +285,5 @@ def _fetch(im, ids, query):
         return row
 
     rows = (parse(next(data), {}) for i in range(len(ids)))
-    rows = ((str(row['UID']), row) for row in rows)
+    rows = ((str(row['UID']), row) for row in rows if row.get('UID'))
     return rows

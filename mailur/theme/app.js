@@ -104,9 +104,9 @@ $('.emails').on('click', '.email-quote-toggle', function() {
 });
 $('.emails').on('click', '.email-pin', function() {
     var email = $(this).parents('.email'),
-        data = {action: 'add', name: '\\Starred', ids: [email.data('id')]};
+        data = {action: '+', name: '\\Starred', ids: [email.data('id')]};
     if (email.hasClass('email-pinned')) {
-        data.action = 'rm';
+        data.action = '-';
         if (email.parents('.emails-byid').length === 0) {
             data.ids = [email.data('thrid')];
             data.thread = true;
@@ -119,9 +119,10 @@ $('.emails-byid').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
 (function() {
-var box = $('.email-labels-edit');
-var url = box.data('baseUrl')
-$('.email-labels-edit').selectize({
+var box = $('.email-labels-edit'),
+    url = box.data('baseUrl');
+
+box.selectize({
     plugins: ['remove_button'],
     options: box.data('all'),
     delimiter: ',',
@@ -148,10 +149,10 @@ $('.email-labels-edit').selectize({
         };
     },
     onItemAdd: function(value) {
-        mark({action: 'add', name: value});
+        mark({action: '+', name: value});
     },
     onItemRemove: function(value) {
-        mark({action: 'rm', name: value});
+        mark({action: '-', name: value});
     }
 });
 })();
@@ -192,8 +193,29 @@ Mousetrap
         $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
     })
     .bind('shift+i', function() {
-        mark({action: 'rm', name: '\\Unread'});
+        mark({action: '-', name: '\\Unread'});
     })
     .bind('shift+u', function() {
-        mark({action: 'add', name: '\\Unread'});
+        mark({action: '+', name: '\\Unread'});
+    })
+    .bind('!', function() {
+        mark({action: '+', name: '\\Junk'});
+    })
+    .bind('#', function() {
+        mark({action: '+', name: '\\Trash'});
+    })
+    .bind('a', function() {
+        mark({action: '+', name: '\\All'});
     });
+
+$([
+    ['g i', '\\Inbox'],
+    ['g a', '\\All'],
+    ['g d', '\\Drafts'],
+    ['g !', '\\Junk'],
+    ['g #', '\\Trash']
+]).each(function(index, item) {
+    Mousetrap.bind(item[0], function() {
+        location.href = '/emails/?in=' + item[1];
+    });
+});

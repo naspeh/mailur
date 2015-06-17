@@ -108,7 +108,7 @@ def ctx_emails(env, items, domid='id'):
         email['hash'] = f.get_hash(email)
         emails.append(email)
 
-    emails = emails and {
+    emails = bool(emails) and {
         'items': emails,
         'length': len(emails),
         'last': str(last)

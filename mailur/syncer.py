@@ -11,6 +11,8 @@ from . import imap_utf7, parser, log
 from .helpers import Timer, with_lock
 from .imap import Client
 
+FOLDERS = {'\\All', '\\Junk', '\\Trash'}
+
 
 def lock_sync_gmail(func):
     @wraps(func)
@@ -28,7 +30,7 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
     folders = imap.folders()
     if not only_labels:
         # Only these folders contain unique emails
-        only_labels = ('\\All', '\\Junk', '\\Trash')
+        only_labels = FOLDERS
 
     labels_ = labels or {}
     for attrs, delim, name in folders:
@@ -248,10 +250,10 @@ def process_tasks(env):
     return updated
 
 
-def mark(env, data, new=False):
+def mark(env, data, new=False, inner=False):
     schema = v.parse({
-        '+action': v.Enum(('add', 'rm')),
-        '+name': str,
+        '+action': v.Enum(('+', '-')),
+        '+name': v.AnyOf(str, [str]),
         '+ids': [str],
         'thread': v.Nullable(bool, False)
     })
@@ -265,14 +267,14 @@ def mark(env, data, new=False):
         ids = tuple(r[0] for r in i)
 
     actions = {
-        'rm': (
+        '-': (
             '''
             UPDATE emails SET labels = array_remove(labels, %(name)s)
             WHERE id IN %(ids)s AND %(name)s=ANY(labels)
             RETURNING id
             '''
         ),
-        'add': (
+        '+': (
             '''
             UPDATE emails SET labels = (labels || %(name)s::varchar)
             WHERE id IN %(ids)s AND NOT(%(name)s=ANY(labels))
@@ -280,24 +282,49 @@ def mark(env, data, new=False):
             '''
         ),
     }
-    i = env.sql(actions[data['action']], {'name': data['name'], 'ids': ids})
-    updated = [r[0] for r in i]
-    if new:
-        env.tasks.insert({'data': {
-            'action': data['action'],
-            'name': data['name'],
-            'ids': ids
-        }})
-        env.db.commit()
-        notify(updated)
+    updated = []
+
+    clean = {
+        ('+', '\\Trash'): [('-', ['\\All', '\\Inbox', '\\Junk'])],
+        ('-', '\\Trash'): [('+', ['\\All', '\\Inbox'])],
+        ('+', '\\Junk'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
+        ('-', '\\Junk'): [('+', ['\\All', '\\Inbox'])],
+        ('+', '\\All'): [('-', ['\\Trash', '\\Junk'])],
+        ('-', '\\All'): [('+', ['\\Trash']), ('-', 'Inbox')],
+        ('+', '\\Inbox'): [('-', ['\\Trash', '\\Junk']), ('+', '\\All')],
+    }
+
+    labels = data['name']
+    labels = [labels] if isinstance(labels, str) else labels
+    for label in labels:
+        extra = [] if inner else clean.get((data['action'], label), [])
+        for action, name in extra:
+            params = {'action': action, 'name': name, 'ids': ids}
+            mark(env, params, inner=True)
+
+        i = env.sql(actions[data['action']], {'name': label, 'ids': ids})
+        updated += [r[0] for r in i]
+
+        if new:
+            env.tasks.insert({'data': {
+                'action': data['action'],
+                'name': label,
+                'ids': ids
+            }})
+
+    env.db.commit()
+    notify(updated)
     return updated
 
 
 def sync_marks(env, imap, map_uids):
     log.info('  * Sync marks')
     store = {
-        '\\Starred': ('FLAGS', '\\Flagged'),
-        '\\Unread': ('FLAGS', '\\Seen'),
+        ('+', '\\All'): [('+X-GM-LABELS', '\\Inbox')],
+        ('-', '\\All'): [('+X-GM-LABELS', '\\Trash')],
+        '\\Starred': [('FLAGS', '\\Flagged')],
+        '\\Unread': [('FLAGS', '\\Seen')],
+        '\\Junk': [('X-GM-LABELS', '\\Spam')],
     }
     tasks = env.sql('''
     SELECT
@@ -317,12 +344,18 @@ def sync_marks(env, imap, map_uids):
         ''', [msgids, ids]).fetchall()
         msgids_ = [r['msgid'] for r in emails]
         uids = [uid for uid, gid in map_uids.items() if gid in msgids_]
-        if uids:
-            key, value = store.get(t['name'], (None, None))
-            if not key:
-                key, value = 'X-GM-LABELS', t['name']
-            key = {'rm': '-', 'add': '+'}[t['action']] + key
+        if not uids:
+            return
 
+        values = store.get((t['action'], t['name']))
+        if not values:
+            default = [('X-GM-LABELS', t['name'])]
+            values = store.get(t['name'], default)
+            values = [(t['action'] + k, v) for k, v in values]
+
+        for key, value in values:
+            value = [value] if isinstance(value, str) else value
+            value = ' '.join([imap_utf7.decode(v) for v in value])
             log.info('  - store (%s %s) for %s ones', key, value, len(uids))
             try:
                 imap.uid('STORE', ','.join(uids), key, value)
@@ -330,18 +363,18 @@ def sync_marks(env, imap, map_uids):
                 log.warn('  ! %r', e)
                 return
 
-            diff = set(ids) - set(r['id'] for r in emails)
-            if diff:
-                log.info('  - add task for %s others', len(diff))
-                env.tasks.insert({'data': {
-                    'name': t['name'],
-                    'action': t['action'],
-                    'ids': list(diff)
-                }})
-            env.sql(
-                'DELETE FROM tasks WHERE id IN %s',
-                [tuple(t['task_ids'])]
-            )
+        diff = set(ids) - set(r['id'] for r in emails)
+        if diff:
+            log.info('  - add task for %s others', len(diff))
+            env.tasks.insert({'data': {
+                'name': t['name'],
+                'action': t['action'],
+                'ids': list(diff)
+            }})
+        env.sql(
+            'DELETE FROM tasks WHERE id IN %s',
+            [tuple(t['task_ids'])]
+        )
 
 
 def notify(ids):
