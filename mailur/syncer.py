@@ -11,7 +11,8 @@ from . import imap_utf7, parser, log
 from .helpers import Timer, with_lock
 from .imap import Client
 
-FOLDERS = {'\\All', '\\Junk', '\\Trash'}
+# Only these folders contain unique emails
+FOLDERS = ('\\All', '\\Junk', '\\Trash')
 
 
 def lock_sync_gmail(func):
@@ -29,7 +30,6 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
     imap = Client(env, email)
     folders = imap.folders()
     if not only_labels:
-        # Only these folders contain unique emails
         only_labels = FOLDERS
 
     labels_ = labels or {}
@@ -285,8 +285,14 @@ def mark(env, data, new=False, inner=False):
         ('-', '\\Trash'): [('+', ['\\All', '\\Inbox'])],
         ('+', '\\Junk'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
         ('-', '\\Junk'): [('+', ['\\All', '\\Inbox'])],
-        ('-', '\\Inbox'): [('+', ['\\Trash']), ('-', '\\All')],
-        ('+', '\\Inbox'): [('-', ['\\Trash', '\\Junk']), ('+', '\\All')],
+        ('-', '\\Inbox'): [
+            ('+', ['\\Trash']),
+            ('-', '\\All')
+        ],
+        ('+', '\\Inbox'): [
+            ('-', ['\\Trash', '\\Junk']),
+            ('+', '\\All')
+        ],
     }
 
     labels = data['name']
@@ -384,8 +390,8 @@ def update_label(env, gids, label, folder=None):
 def update_thrids(env):
     log.info('Update thread ids')
 
-    def step(label, sql, log_ids=False):
-        i = env.sql(sql)
+    def step(label, sql, args=None, log_ids=False):
+        i = env.sql(sql, args)
         log.info('  - for %s emails (%s)', i.rowcount, label)
         env.db.commit()
 
@@ -427,8 +433,14 @@ def update_thrids(env):
     RETURNING e.id
     ''')
 
-    step('other as thrid=id', '''
+    step('other: thrid=id', '''
     UPDATE emails SET thrid = id
     WHERE thrid IS NULL
     RETURNING id
     ''', log_ids=True)
+
+    step('clear deleted: thrid=id and labels={}', '''
+    UPDATE emails set thrid = id, labels='{}'
+    WHERE NOT (labels && %s::varchar[]) AND thrid != id AND labels != '{}'
+    RETURNING id
+    ''', [list(FOLDERS)])
