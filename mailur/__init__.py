@@ -42,6 +42,7 @@ def get_conf(conf):
             'ui_ga_id': str,
             'ui_is_public': v.Nullable(bool, False),
             'ui_use_names': v.Nullable(bool, True),
+            'ui_per_page': v.Nullable(int, 100),
         })
     conf = schema.validate(conf)
 

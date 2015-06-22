@@ -71,5 +71,8 @@
     </div>
 </li>
 {{/items}}
+{{#next?}}
+<li class="emails-more" data-url="{{url}}"><a href="{{url}}">Next page</a></li>
+{{/next?}}
 </ul>
 {{/emails?}}

@@ -81,11 +81,14 @@ def run(env, no_reloader, only_wsgi):
         })
         run_simple('0.0.0.0', 5000, wsgi_app, use_debugger=True)
 
-    ps = [Process(target=run_wsgi)]
-    if not only_wsgi:
-        main(['static'])
-        ps += [Process(target=async.run, args=('127.0.0.1', 5001))]
+    if only_wsgi:
+        return run_wsgi()
 
+    main(['static'])
+    ps = [
+        Process(target=run_wsgi),
+        Process(target=async.run, args=('127.0.0.1', 5001))
+    ]
     for p in ps:
         p.start()
     pids = ' '.join(str(p.pid) for p in ps)

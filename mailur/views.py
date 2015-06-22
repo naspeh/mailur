@@ -48,12 +48,39 @@ def login_required(func):
     return ft.wraps(func)(inner)
 
 
+def adapt_page():
+    def inner(env, *a, **kw):
+        args = env.request.args
+        schema = v.parse({
+            'page': v.Nullable(v.AdaptTo(int), 1),
+        })
+        page = schema.validate(args)['page']
+        page = {
+            'sql': {
+                'limit': env('ui_per_page'),
+                'offset': env('ui_per_page') * (page - 1),
+            },
+            'count': env('ui_per_page') * page,
+            'current': page,
+            'next': page + 1,
+            'url_next': env.url(
+                env.request.path, dict(args.to_dict(), page=page+1)
+            )
+        }
+        return wrapper.func(env, page, *a, **kw)
+
+    def wrapper(func):
+        wrapper.func = func
+        return ft.wraps(func)(inner)
+    return wrapper
+
+
 def adapt_fmt(tpl):
     def inner(env, *a, **kw):
         default = 'body' if env.request.is_xhr else 'html'
         fmt = env.request.args.get('fmt', default)
 
-        ctx = inner.func(env, *a, **kw)
+        ctx = wrapper.func(env, *a, **kw)
         if fmt == 'json':
             return env.to_json(ctx)
         elif fmt == 'body':
@@ -61,7 +88,7 @@ def adapt_fmt(tpl):
         return env.render_body(tpl, ctx)
 
     def wrapper(func):
-        inner.func = func
+        wrapper.func = func
         return ft.wraps(func)(inner)
     return wrapper
 
@@ -201,7 +228,8 @@ def thread(env, id):
 
 @login_required
 @adapt_fmt('emails')
-def emails(env):
+@adapt_page()
+def emails(env, page):
     schema = v.parse({
         'person': str,
         'subj': str,
@@ -228,7 +256,7 @@ def emails(env):
         WHERE {where}
         GROUP BY thrid
         ORDER BY 2 DESC
-        LIMIT 100
+        LIMIT {page[limit]} OFFSET {page[offset]}
     ),
     threads  AS (
         SELECT
@@ -252,7 +280,7 @@ def emails(env):
         ORDER BY time DESC LIMIT 1
     )
     ORDER BY time DESC
-    '''.format(where=where))
+    '''.format(where=where, page=page['sql']))
 
     def emails():
         for msg in i:
@@ -267,7 +295,13 @@ def emails(env):
             })
             yield msg
 
+    sql = 'SELECT count(distinct thrid) FROM emails WHERE %s' % where
+    count = env.sql(sql).fetchone()[0]
+
     ctx = ctx_emails(env, emails(), domid='thrid')
+    ctx['count'] = count
+    if page['count'] < count:
+        ctx['next?'] = {'url': page['url_next']}
     return ctx
 
 

@@ -118,6 +118,7 @@ $('.emails').on('click', '.email-pin', function() {
 $('.emails-byid').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
+
 (function() {
 var box = $('.email-labels-edit'),
     url = box.data('baseUrl');
