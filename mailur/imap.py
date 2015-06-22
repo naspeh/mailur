@@ -201,9 +201,10 @@ def fetch_batch(im, uids, query, label=None):
             if step_uids and step_size + size > group_size:
                 group_uids.append(step_uids)
                 step_uids, step_size = [], 0
-            else:
-                step_uids.append(uid)
-                step_size += size
+
+            step_uids.append(uid)
+            step_size += size
+
         if step_uids:
             group_uids.append(step_uids)
         steps = group_uids

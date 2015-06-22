@@ -141,9 +141,10 @@ def async_runner(count=0):
 
         yield run
 
-        [r.get() for r in results]
         pool.close()
         pool.join()
+
+        [r.get() for r in results]
     else:
         def run(func, *a, **kw):
             func(*a, **kw)
@@ -163,6 +164,8 @@ def fetch_bodies(env, imap, map_uids):
         log.info('  * No bodies to fetch')
         return
 
+    results = []
+
     def update(env, items):
         ids = []
         for data, msgid in items:
@@ -170,12 +173,15 @@ def fetch_bodies(env, imap, map_uids):
             ids += env.emails.update(data_, 'msgid=%s', [msgid])
         env.db.commit()
         notify(ids)
+        results.append(len(ids))
 
     q = 'BODY.PEEK[]'
     with async_runner(env('async_pool')) as run:
         for data in imap.fetch_batch(uids, q, 'add bodies'):
             items = ((row[q], map_uids[uid]) for uid, row in data)
             run(update, env, items)
+
+    log.info('  * Done %s bodies', sum(results))
 
 
 def fetch_labels(env, imap, map_uids, folder):
