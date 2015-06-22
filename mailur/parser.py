@@ -7,7 +7,7 @@ from collections import OrderedDict
 from html import escape as html_escape
 
 import chardet
-from lxml import etree, html as lhtml
+from lxml import html as lhtml
 from lxml.html.clean import Cleaner
 from werkzeug.utils import secure_filename
 
@@ -167,7 +167,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
     if content['html']:
         htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()
         if not htm:
-            content['html'] = htm
+            content['html'] = ''
             return content
 
         cleaner = Cleaner(
@@ -176,17 +176,25 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             kill_tags=['head'],
             remove_tags=['html', 'body', 'base']
         )
+        htm = lhtml.fromstring(htm)
         htm = cleaner.clean_html(htm)
-        for cid, path in content['embedded'].items():
-            cid = 'cid:%s' % cid.strip('<>')
-            path = '/attachments/%s' % path
-            htm = re.sub(re.escape(cid), path, htm)
 
-        content['html'] = htm
+        # Fix img[@src]
+        for img in htm.xpath('//img[@src]'):
+            src = img.attrib.get('src')
+
+            cid = re.match('^cid:(.*)', src)
+            path = cid and content['embedded'].get('<%s>' % cid.group(1))
+            if path:
+                cid = cid.group(1)
+                img.attrib['src'] = '/attachments/%s' % path
+            elif not re.match('^(https?://|/|data:image/).*', src):
+                del img.attrib['src']
+
+        content['html'] = lhtml.tostring(htm).decode()
         if 'text' not in content or not content['text']:
-            htm = lhtml.fromstring(htm)
             htm = Cleaner(links=False, style=True).clean_html(htm)
-            text = "\n".join(etree.XPath("//text()")(htm))
+            text = '\n'.join(htm.xpath('//text()'))
             content['text'] = text.strip()
 
     content['text'] = content.get('text') or ''
