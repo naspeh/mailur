@@ -57,11 +57,11 @@ def adapt_page():
         })
         data = schema.validate(env.request.args)
         page, last = data['page'], data.get('last')
-        last = dt.datetime.fromtimestamp(last) if last else None
         page = {
             'limit': env('ui_per_page'),
             'offset': env('ui_per_page') * (page - 1),
             'last': last,
+            'last_dt': dt.datetime.fromtimestamp(last) if last else None,
             'count': env('ui_per_page') * page,
             'current': page,
             'next': page + 1,
@@ -125,6 +125,7 @@ def ctx_emails(env, items, domid='id'):
             'thread_url': env.url_for('thread', id=i['thrid']),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
+            'time_stamp': i['time'].timestamp(),
             'from': f.format_from(env, i['fr'][0]),
             'from_short': f.format_from(env, i['fr'][0], short=True),
             'from_url': env.url_for('emails', {'person': i['fr'][0][1]}),
@@ -248,7 +249,7 @@ def emails(env, page):
         return env.abort(400)
 
     if page['last']:
-        where = env.mogrify(where + ' AND time < %s', [page['last']])
+        where = env.mogrify(where + ' AND time < %s', [page['last_dt']])
 
     i = env.sql('''
     WITH
@@ -305,7 +306,7 @@ def emails(env, page):
     if page['count'] < count:
         ctx['next?'] = {'url': env.url(env.request.path, dict(
             env.request.args.to_dict(),
-            last=ctx['emails?']['last'],
+            last=page['last'] or ctx['emails?']['items'][0]['time_stamp'],
             page=page['next']
         ))}
     return ctx
