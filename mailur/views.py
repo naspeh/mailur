@@ -1,3 +1,4 @@
+import datetime as dt
 import functools as ft
 import json
 import os
@@ -50,22 +51,20 @@ def login_required(func):
 
 def adapt_page():
     def inner(env, *a, **kw):
-        args = env.request.args
         schema = v.parse({
             'page': v.Nullable(v.AdaptTo(int), 1),
+            'last': v.Nullable(v.AdaptTo(float))
         })
-        page = schema.validate(args)['page']
+        data = schema.validate(env.request.args)
+        page, last = data['page'], data.get('last')
+        last = dt.datetime.fromtimestamp(last) if last else None
         page = {
-            'sql': {
-                'limit': env('ui_per_page'),
-                'offset': env('ui_per_page') * (page - 1),
-            },
+            'limit': env('ui_per_page'),
+            'offset': env('ui_per_page') * (page - 1),
+            'last': last,
             'count': env('ui_per_page') * page,
             'current': page,
             'next': page + 1,
-            'url_next': env.url(
-                env.request.path, dict(args.to_dict(), page=page+1)
-            )
         }
         return wrapper.func(env, page, *a, **kw)
 
@@ -138,7 +137,7 @@ def ctx_emails(env, items, domid='id'):
     emails = bool(emails) and {
         'items': emails,
         'length': len(emails),
-        'last': str(last)
+        'last': last.timestamp()
     }
     return {
         'emails?': emails,
@@ -248,6 +247,9 @@ def emails(env, page):
     else:
         return env.abort(400)
 
+    if page['last']:
+        where = env.mogrify(where + ' AND time < %s', [page['last']])
+
     i = env.sql('''
     WITH
     thread_ids AS (
@@ -280,7 +282,7 @@ def emails(env, page):
         ORDER BY time DESC LIMIT 1
     )
     ORDER BY time DESC
-    '''.format(where=where, page=page['sql']))
+    '''.format(where=where, page=page))
 
     def emails():
         for msg in i:
@@ -301,7 +303,11 @@ def emails(env, page):
     ctx = ctx_emails(env, emails(), domid='thrid')
     ctx['count'] = count
     if page['count'] < count:
-        ctx['next?'] = {'url': page['url_next']}
+        ctx['next?'] = {'url': env.url(env.request.path, dict(
+            env.request.args.to_dict(),
+            last=ctx['emails?']['last'],
+            page=page['next']
+        ))}
     return ctx
 
 
