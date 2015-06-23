@@ -193,26 +193,35 @@ Mousetrap
     .bind('* t', function() {
         $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
     })
-    .bind('shift+i', function() {
-        mark({action: '-', name: '\\Unread'});
-    })
-    .bind('shift+u', function() {
-        mark({action: '+', name: '\\Unread'});
-    })
     .bind('!', function() {
         mark({action: '+', name: '\\Junk'});
     })
     .bind('#', function() {
         mark({action: '+', name: '\\Trash'});
     })
+    .bind('u', function() {
+        mark({action: '+', name: '\\Unread'});
+    })
+    .bind('shift+u', function() {
+        mark({action: '-', name: '\\Unread'});
+    })
     .bind('i', function() {
         mark({action: '+', name: '\\Inbox'});
+    })
+    .bind('shift+i', function() {
+        mark({action: '-', name: '\\Inbox'});
+    })
+    .bind('g l', function() {
+        location.href = '/';
     });
 
 $([
     ['g i', '\\Inbox'],
     ['g a', '\\All'],
     ['g d', '\\Drafts'],
+    ['g s', '\\Sent'],
+    ['g u', '\\Unread'],
+    ['g p', '\\Starred'],
     ['g !', '\\Junk'],
     ['g #', '\\Trash']
 ]).each(function(index, item) {

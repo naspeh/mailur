@@ -284,7 +284,7 @@ def mark(env, data, new=False, inner=False):
             '''
         ),
     }
-    updated = []
+    updated, tasks = [], []
 
     clean = {
         ('+', '\\Trash'): [('-', ['\\All', '\\Inbox', '\\Junk'])],
@@ -312,23 +312,25 @@ def mark(env, data, new=False, inner=False):
         i = env.sql(actions[data['action']], {'name': label, 'ids': ids})
         updated += [r[0] for r in i]
 
-        if new:
-            env.tasks.insert({'data': {
-                'action': data['action'],
-                'name': label,
-                'ids': ids
-            }})
+        tasks.append({'data': {
+            'action': data['action'],
+            'name': label,
+            'ids': ids
+        }})
 
-    env.db.commit()
-    notify(updated)
+    if new:
+        env.tasks.insert(tasks)
+        env.db.commit()
+        notify(updated)
     return updated
 
 
 def sync_marks(env, imap, map_uids):
     log.info('  * Sync marks')
     store = {
+        ('+', '\\Unread'): ('-FLAGS', '\\Seen'),
+        ('-', '\\Unread'): ('+FLAGS', '\\Seen'),
         '\\Starred': ('FLAGS', '\\Flagged'),
-        '\\Unread': ('FLAGS', '\\Seen'),
         '\\Junk': ('X-GM-LABELS', '\\Spam'),
     }
     tasks = env.sql('SELECT id, data FROM tasks ORDER BY created').fetchall()
@@ -344,6 +346,8 @@ def sync_marks(env, imap, map_uids):
 
         default = ('X-GM-LABELS', t['name'])
         key, value = store.get(t['name'], default)
+        key = t['action'] + key
+        key, value = store.get((t['action'], t['name']), (key, value))
         value = [value] if isinstance(value, str) else value
         value = ' '.join([imap_utf7.decode(v) for v in value])
         log.info('  - store (%s %s) for %s ones', key, value, len(uids))
