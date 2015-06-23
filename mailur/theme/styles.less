@@ -14,7 +14,7 @@
 @Color1b: #fff;
 
 /* Mixins */
-.button() {
+.mix_button() {
     color: @ColorA;
     border: 1px solid @Color0b;
     background-color: @Color0bg;
@@ -24,6 +24,20 @@
     &:hover {
         cursor: pointer;
         background-color: @Color1bg;
+    }
+}
+.mix_input() {
+    display: block;
+    width: 98%;
+    padding: 1% 5px;
+    border: 0;
+    border-bottom: 1px solid @Color0b;
+
+    &:hover, &:active, &:focus {
+        outline: none;
+    }
+    &:focus {
+        border-bottom: 1px solid @ColorC;
     }
 }
 
@@ -201,7 +215,7 @@ body {
     }
     .email-quote-toggle {
         .icon-ellipsis;
-        .button;
+        .mix_button;
         display: inline-block;
         font-size: 80%;
     }
@@ -225,5 +239,16 @@ body {
         .email-from {
             font-weight: bold;
         }
+    }
+}
+.compose {
+    padding: 10px;
+
+    input[type="text"] {
+        .mix_input;
+    }
+    textarea {
+        .mix_input;
+        height: 200px;
     }
 }

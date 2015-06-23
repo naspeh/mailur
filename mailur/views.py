@@ -21,6 +21,7 @@ rules = [
     Rule('/emails/', endpoint='emails'),
     Rule('/search/<q>/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
+    Rule('/compose/', endpoint='compose'),
 ]
 url_map = Map(rules)
 
@@ -388,3 +389,8 @@ def raw(env, id):
 def mark(env):
     syncer.mark(env, env.request.json, new=True)
     return 'OK'
+
+
+@login_required
+def compose(env):
+    return env.render_body('compose', {})
