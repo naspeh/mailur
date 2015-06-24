@@ -132,17 +132,10 @@ box.selectize({
             text: input
         };
     },
-    load: function(query, callback) {
-        if (!query.length) return callback();
-        $.ajax({
-            url: '/search-email/?q=' + encodeURIComponent(query),
-            type: 'GET',
-            error: function() {
-                callback();
-            },
-            success: function(res) {
-                callback(res.slice(0, 10));
-            }
+    load: function(q, callback) {
+        if (!q.length) return callback();
+        send('/search-email/?q=' + encodeURIComponent(q), null, function(res) {
+            callback(JSON.parse(res));
         });
     }
 });

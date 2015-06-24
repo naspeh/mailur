@@ -68,12 +68,12 @@ class WebEnv(Env):
         secret_key = self('cookie_secret').encode()
         return SecureCookie.load_cookie(self.request, secret_key=secret_key)
 
-    def login(self):
-        self.session['logined'] = True
+    def login(self, email):
+        self.session['email'] = email
 
     @property
     def is_logined(self):
-        return self.session.get('logined')
+        return self.session.get('email')
 
     def make_response(self, response, **kw):
         kw.setdefault('content_type', 'text/html')

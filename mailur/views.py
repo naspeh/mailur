@@ -35,8 +35,8 @@ def auth(env):
 def auth_callback(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
     try:
-        imap.auth_callback(env, redirect_uri, env.request.args['code'])
-        env.login()
+        info = imap.auth_callback(env, redirect_uri, env.request.args['code'])
+        env.login(info['email'])
         return env.redirect_for('index')
     except imap.AuthError as e:
         return str(e)
@@ -420,11 +420,17 @@ def search_email(env):
         where += env.mogrify('addr LIKE %s', ['%{}%'.format(args['q'])])
     where = ('WHERE ' + where) if where else ''
 
+    addresses = env.mogrify('''
+    SELECT distinct unnest("to") AS addr, time
+    FROM emails
+    WHERE fr[1] LIKE %s
+    ''', ['%<{}>'.format(env.session['email'])])
+
     i = env.sql('''
-    WITH addresses AS (
-        SELECT distinct unnest("to") AS addr, time FROM emails
-    )
+    WITH addresses AS ({addresses})
     SELECT addr, time FROM addresses
     {where} ORDER BY time DESC LIMIT 100
-    '''.format(where=where))
-    return env.to_json([{'text': v[0], 'value': v[0]} for v in i])
+    '''.format(where=where, addresses=addresses))
+    return env.to_json([
+        {'text': v[0], 'value': v[0]} for v in i if len(v[0]) < 100
+    ])

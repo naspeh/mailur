@@ -58,7 +58,7 @@ def auth_callback(env, redirect_uri, code):
         ).json()
         env.accounts.add_or_update(info['email'], auth)
         env.db.commit()
-        return
+        return info
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
