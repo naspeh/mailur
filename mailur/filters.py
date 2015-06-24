@@ -1,6 +1,7 @@
 import datetime as dt
 import json
 import re
+from email.utils import getaddresses
 from hashlib import md5
 from urllib.parse import urlencode
 
@@ -8,12 +9,12 @@ import toronado
 import lxml.html as lhtml
 
 
-def format_from(env, v, short=False):
-    if not v[0]:
-        v[0] = v[1].split('@')[0]
-    if short:
-        return v[0] if env('ui_use_names') else v[1]
-    return '"{}" <{}>'.format(*v)
+def format_addr(env, v, short=False):
+    if not short:
+        return v
+
+    v = getaddresses([v])[0]
+    return v[0] if env('ui_use_names') else v[1]
 
 
 def get_gravatar(addr, size=20, default='identicon'):

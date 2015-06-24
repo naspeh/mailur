@@ -84,6 +84,19 @@ def get_gids(env, gids, where=None):
 
 
 def get_parsed(env, data, msgid=None):
+    def format_addr(v):
+        if not v[0]:
+            v[0] = v[1].split('@')[0]
+        return '"{}" <{}>'.format(*v)
+
+    def clean(key, value):
+        if not value:
+            return value
+        elif key in ('to', 'fr', 'cc', 'bcc', 'reply_to', 'sender'):
+            return [format_addr(v) for v in value]
+        else:
+            return value
+
     pairs = (
         ('subject', 'subj'),
         ('from', 'fr'),
@@ -102,7 +115,7 @@ def get_parsed(env, data, msgid=None):
         ('embedded', 'embedded'),
     )
     msg = parser.parse(data, msgid, env('path_attachments'))
-    return ((field, msg[key]) for key, field in pairs)
+    return ((field, clean(field, msg[key])) for key, field in pairs)
 
 
 def fetch_headers(env, email, imap, map_uids):

@@ -120,6 +120,35 @@ $('.emails-byid').on('click', '.email-text a', function() {
 });
 
 (function() {
+var box = $('.compose-to');
+
+box.selectize({
+    plugins: ['remove_button', 'restore_on_backspace'],
+    delimiter: ',',
+    persist: true,
+    create: function(input) {
+        return {
+            value: input,
+            text: input
+        };
+    },
+    load: function(query, callback) {
+        if (!query.length) return callback();
+        $.ajax({
+            url: '/search-email/?q=' + encodeURIComponent(query),
+            type: 'GET',
+            error: function() {
+                callback();
+            },
+            success: function(res) {
+                callback(res.slice(0, 10));
+            }
+        });
+    }
+});
+})();
+
+(function() {
 var box = $('.email-labels-edit'),
     url = box.data('baseUrl');
 

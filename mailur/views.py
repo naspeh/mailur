@@ -22,6 +22,7 @@ rules = [
     Rule('/search/<q>/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
     Rule('/compose/', endpoint='compose'),
+    Rule('/search-email/', endpoint='search_email')
 ]
 url_map = Map(rules)
 
@@ -127,8 +128,8 @@ def ctx_emails(env, items, domid='id'):
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'time_stamp': i['time'].timestamp(),
-            'from': f.format_from(env, i['fr'][0]),
-            'from_short': f.format_from(env, i['fr'][0], short=True),
+            'from': f.format_addr(env, i['fr'][0]),
+            'from_short': f.format_addr(env, i['fr'][0], short=True),
             'from_url': env.url_for('emails', {'person': i['fr'][0][1]}),
             'gravatar': f.get_gravatar(i['fr'][0][1]),
             'labels?': ctx_labels(env, i['labels'])
@@ -393,4 +394,37 @@ def mark(env):
 
 @login_required
 def compose(env):
-    return env.render_body('compose', {})
+    schema = v.parse({'id': str})
+    args = schema.validate(env.request.args)
+    ctx = {}
+    if args.get('id'):
+        i = env.sql('''
+        SELECT msgid, "to", fr, cc, bcc, subj, reply_to
+        FROM emails WHERE id=%s LIMIT 1
+        ''', [args['id']]).fetchone()
+        ctx.update({
+            'to': ', '.join(i['reply_to'] or i['fr']),
+            'subj': 'Re: %s' % f.humanize_subj(i['subj'], empty=''),
+            'in_reply_to': i['msgid']
+        })
+
+    return env.render_body('compose', ctx)
+
+
+def search_email(env):
+    schema = v.parse({'q': str})
+    args = schema.validate(env.request.args)
+
+    where = ''
+    if args.get('q'):
+        where += env.mogrify('addr LIKE %s', ['%{}%'.format(args['q'])])
+    where = ('WHERE ' + where) if where else ''
+
+    i = env.sql('''
+    WITH addresses AS (
+        SELECT distinct unnest("to") AS addr, time FROM emails
+    )
+    SELECT addr, time FROM addresses
+    {where} ORDER BY time DESC LIMIT 100
+    '''.format(where=where))
+    return env.to_json([{'text': v[0], 'value': v[0]} for v in i])
