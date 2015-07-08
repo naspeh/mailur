@@ -411,22 +411,21 @@ def compose(env):
     if env.request.method == 'POST':
         schema = v.parse({'+to': str, '+subj': str, '+body': str})
         msg = schema.validate(env.request.form)
-        msg['fr'] = env.session['email']
         msg['to'] = [msg['to']]
         msg['in-reply-to'] = parent.get('msgid')
-        sendmail(env, msg)
+        sendmail(env, env.session['email'], msg)
         return 'OK'
     return env.render_body('compose', ctx)
 
 
-def sendmail(env, msg):
+def sendmail(env, fr, msg):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.utils import COMMASPACE, formatdate
     from mistune import markdown
 
     email = MIMEMultipart('alternative')
-    email['From'] = msg['fr']
+    email['From'] = fr
     email['To'] = COMMASPACE.join(msg['to'])
     email['Date'] = formatdate()
     email['Subject'] = msg['subj']
@@ -437,8 +436,8 @@ def sendmail(env, msg):
         email['In-Reply-To'] = msg['in-reply-to']
         email['References'] = msg['in-reply-to']
 
-    sendmail = gmail.smtp_connect(env, msg['fr'])
-    sendmail(msg['fr'], msg['to'], email.as_string())
+    _, sendmail = gmail.smtp_connect(env, fr)
+    sendmail(fr, msg['to'], email.as_string())
 
 
 def search_email(env):

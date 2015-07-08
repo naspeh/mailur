@@ -123,4 +123,4 @@ def smtp_connect(env, email):
             send(*a, _retry=True, **kw)
         finally:
             conn.close()
-    return send
+    return conn, send
