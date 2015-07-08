@@ -7,7 +7,7 @@ import re
 import valideer as v
 from werkzeug.routing import Map, Rule
 
-from . import parser, syncer, imap, filters as f
+from . import parser, syncer, gmail, filters as f
 
 rules = [
     Rule('/auth/', endpoint='auth'),
@@ -29,16 +29,16 @@ url_map = Map(rules)
 
 def auth(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
-    return env.redirect(imap.auth_url(env, redirect_uri))
+    return env.redirect(gmail.auth_url(env, redirect_uri))
 
 
 def auth_callback(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
     try:
-        info = imap.auth_callback(env, redirect_uri, env.request.args['code'])
+        info = gmail.auth_callback(env, redirect_uri, env.request.args['code'])
         env.login(info['email'])
         return env.redirect_for('index')
-    except imap.AuthError as e:
+    except gmail.AuthError as e:
         return str(e)
 
 
@@ -397,19 +397,47 @@ def mark(env):
 def compose(env):
     schema = v.parse({'id': str})
     args = schema.validate(env.request.args)
-    ctx = {}
+    ctx, parent = {}, {}
     if args.get('id'):
-        i = env.sql('''
+        parent = env.sql('''
         SELECT msgid, "to", fr, cc, bcc, subj, reply_to
         FROM emails WHERE id=%s LIMIT 1
         ''', [args['id']]).fetchone()
         ctx.update({
-            'to': ', '.join(i['reply_to'] or i['fr']),
-            'subj': 'Re: %s' % f.humanize_subj(i['subj'], empty=''),
-            'in_reply_to': i['msgid']
+            'to': ', '.join(parent['reply_to'] or parent['fr']),
+            'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
         })
 
+    if env.request.method == 'POST':
+        schema = v.parse({'+to': str, '+subj': str, '+body': str})
+        msg = schema.validate(env.request.form)
+        msg['fr'] = env.session['email']
+        msg['to'] = [msg['to']]
+        msg['in-reply-to'] = parent.get('msgid')
+        sendmail(env, msg)
+        return 'OK'
     return env.render_body('compose', ctx)
+
+
+def sendmail(env, msg):
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from email.utils import COMMASPACE, formatdate
+
+    email = MIMEMultipart()
+    email['From'] = msg['fr']
+    email['To'] = COMMASPACE.join(msg['to'])
+    email['Date'] = formatdate()
+    email['Subject'] = msg['subj']
+    email.attach(MIMEText(msg['body']))
+
+    if msg.get('in-reply-to'):
+        email['In-Reply-To'] = msg['in-reply-to']
+        email['References'] = msg['in-reply-to']
+
+    smtp = gmail.smtp_connect(env, msg['fr'])
+    smtp.sendmail(msg['fr'], msg['to'], email.as_string())
+    smtp.close()
 
 
 def search_email(env):
