@@ -1,4 +1,3 @@
-@import (inline) url(./reset.css);
 @import url(./font/fontello.less);
 
 @Space: 16px;
@@ -40,14 +39,23 @@
         border-bottom: 1px solid @ColorC;
     }
 }
+.mix_reset_list() {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
 
 /* General */
 body {
     font-size: @Size;
     max-width: 800px;
 }
+.emails {
+    .mix_reset_list();
+}
 .email {
     .email-line {
+        .mix_reset_list();
         position: relative;
         white-space: nowrap;
         overflow: hidden;
@@ -186,21 +194,6 @@ body {
     padding: @Space/2 @Space;
     position: relative;
 
-    blockquote {
-        padding-left: @Space;
-        border-left: 1px solid @Color0b;
-        color: @ColorA;
-    }
-    b, strong {
-        font-weight: bold;
-    }
-    pre {
-        font-size: 80%;
-        white-space: pre-wrap;
-    }
-    table {
-        margin: auto;
-    }
     .email-quote {
         display: none;
     }

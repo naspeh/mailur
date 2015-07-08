@@ -191,6 +191,7 @@ def get_full(argv):
         'lessc {0}styles.less {0}build/styles.css &&'
         'autoprefixer {0}build/styles.css {0}build/styles.css &&'
         'cat'
+        '   node_modules/normalize.css/normalize.css'
         '   node_modules/selectize/dist/css/selectize.css'
         '   {0}build/styles.css'
         '   > {0}build/all.css &&'
