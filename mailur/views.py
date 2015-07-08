@@ -112,6 +112,7 @@ def ctx_emails(env, items, domid='id'):
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
         extra = i.get('_extra', {})
+        fr = f.get_addr(i['fr'][0])
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
@@ -128,10 +129,10 @@ def ctx_emails(env, items, domid='id'):
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'time_stamp': i['time'].timestamp(),
-            'from': f.format_addr(env, i['fr'][0]),
-            'from_short': f.format_addr(env, i['fr'][0], short=True),
-            'from_url': env.url_for('emails', {'person': i['fr'][0][1]}),
-            'gravatar': f.get_gravatar(i['fr'][0][1]),
+            'from': i['fr'][0],
+            'from_short': f.format_addr(env, i['fr'][0]),
+            'from_url': env.url_for('emails', {'person': fr}),
+            'gravatar': f.get_gravatar(fr),
             'labels?': ctx_labels(env, i['labels'])
         }, **extra)
         email['hash'] = f.get_hash(email)
@@ -244,8 +245,8 @@ def emails(env, page):
         where = env.mogrify('%s = subj', [args['subj']])
     elif args.get('person'):
         where = env.mogrify(
-            '(%(fr)s IN (SELECT fr[1][2]) OR %(fr)s IN (SELECT "to"[1][2]))',
-            {'fr': args['person']}
+            '(fr[1] LIKE %(fr)s OR "to"[1] LIKE %(fr)s)',
+            {'fr': '%<{}>'.format(args['person'])}
         )
     else:
         return env.abort(400)

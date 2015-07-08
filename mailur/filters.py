@@ -9,12 +9,13 @@ import toronado
 import lxml.html as lhtml
 
 
-def format_addr(env, v, short=False):
-    if not short:
-        return v
-
+def format_addr(env, v):
     v = getaddresses([v])[0]
     return v[0] if env('ui_use_names') else v[1]
+
+
+def get_addr(v):
+    return getaddresses([v])[0][1]
 
 
 def get_gravatar(addr, size=20, default='identicon'):
