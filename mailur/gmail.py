@@ -104,11 +104,23 @@ def imap_connect(env, email):
 
 
 def smtp_connect(env, email):
-    auth = xoauth2(env, email)
-
     conn = smtplib.SMTP('smtp.gmail.com', 587)
     conn.set_debuglevel(env('smtp_debug'))
     conn.ehlo()
     conn.starttls()
-    conn.docmd('AUTH', 'XOAUTH2 %s' % base64.b64encode(auth.encode()).decode())
-    return conn
+
+    def send(*a, _retry=False, **kw):
+        auth = xoauth2(env, email)
+        auth = base64.b64encode(auth.encode()).decode()
+
+        try:
+            conn.docmd('AUTH', 'XOAUTH2 %s' % auth)
+            conn.sendmail(*a, **kw)
+        except OSError as e:
+            if _retry:
+                raise AuthError(e)
+            auth_refresh(env, email)
+            send(*a, _retry=True, **kw)
+        finally:
+            conn.close()
+    return send

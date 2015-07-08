@@ -435,9 +435,8 @@ def sendmail(env, msg):
         email['In-Reply-To'] = msg['in-reply-to']
         email['References'] = msg['in-reply-to']
 
-    smtp = gmail.smtp_connect(env, msg['fr'])
-    smtp.sendmail(msg['fr'], msg['to'], email.as_string())
-    smtp.close()
+    sendmail = gmail.smtp_connect(env, msg['fr'])
+    sendmail(msg['fr'], msg['to'], email.as_string())
 
 
 def search_email(env):
