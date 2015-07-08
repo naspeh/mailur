@@ -423,13 +423,15 @@ def sendmail(env, msg):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.utils import COMMASPACE, formatdate
+    from mistune import markdown
 
-    email = MIMEMultipart()
+    email = MIMEMultipart('alternative')
     email['From'] = msg['fr']
     email['To'] = COMMASPACE.join(msg['to'])
     email['Date'] = formatdate()
     email['Subject'] = msg['subj']
-    email.attach(MIMEText(msg['body']))
+    email.attach(MIMEText(msg['body'], 'plain'))
+    email.attach(MIMEText(markdown(msg['body']), 'html'))
 
     if msg.get('in-reply-to'):
         email['In-Reply-To'] = msg['in-reply-to']

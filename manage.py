@@ -23,6 +23,7 @@ def reqs(dev=False):
         'aiohttp '
         'chardet '
         'lxml '
+        'mistune '
         'psycopg2 '
         'pystache '
         'requests '
