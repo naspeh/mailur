@@ -175,7 +175,7 @@ def ctx_all_labels(env):
 
 def ctx_body(env, msg, msgs, show=False):
     return (show or '\\Unread' in msg['labels']) and {
-        'text': f.humanize_html(msg['html'], reversed(msgs)),
+        'text': f.humanize_html(msg['html'], msgs),
         'attachments?': bool(msg.get('attachments')) and {
             'items': [
                 {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
@@ -207,7 +207,7 @@ def thread(env, id):
             msg['_extra'] = {
                 'subj_changed?': f.is_subj_changed(msg['subj'], subj),
                 'subj_human': f.humanize_subj(msg['subj'], subj),
-                'body?': ctx_body(env, msg, msgs)
+                'body?': ctx_body(env, msg, reversed(msgs))
             }
             yield msg
             msgs.append(msg)
@@ -217,7 +217,7 @@ def thread(env, id):
         emails = ctx['emails?']['items']
 
         last = emails[-1]
-        parents = [p['html'] for p in msgs[:-1]]
+        parents = reversed([p['html'] for p in msgs[:-1]])
         last['body?'] = ctx_body(env, msgs[-1], parents, show=True)
 
         ctx['thread?'] = {
