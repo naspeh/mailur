@@ -340,10 +340,7 @@ def search(env, q):
 @adapt_fmt('emails')
 def body(env, id):
     def parse(raw, id):
-        if not raw:
-            return ''
-        res = parser.parse(raw.tobytes(), id, env('path_attachments'))
-        return res['html']
+        return parser.parse(raw.tobytes(), id, env('path_attachments'))
 
     row = env.sql('''
     SELECT
@@ -360,12 +357,16 @@ def body(env, id):
 
         def emails():
             for msg in [row]:
-                msg = dict(msg)
-                msg['html'] = parse(msg['raw'], msg['id'])
-                msgs = [parse(p['raw'], p['id']) for p in i]
-                msg['_extra'] = {
-                    'body?': ctx_body(env, msg, msgs, show=True),
-                }
+                if msg['raw']:
+                    parsed = parse(msg['raw'], msg['id'])
+                    msg = dict(msg)
+                    msg['html'] = parsed['html']
+                    msg['attachments'] = parsed['attachments']
+                    msg['embedded'] = parsed['embedded']
+                    msgs = [parse(p['raw'], p['id'])['html'] for p in i]
+                    msg['_extra'] = {
+                        'body?': ctx_body(env, msg, msgs, show=True),
+                    }
                 yield msg
 
         return ctx_emails(env, emails())

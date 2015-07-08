@@ -121,27 +121,27 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id=msg_id)
         content['html'] = text
-    elif part.get_filename() or mtype == 'image':
-        payload = part.get_payload(decode=True)
-        attachment = {
-            'maintype': mtype,
-            'type': ctype,
-            'id': part.get('Content-ID'),
-            'filename': decode_header(part.get_filename(), msg_id),
-            'payload': payload,
-            'size': len(payload) if payload else None
-        }
-        content['files'] += [attachment]
     elif ctype in ['text/html', 'text/plain']:
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id=msg_id)
         if ctype == 'text/plain':
             text = text2html(text)
         content['html'] = text
-    elif ctype in ('message/rfc822', 'text/calendar'):
-        pass
     else:
-        log.warn('UnknownType(%s) -- %s', ctype, msg_id)
+        payload = part.get_payload(decode=True)
+        filename = part.get_filename()
+        filename = decode_header(filename, msg_id) if filename else ctype
+        attachment = {
+            'maintype': mtype,
+            'type': ctype,
+            'id': part.get('Content-ID'),
+            'filename': filename,
+            'payload': payload,
+            'size': len(payload) if payload else None
+        }
+        content['files'] += [attachment]
+        if not part.get_filename() and mtype != 'image':
+            log.warn('UnknownType(%s) -- %s', ctype, msg_id)
 
     if inner:
         return content
