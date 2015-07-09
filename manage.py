@@ -22,6 +22,7 @@ def reqs(dev=False):
         'Werkzeug '
         'aiohttp '
         'chardet '
+        'dnspython3 '
         'lxml '
         'mistune '
         'psycopg2 '
