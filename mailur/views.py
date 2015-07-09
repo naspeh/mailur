@@ -403,7 +403,7 @@ def compose(env):
     ctx, parent = {}, {}
     if args.get('id'):
         parent = env.sql('''
-        SELECT msgid, "to", fr, cc, bcc, subj, reply_to
+        SELECT thrid, msgid, "to", fr, cc, bcc, subj, reply_to
         FROM emails WHERE id=%s LIMIT 1
         ''', [args['id']]).fetchone()
         if f.get_addr(parent['fr'][0]) == env.session['email']:
@@ -441,24 +441,43 @@ def compose(env):
             '+body': str
         })
         msg = schema.validate(env.request.form)
-        sendmail(env, env.session['email'], msg, parent.get('msgid'))
-        return 'OK'
+        msg['in_reply_to'] = parent.get('msgid')
+        msg['files'] = env.request.files.getlist('files')
+        sendmail(env, env.session['email'], msg)
+        if parent.get('thrid'):
+            return env.redirect_for('thread', id=parent['thrid'])
+        return env.redirect_for('emails', {'in': '\\Sent'})
     return env.render_body('compose', ctx)
 
 
-def sendmail(env, fr, msg, in_reply_to=None):
+def sendmail(env, fr, msg):
+    from email.encoders import encode_base64
+    from email.mime.base import MIMEBase
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.utils import COMMASPACE, formatdate
     from mistune import markdown
 
-    email = MIMEMultipart('alternative')
+    in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
+
+    text = MIMEMultipart('alternative')
+    text.attach(MIMEText(msg['body'], 'plain'))
+    text.attach(MIMEText(markdown(msg['body']), 'html'))
+    email = text
+    if files:
+        email = MIMEMultipart()
+        email.attach(text)
+    for i in files:
+        a = MIMEBase(*i.mimetype.split('/'))
+        a.set_payload(i.stream.read())
+        a.add_header('Content-Disposition', 'attachment', filename=i.filename)
+        encode_base64(a)
+        email.attach(a)
+
     email['From'] = fr
     email['To'] = COMMASPACE.join(msg['to'])
     email['Date'] = formatdate()
     email['Subject'] = msg['subj']
-    email.attach(MIMEText(msg['body'], 'plain'))
-    email.attach(MIMEText(markdown(msg['body']), 'html'))
 
     if in_reply_to:
         email['In-Reply-To'] = in_reply_to

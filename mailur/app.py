@@ -57,8 +57,8 @@ class WebEnv(Env):
     def redirect(self, location, code=302):
         return redirect(location, code)
 
-    def redirect_for(self, endpoint, _code=302, **values):
-        return redirect(self.url_for(endpoint, **values), code=_code)
+    def redirect_for(self, endpoint, _args=None, _code=302, **values):
+        return redirect(self.url_for(endpoint, _args, **values), code=_code)
 
     def abort(self, code, *a, **kw):
         abort(code, *a, **kw)
