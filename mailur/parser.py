@@ -86,7 +86,7 @@ def decode_addresses(text, msg_id):
     if not isinstance(text, str):
         text = str(text)
     text = decode_header(text, msg_id)
-    return [[name, addr] for name, addr in email.utils.getaddresses([text])]
+    return [(name, addr) for name, addr in email.utils.getaddresses([text])]
 
 
 def decode_date(text, *args):

@@ -86,7 +86,7 @@ def get_gids(env, gids, where=None):
 def get_parsed(env, data, msgid=None):
     def format_addr(v):
         if not v[0]:
-            v[0] = v[1].split('@')[0]
+            v = (v[1].split('@')[0], v[1])
         return '"{}" <{}>'.format(*v)
 
     def clean(key, value):
