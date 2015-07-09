@@ -235,6 +235,12 @@ Mousetrap
     })
     .bind('g l', function() {
         location.href = '/';
+    })
+    .bind('r r', function() {
+        location.href = $('.email:last').data('replyUrl');
+    })
+    .bind('r a', function() {
+        location.href = $('.email:last').data('replyallUrl');
     });
 
 $([

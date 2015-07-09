@@ -126,6 +126,8 @@ def ctx_emails(env, items, domid='id'):
             'body_url': env.url_for('body', id=i['id']),
             'raw_url': env.url_for('raw', id=i['id']),
             'thread_url': env.url_for('thread', id=i['thrid']),
+            'reply_url': env.url_for('compose', {'id': i['id']}),
+            'replyall_url': env.url_for('compose', {'id': i['id'], 'all': 1}),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'time_stamp': i['time'].timestamp(),
@@ -396,7 +398,7 @@ def mark(env):
 
 @login_required
 def compose(env):
-    schema = v.parse({'id': str})
+    schema = v.parse({'id': str, 'all': v.Nullable(v.AdaptTo(bool), False)})
     args = schema.validate(env.request.args)
     ctx, parent = {}, {}
     if args.get('id'):
@@ -404,8 +406,14 @@ def compose(env):
         SELECT msgid, "to", fr, cc, bcc, subj, reply_to
         FROM emails WHERE id=%s LIMIT 1
         ''', [args['id']]).fetchone()
+        if f.get_addr(parent['fr'][0]) == env.session['email']:
+            to = parent['to']
+        else:
+            to = parent['reply_to'] or parent['fr']
+        if args.get('all'):
+            to += parent['cc'] or []
         ctx.update({
-            'to': ', '.join(parent['reply_to'] or parent['fr']),
+            'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
         })
 
