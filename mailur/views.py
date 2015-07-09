@@ -410,16 +410,35 @@ def compose(env):
         })
 
     if env.request.method == 'POST':
-        schema = v.parse({'+to': str, '+subj': str, '+body': str})
+        from email.utils import parseaddr
+        import dns.resolver
+        import dns.exception
+
+        class Email(v.Validator):
+            def validate(self, value, adapt=True):
+                addr = parseaddr(value)[1]
+                hostname = addr[addr.find('@') + 1:]
+                try:
+                    dns.resolver.query(hostname, 'MX')
+                except dns.exception.DNSException:
+                    raise v.ValidationError('No MX record for %s' % hostname)
+                return value
+
+        schema = v.parse({
+            '+to': v.ChainOf(
+                v.AdaptBy(lambda v: [i.strip() for i in v.split(',')]),
+                [Email]
+            ),
+            '+subj': str,
+            '+body': str
+        })
         msg = schema.validate(env.request.form)
-        msg['to'] = [msg['to']]
-        msg['in-reply-to'] = parent.get('msgid')
-        sendmail(env, env.session['email'], msg)
+        sendmail(env, env.session['email'], msg, parent.get('msgid'))
         return 'OK'
     return env.render_body('compose', ctx)
 
 
-def sendmail(env, fr, msg):
+def sendmail(env, fr, msg, in_reply_to=None):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.utils import COMMASPACE, formatdate
@@ -433,9 +452,9 @@ def sendmail(env, fr, msg):
     email.attach(MIMEText(msg['body'], 'plain'))
     email.attach(MIMEText(markdown(msg['body']), 'html'))
 
-    if msg.get('in-reply-to'):
-        email['In-Reply-To'] = msg['in-reply-to']
-        email['References'] = msg['in-reply-to']
+    if in_reply_to:
+        email['In-Reply-To'] = in_reply_to
+        email['References'] = in_reply_to
 
     _, sendmail = gmail.smtp_connect(env, fr)
     sendmail(fr, msg['to'], email.as_string())
