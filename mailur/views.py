@@ -209,7 +209,7 @@ def thread(env, id):
             msg['_extra'] = {
                 'subj_changed?': f.is_subj_changed(msg['subj'], subj),
                 'subj_human': f.humanize_subj(msg['subj'], subj),
-                'body?': ctx_body(env, msg, reversed(msgs))
+                'body?': ctx_body(env, msg, (m['html'] for m in msgs[::-1]))
             }
             yield msg
             msgs.append(msg)
@@ -219,7 +219,7 @@ def thread(env, id):
         emails = ctx['emails?']['items']
 
         last = emails[-1]
-        parents = reversed([p['html'] for p in msgs[:-1]])
+        parents = (p['html'] for p in msgs[:-1:-1])
         last['body?'] = ctx_body(env, msgs[-1], parents, show=True)
 
         ctx['thread?'] = {
@@ -455,7 +455,7 @@ def sendmail(env, fr, msg):
     from email.mime.base import MIMEBase
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
-    from email.utils import COMMASPACE, formatdate
+    from email.utils import formatdate, formataddr, getaddresses
     from mistune import markdown
 
     in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
@@ -464,6 +464,8 @@ def sendmail(env, fr, msg):
     text.attach(MIMEText(msg['body'], 'plain'))
     text.attach(MIMEText(markdown(msg['body']), 'html'))
     email = text
+
+    files = [i for i in files if i.filename]
     if files:
         email = MIMEMultipart()
         email.attach(text)
@@ -475,7 +477,7 @@ def sendmail(env, fr, msg):
         email.attach(a)
 
     email['From'] = fr
-    email['To'] = COMMASPACE.join(msg['to'])
+    email['To'] = ', '.join(formataddr(a) for a in getaddresses(msg['to']))
     email['Date'] = formatdate()
     email['Subject'] = msg['subj']
 
