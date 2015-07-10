@@ -27,8 +27,7 @@
 }
 .mix_input() {
     display: block;
-    width: 98%;
-    padding: 1% 5px;
+    width: 100%;
     border: 0;
     border-bottom: 1px solid @Color0b;
 
@@ -210,8 +209,25 @@ body {
 }
 .thread-subj {
     margin: 10px;
-    font-size: 120%;
-    font-weight: bold;
+    line-height: 25px;
+
+    h3 {
+        display: inline-block;
+        font-size: 120%;
+        font-weight: bold;
+        margin: 0;
+        padding: 0;
+    }
+    .email-labels-edit {
+        vertical-align: bottom;
+        display: inline-block;
+        height: 25px;
+        min-width: 150px;
+
+        .selectize-input {
+            padding-right: 30px;
+        }
+    }
 }
 .thread {
     .email-line {

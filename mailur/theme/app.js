@@ -126,12 +126,10 @@ box.selectize({
     plugins: ['remove_button', 'restore_on_backspace'],
     delimiter: ',',
     persist: true,
-    create: function(input) {
-        return {
-            value: input,
-            text: input
-        };
-    },
+    create: true,
+    hideSelected: true,
+    openOnFocus: false,
+    closeAfterSelect: true,
     load: function(q, callback) {
         if (!q.length) return callback();
         send('/search-email/?q=' + encodeURIComponent(q), null, function(res) {
@@ -142,7 +140,7 @@ box.selectize({
 })();
 
 (function() {
-var box = $('.email-labels-edit'),
+var box = $('.email-labels-edit input'),
     url = box.data('baseUrl');
 
 box.selectize({
@@ -154,7 +152,8 @@ box.selectize({
     labelField: 'name',
     searchField: ['name'],
     hideSelected: true,
-    openOnFocus: true,
+    openOnFocus: false,
+    closeAfterSelect: true,
     render: {
         item: function(i, e) {
             return (

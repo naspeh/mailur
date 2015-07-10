@@ -193,7 +193,7 @@ def get_full(argv):
         'autoprefixer {0}build/styles.css {0}build/styles.css &&'
         'cat'
         '   node_modules/normalize.css/normalize.css'
-        '   node_modules/selectize/dist/css/selectize.css'
+        '   {0}selectize.css'
         '   {0}build/styles.css'
         '   > {0}build/all.css &&'
         'csso {0}build/all.css {0}build/all.min.css &&'

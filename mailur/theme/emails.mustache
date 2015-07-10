@@ -1,15 +1,16 @@
 {{#thread?}}
-<h3 class="thread-subj">
-    {{subj}}
+<div class="thread-subj">
+    <h3>{{subj}}</h3>
     {{#labels?}}
+    <div class="email-labels-edit">
     <input
-        class="email-labels-edit"
         value="{{#items}}{{name}},{{/items}}"
         data-all="{{all_labels}}"
         data-base-url="{{base_url}}"
     >
+    </div>
     {{/labels?}}
-</h3>
+</div>
 {{/thread?}}
 {{#emails?}}
 <ul class="emails {{emails_class}}" data-last="{{last}}">
