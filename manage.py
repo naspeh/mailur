@@ -153,7 +153,7 @@ def docker(env, opts):
         ([ -d {dest} ] || mkdir /home/dotfiles)
         cd {dest} &&
         ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
-        git pull && ./manage.py init --boot vim zsh
+        git pull && ./manage.py init --boot vim zsh bin dev
         '''.format(dest='/home/dotfiles'))
 
     if opts['pkgs']:
