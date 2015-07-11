@@ -17,6 +17,10 @@ def sh(cmd):
     return 0
 
 
+def ssh(host, cmd):
+    return sh('ssh %s "%s"' % (host, cmd.replace('"', '\\"')))
+
+
 def reqs(dev=False):
     requirements = (
         'Werkzeug '
@@ -120,6 +124,74 @@ def shell(env):
         interact('', local=namespace)
 
 
+def docker(env, opts):
+    opts['cwd'] = os.getcwd()
+    opts['host'] = 'root@localhost'
+    opts['port'] = 2200
+    opts['manage'] = (
+        'source {path_env}/bin/activate && cd {path_src} && ./manage.py'
+        .format(**opts)
+    )
+    ssh_ = ft.partial(ssh, '{host} -p{port}'.format(**opts))
+
+    sh('''
+    (docker inspect -f "{{.Id}}" mailur || (
+       docker run -d --net=host --name=mailur \
+           -v {cwd}:{path_src} naspeh/sshd \
+       &&
+       docker exec -i mailur \
+           /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
+           < ~/.ssh/id_rsa.pub
+    ))
+    '''.format(**opts))
+
+    if opts['dot']:
+        ssh_('''
+        pacman -S python-requests
+        ([ -d {dest} ] || mkdir /home/dotfiles)
+        cd {dest} &&
+        ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
+        git pull && ./manage.py init --boot vim zsh
+        '''.format(dest='/home/dotfiles'))
+
+    if opts['pkgs']:
+        ssh_('''
+        pacman -Sy \
+           python-virtualenv gcc libxslt \
+           nginx \
+           uwsgi uwsgi-plugin-python \
+           postgresql \
+           rsync
+        ''')
+
+    sh('rsync -rv -e \"ssh -p{port}\" docker/etc/ {host}:/etc/'.format(**opts))
+    ssh_('''
+    supervisorctl update
+    ([ -d {path_src} ] || (
+       ssh-keyscan github.com >> ~/.ssh/known_hosts &&
+       mkdir -p {path_src} &&
+       git clone git@github.com:naspeh/mailur.git {path_src}
+    ))
+    '''.format(**opts))
+
+    if opts['env']:
+        ssh_('''
+        ([ -d {path_env} ] || mkdir -p {path_env} && virtualenv {path_env}) &&
+        ([ -d {path_env}/../wheels ] || mkdir -p {path_env}/../wheels) &&
+        {manage} reqs &&
+        echo {path_env} > {path_src}/.venv
+        '''.format(**opts))
+
+    if opts['db']:
+        ssh_('''
+        ([ -d {path_pgdata} ] ||
+            sudo -upostgres \
+                initdb --locale en_US.UTF-8 -E UTF8 -D "{path_pgdata}"
+        ) &&
+        {manage} db-init
+        '''.format(**opts))
+
+
 def get_base(argv):
     parser = argparse.ArgumentParser('mail')
     cmds = parser.add_subparsers(help='commands')
@@ -137,13 +209,26 @@ def get_base(argv):
     return parser, cmd
 
 
-def get_full(argv):
-    from mailur import Env, db, async
+def get_env():
+    from mailur import Env
 
     with open('conf.json', 'br') as f:
         conf = json.loads(f.read().decode())
 
-    env = Env(conf)
+    return Env(conf)
+
+
+def get_app():
+    from mailur import app
+
+    env = get_env()
+    return app.create_app(env.conf)
+
+
+def get_full(argv):
+    from mailur import db, async
+
+    env = get_env()
 
     parser, cmd = get_base(argv)
     cmd('sync')\
@@ -210,6 +295,15 @@ def get_full(argv):
         '   > {0}build/version'
         .format(env('path_theme') + os.path.sep)
     ))
+    cmd('docker')\
+        .arg('--dot', action='store_true')\
+        .arg('--env', action='store_true')\
+        .arg('--pkgs', action='store_true')\
+        .arg('--db', action='store_true')\
+        .arg('--path-src', default='/var/local/mailur/src')\
+        .arg('--path-env', default='/var/local/mailur/env')\
+        .arg('--path-pgdata', default='/var/lib/postgres/data')\
+        .exe(lambda a: docker(env, a.__dict__))
 
     return parser
 
