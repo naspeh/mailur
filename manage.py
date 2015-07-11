@@ -135,19 +135,21 @@ def docker(env, opts):
     ssh_ = ft.partial(ssh, '{host} -p{port}'.format(**opts))
 
     sh('''
-    (docker inspect -f "{{.Id}}" mailur || (
+    running="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
+    ([ "true" == "$running" ] || (
        docker run -d --net=host --name=mailur \
            -v {cwd}:{path_src} naspeh/sshd \
        &&
        docker exec -i mailur \
            /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
            < ~/.ssh/id_rsa.pub
+        sleep 5
     ))
     '''.format(**opts))
 
     if opts['dot']:
         ssh_('''
-        pacman -S python-requests
+        pacman --noconfirm -Sy python-requests
         ([ -d {dest} ] || mkdir /home/dotfiles)
         cd {dest} &&
         ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
@@ -156,7 +158,7 @@ def docker(env, opts):
 
     if opts['pkgs']:
         ssh_('''
-        pacman -Sy \
+        pacman --noconfirm -Sy \
            python-virtualenv gcc libxslt \
            nginx \
            uwsgi uwsgi-plugin-python \
@@ -179,15 +181,17 @@ def docker(env, opts):
         ([ -d {path_env} ] || mkdir -p {path_env} && virtualenv {path_env}) &&
         ([ -d {path_env}/../wheels ] || mkdir -p {path_env}/../wheels) &&
         {manage} reqs &&
-        echo {path_env} > {path_src}/.venv
+        touch {path_src}/../reload
         '''.format(**opts))
 
     if opts['db']:
         ssh_('''
-        ([ -d {path_pgdata} ] ||
+        ([ -f {path_pgdata}/postgresql.conf ] ||
             sudo -upostgres \
-                initdb --locale en_US.UTF-8 -E UTF8 -D "{path_pgdata}"
+                initdb --locale en_US.UTF-8 -E UTF8 -D {path_pgdata}
         ) &&
+        supervisorctl restart postgres &&
+        psql -Upostgres -hlocalhost -c "CREATE DATABASE mailur_dev";
         {manage} db-init
         '''.format(**opts))
 
