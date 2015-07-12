@@ -53,13 +53,17 @@ def notify(request):
     return web.Response(body=b'OK')
 
 
-@asyncio.coroutine
-def init(loop, host, port):
+def create_app(loop=None):
     app = web.Application(loop=loop)
     app['sockets'] = []
     app.router.add_route('GET', '/', wshandler)
     app.router.add_route('POST', '/notify/', notify)
+    return app
 
+
+@asyncio.coroutine
+def init(loop, host, port):
+    app = create_app(loop=loop)
     handler = app.make_handler()
     srv = yield from loop.create_server(handler, host, port)
     log.info('Server started at http://%s:%s', host, port)

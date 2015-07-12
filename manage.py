@@ -27,6 +27,7 @@ def reqs(dev=False):
         'aiohttp '
         'chardet '
         'dnspython3 '
+        'gunicorn '
         'lxml '
         'mistune '
         'psycopg2 '
@@ -162,7 +163,6 @@ def deploy(env, opts):
         pacman --noconfirm -Sy \
            python-virtualenv gcc libxslt \
            nginx \
-           uwsgi uwsgi-plugin-python \
            postgresql \
            rsync \
            inotify-tools
@@ -171,6 +171,7 @@ def deploy(env, opts):
     sh('rsync -rv -e \"ssh -p{port}\" deploy/etc/ {host}:/etc/'.format(**ctx))
     ssh_('''
     supervisorctl update
+    supervisorctl pid async web nginx | xargs kill -s HUP
     ([ -d {path_src} ] || (
        ssh-keyscan github.com >> ~/.ssh/known_hosts &&
        mkdir -p {path_src} &&
@@ -184,7 +185,7 @@ def deploy(env, opts):
         ([ -d {path_env}/../wheels ] || mkdir -p {path_env}/../wheels) &&
         {manage} reqs &&
         echo '../env' > .venv &&
-        touch {path_src}/../reload
+        supervisorctl pid async web | xargs kill -s HUP
         '''.format(**ctx))
 
     if opts['db']:
@@ -300,8 +301,11 @@ def get_full(argv):
         .exe(lambda a: deploy(env, a.__dict__))
 
     cmd('touch').exe(lambda a: sh(
-        './manage.py static && touch ../reload && nginx -s reload'
+        './manage.py static &&'
+        'supervisorctl pid async web nginx | xargs kill -s HUP'
+        'nginx -s reload'
     ))
+    cmd('gunicorn').exe(lambda a: sh('gunicorn %s' % ' '.join(a)))
 
     return parser
 
@@ -314,7 +318,7 @@ def main(argv=None):
         parser, _ = get_base(argv)
 
     args, extra = parser.parse_known_args(argv)
-    if getattr(args, 'cmd', None) == 'test':
+    if getattr(args, 'cmd', None) in ('test', 'gunicorn'):
         args.exe(extra)
         return
 
