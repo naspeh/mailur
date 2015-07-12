@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import functools as ft
-import json
 import logging
 import os
 import subprocess as sp
@@ -196,6 +195,12 @@ def docker(env, opts):
         '''.format(**opts))
 
 
+def get_app():
+    from mailur import Env, app
+
+    return app.create_app(Env().conf)
+
+
 def get_base(argv):
     parser = argparse.ArgumentParser('mail')
     cmds = parser.add_subparsers(help='commands')
@@ -213,26 +218,10 @@ def get_base(argv):
     return parser, cmd
 
 
-def get_env():
-    from mailur import Env
-
-    with open('conf.json', 'br') as f:
-        conf = json.loads(f.read().decode())
-
-    return Env(conf)
-
-
-def get_app():
-    from mailur import app
-
-    env = get_env()
-    return app.create_app(env.conf)
-
-
 def get_full(argv):
-    from mailur import db, async
+    from mailur import Env, db, async
 
-    env = get_env()
+    env = Env()
 
     parser, cmd = get_base(argv)
     cmd('sync')\

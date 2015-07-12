@@ -1,3 +1,4 @@
+import json
 import logging
 import logging.config
 from pathlib import Path
@@ -54,7 +55,11 @@ def get_conf(conf):
 
 
 class Env:
-    def __init__(self, conf):
+    def __init__(self, conf=None):
+        if not conf:
+            with open('conf.json', 'br') as f:
+                conf = json.loads(f.read().decode())
+
         self.conf = get_conf(conf)
         setup_logging(self)
 
