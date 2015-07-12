@@ -178,10 +178,8 @@ def deploy(env, opts):
        mkdir -p {path_src} &&
        git clone git@github.com:naspeh/mailur.git {path_src}
     )) &&
-    ([ -d {path_root}/attachments ] || (
-        mkdir {path_root}/attachments &&
-        chown http:http {path_root}/attachments
-    ))
+    ([ -d {path_root}/attachments ] || mkdir {path_root}/attachments) &&
+    chown http:http {path_root}/attachments
     '''.format(**ctx))
 
     if opts['env']:
