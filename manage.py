@@ -93,7 +93,7 @@ def run(env, no_reloader, only_wsgi):
     main(['static'])
     ps = [
         Process(target=run_wsgi),
-        Process(target=async.run, args=('127.0.0.1', 5001))
+        Process(target=async.run)
     ]
     for p in ps:
         p.start()
@@ -245,7 +245,7 @@ def get_full(argv):
 
     cmd('async')\
         .arg('-H', '--host', default='127.0.0.1')\
-        .arg('-P', '--port', type=int, default=5001)\
+        .arg('-P', '--port', type=int, default=9000)\
         .exe(lambda a: async.run(a.host, a.port))
 
     cmd('shell')\

@@ -13,7 +13,7 @@ function guid() {
     return uuid;
 }
 function connect() {
-    ws = new WebSocket('ws://localhost:5001');
+    ws = new WebSocket('ws://localhost:9000');
     ws.onopen = function() {
         console.log('ws opened');
         while (messages.length > 0) {

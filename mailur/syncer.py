@@ -378,7 +378,7 @@ def notify(ids):
         return
 
     ids = set(ids)
-    url = 'http://localhost:5001/notify/'
+    url = 'http://localhost:9000/notify/'
     try:
         requests.post(url, data={'ids': ids}, timeout=5)
     except IOError as e:

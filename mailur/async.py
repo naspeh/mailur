@@ -77,7 +77,7 @@ def finish(app, srv, handler):
     yield from srv.wait_closed()
 
 
-def run(host, port):
+def run(host='127.0.0.1', port=9000):
     loop = asyncio.get_event_loop()
     app, srv, handler = loop.run_until_complete(init(loop, host, port))
     try:
