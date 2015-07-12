@@ -54,7 +54,7 @@ function connect() {
 }
 function send(url, data, callback) {
     if (ws && ws.readyState === ws.OPEN) {
-        url = 'http://localhost:5000' + url;
+        url = 'http://localhost' + url;
         var resp = {url: url, payload: data, uid: guid()};
         ws.send(JSON.stringify(resp));
         if (callback) {

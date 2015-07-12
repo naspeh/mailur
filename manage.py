@@ -4,6 +4,7 @@ import functools as ft
 import logging
 import os
 import subprocess as sp
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -124,14 +125,15 @@ def shell(env):
 
 
 def docker(env, opts):
-    opts['cwd'] = os.getcwd()
-    opts['host'] = 'root@localhost'
-    opts['port'] = 2200
-    opts['manage'] = (
-        'source {path_env}/bin/activate && cd {path_src} && ./manage.py'
-        .format(**opts)
-    )
-    ssh_ = ft.partial(ssh, '{host} -p{port}'.format(**opts))
+    ctx = {}
+    ctx['cwd'] = os.getcwd()
+    ctx['path_root'] = Path('/var/local/mailur')
+    ctx['path_src'] = str(ctx['path_root'] / 'src')
+    ctx['path_env'] = str(ctx['path_root'] / 'env')
+    ctx['host'] = 'root@localhost'
+    ctx['port'] = 2200
+    ctx['manage'] = '{path_src}/m'.format(**ctx)
+    ssh_ = ft.partial(ssh, '{host} -p{port}'.format(**ctx))
 
     sh('''
     running="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
@@ -144,7 +146,7 @@ def docker(env, opts):
            < ~/.ssh/id_rsa.pub
         sleep 5
     ))
-    '''.format(**opts))
+    '''.format(**ctx))
 
     if opts['dot']:
         ssh_('''
@@ -162,10 +164,11 @@ def docker(env, opts):
            nginx \
            uwsgi uwsgi-plugin-python \
            postgresql \
-           rsync
+           rsync \
+           inotify-tools
         ''')
 
-    sh('rsync -rv -e \"ssh -p{port}\" docker/etc/ {host}:/etc/'.format(**opts))
+    sh('rsync -rv -e \"ssh -p{port}\" docker/etc/ {host}:/etc/'.format(**ctx))
     ssh_('''
     supervisorctl update
     ([ -d {path_src} ] || (
@@ -173,15 +176,16 @@ def docker(env, opts):
        mkdir -p {path_src} &&
        git clone git@github.com:naspeh/mailur.git {path_src}
     ))
-    '''.format(**opts))
+    '''.format(**ctx))
 
     if opts['env']:
         ssh_('''
         ([ -d {path_env} ] || mkdir -p {path_env} && virtualenv {path_env}) &&
         ([ -d {path_env}/../wheels ] || mkdir -p {path_env}/../wheels) &&
         {manage} reqs &&
+        echo '../env' > .venv &&
         touch {path_src}/../reload
-        '''.format(**opts))
+        '''.format(**ctx))
 
     if opts['db']:
         ssh_('''
@@ -192,7 +196,7 @@ def docker(env, opts):
         supervisorctl restart postgres &&
         psql -Upostgres -hlocalhost -c "CREATE DATABASE mailur_dev";
         {manage} db-init
-        '''.format(**opts))
+        '''.format(**ctx))
 
 
 def get_app():
@@ -290,13 +294,14 @@ def get_full(argv):
     ))
     cmd('docker')\
         .arg('--dot', action='store_true')\
-        .arg('--env', action='store_true')\
-        .arg('--pkgs', action='store_true')\
-        .arg('--db', action='store_true')\
-        .arg('--path-src', default='/var/local/mailur/src')\
-        .arg('--path-env', default='/var/local/mailur/env')\
-        .arg('--path-pgdata', default='/var/lib/postgres/data')\
+        .arg('-e', '--env', action='store_true')\
+        .arg('-p', '--pkgs', action='store_true')\
+        .arg('-d', '--db', action='store_true')\
         .exe(lambda a: docker(env, a.__dict__))
+
+    cmd('touch').exe(lambda a: sh(
+        './manage.py static && touch ../reload && nginx -s reload'
+    ))
 
     return parser
 
