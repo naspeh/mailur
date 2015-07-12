@@ -124,7 +124,7 @@ def shell(env):
         interact('', local=namespace)
 
 
-def docker(env, opts):
+def deploy(env, opts):
     ctx = {}
     ctx['cwd'] = os.getcwd()
     ctx['path_root'] = Path('/var/local/mailur')
@@ -168,7 +168,7 @@ def docker(env, opts):
            inotify-tools
         ''')
 
-    sh('rsync -rv -e \"ssh -p{port}\" docker/etc/ {host}:/etc/'.format(**ctx))
+    sh('rsync -rv -e \"ssh -p{port}\" deploy/etc/ {host}:/etc/'.format(**ctx))
     ssh_('''
     supervisorctl update
     ([ -d {path_src} ] || (
@@ -292,12 +292,12 @@ def get_full(argv):
         '   > {0}build/version'
         .format(env('path_theme') + os.path.sep)
     ))
-    cmd('docker')\
+    cmd('deploy')\
         .arg('--dot', action='store_true')\
         .arg('-e', '--env', action='store_true')\
         .arg('-p', '--pkgs', action='store_true')\
         .arg('-d', '--db', action='store_true')\
-        .exe(lambda a: docker(env, a.__dict__))
+        .exe(lambda a: deploy(env, a.__dict__))
 
     cmd('touch').exe(lambda a: sh(
         './manage.py static && touch ../reload && nginx -s reload'
