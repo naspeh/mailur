@@ -170,9 +170,10 @@ def deploy(env, opts):
            inotify-tools
         ''')
 
-    sh('rsync -rv -e \"ssh -p{port}\" deploy/etc/ {host}:/etc/'.format(**ctx))
     ssh_('''
-    supervisorctl update;
+    rsync -v {path_src}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
+    rsync -v {path_src}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
+    supervisorctl update &&
     ([ -d {path_src} ] || (
        ssh-keyscan github.com >> ~/.ssh/known_hosts &&
        mkdir -p {path_src} &&
