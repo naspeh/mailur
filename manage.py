@@ -21,7 +21,7 @@ def ssh(host, cmd):
     return sh('ssh %s "%s"' % (host, cmd.replace('"', '\\"')))
 
 
-def reqs(dev=False):
+def reqs(dev=False, clear=False):
     requirements = (
         'Werkzeug '
         'aiohttp '
@@ -43,8 +43,10 @@ def reqs(dev=False):
 
     sh('[ -d "$VIRTUAL_ENV" ] || (echo "ERROR: no virtualenv" && exit 1)')
     sh(
-        'rm -rf $VIRTUAL_ENV && '
-        'virtualenv $VIRTUAL_ENV && '
+        (
+            'rm -rf $VIRTUAL_ENV && virtualenv $VIRTUAL_ENV && '
+            if clear else ''
+        ) +
         'pip install wheel && '
         'pip wheel -w ../wheels/ -f ../wheels/ {requirements} &&'
         'pip uninstall -y wheel &&'
@@ -131,6 +133,7 @@ def deploy(env, opts):
     ctx['path_root'] = Path('/var/local/mailur')
     ctx['path_src'] = str(ctx['path_root'] / 'src')
     ctx['path_env'] = str(ctx['path_root'] / 'env')
+    ctx['path_pgdata'] = '/var/lib/postgres/data'
     ctx['host'] = 'root@localhost'
     ctx['port'] = 2200
     ctx['manage'] = '{path_src}/m'.format(**ctx)
@@ -140,7 +143,7 @@ def deploy(env, opts):
     running="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
     ([ "true" == "$running" ] || (
        docker run -d --net=host --name=mailur \
-           -v {cwd}:{path_src} naspeh/sshd \
+           -v {cwd}:{path_src} naspeh/web \
        &&
        docker exec -i mailur \
            /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
@@ -162,30 +165,33 @@ def deploy(env, opts):
         ssh_('''
         pacman --noconfirm -Sy \
            python-virtualenv gcc libxslt \
-           nginx \
-           postgresql \
+           systemd postgresql \
            rsync \
            inotify-tools
         ''')
 
     sh('rsync -rv -e \"ssh -p{port}\" deploy/etc/ {host}:/etc/'.format(**ctx))
     ssh_('''
-    supervisorctl update
-    supervisorctl pid async web nginx | xargs kill -s HUP
+    supervisorctl update;
     ([ -d {path_src} ] || (
        ssh-keyscan github.com >> ~/.ssh/known_hosts &&
        mkdir -p {path_src} &&
        git clone git@github.com:naspeh/mailur.git {path_src}
+    )) &&
+    ([ -d {path_root}/attachments ] || (
+        mkdir {path_root}/attachments &&
+        chown http:http {path_root}/attachments
     ))
     '''.format(**ctx))
 
     if opts['env']:
         ssh_('''
-        ([ -d {path_env} ] || mkdir -p {path_env} && virtualenv {path_env}) &&
+        ([ -d {path_env} ] || (
+            mkdir -p {path_env} && virtualenv {path_env}
+        )) &&
         ([ -d {path_env}/../wheels ] || mkdir -p {path_env}/../wheels) &&
-        {manage} reqs &&
-        echo '../env' > .venv &&
-        supervisorctl pid async web | xargs kill -s HUP
+        {manage} reqs -c &&
+        echo '../env' > .venv
         '''.format(**ctx))
 
     if opts['db']:
@@ -198,6 +204,8 @@ def deploy(env, opts):
         psql -Upostgres -hlocalhost -c "CREATE DATABASE mailur_dev";
         {manage} db-init
         '''.format(**ctx))
+
+    ssh_('supervisorctl pid async web nginx | xargs kill -s HUP')
 
 
 def get_app():
@@ -219,7 +227,8 @@ def get_base(argv):
 
     cmd('reqs', help='update python requirements')\
         .arg('-d', '--dev', action='store_true')\
-        .exe(lambda a: reqs(a.dev))
+        .arg('-c', '--clear', action='store_true')\
+        .exe(lambda a: reqs(a.dev, a.clear))
     return parser, cmd
 
 
@@ -303,10 +312,7 @@ def get_full(argv):
     cmd('touch').exe(lambda a: sh(
         './manage.py static &&'
         'supervisorctl pid async web nginx | xargs kill -s HUP'
-        'nginx -s reload'
     ))
-    cmd('gunicorn').exe(lambda a: sh('gunicorn %s' % ' '.join(a)))
-
     return parser
 
 
