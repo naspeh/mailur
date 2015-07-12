@@ -4,6 +4,7 @@ import functools as ft
 import logging
 import os
 import subprocess as sp
+from collections import namedtuple
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -128,22 +129,30 @@ def shell(env):
 
 
 def deploy(env, opts):
-    ctx = {}
-    ctx['cwd'] = os.getcwd()
-    ctx['path_root'] = Path('/var/local/mailur')
-    ctx['path_src'] = str(ctx['path_root'] / 'src')
-    ctx['path_env'] = str(ctx['path_root'] / 'env')
-    ctx['path_pgdata'] = '/var/lib/postgres/data'
-    ctx['host'] = 'root@localhost'
-    ctx['port'] = 2200
-    ctx['manage'] = '{path_src}/m'.format(**ctx)
+    root = Path('/var/local/mailur')
+    path = dict(
+        src=str(root / 'src'),
+        env=str(root / 'env'),
+        attachments=str(root / 'attachments'),
+        wheels=str(root / 'wheels'),
+        pgdata='/var/lib/postgres/data'
+    )
+    path = namedtuple('Path', path.keys())(**path)
+
+    ctx = {
+        'cwd': os.getcwd(),
+        'path': path,
+        'host': 'root@localhost',
+        'port': 2200,
+        'manage': '{}/m'.format(path.src)
+    }
     ssh_ = ft.partial(ssh, '{host} -p{port}'.format(**ctx))
 
     sh('''
     running="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
     ([ "true" == "$running" ] || (
        docker run -d --net=host --name=mailur \
-           -v {cwd}:{path_src} naspeh/web \
+           -v {cwd}:{path.src} naspeh/web \
        &&
        docker exec -i mailur \
            /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
@@ -171,33 +180,33 @@ def deploy(env, opts):
         ''')
 
     ssh_('''
-    rsync -v {path_src}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
-    rsync -v {path_src}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
+    rsync -v {path.src}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
+    rsync -v {path.src}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     supervisorctl update &&
-    ([ -d {path_src} ] || (
+    ([ -d {path.src} ] || (
        ssh-keyscan github.com >> ~/.ssh/known_hosts &&
-       mkdir -p {path_src} &&
-       git clone git@github.com:naspeh/mailur.git {path_src}
+       mkdir -p {path.src} &&
+       git clone git@github.com:naspeh/mailur.git {path.src}
     )) &&
-    ([ -d {path_root}/attachments ] || mkdir {path_root}/attachments) &&
-    chown http:http {path_root}/attachments
+    ([ -d {path.attachments} ] || mkdir {path.attachments}) &&
+    chown http:http {path.attachments}
     '''.format(**ctx))
 
     if opts['env']:
         ssh_('''
-        ([ -d {path_env} ] || (
-            mkdir -p {path_env} && virtualenv {path_env}
+        ([ -d {path.env} ] || (
+            mkdir -p {path.env} && virtualenv {path.env}
         )) &&
-        ([ -d {path_env}/../wheels ] || mkdir -p {path_env}/../wheels) &&
+        ([ -d {path.wheels} ] || mkdir -p {path.wheels}) &&
         {manage} reqs -c &&
         echo '../env' > .venv
         '''.format(**ctx))
 
     if opts['db']:
         ssh_('''
-        ([ -f {path_pgdata}/postgresql.conf ] ||
+        ([ -f {path.pgdata}/postgresql.conf ] ||
             sudo -upostgres \
-                initdb --locale en_US.UTF-8 -E UTF8 -D {path_pgdata}
+                initdb --locale en_US.UTF-8 -E UTF8 -D {path.pgdata}
         ) &&
         supervisorctl restart postgres &&
         psql -Upostgres -hlocalhost -c "CREATE DATABASE mailur_dev";
