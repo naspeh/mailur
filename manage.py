@@ -179,6 +179,8 @@ def deploy(env, opts):
     ssh_('''
     rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
+    rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
+    cat /etc/fcrontab/* | fcrontab - &&
     ([ -d {path[src]} ] || (
        ssh-keyscan github.com >> ~/.ssh/known_hosts &&
        mkdir -p {path[src]} &&
