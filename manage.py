@@ -146,14 +146,14 @@ def deploy(env, opts):
     ssh_ = ft.partial(ssh, '{host} -p{port}'.format(**ctx))
 
     sh('''
-    running="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
-    ([ "true" == "$running" ] || (
-       docker run -d --net=host --name=mailur \
-           -v {cwd}:{path[src]} naspeh/web \
-       &&
-       docker exec -i mailur \
-           /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
-           < ~/.ssh/id_rsa.pub
+    r="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
+    ([ "true" == "$r" ] || (
+        docker run -d --net=host --name=mailur \
+            -v {cwd}:{path[src]} naspeh/web \
+        &&
+        docker exec -i mailur \
+            /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
+            < ~/.ssh/id_rsa.pub
         sleep 5
     ))
     '''.format(**ctx))
@@ -168,13 +168,13 @@ def deploy(env, opts):
         '''.format(dest='/home/dotfiles'))
 
     if opts['pkgs']:
-        ssh_('''
-        pacman --noconfirm -Sy \
-           python-virtualenv gcc libxslt \
-           systemd postgresql \
-           rsync \
-           inotify-tools
-        ''')
+        ssh_(
+            'pacman --noconfirm -Sy'
+            '  python-virtualenv gcc libxslt'
+            '  postgresql'
+            '  rsync'
+            '  inotify-tools'
+        )
 
     ssh_('''
     rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
@@ -186,8 +186,10 @@ def deploy(env, opts):
        mkdir -p {path[src]} &&
        git clone git@github.com:naspeh/mailur.git {path[src]}
     )) &&
-    ([ -d {path[attachments]} ] || mkdir {path[attachments]}) &&
-    chown http:http {path[attachments]}
+    ([ -d {path[attachments]} ] || (
+        mkdir {path[attachments]} &&
+        chown http:http {path[attachments]}
+    ))
     '''.format(**ctx))
 
     if opts['env']:
@@ -206,7 +208,11 @@ def deploy(env, opts):
             sudo -upostgres \
                 initdb --locale en_US.UTF-8 -E UTF8 -D {path[pgdata]}
         ) &&
-        supervisorctl restart postgres &&
+        ([ -d /run/postgresql ] || (
+            mkdir -m 0775 /run/postgresql &&
+            chown postgres:postgres /run/postgresql
+        )) &&
+        supervisorctl update && supervisorctl restart postgres &&
         psql -Upostgres -hlocalhost -c "CREATE DATABASE mailur_dev";
         {manage} db-init
         '''.format(**ctx))
