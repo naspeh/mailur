@@ -8,9 +8,14 @@ from . import log
 
 @contextmanager
 def with_lock(target):
-    target = 'mailur:%s' % hashlib.md5(target.encode()).hexdigest()
+    name = 'mailur:%s' % hashlib.md5(target.encode()).hexdigest()
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-    sock.bind('\0' + target)
+    try:
+        sock.bind('\0' + name)
+    except IOError:
+        log.warn('Target %r is running already' % target)
+        raise SystemExit()
+
     yield
     sock.close()
 

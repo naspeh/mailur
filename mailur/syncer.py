@@ -20,7 +20,7 @@ def lock_sync_gmail(func):
     def inner(*args, **kwargs):
         email = kwargs.get('email') or args[1]
 
-        with with_lock(email):
+        with with_lock('%s:%s' % (func.__name__, email)):
             return func(*args, **kwargs)
     return inner
 
