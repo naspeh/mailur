@@ -164,7 +164,7 @@ def deploy(env, opts):
         ([ -d {dest} ] || mkdir /home/dotfiles)
         cd {dest} &&
         ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
-        git pull && ./manage.py init --boot vim zsh bin dev
+        git pull && ./manage.py init --boot vim zsh bin
         '''.format(dest='/home/dotfiles'))
 
     if opts['pkgs']:
@@ -179,7 +179,6 @@ def deploy(env, opts):
     ssh_('''
     rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
-    supervisorctl update &&
     ([ -d {path[src]} ] || (
        ssh-keyscan github.com >> ~/.ssh/known_hosts &&
        mkdir -p {path[src]} &&
@@ -210,7 +209,10 @@ def deploy(env, opts):
         {manage} db-init
         '''.format(**ctx))
 
-    ssh_('supervisorctl pid async web nginx | xargs kill -s HUP')
+    ssh_(
+        'supervisorctl update &&'
+        'supervisorctl pid async web nginx | xargs kill -s HUP'
+    )
 
 
 def get_app():
