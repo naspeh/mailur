@@ -3,6 +3,7 @@ import os
 from urllib.parse import urlencode
 
 from werkzeug.contrib.securecookie import SecureCookie
+from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
@@ -26,6 +27,9 @@ def create_app(conf):
             response = e
         env.session.save_cookie(response)
         return response
+
+    if conf['debug']:
+        app = DebuggedApplication(app)
     return app
 
 

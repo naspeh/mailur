@@ -5,6 +5,7 @@ import os
 import re
 
 import valideer as v
+from mistune import markdown
 from werkzeug.routing import Map, Rule
 
 from . import parser, syncer, gmail, filters as f
@@ -434,6 +435,7 @@ def compose(env):
                 return value
 
         schema = v.parse({
+            'preview': v.Nullable(v.AdaptBy(lambda v: True), False),
             '+to': v.ChainOf(
                 v.AdaptBy(lambda v: [i.strip() for i in v.split(',')]),
                 [Email]
@@ -442,6 +444,11 @@ def compose(env):
             '+body': str
         })
         msg = schema.validate(env.request.form)
+        if msg['preview']:
+            msg['to'] = ','.join(msg['to'])
+            msg['preview?'] = {'html': markdown(msg['body'])}
+            return env.render_body('compose', msg)
+
         msg['in_reply_to'] = parent.get('msgid')
         msg['files'] = env.request.files.getlist('files')
         sendmail(env, env.session['email'], msg)
@@ -457,7 +464,6 @@ def sendmail(env, fr, msg):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.utils import formatdate, formataddr, getaddresses
-    from mistune import markdown
 
     in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
 
