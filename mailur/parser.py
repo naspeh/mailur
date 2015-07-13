@@ -257,5 +257,5 @@ def text2html(txt):
 
     htm = html_escape(txt)
     htm = link_re.sub(fill_link, htm)
-    htm = '<pre>%s</pre>' % htm
+    htm = '<pre class="email-text2html">%s</pre>' % htm
     return htm

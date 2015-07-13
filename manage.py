@@ -174,6 +174,7 @@ def deploy(env, opts):
             '  postgresql'
             '  rsync'
             '  inotify-tools'
+            '  npm'
         )
 
     ssh_('''

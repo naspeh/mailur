@@ -363,6 +363,7 @@ def body(env, id):
                     parsed = parse(msg['raw'], msg['id'])
                     msg = dict(msg)
                     msg['html'] = parsed['html']
+                    msg['text'] = parsed['text']
                     msg['attachments'] = parsed['attachments']
                     msg['embedded'] = parsed['embedded']
                     msgs = [parse(p['raw'], p['id'])['html'] for p in i]
