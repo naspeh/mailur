@@ -1,7 +1,9 @@
 from mailur import Env, app
 
-app = app.create_app(Env().conf)
+env = Env()
+app = app.create_app(env.conf)
 
 bind = 'localhost:8000'
 workers = 4
 accesslog = '-'
+reload = env('debug')

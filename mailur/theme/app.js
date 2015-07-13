@@ -214,32 +214,32 @@ Mousetrap
     .bind('* t', function() {
         $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
     })
-    .bind('!', function() {
+    .bind(['m !', '!'], function() {
         mark({action: '+', name: '\\Junk'});
     })
-    .bind('#', function() {
+    .bind(['m #', '#'] , function() {
         mark({action: '+', name: '\\Trash'});
     })
-    .bind('u', function() {
+    .bind(['m u', 'm shift+r'], function() {
         mark({action: '+', name: '\\Unread'});
     })
-    .bind('shift+u', function() {
+    .bind(['m r', 'm shift+u'], function() {
         mark({action: '-', name: '\\Unread'});
     })
-    .bind('i', function() {
+    .bind(['m i', 'm shift+a'], function() {
         mark({action: '+', name: '\\Inbox'});
     })
-    .bind('shift+i', function() {
+    .bind(['m a', 'm shift+i'], function() {
         mark({action: '-', name: '\\Inbox'});
+    })
+    .bind(['d r'], function() {
+        location.href = $('.email:last').data('replyUrl');
+    })
+    .bind(['d a', 'd shift+r'], function() {
+        location.href = $('.email:last').data('replyallUrl');
     })
     .bind('g l', function() {
         location.href = '/';
-    })
-    .bind('r r', function() {
-        location.href = $('.email:last').data('replyUrl');
-    })
-    .bind('r a', function() {
-        location.href = $('.email:last').data('replyallUrl');
     });
 
 $([
