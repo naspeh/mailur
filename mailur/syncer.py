@@ -304,10 +304,6 @@ def mark(env, data, new=False, inner=False):
         ('-', '\\Trash'): [('+', ['\\All', '\\Inbox'])],
         ('+', '\\Junk'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
         ('-', '\\Junk'): [('+', ['\\All', '\\Inbox'])],
-        ('-', '\\Inbox'): [
-            ('+', ['\\Trash']),
-            ('-', '\\All')
-        ],
         ('+', '\\Inbox'): [
             ('-', ['\\Trash', '\\Junk']),
             ('+', '\\All')
