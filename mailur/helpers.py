@@ -1,5 +1,5 @@
 import hashlib
-import socket
+import os
 import time
 from contextlib import ContextDecorator, contextmanager
 
@@ -8,16 +8,17 @@ from . import log
 
 @contextmanager
 def with_lock(target):
-    name = 'mailur:%s' % hashlib.md5(target.encode()).hexdigest()
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-    try:
-        sock.bind('\0' + name)
-    except IOError:
-        log.warn('Target %r is running already' % target)
+    path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
+    if os.path.exists(path):
+        log.warn('%r is locked. Remove file %r to run' % (target, path))
         raise SystemExit()
-
-    yield
-    sock.close()
+    else:
+        try:
+            with open(path, 'w') as f:
+                f.write(str(os.getpid()))
+            yield
+        finally:
+            os.remove(path)
 
 
 class Timer(ContextDecorator):
