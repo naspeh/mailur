@@ -5,10 +5,7 @@
     <input name="subj" value="{{subj}}" class="compose-subj" placeholder="Subject" type="text">
     <textarea name="body" class="compose-body">{{body}}</textarea>
     <button type="submit" name="send">Send</button>
-    <button type="submit" name="preview">Preview</button>
-    <input name="files" type="file" multiple>
-    {{#preview?}}
-    <div class="email-text">{{&html}}</div>
-    {{/preview?}}
+    <button type="button" class="compose-preview">Preview</button>
+    <input type="file" name="files" multiple>
+    <div class="email-html"></div>
 </form>
-

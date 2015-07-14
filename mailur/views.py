@@ -23,6 +23,7 @@ rules = [
     Rule('/search/<q>/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
     Rule('/compose/', endpoint='compose'),
+    Rule('/preview/', endpoint='preview'),
     Rule('/search-email/', endpoint='search_email')
 ]
 url_map = Map(rules)
@@ -435,7 +436,6 @@ def compose(env):
                 return value
 
         schema = v.parse({
-            'preview': v.Nullable(v.AdaptBy(lambda v: True), False),
             '+to': v.ChainOf(
                 v.AdaptBy(lambda v: [i.strip() for i in v.split(',')]),
                 [Email]
@@ -444,11 +444,6 @@ def compose(env):
             '+body': str
         })
         msg = schema.validate(env.request.form)
-        if msg['preview']:
-            msg['to'] = ','.join(msg['to'])
-            msg['preview?'] = {'html': markdown(msg['body'])}
-            return env.render_body('compose', msg)
-
         msg['in_reply_to'] = parent.get('msgid')
         msg['files'] = env.request.files.getlist('files')
         sendmail(env, env.session['email'], msg)
@@ -496,6 +491,14 @@ def sendmail(env, fr, msg):
     sendmail(fr, msg['to'], email.as_string())
 
 
+@login_required
+def preview(env):
+    schema = v.parse({'+body': str})
+    body = schema.validate(env.request.form)['body']
+    return markdown(body)
+
+
+@login_required
 def search_email(env):
     schema = v.parse({'q': str})
     args = schema.validate(env.request.args)

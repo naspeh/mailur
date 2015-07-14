@@ -137,6 +137,12 @@ box.selectize({
         });
     }
 });
+
+$('.compose-preview').click(function() {
+    $.post('/preview/', {'body': $('.compose-body').val()}, function(data) {
+        $('.email-html').html(data).show();
+    });
+});
 })();
 
 (function() {
