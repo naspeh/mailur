@@ -10,32 +10,31 @@ from . import log
 @contextmanager
 def with_lock(target):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
-    def minutes_elapsed():
-        return (time.time() - os.path.getctime(path)) / 60
 
-    def expired(timeout=10):
-        with open(path) as f:
-            pid = int(f.read())
-        os.path.getctime(path)
-        if minutes_elapsed() > timeout:
+    def is_locked(timeout=0.5):
+        if not os.path.exists(path):
+            return
+
+        minutes_out = (time.time() - os.path.getctime(path)) / 60
+        if minutes_out > timeout:
+            with open(path) as f:
+                pid = int(f.read())
             os.kill(pid, signal.SIGQUIT)
             os.remove(path)
-            return True
-        return False
-
-    if os.path.exists(path) and not expired():
+            return
         log.warn(
             '%r is locked (for %.2f minutes). Remove file %r to run',
-            target, minutes_elapsed(), path
+            target, minutes_out, path
         )
         raise SystemExit()
-    else:
-        try:
-            with open(path, 'w') as f:
-                f.write(str(os.getpid()))
-            yield
-        finally:
-            os.remove(path)
+
+    is_locked()
+    try:
+        with open(path, 'w') as f:
+            f.write(str(os.getpid()))
+        yield
+    finally:
+        os.remove(path)
 
 
 class Timer(ContextDecorator):
