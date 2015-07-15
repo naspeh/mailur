@@ -221,7 +221,7 @@ def thread(env, id):
         emails = ctx['emails?']['items']
 
         last = emails[-1]
-        parents = (p['html'] for p in msgs[:-1:-1])
+        parents = reversed([p['html'] for p in msgs[:-1]])
         last['body?'] = ctx_body(env, msgs[-1], parents, show=True)
 
         ctx['thread?'] = {
