@@ -17,10 +17,6 @@ def sh(cmd):
     return 0
 
 
-def ssh(host, cmd):
-    return sh('ssh %s "%s"' % (host, cmd.replace('"', '\\"')))
-
-
 def reqs(dev=False, clear=False):
     requirements = (
         'Werkzeug '
@@ -134,41 +130,42 @@ def deploy(env, opts):
         env=str(root / 'env'),
         attachments=str(root / 'attachments'),
         wheels=str(root / 'wheels'),
-        pgdata='/var/lib/postgres/data'
+        pgdata='/var/lib/postgres/data',
+        dotfiles='/home/dotfiles'
     )
     ctx = {
         'cwd': os.getcwd(),
         'path': path,
-        'host': 'root@localhost',
-        'port': 2200,
         'manage': '{[src]}/m'.format(path)
     }
-    ssh_ = ft.partial(ssh, '{host} -p{port}'.format(**ctx))
 
-    sh('''
-    r="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
-    ([ "true" == "$r" ] || (
-        docker run -d --net=host --name=mailur \
-            -v {cwd}:{path[src]} naspeh/web \
-        &&
-        docker exec -i mailur \
-            /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
-            < ~/.ssh/id_rsa.pub
-        sleep 5
-    ))
-    '''.format(**ctx))
+    if opts['docker']:
+        sh('''
+        r="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
+        ([ "true" == "$r" ] || (
+            docker run -d --net=host --name=mailur \
+                -v {cwd}:{path[src]} naspeh/web \
+            &&
+            docker exec -i mailur \
+                /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
+                < ~/.ssh/id_rsa.pub
+            sleep 5
+        ))
+        '''.format(**ctx))
+        opts['ssh'] = 'root@localhost -p2200'
 
+    cmd = []
     if opts['dot']:
-        ssh_('''
-        pacman --noconfirm -Sy python-requests
-        ([ -d {dest} ] || mkdir /home/dotfiles)
-        cd {dest} &&
+        cmd.append('''
+        pacman --noconfirm -Sy python-requests &&
+        ([ -d {path[dotfiles]} ] || mkdir {path[dotfiles]}) &&
+        cd {path[dotfiles]} &&
         ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
         git pull && ./manage.py init --boot vim zsh bin
-        '''.format(dest='/home/dotfiles'))
+        ''')
 
     if opts['pkgs']:
-        ssh_(
+        cmd.append(
             'pacman --noconfirm -Sy'
             '  python-virtualenv gcc libxslt'
             '  postgresql'
@@ -177,34 +174,33 @@ def deploy(env, opts):
             '  npm'
         )
 
-    ssh_('''
+    cmd.append('''
     rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
     cat /etc/fcrontab/* | fcrontab - &&
     ([ -d {path[src]} ] || (
-       ssh-keyscan github.com >> ~/.ssh/known_hosts &&
-       mkdir -p {path[src]} &&
-       git clone git@github.com:naspeh/mailur.git {path[src]}
+       git clone https://github.com/naspeh/mailur.git {path[src]}
     )) &&
+    cd {path[src]} && git pull;
     ([ -d {path[attachments]} ] || (
         mkdir {path[attachments]} &&
         chown http:http {path[attachments]}
     ))
-    '''.format(**ctx))
+    ''')
 
     if opts['env']:
-        ssh_('''
+        cmd.append('''
         ([ -d {path[env]} ] || (
             mkdir -p {path[env]} && virtualenv {path[env]}
         )) &&
         ([ -d {path[wheels]} ] || mkdir -p {path[wheels]}) &&
         {manage} reqs -c &&
         echo '../env' > .venv
-        '''.format(**ctx))
+        ''')
 
     if opts['db']:
-        ssh_('''
+        cmd.append('''
         ([ -f {path[pgdata]}/postgresql.conf ] ||
             sudo -upostgres \
                 initdb --locale en_US.UTF-8 -E UTF8 -D {path[pgdata]}
@@ -216,12 +212,18 @@ def deploy(env, opts):
         supervisorctl update && supervisorctl restart postgres &&
         psql -Upostgres -hlocalhost -c "CREATE DATABASE mailur_dev";
         {manage} db-init
-        '''.format(**ctx))
+        ''')
 
-    ssh_(
+    cmd.append(
         'supervisorctl update &&'
         'supervisorctl pid async web nginx | xargs kill -s HUP'
     )
+
+    cmd = '\n'.join(cmd).format(**ctx)
+    if opts['ssh']:
+        sh('ssh {} "{}"'.format(opts['ssh'], cmd.replace('"', '\\"')))
+    else:
+        sh(cmd)
 
 
 def get_app():
@@ -319,7 +321,9 @@ def get_full(argv):
         .format(env('path_theme') + os.path.sep)
     ))
     cmd('deploy')\
+        .arg('-s', '--ssh')\
         .arg('--dot', action='store_true')\
+        .arg('-c', '--docker', action='store_true')\
         .arg('-e', '--env', action='store_true')\
         .arg('-p', '--pkgs', action='store_true')\
         .arg('-d', '--db', action='store_true')\

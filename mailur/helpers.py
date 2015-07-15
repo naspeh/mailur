@@ -18,8 +18,9 @@ def with_lock(target):
         minutes_out = (time.time() - os.path.getctime(path)) / 60
         if minutes_out > timeout:
             with open(path) as f:
-                pid = int(f.read())
-            os.kill(pid, signal.SIGQUIT)
+                pid = f.read()
+            if pid:
+                os.kill(int(pid), signal.SIGQUIT)
             os.remove(path)
             return
         log.warn(
