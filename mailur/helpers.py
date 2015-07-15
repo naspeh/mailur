@@ -1,6 +1,7 @@
 import hashlib
 import os
 import time
+import signal
 from contextlib import ContextDecorator, contextmanager
 
 from . import log
@@ -9,8 +10,24 @@ from . import log
 @contextmanager
 def with_lock(target):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
-    if os.path.exists(path):
-        log.warn('%r is locked. Remove file %r to run' % (target, path))
+    def minutes_elapsed():
+        return (time.time() - os.path.getctime(path)) / 60
+
+    def expired(timeout=10):
+        with open(path) as f:
+            pid = int(f.read())
+        os.path.getctime(path)
+        if minutes_elapsed() > timeout:
+            os.kill(pid, signal.SIGQUIT)
+            os.remove(path)
+            return True
+        return False
+
+    if os.path.exists(path) and not expired():
+        log.warn(
+            '%r is locked (for %.2f minutes). Remove file %r to run',
+            target, minutes_elapsed(), path
+        )
         raise SystemExit()
     else:
         try:
