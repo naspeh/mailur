@@ -1,3 +1,4 @@
+import re
 from collections import OrderedDict
 from contextlib import contextmanager
 from functools import wraps
@@ -463,3 +464,36 @@ def update_thrids(env):
     WHERE NOT (labels && %s::varchar[]) AND thrid != id AND labels != '{}'
     RETURNING id
     ''', [list(FOLDERS)])
+
+    failed_recipients(env)
+
+
+def failed_recipients(env):
+    emails = env.sql('''
+    SELECT id, text FROM emails
+    WHERE fr[1] LIKE '%<mailer-daemon@googlemail.com>'
+    ORDER BY time
+    ''')
+    ids = []
+    for msg in emails:
+        msgid = re.search('(?m)^Message-ID:(.*)$', msg['text'])
+        if not msgid:
+            continue
+
+        msgid = msgid.group(1).strip()
+        thrid = env.sql('''
+        SELECT thrid FROM emails WHERE msgid=%s
+        ''', [msgid]).fetchall()
+        if not thrid:
+            continue
+
+        thrid, id = thrid[0][0], msg['id']
+        i = env.sql('''
+        UPDATE emails SET thrid=%s WHERE id=%s OR thrid=%s RETURNING id
+        ''', [thrid, id, id])
+        ids += [r['id'] for r in i]
+
+    if ids:
+        env.db.commit()
+        notify(ids)
+        log.info('  - X-Failed-Recipients: %s', ids)
