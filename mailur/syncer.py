@@ -56,9 +56,6 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
             fetch_headers(env, email, imap, uids)
             fetch_labels(env, imap, uids, label)
             sync_marks(env, imap, uids)
-    # Refresh search index
-    env.sql('REFRESH MATERIALIZED VIEW emails_search')
-    env.db.commit()
     return labels_
 
 
@@ -196,6 +193,14 @@ def fetch_bodies(env, imap, map_uids):
             run(update, env, items)
 
     log.info('  * Done %s bodies', sum(results))
+    if results:
+        refresh_search()
+
+
+def refresh_search(env):
+    log.info('Refresh search index')
+    env.sql('REFRESH MATERIALIZED VIEW emails_search')
+    env.db.commit()
 
 
 def fetch_labels(env, imap, map_uids, folder):
@@ -465,10 +470,10 @@ def update_thrids(env):
     RETURNING id
     ''', [list(FOLDERS)])
 
-    failed_recipients(env)
+    failed_delivery(env)
 
 
-def failed_recipients(env):
+def failed_delivery(env):
     emails = env.sql('''
     SELECT id, text FROM emails
     WHERE fr[1] LIKE '%<mailer-daemon@googlemail.com>'
@@ -496,4 +501,4 @@ def failed_recipients(env):
     if ids:
         env.db.commit()
         notify(ids)
-        log.info('  - X-Failed-Recipients: %s', ids)
+        log.info('  - merge threads by failed delivery: %s', ids)
