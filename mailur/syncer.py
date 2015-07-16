@@ -492,10 +492,11 @@ def failed_delivery(env):
         if not thrid:
             continue
 
-        thrid, id = thrid[0][0], msg['id']
         i = env.sql('''
-        UPDATE emails SET thrid=%s WHERE id=%s OR thrid=%s RETURNING id
-        ''', [thrid, id, id])
+        UPDATE emails SET thrid=%(thrid)s
+        WHERE (id=%(id)s OR thrid=%(id)s) AND thrid!=%(thrid)s
+        RETURNING id
+        ''', {'thrid': thrid[0][0], 'id': msg['id']})
         ids += [r['id'] for r in i]
 
     if ids:

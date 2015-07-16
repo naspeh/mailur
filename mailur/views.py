@@ -225,7 +225,7 @@ def thread(env, id):
         last['body?'] = ctx_body(env, msgs[-1], parents, show=True)
 
         ctx['thread?'] = {
-            'subj': emails[0]['subj'],
+            'subj': f.humanize_subj(emails[0]['subj']),
             'labels?': ctx_labels(env, labels),
             'all_labels': json.dumps((ctx_all_labels(env) or {}).get('items'))
         }

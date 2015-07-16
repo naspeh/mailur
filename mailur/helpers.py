@@ -19,9 +19,12 @@ def with_lock(target):
         if minutes_out > timeout:
             with open(path) as f:
                 pid = f.read()
-            if pid:
+            try:
                 os.kill(int(pid), signal.SIGQUIT)
-            os.remove(path)
+            except:
+                pass
+            finally:
+                os.remove(path)
             return
         log.warn(
             '%r is locked (for %.2f minutes). Remove file %r to run',
