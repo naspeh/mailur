@@ -244,7 +244,9 @@ def emails(env, page):
     })
     args = schema.validate(env.request.args)
     if args.get('in'):
-        where = env.mogrify('%s = ANY(labels)', [args['in']])
+        l = args['in']
+        l = [l] if l in ['\\Trash', '\\Junk'] else [l, '\\All']
+        where = env.mogrify('%s::varchar[] <@ labels', [l])
     elif args.get('subj'):
         where = env.mogrify('%s = subj', [args['subj']])
     elif args.get('person'):
