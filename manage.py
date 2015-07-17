@@ -137,7 +137,8 @@ def deploy(env, opts):
     ctx = {
         'cwd': os.getcwd(),
         'path': path,
-        'manage': '{[src]}/m'.format(path)
+        'manage': '{[src]}/m'.format(path),
+        'dbname': env('pg_dbname')
     }
 
     if opts['docker']:
@@ -211,7 +212,7 @@ def deploy(env, opts):
             chown postgres:postgres /run/postgresql
         )) &&
         supervisorctl update && supervisorctl restart postgres &&
-        psql -Upostgres -hlocalhost -c "CREATE DATABASE mailur_dev";
+        psql -Upostgres -hlocalhost -c "CREATE DATABASE {dbname}";
         {manage} db-init
         ''')
 
