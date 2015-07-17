@@ -1,2 +1,2 @@
 ### sync gmail
-@runas(http) 1 /var/local/mailur/src/m sync naspeh@gmail.com -t full
+@runas(http),exesev(true) 1 /var/local/mailur/src/m sync naspeh@gmail.com -t full

@@ -30,6 +30,7 @@ def reqs(dev=False, clear=False):
         'pystache '
         'requests '
         'toronado '
+        'unidecode '
         'valideer '
     )
     requirements += (

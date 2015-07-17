@@ -11,7 +11,7 @@ from . import log
 def with_lock(target):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
 
-    def is_locked(timeout=0.5):
+    def is_locked(timeout=30):
         if not os.path.exists(path):
             return
 

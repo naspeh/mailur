@@ -9,9 +9,15 @@ from html import escape as html_escape
 import chardet
 from lxml import html as lhtml
 from lxml.html.clean import Cleaner
-from werkzeug.utils import secure_filename
 
 from . import log
+
+
+def slugify(value):
+    from werkzeug.utils import secure_filename
+    from unidecode import unidecode
+
+    return secure_filename(unidecode(value).lower())
 
 
 def get_charset(name):
@@ -149,8 +155,8 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
     content.update(attachments=[], embedded={})
     for index, item in enumerate(content['files']):
         if item['payload']:
-            name = secure_filename(item['filename'] or item['id'])
-            url = '/'.join([secure_filename(msg_id), str(index), name])
+            name = slugify(item['filename'] or item['id'])
+            url = '/'.join([slugify(msg_id), str(index), name])
             if item['id'] and item['maintype'] == 'image':
                 content['embedded'][item['id']] = url
             elif item['filename']:

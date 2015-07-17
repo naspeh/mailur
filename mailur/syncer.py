@@ -81,6 +81,11 @@ def get_gids(env, gids, where=None):
     return [r[0] for r in env.sql(sql, {'gids': list(gids)})]
 
 
+def get_ids(env, msgids):
+    sql = 'SELECT msgid, id FROM emails WHERE msgid = ANY(%(msgids)s)'
+    return dict(r for r in env.sql(sql, {'msgids': list(msgids)}))
+
+
 def get_parsed(env, data, msgid=None):
     def format_addr(v):
         if not v[0]:
@@ -178,9 +183,11 @@ def fetch_bodies(env, imap, map_uids):
     results = []
 
     def update(env, items):
+        map_ids = get_ids(env, [v[1] for v in items])
+
         ids = []
         for data, msgid in items:
-            data_ = dict(get_parsed(env, data, msgid), raw=data)
+            data_ = dict(get_parsed(env, data, map_ids[msgid]), raw=data)
             ids += env.emails.update(data_, 'msgid=%s', [msgid])
         env.db.commit()
         notify(ids)
@@ -189,12 +196,12 @@ def fetch_bodies(env, imap, map_uids):
     q = 'BODY.PEEK[]'
     with async_runner(env('async_pool')) as run:
         for data in imap.fetch_batch(uids, q, 'add bodies'):
-            items = ((row[q], map_uids[uid]) for uid, row in data)
+            items = [(row[q], map_uids[uid]) for uid, row in data]
             run(update, env, items)
 
     log.info('  * Done %s bodies', sum(results))
     if results:
-        refresh_search()
+        refresh_search(env)
 
 
 def refresh_search(env):
@@ -364,7 +371,8 @@ def sync_marks(env, imap, map_uids):
         key = t['action'] + key
         key, value = store.get((t['action'], t['name']), (key, value))
         value = [value] if isinstance(value, str) else value
-        value = ' '.join([imap_utf7.decode(v) for v in value])
+        value = (imap_utf7.decode(v) for v in value)
+        value = ' '.join('"%s"' % v.replace('"', '\\"') for v in value)
         log.info('  - store (%s %s) for %s ones', key, value, len(uids))
         try:
             imap.uid('STORE', ','.join(uids), key, value)
