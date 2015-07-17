@@ -1,17 +1,18 @@
-{{#thread?}}
+{{#header?}}
 <div class="thread-subj">
     <h3>{{subj}}</h3>
-    {{#labels?}}
     <div class="email-labels-edit">
+    {{#labels}}
     <input
-        value="{{#items}}{{name}},{{/items}}"
-        data-all="{{all_labels}}"
+        class="email-labels-input"
+        data-items="{{items_json}}"
+        data-all="{{all_json}}"
         data-base-url="{{base_url}}"
     >
+    {{/labels}}
     </div>
-    {{/labels?}}
 </div>
-{{/thread?}}
+{{/header?}}
 {{#emails?}}
 <ul class="emails {{emails_class}}" data-last="{{last}}">
 {{#items}}
@@ -24,6 +25,7 @@
     id="{{domid}}"
     data-id="{{id}}"
     data-thrid="{{thrid}}"
+    data-labels="{{#labels?}}{{names_json}}{{/labels?}}"
     data-hash="{{hash}}"
     data-body-url="{{body_url}}"
     data-reply-url="{{reply_url}}"
@@ -35,13 +37,13 @@
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
         <li class="email-pic email-info" style="background-image:url({{gravatar}})"></li>
         <li class="email-from email-info" title="{{from}}">{{from_short}}</li>
+        {{#labels?}}
+        <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
+        {{/labels?}}
         {{#count}}<li class="email-count email-info">{{count}}</li>{{/count}}
         <li class="email-subj email-info{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
             <a href="{{thread_url}}">{{subj_human}}</a>
         </li>
-        {{#labels?}}
-        <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
-        {{/labels?}}
         <li class="email-preview email-info">{{preview}}</li>
         <li class="email-expander email-info">&nbsp;</li>
         <li class="email-time" title="{{time}}">{{time_human}}</li>

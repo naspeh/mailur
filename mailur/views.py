@@ -161,13 +161,19 @@ def ctx_labels(env, labels, ignore=None):
         [r'(?:\\\\)*(?![\\]).*'] +
         [re.escape(i) for i in ('\\Inbox', '\\Junk', '\\Trash')]
     ))
+    labels = [
+        l for l in sorted(set(labels))
+        if l not in ignore and pattern.match(l)
+    ]
+    items = [
+        {'name': l, 'url': env.url_for('emails', {'in': l})}
+        for l in labels
+    ]
     return {
-        'items': [
-            {'name': l, 'url': env.url_for('emails', {'in': l})}
-            for l in sorted(set(labels))
-            if l not in ignore and pattern.match(l)
-        ],
-        'base_url': env.url_for('emails', {'in': ''})
+        'items': items,
+        'items_json': json.dumps(items),
+        'names': labels,
+        'names_json': json.dumps(labels)
     }
 
 
@@ -175,6 +181,17 @@ def ctx_all_labels(env):
     i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
     items = sorted(r[0] for r in i.fetchall())
     return ctx_labels(env, items)
+
+
+def ctx_header(env, subj, labels=None):
+    return {
+        'subj': subj,
+        'labels': {
+            'items_json': json.dumps(list(labels or [])),
+            'all_json': ctx_all_labels(env)['items_json'],
+            'base_url': env.url_for('emails', {'in': ''})
+        }
+    }
 
 
 def ctx_body(env, msg, msgs, show=False):
@@ -219,16 +236,13 @@ def thread(env, id):
     ctx = ctx_emails(env, emails())
     if ctx['emails?']:
         emails = ctx['emails?']['items']
+        subj = f.humanize_subj(emails[0]['subj'])
 
         last = emails[-1]
         parents = reversed([p['html'] for p in msgs[:-1]])
         last['body?'] = ctx_body(env, msgs[-1], parents, show=True)
 
-        ctx['thread?'] = {
-            'subj': f.humanize_subj(emails[0]['subj']),
-            'labels?': ctx_labels(env, labels),
-            'all_labels': json.dumps((ctx_all_labels(env) or {}).get('items'))
-        }
+        ctx['header?'] = ctx_header(env, subj, labels)
         ctx['emails_class'] = ctx['emails_class'] + ' thread'
     return ctx
 
@@ -245,11 +259,14 @@ def emails(env, page):
     args = schema.validate(env.request.args)
     if args.get('in'):
         l = args['in']
+        subj = l
         l = [l] if l in ['\\Trash', '\\Junk'] else [l, '\\All']
         where = env.mogrify('%s::varchar[] <@ labels', [l])
     elif args.get('subj'):
+        subj = 'Filter by subj %r' % args['subj']
         where = env.mogrify('%s = subj', [args['subj']])
     elif args.get('person'):
+        subj = 'Filter by person %r' % args['person']
         where = env.mogrify(
             '(fr[1] LIKE %(fr)s OR "to"[1] LIKE %(fr)s)',
             {'fr': '%<{}>'.format(args['person'])}
@@ -318,6 +335,7 @@ def emails(env, page):
             last=page['last'] or ctx['emails?']['items'][0]['time_stamp'],
             page=page['next']
         ))}
+    ctx['header?'] = ctx_header(env, subj)
     return ctx
 
 

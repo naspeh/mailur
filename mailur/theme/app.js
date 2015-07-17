@@ -130,6 +130,7 @@ box.selectize({
     hideSelected: true,
     openOnFocus: false,
     closeAfterSelect: true,
+    copyClassesToDropdown: true,
     load: function(q, callback) {
         if (!q.length) return callback();
         send('/search-email/?q=' + encodeURIComponent(q), null, function(res) {
@@ -146,11 +147,18 @@ $('.compose-preview').click(function() {
 })();
 
 (function() {
-var box = $('.email-labels-edit input'),
-    url = box.data('baseUrl');
+var box = $('.email-labels-input'),
+    url = box.data('baseUrl'),
+    active = false,
+    selectize;
 
-box.selectize({
+if ($('.thread').length) {
+    active = true;
+}
+
+selectize = box.selectize({
     plugins: ['remove_button'],
+    items: box.data('items'),
     options: box.data('all'),
     delimiter: ',',
     persist: true,
@@ -160,6 +168,7 @@ box.selectize({
     hideSelected: true,
     openOnFocus: false,
     closeAfterSelect: true,
+    copyClassesToDropdown: true,
     render: {
         item: function(i, e) {
             return (
@@ -177,11 +186,28 @@ box.selectize({
         };
     },
     onItemAdd: function(value) {
+        if (!active) return;
         mark({action: '+', name: value});
     },
     onItemRemove: function(value) {
+        if (!active) return;
         mark({action: '-', name: value});
     }
+})[0].selectize;
+
+$('.emails').on('change', '.email-pick', function() {
+    var labels = [];
+
+    $('.email-pick input:checked').each(function() {
+        var email = $(this).parents('.email');
+        $.each(email.data('labels') || [], function(index, value) {
+            if ($.inArray(value, labels) == -1) {
+                labels.push(value);
+            }
+        });
+    });
+    box.val(labels.join());
+    selectize.setValue(labels);
 });
 })();
 function mark(params) {
