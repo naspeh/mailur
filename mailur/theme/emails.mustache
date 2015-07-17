@@ -1,16 +1,18 @@
 {{#header?}}
-<div class="thread-subj">
+<div class="header">
     <h3>{{subj}}</h3>
-    <div class="email-labels-edit">
     {{#labels}}
-    <input
-        class="email-labels-input"
-        data-items="{{items_json}}"
-        data-all="{{all_json}}"
-        data-base-url="{{base_url}}"
-    >
-    {{/labels}}
+    <div class="email-labels-edit">
+        <input
+            class="email-labels-input"
+            data-items="{{items_json}}"
+            data-all="{{all_json}}"
+            data-base-url="{{base_url}}"
+        >
+        <button class="email-labels-ok">Ok</button>
+        <button class="email-labels-cancel">Cancel</button>
     </div>
+    {{/labels}}
 </div>
 {{/header?}}
 {{#emails?}}

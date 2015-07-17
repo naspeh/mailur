@@ -211,9 +211,8 @@ body {
         white-space: pre-wrap;
     }
 }
-.thread-subj {
+.header {
     margin: 10px;
-    line-height: 25px;
 
     h3 {
         display: inline-block;
@@ -223,14 +222,17 @@ body {
         padding: 0;
     }
     .email-labels-edit {
+        display: inline-block;
+
+        button {
+            line-height: 15px;
+        }
+    }
+    .email-labels-input {
         vertical-align: bottom;
         display: inline-block;
-        height: 25px;
         min-width: 150px;
-
-        .selectize-input {
-            padding-right: 30px;
-        }
+        margin-bottom: -5px;
     }
 }
 .thread {

@@ -148,15 +148,9 @@ $('.compose-preview').click(function() {
 
 (function() {
 var box = $('.email-labels-input'),
-    url = box.data('baseUrl'),
-    active = false,
-    selectize;
+    url = box.data('baseUrl');
 
-if ($('.thread').length) {
-    active = true;
-}
-
-selectize = box.selectize({
+box.selectize({
     plugins: ['remove_button'],
     items: box.data('items'),
     options: box.data('all'),
@@ -184,21 +178,13 @@ selectize = box.selectize({
             name: input,
             url: url + input
         };
-    },
-    onItemAdd: function(value) {
-        if (!active) return;
-        mark({action: '+', name: value});
-    },
-    onItemRemove: function(value) {
-        if (!active) return;
-        mark({action: '-', name: value});
     }
-})[0].selectize;
+});
 
-$('.emails').on('change', '.email-pick', function() {
+var getLabels = function() {
     var labels = [];
 
-    $('.email-pick input:checked').each(function() {
+    $('.email-pick input:checked, .thread .email-pick input').each(function() {
         var email = $(this).parents('.email');
         $.each(email.data('labels') || [], function(index, value) {
             if ($.inArray(value, labels) == -1) {
@@ -206,8 +192,23 @@ $('.emails').on('change', '.email-pick', function() {
             }
         });
     });
-    box.val(labels.join());
-    selectize.setValue(labels);
+    box.parents('.email-labels-edit')
+        .toggle($('.emails.thread').length !== 0 || labels.length !== 0);
+    return labels;
+};
+var selectize = box[0].selectize;
+selectize.setValue(getLabels());
+
+$('.emails').on('change', '.email-pick', function() {
+    selectize.setValue(getLabels());
+});
+
+$('.email-labels-ok').on('click', function() {
+    mark({action: '-', name: getLabels()});
+    mark({action: '+', name: selectize.getValue().split(',')});
+});
+$('.email-labels-cancel').on('click', function() {
+    selectize.setValue(getLabels());
 });
 })();
 function mark(params) {
