@@ -8,10 +8,10 @@ from . import log
 
 
 @contextmanager
-def with_lock(target):
+def with_lock(target, timeout=10):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
 
-    def is_locked(timeout=30):
+    def is_locked():
         if not os.path.exists(path):
             return
 

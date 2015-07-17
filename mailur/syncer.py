@@ -21,7 +21,7 @@ def lock_sync_gmail(func):
     def inner(*args, **kwargs):
         email = kwargs.get('email') or args[1]
 
-        with with_lock('%s:%s' % (func.__name__, email)):
+        with with_lock('%s:%s' % (func.__name__, email), timeout=30):
             return Timer(func.__name__)(func)(*args, **kwargs)
     return inner
 
