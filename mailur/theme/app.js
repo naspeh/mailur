@@ -183,8 +183,9 @@ box.selectize({
 
 var getLabels = function() {
     var labels = [];
+        checked = $('.email-pick input:checked, .thread .email-pick input');
 
-    $('.email-pick input:checked, .thread .email-pick input').each(function() {
+    checked.each(function() {
         var email = $(this).parents('.email');
         $.each(email.data('labels') || [], function(index, value) {
             if ($.inArray(value, labels) == -1) {
@@ -192,8 +193,7 @@ var getLabels = function() {
             }
         });
     });
-    box.parents('.email-labels-edit')
-        .toggle($('.emails.thread').length !== 0 || labels.length !== 0);
+    box.parents('.email-labels-edit').toggle(checked.length !== 0);
     return labels;
 };
 var selectize = box[0].selectize;
