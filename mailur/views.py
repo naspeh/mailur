@@ -99,11 +99,20 @@ def adapt_fmt(tpl):
 @login_required
 @adapt_fmt('index')
 def index(env):
-    return {'labels?': ctx_all_labels(env)}
+    i = env.sql('''
+    WITH labels(name) AS (SELECT DISTINCT unnest(labels) FROM emails)
+    SELECT l.name, count(e.id) AS unread FROM labels l
+    LEFT JOIN emails e ON l.name = ANY(labels) AND '\\Unread' = ANY(labels)
+    GROUP BY l.name
+    ORDER BY l.name
+    ''')
+    labels = (dict(l, url=env.url_for('emails', {'in': l['name']})) for l in i)
+    labels = sorted(labels, key=lambda v: v['name'])
+    return {'labels': labels}
 
 
 def init(env):
-    schema = v.parse({'+offset': v.Range(v.AdaptTo(int), min_value=0)})
+    schema = v.parse({'+offset': v.AdaptTo(int)})
     args = schema.validate(env.request.args)
     env.session['tz_offset'] = args['offset']
     return 'OK'

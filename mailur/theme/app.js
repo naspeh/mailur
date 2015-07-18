@@ -228,6 +228,9 @@ function mark(params) {
     }
     send('/mark/', params);
 }
+$('.emails.thread').each(function() {
+    mark({action: '-', name: '\\Unread'});
+});
 Mousetrap
     .bind('* a', function() {
         $('.email .email-pick input').prop('checked', true);

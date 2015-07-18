@@ -1,7 +1,8 @@
-{{#labels?}}
 <ul>
-{{#items}}
-<li><a href="{{url}}">{{name}}</a>
-{{/items}}
+{{#labels}}
+<li><a href="{{url}}">
+    {{^unread}}{{name}}{{/unread}}
+    {{#unread}}<b>{{name}} ({{unread}}</b>){{/unread}}
+</a></li>
+{{/labels}}
 </ul>
-{{/labels?}}
