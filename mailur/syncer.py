@@ -1,7 +1,6 @@
 import re
 from collections import OrderedDict
 from contextlib import contextmanager
-from functools import wraps
 from multiprocessing.dummy import Pool
 from uuid import uuid5, NAMESPACE_URL
 
@@ -16,17 +15,14 @@ from .imap import Client
 FOLDERS = ('\\All', '\\Junk', '\\Trash')
 
 
-def lock_sync_gmail(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        email = kwargs.get('email') or args[1]
+def locked_sync_gmail(*args, **kwargs):
+    email = kwargs.get('email') or args[1]
+    func = sync_gmail
 
-        with with_lock('%s:%s' % (func.__name__, email), timeout=30):
-            return Timer(func.__name__)(func)(*args, **kwargs)
-    return inner
+    with with_lock('%s:%s' % (func.__name__, email), timeout=30):
+        return Timer(func.__name__)(func)(*args, **kwargs)
 
 
-@lock_sync_gmail
 def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
     imap = Client(env, email)
     folders = imap.folders()
@@ -54,7 +50,7 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
             fetch_bodies(env, imap, uids)
         else:
             fetch_headers(env, email, imap, uids)
-            fetch_labels(env, imap, uids, label)
+            fetch_labels(env, imap, uids, label, only_labels == FOLDERS)
             sync_marks(env, imap, uids)
     return labels_
 
@@ -210,11 +206,14 @@ def refresh_search(env):
     env.db.commit()
 
 
-def fetch_labels(env, imap, map_uids, folder):
+def fetch_labels(env, imap, map_uids, folder, clean=True):
     updated = []
+    folder = '\\Inbox' if folder == 'INBOX' else folder
 
     gids = get_gids(env, map_uids.values())
     updated += update_label(env, gids, folder)
+    if folder not in FOLDERS:
+        updated += update_label(env, gids, '\\All', folder)
 
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if not uids:
@@ -240,6 +239,15 @@ def fetch_labels(env, imap, map_uids, folder):
         gids = [map_uids[uid] for uid, row in data if func(row, *args)]
         updated += update_label(env, gids, label, folder)
 
+    if clean:
+        updated += clean_emails(env, glabels, folder)
+    updated += process_tasks(env)
+
+    env.db.commit()
+    notify(updated)
+
+
+def clean_emails(env, labels, folder):
     # Sorted array intersection
     new_labels = env.mogrify('''
     SELECT ARRAY(
@@ -250,7 +258,7 @@ def fetch_labels(env, imap, map_uids, folder):
       ) as dt(i)
       ORDER BY 1
     )
-    ''', [list(glabels | {'\\Answered', '\\Unread', folder})])
+    ''', [list(labels | {'\\Answered', '\\Unread', folder})])
     sql = '''
     UPDATE emails SET labels=({0})
     WHERE (SELECT ARRAY(SELECT unnest(labels) ORDER BY 1)) != ({0})
@@ -258,13 +266,8 @@ def fetch_labels(env, imap, map_uids, folder):
     RETURNING id
     '''.format(new_labels)
     i = env.sql(sql, [folder])
-    updated += tuple(r[0] for r in i)
     log.info('  * Clean %d emails', i.rowcount)
-
-    updated += process_tasks(env)
-
-    env.db.commit()
-    notify(updated)
+    return tuple(r[0] for r in i)
 
 
 def process_tasks(env):

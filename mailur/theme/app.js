@@ -82,6 +82,9 @@ function updateEmails(data, thread) {
 }
 
 connect();
+if ($('.thread .email-unread').length !== 0) {
+    mark({action: '-', name: '\\Unread'});
+}
 $('.emails-byid').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
@@ -122,6 +125,7 @@ $('.emails-byid').on('click', '.email-text a', function() {
 (function() {
 var box = $('.compose-to');
 
+if (box.length === 0) return;
 box.selectize({
     plugins: ['remove_button', 'restore_on_backspace'],
     delimiter: ',',
@@ -150,6 +154,7 @@ $('.compose-preview').click(function() {
 var box = $('.email-labels-input'),
     url = box.data('baseUrl');
 
+if (box.length === 0) return;
 box.selectize({
     plugins: ['remove_button'],
     items: box.data('items'),
@@ -228,9 +233,6 @@ function mark(params) {
     }
     send('/mark/', params);
 }
-$('.emails.thread').each(function() {
-    mark({action: '-', name: '\\Unread'});
-});
 Mousetrap
     .bind('* a', function() {
         $('.email .email-pick input').prop('checked', true);

@@ -104,7 +104,6 @@ def index(env):
     SELECT l.name, count(e.id) AS unread FROM labels l
     LEFT JOIN emails e ON l.name = ANY(labels) AND '\\Unread' = ANY(labels)
     GROUP BY l.name
-    ORDER BY l.name
     ''')
     labels = (dict(l, url=env.url_for('emails', {'in': l['name']})) for l in i)
     labels = sorted(labels, key=lambda v: v['name'])

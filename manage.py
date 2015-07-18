@@ -56,7 +56,7 @@ def reqs(dev=False, clear=False):
 def sync(env, email, target=None, **kwargs):
     from mailur import syncer
 
-    func = ft.partial(syncer.sync_gmail, env, email, **kwargs)
+    func = ft.partial(syncer.locked_sync_gmail, env, email, **kwargs)
     if target in (None, 'fast'):
         return func()
     elif target == 'bodies':
