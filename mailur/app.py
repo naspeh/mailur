@@ -3,7 +3,6 @@ import os
 from urllib.parse import urlencode
 
 from werkzeug.contrib.securecookie import SecureCookie
-from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
@@ -31,7 +30,13 @@ def create_app(views):
         return response
 
     if env('debug'):
-        app = DebuggedApplication(app)
+        from werkzeug.debug import DebuggedApplication
+        from werkzeug.wsgi import SharedDataMiddleware
+
+        app = SharedDataMiddleware(DebuggedApplication(app), {
+            '/attachments': env('path_attachments'),
+            '/theme': env('path_theme'),
+        })
     return app
 
 

@@ -72,44 +72,29 @@ def sync(env, email, target=None, **kwargs):
 sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
-def run(env, no_reloader, only_wsgi):
-    import signal
-    import sys
+def grun(name, extra):
+    extra = '--timeout 300 --graceful-timeout=0 %s' % (extra or '')
+    sh(
+        'PYTHONPATH=.:./deploy/ '
+        'gunicorn app:{name} -c deploy/{name}.conf.py {extra}'
+        .format(name=name, extra=extra)
+    )
+
+
+def run(env):
     from multiprocessing import Process
-    from werkzeug.serving import run_simple
-    from werkzeug.wsgi import SharedDataMiddleware
-    from mailur import app, async
 
-    def run_wsgi():
-        wsgi_app = SharedDataMiddleware(app.create_app(env.conf), {
-            '/attachments': env('path_attachments'),
-            '/theme': env('path_theme'),
-        })
-        run_simple('0.0.0.0', 5000, wsgi_app, use_debugger=True)
-
-    if only_wsgi:
-        return run_wsgi()
+    def process(name):
+        return Process(target=grun, args=[name, '--pid=/tmp/g-%s.pid' % name])
 
     main(['static'])
-    ps = [
-        Process(target=run_wsgi),
-        Process(target=async.run)
-    ]
-    for p in ps:
+    for p in [process('web'), process('async')]:
         p.start()
-    pids = ' '.join(str(p.pid) for p in ps)
-    log.info('Pids: %s', pids)
 
-    if no_reloader:
-        def close(signal, frame):
-            for p in ps:
-                p.terminate()
-        signal.signal(signal.SIGINT, close)
-    else:
-        sh(
-            'while inotifywait -e modify -r .;do kill {pids};{cmd};done'
-            .format(pids=pids, cmd=' '.join(sys.argv))
-        )
+    sh(
+        'while inotifywait -e modify -r .;'
+        '   do ./manage.py static;cat /tmp/g-*.pid | xargs kill -s HUP;done'
+    )
 
 
 def shell(env):
@@ -228,12 +213,6 @@ def deploy(env, opts):
         sh(cmd)
 
 
-def get_app():
-    from mailur import Env, app
-
-    return app.create_app(Env().conf)
-
-
 def get_base(argv):
     parser = argparse.ArgumentParser('mail')
     cmds = parser.add_subparsers(help='commands')
@@ -253,7 +232,7 @@ def get_base(argv):
 
 
 def get_full(argv):
-    from mailur import Env, db, async
+    from mailur import Env, db
 
     env = Env()
 
@@ -268,15 +247,9 @@ def get_full(argv):
         .arg('-r', '--reset', action='store_true')\
         .exe(lambda a: db.init(env, a.reset))
 
-    cmd('run')\
-        .arg('-w', '--only-wsgi', action='store_true')\
-        .arg('--no-reloader', action='store_true')\
-        .exe(lambda a: run(env, a.no_reloader, only_wsgi=a.only_wsgi))
-
-    cmd('async')\
-        .arg('-H', '--host', default='127.0.0.1')\
-        .arg('-P', '--port', type=int, default=9000)\
-        .exe(lambda a: async.run(a.host, a.port))
+    cmd('run').exe(lambda a: run(env))
+    cmd('web', add_help=False).exe(lambda a: grun('web', ' '.join(a)))
+    cmd('async', add_help=False).exe(lambda a: grun('async', ' '.join(a)))
 
     cmd('shell')\
         .exe(lambda a: shell(env))
@@ -346,7 +319,7 @@ def main(argv=None):
         parser, _ = get_base(argv)
 
     args, extra = parser.parse_known_args(argv)
-    if getattr(args, 'cmd', None) in ('test', 'gunicorn'):
+    if getattr(args, 'cmd', None) in ('test', 'async', 'web'):
         args.exe(extra)
         return
 
