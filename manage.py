@@ -73,7 +73,7 @@ sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
 def grun(name, extra):
-    extra = '--timeout 300 --graceful-timeout=0 %s' % (extra or '')
+    extra = '--timeout=300 --graceful-timeout=0 %s' % (extra or '')
     sh(
         'PYTHONPATH=.:./deploy/ '
         'gunicorn app:{name} -c deploy/{name}.conf.py {extra}'
@@ -247,12 +247,10 @@ def get_full(argv):
         .arg('-r', '--reset', action='store_true')\
         .exe(lambda a: db.init(env, a.reset))
 
+    cmd('shell').exe(lambda a: shell(env))
     cmd('run').exe(lambda a: run(env))
     cmd('web', add_help=False).exe(lambda a: grun('web', ' '.join(a)))
     cmd('async', add_help=False).exe(lambda a: grun('async', ' '.join(a)))
-
-    cmd('shell')\
-        .exe(lambda a: shell(env))
 
     cmd('test', add_help=False).exe(lambda a: (
         sh('py.test --ignore=node_modules --confcutdir=tests %s' % ' '.join(a))

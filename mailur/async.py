@@ -1,7 +1,8 @@
 import asyncio
 import json
 
-from aiohttp import web, request as http
+import aiohttp
+import aiohttp.web as web
 
 from . import log
 
@@ -12,7 +13,6 @@ def wshandler(request):
     ws.start(request)
 
     request.app['sockets'].append(ws)
-    cookies = request.cookies
 
     while True:
         msg = yield from ws.receive()
@@ -22,15 +22,14 @@ def wshandler(request):
             payload = data.get('payload')
             if payload:
                 payload = json.dumps(payload)
-            resp = yield from http(
+            resp = yield from aiohttp.request(
                 'POST' if payload else 'GET',
                 data['url'],
                 data=payload,
-                cookies=cookies.items()
+                cookies=request.cookies.items()
             )
             log.debug('%s %s', resp.status, msg.data)
             if resp.status == 200:
-                cookies = dict(cookies, **resp.cookies)
                 resp = (yield from resp.read()).decode()
                 ws.send_str(json.dumps({'uid': data['uid'], 'payload': resp}))
         elif msg.tp == web.MsgType.close:
@@ -53,38 +52,9 @@ def notify(request):
     return web.Response(body=b'OK')
 
 
-def create_app(loop=None):
-    app = web.Application(loop=loop)
+def create_app():
+    app = web.Application()
     app['sockets'] = []
     app.router.add_route('GET', '/', wshandler)
     app.router.add_route('POST', '/notify/', notify)
     return app
-
-
-@asyncio.coroutine
-def init(loop, host, port):
-    app = create_app(loop=loop)
-    handler = app.make_handler()
-    srv = yield from loop.create_server(handler, host, port)
-    log.info('Server started at http://%s:%s', host, port)
-    return app, srv, handler
-
-
-@asyncio.coroutine
-def finish(app, srv, handler):
-    for ws in app['sockets']:
-        ws.close()
-    app['sockets'].clear()
-    yield from asyncio.sleep(0.1)
-    srv.close()
-    yield from handler.finish_connections()
-    yield from srv.wait_closed()
-
-
-def run(host='127.0.0.1', port=9000):
-    loop = asyncio.get_event_loop()
-    app, srv, handler = loop.run_until_complete(init(loop, host, port))
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        loop.run_until_complete(finish(app, srv, handler))
