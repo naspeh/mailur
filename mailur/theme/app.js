@@ -209,8 +209,11 @@ $('.emails').on('change', '.email-pick', function() {
 });
 
 $('.email-labels-ok').on('click', function() {
-    mark({action: '-', name: getLabels()});
-    mark({action: '+', name: selectize.getValue().split(',')});
+    mark({
+        action: '=',
+        name: selectize.getValue().split(','),
+        old_name: getLabels()
+    });
 });
 $('.email-labels-cancel').on('click', function() {
     selectize.setValue(getLabels());

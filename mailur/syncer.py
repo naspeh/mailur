@@ -282,10 +282,16 @@ def process_tasks(env):
 
 
 def mark(env, data, new=False, inner=False):
+    def name(value):
+        if isinstance(value, str):
+            value = [value]
+        return list(value)
+
     schema = v.parse({
-        '+action': v.Enum(('+', '-')),
-        '+name': v.AnyOf(str, [str]),
+        '+action': v.Enum(('+', '-', '=')),
+        '+name': v.AdaptBy(name),
         '+ids': [str],
+        'old_name': v.AdaptBy(name),
         'thread': v.Nullable(bool, False)
     })
     data = schema.validate(data)
@@ -296,6 +302,21 @@ def mark(env, data, new=False, inner=False):
     if data['thread']:
         i = env.sql('SELECT id FROM emails WHERE thrid IN %s', [ids])
         ids = tuple(r[0] for r in i)
+
+    if data['action'] == '=':
+        if data.get('old_name') is None:
+            return []
+
+        def do(action, name):
+            if not name:
+                return []
+            data = {'action': action, 'ids': ids, 'name': name}
+            return mark(env, data, new=True)
+
+        return (
+            do('-', set(data['old_name']) - set(data['name'])) +
+            do('+', set(data['name']) - set(data['old_name']))
+        )
 
     actions = {
         '-': (
@@ -326,9 +347,7 @@ def mark(env, data, new=False, inner=False):
         ],
     }
 
-    labels = data['name']
-    labels = [labels] if isinstance(labels, str) else labels
-    for label in labels:
+    for label in data['name']:
         extra = [] if inner else clean.get((data['action'], label), [])
         for action, name in extra:
             params = {'action': action, 'name': name, 'ids': ids}
