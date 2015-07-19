@@ -1,5 +1,4 @@
-from mailur import Env, app, async
+from mailur import app, async
 
-env = Env()
-web = app.create_app(env.conf)
+web = app.create_app()
 async = async.create_app()

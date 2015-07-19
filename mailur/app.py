@@ -17,10 +17,10 @@ class Request(_Request):
         return json.loads(self.data.decode())
 
 
-def create_app(conf):
+def create_app():
     @Request.application
     def app(request):
-        env = WebEnv(conf, request)
+        env = WebEnv(request)
         try:
             response = env.wsgi()
         except HTTPException as e:
@@ -28,14 +28,14 @@ def create_app(conf):
         env.session.save_cookie(response)
         return response
 
-    if conf['debug']:
+    if Env()('debug'):
         app = DebuggedApplication(app)
     return app
 
 
 class WebEnv(Env):
-    def __init__(self, conf, request):
-        super().__init__(conf)
+    def __init__(self, request):
+        super().__init__()
 
         self.url_map = views.url_map
         self.request = request
