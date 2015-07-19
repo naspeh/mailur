@@ -51,7 +51,8 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
         else:
             fetch_headers(env, email, imap, uids)
             fetch_labels(env, imap, uids, label, only_labels == FOLDERS)
-            sync_marks(env, imap, uids)
+            if label in FOLDERS:
+                sync_marks(env, imap, uids)
     return labels_
 
 
@@ -305,7 +306,7 @@ def mark(env, data, new=False, inner=False):
 
     if data['action'] == '=':
         if data.get('old_name') is None:
-            return []
+            raise ValueError('Missing parameter "old_name" for %r' % data)
 
         def do(action, name):
             if not name:
