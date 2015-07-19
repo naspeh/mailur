@@ -8,7 +8,7 @@ from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
 
-from . import Env, views
+from . import Env
 
 
 class Request(_Request):
@@ -17,10 +17,12 @@ class Request(_Request):
         return json.loads(self.data.decode())
 
 
-def create_app():
+def create_app(views):
+    env = WebEnv(views)
+
     @Request.application
     def app(request):
-        env = WebEnv(request)
+        env.set_request(request)
         try:
             response = env.wsgi()
         except HTTPException as e:
@@ -28,25 +30,27 @@ def create_app():
         env.session.save_cookie(response)
         return response
 
-    if Env()('debug'):
+    if env('debug'):
         app = DebuggedApplication(app)
     return app
 
 
 class WebEnv(Env):
-    def __init__(self, request):
+    def __init__(self, views):
         super().__init__()
-
+        self.views = views
         self.url_map = views.url_map
-        self.request = request
-        self.adapter = self.url_map.bind_to_environ(request.environ)
 
         with open(os.path.join(self('path_theme'), 'build/version')) as f:
             self.theme_version = f.read()
 
+    def set_request(self, request):
+        self.request = request
+        self.adapter = self.url_map.bind_to_environ(request.environ)
+
     def wsgi(self):
         endpoint, values = self.adapter.match()
-        response = getattr(views, endpoint)(self, **values)
+        response = getattr(self.views, endpoint)(self, **values)
         if isinstance(response, str):
             return self.make_response(response)
         return response

@@ -1,4 +1,4 @@
-from mailur import app, async
+from mailur import app, views, async
 
-web = app.create_app()
+web = app.create_app(views)
 async = async.create_app()
