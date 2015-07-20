@@ -290,10 +290,10 @@ Mousetrap
     .bind(['m a', 'm shift+i'], function() {
         mark({action: '-', name: '\\Inbox'});
     })
-    .bind(['d r'], function() {
+    .bind(['r r'], function() {
         location.href = $('.email:last').data('replyUrl');
     })
-    .bind(['d a', 'd shift+r'], function() {
+    .bind(['r a'], function() {
         location.href = $('.email:last').data('replyallUrl');
     })
     .bind('g l', function() {
