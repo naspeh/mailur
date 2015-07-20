@@ -225,14 +225,11 @@ cancel.on('click', function() {
 });
 $(container.find('input')).each(function() {
     Mousetrap(this)
-        .bind('backspace', function() {
+        .bind(['backspace', 'esc'], function() {
             selectize.close();
         })
         .bind('ctrl+enter', function() {
             ok.focus().click();
-        })
-        .bind('esc', function() {
-            cancel.focus().click();
         });
 });
 })();
@@ -253,64 +250,98 @@ function mark(params) {
     }
     send('/mark/', params);
 }
-Mousetrap
-    .bind('* a', function() {
-        $('.email .email-pick input').prop('checked', true);
-    })
-    .bind('* n', function() {
-        $('.email .email-pick input').prop('checked', false);
-    })
-    .bind('* r', function() {
-        $('.email:not(.email-unread) .email-pick input').prop('checked', true);
-    })
-    .bind('* u', function() {
-        $('.email.email-unread .email-pick input').prop('checked', true);
-    })
-    .bind('* s', function() {
-        $('.email.email-pinned .email-pick input').prop('checked', true);
-    })
-    .bind('* t', function() {
-        $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
-    })
-    .bind(['m !', '!'], function() {
-        mark({action: '+', name: '\\Junk'});
-    })
-    .bind(['m #', '#'] , function() {
-        mark({action: '+', name: '\\Trash'});
-    })
-    .bind(['m u', 'm shift+r'], function() {
-        mark({action: '+', name: '\\Unread'});
-    })
-    .bind(['m r', 'm shift+u'], function() {
-        mark({action: '-', name: '\\Unread'});
-    })
-    .bind(['m i', 'm shift+a'], function() {
-        mark({action: '+', name: '\\Inbox'});
-    })
-    .bind(['m a', 'm shift+i'], function() {
-        mark({action: '-', name: '\\Inbox'});
-    })
-    .bind(['r r'], function() {
-        location.href = $('.email:last').data('replyUrl');
-    })
-    .bind(['r a'], function() {
-        location.href = $('.email:last').data('replyallUrl');
-    })
-    .bind('g l', function() {
-        location.href = '/';
-    });
+function goToLabel(label) {
+    return function() {
+        location.href = '/emails/?in=' + label;
+    };
+}
 
-$([
-    ['g i', '\\Inbox'],
-    ['g a', '\\All'],
-    ['g d', '\\Drafts'],
-    ['g s', '\\Sent'],
-    ['g u', '\\Unread'],
-    ['g p', '\\Starred'],
-    ['g !', '\\Junk'],
-    ['g #', '\\Trash']
-]).each(function(index, item) {
-    Mousetrap.bind(item[0], function() {
-        location.href = '/emails/?in=' + item[1];
-    });
+var hotkeys = [
+    [['* a'], 'Select all conversations', function() {
+        $('.email .email-pick input').prop('checked', true);
+    }],
+    [['* n'], 'Deselect all conversations', function() {
+        $('.email .email-pick input').prop('checked', false);
+    }],
+    [['* r'], 'Select read conversations', function() {
+        $('.email:not(.email-unread) .email-pick input').prop('checked', true);
+    }],
+    [['* u'], 'Select unread conversations', function() {
+        $('.email.email-unread .email-pick input').prop('checked', true);
+    }],
+    [['* s', '* p'], 'Select pinned conversations', function() {
+        $('.email.email-pinned .email-pick input').prop('checked', true);
+    }],
+    [['* t', '* shift+p'], 'Select unpinned conversations', function() {
+        $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
+    }],
+    [['m !', '!'], 'Report as spam', function() {
+        mark({action: '+', name: '\\Junk'});
+    }],
+    [['m #', '#'] , 'Delete', function() {
+        mark({action: '+', name: '\\Trash'});
+    }],
+    [['m u', 'm shift+r'], 'Mark as unread', function() {
+        mark({action: '+', name: '\\Unread'});
+    }],
+    [['m r', 'm shift+u'], 'Mark as read', function() {
+        mark({action: '-', name: '\\Unread'});
+    }],
+    [['m i', 'm shift+a'], 'Move to Inbox', function() {
+        mark({action: '+', name: '\\Inbox'});
+    }],
+    [['m a', 'm shift+i'], 'Move to Archive', function() {
+        mark({action: '-', name: '\\Inbox'});
+    }],
+    [['r r'], 'Reply', function() {
+        location.href = $('.email:last').data('replyUrl');
+    }],
+    [['r a'], 'Reply all', function() {
+        location.href = $('.email:last').data('replyallUrl');
+    }],
+    [['g l'], 'Go to Labels', function() {
+        location.href = '/';
+    }],
+    [['g i'], 'Go to Inbox', goToLabel('\\Inbox')],
+    [['g d'], 'Go to Drafts', goToLabel('\\Drafts')],
+    [['g s'], 'Go to Sent messages', goToLabel('\\Sent')],
+    [['g u'], 'Go to Unread conversations', goToLabel('\\Unread')],
+    [['g p'], 'Go to Pinned conversations', goToLabel('\\Starred')],
+    [['g a'], 'Go to All mail', goToLabel('\\All')],
+    [['g !'], 'Go to Spam', goToLabel('\\Junk')],
+    [['g #'], 'Go to Trash', goToLabel('\\Trash')],
+    [['?'], 'Toggle keyboard shortcut help', function() {
+        var help = $('.help');
+        if (!help.hasClass('help-loaded')) {
+            var html = '';
+            $(hotkeys).each(function(index, item) {
+                html += '<div><b>' + item[0][0] + '</b>: ' + item[1] + '</div>';
+            });
+            help.append(html);
+            help.addClass('help-loaded');
+            help.find('.help-close').on('click', function() {
+                help.trigger('hide');
+            });
+        }
+        help.on({
+            'hide': function() {
+                Mousetrap.unbind('esc');
+                help.hide();
+            },
+            'show': function() {
+                Mousetrap.bind('esc', function() {
+                    help.hide();
+                });
+                help.show();
+            }
+        });
+        if (help.is(':hidden')) {
+            help.trigger('show');
+        } else {
+            help.trigger('hide');
+        }
+    }]
+];
+$(hotkeys).each(function(index, item) {
+    Mousetrap.bind(item[0], item[2]);
 });
