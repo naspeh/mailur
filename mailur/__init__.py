@@ -2,9 +2,11 @@ import json
 import logging
 import logging.config
 from pathlib import Path
+from uuid import uuid4
 
 import psycopg2
 import valideer as v
+from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.utils import cached_property
 
 from . import db
@@ -28,6 +30,7 @@ def get_conf(conf):
             '+google_id': str,
             '+google_secret': str,
             '+cookie_secret': str,
+            '+token': v.Nullable(str, str(uuid4())),
             'log_handlers': (
                 v.Nullable([v.Enum(log_handlers)], log_handlers[:1])
             ),
@@ -61,7 +64,7 @@ class Env:
                 conf = json.loads(f.read().decode())
 
         self.conf = get_conf(conf)
-        setup_logging(self)
+        self.conf_log = setup_logging(self)
 
         self.accounts = db.Accounts(self)
         self.emails = db.Emails(self)
@@ -104,6 +107,11 @@ class Env:
     def mogrify(self, sql, params):
         result = self.db.cursor().mogrify(sql, params)
         return result.decode()
+
+    def get_session(self, request):
+        secret_key = self('cookie_secret').encode()
+        session = SecureCookie.load_cookie(request, secret_key=secret_key)
+        return session
 
 
 def setup_logging(env):
@@ -163,3 +171,4 @@ def setup_logging(env):
         })
         conf['loggers']['']['handlers'].append('file')
     logging.config.dictConfig(conf)
+    return conf

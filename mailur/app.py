@@ -2,7 +2,6 @@ import json
 import os
 from urllib.parse import urlencode
 
-from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
@@ -78,8 +77,7 @@ class WebEnv(Env):
 
     @cached_property
     def session(self):
-        secret_key = self('cookie_secret').encode()
-        return SecureCookie.load_cookie(self.request, secret_key=secret_key)
+        return self.get_session(self.request)
 
     def login(self, email):
         self.session['email'] = email

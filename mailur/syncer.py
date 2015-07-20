@@ -187,7 +187,7 @@ def fetch_bodies(env, imap, map_uids):
             data_ = dict(get_parsed(env, data, map_ids[msgid]), raw=data)
             ids += env.emails.update(data_, 'msgid=%s', [msgid])
         env.db.commit()
-        notify(ids)
+        notify(env, ids)
         results.append(len(ids))
 
     q = 'BODY.PEEK[]'
@@ -245,7 +245,7 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
     updated += process_tasks(env)
 
     env.db.commit()
-    notify(updated)
+    notify(env, updated)
 
 
 def clean_emails(env, labels, folder):
@@ -366,7 +366,7 @@ def mark(env, data, new=False, inner=False):
     if new:
         env.tasks.insert(tasks)
         env.db.commit()
-        notify(updated)
+        notify(env, updated)
     return updated
 
 
@@ -410,14 +410,15 @@ def sync_marks(env, imap, map_uids):
         env.sql('DELETE FROM tasks WHERE id = %s', [task_id])
 
 
-def notify(ids):
+def notify(env, ids):
     if not ids:
         return
 
-    ids = set(ids)
     url = 'http://localhost:9000/notify/'
+    data = {'ids': set(ids)}
+    headers = {'Authorization': 'Bearer %s' % env('token')}
     try:
-        requests.post(url, data={'ids': ids}, timeout=5)
+        requests.post(url, data=data, timeout=5, headers=headers)
     except IOError as e:
         log.error(e)
 
@@ -456,7 +457,7 @@ def update_thrids(env):
         env.db.commit()
 
         ids = tuple(r[0] for r in i)
-        notify(ids)
+        notify(env, ids)
         if log_ids and ids:
             log.info('  - ids: %s', ids)
         return ids
@@ -536,5 +537,5 @@ def failed_delivery(env):
 
     if ids:
         env.db.commit()
-        notify(ids)
+        notify(env, ids)
         log.info('  - merge threads by failed delivery: %s', ids)
