@@ -75,17 +75,6 @@ class WebEnv(Env):
     def abort(self, code, *a, **kw):
         abort(code, *a, **kw)
 
-    @cached_property
-    def session(self):
-        return self.get_session(self.request)
-
-    def login(self, email):
-        self.session['email'] = email
-
-    @property
-    def is_logined(self):
-        return self.session.get('email')
-
     def make_response(self, response, **kw):
         kw.setdefault('content_type', 'text/html')
         return Response(response, **kw)

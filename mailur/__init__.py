@@ -7,6 +7,7 @@ from uuid import uuid4
 import psycopg2
 import valideer as v
 from werkzeug.contrib.securecookie import SecureCookie
+from werkzeug.http import parse_authorization_header
 from werkzeug.utils import cached_property
 
 from . import db
@@ -58,13 +59,16 @@ def get_conf(conf):
 
 
 class Env:
-    def __init__(self, conf=None):
+    def __init__(self, conf=None, email=None):
         if not conf:
             with open('conf.json', 'br') as f:
                 conf = json.loads(f.read().decode())
 
         self.conf = get_conf(conf)
-        self.conf_log = setup_logging(self)
+        self.log_conf = setup_logging(self)
+
+        self._email = email
+        self.request = None
 
         self.accounts = db.Accounts(self)
         self.emails = db.Emails(self)
@@ -108,10 +112,38 @@ class Env:
         result = self.db.cursor().mogrify(sql, params)
         return result.decode()
 
-    def get_session(self, request):
+    @property
+    def session(self):
+        if self.request is None:
+            return {}
         secret_key = self('cookie_secret').encode()
-        session = SecureCookie.load_cookie(request, secret_key=secret_key)
+        session = SecureCookie.load_cookie(self.request, secret_key=secret_key)
         return session
+
+    @property
+    def email(self):
+        email = self._email or self.session.get('email')
+        if not email:
+            raise ValueError('No email')
+        if not self.accounts.exists(email):
+            raise ValueError('Wrong email %s' % email)
+        return email
+
+    @property
+    def valid_token(self):
+        if self.request is not None:
+            header = self.request.headers.get('authorization')
+            if header:
+                auth = parse_authorization_header(header)
+                return auth and auth.username == self('token')
+        return False
+
+    @property
+    def valid_email(self):
+        try:
+            return self.email and True
+        except ValueError:
+            return False
 
 
 def setup_logging(env):

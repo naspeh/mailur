@@ -8,39 +8,23 @@ import aiohttp.web as web
 from . import Env, log
 
 
-def get_token(request):
-    auth = request.headers.get('Authorization')
-    token = auth and auth[7:]
-    return token
-
-
 def login_required(func):
     def inner(request, *a, **kw):
         env = request.app['env']
-        request.app['session'] = session = env.get_session(request)
-        if session.get('email') or get_token(request) == env('token'):
-            return func(request, *a, **kw)
+        env.request = request
+        if env.valid_email or env.valid_token:
+            return func(env, request, *a, **kw)
         return web.Response(body=b'403 Forbidden', status=403)
-    return ft.wraps(func)(inner)
-
-
-def websockets(func):
-    def inner(request, *a, **kw):
-        ws = web.WebSocketResponse()
-        ws.start(request)
-
-        try:
-            request.app['sockets'].append(ws)
-            return func(request, ws, *a, **kw)
-        finally:
-            request.app['sockets'].remove(ws)
     return ft.wraps(func)(inner)
 
 
 @asyncio.coroutine
 @login_required
-@websockets
-def wshandler(request, ws):
+def wshandler(env, request):
+    ws = web.WebSocketResponse()
+    ws.start(request)
+
+    request.app['sockets'].append(ws)
     while True:
         msg = yield from ws.receive()
         if msg.tp == web.MsgType.text:
@@ -65,12 +49,14 @@ def wshandler(request, ws):
             break
         elif msg.tp == web.MsgType.error:
             log.exception(ws.exception())
+
+    request.app['sockets'].remove(ws)
     return ws
 
 
 @asyncio.coroutine
 @login_required
-def notify(request):
+def notify(env, request):
     yield from request.post()
     msg = json.dumps({'updated': request.POST.getall('ids')})
     for ws in request.app['sockets']:

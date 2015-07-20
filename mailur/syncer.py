@@ -307,6 +307,8 @@ def mark(env, data, new=False, inner=False):
     if data['action'] == '=':
         if data.get('old_name') is None:
             raise ValueError('Missing parameter "old_name" for %r' % data)
+        if data['old_name'] == data['name']:
+            return []
 
         def do(action, name):
             if not name:
@@ -416,9 +418,8 @@ def notify(env, ids):
 
     url = 'http://localhost:9000/notify/'
     data = {'ids': set(ids)}
-    headers = {'Authorization': 'Bearer %s' % env('token')}
     try:
-        requests.post(url, data=data, timeout=5, headers=headers)
+        requests.post(url, data=data, timeout=5, auth=(env('token'), ''))
     except IOError as e:
         log.error(e)
 

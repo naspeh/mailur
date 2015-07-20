@@ -38,7 +38,7 @@ def auth_callback(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
     try:
         info = gmail.auth_callback(env, redirect_uri, env.request.args['code'])
-        env.login(info['email'])
+        env.session['email'] = info['email']
         return env.redirect_for('index')
     except gmail.AuthError as e:
         return str(e)
@@ -46,10 +46,9 @@ def auth_callback(env):
 
 def login_required(func):
     def inner(env, *a, **kw):
-        if not (env.is_logined or env('ui_is_public')):
-            return env.redirect_for('auth')
-        return func(env, *a, **kw)
-
+        if env.valid_email:
+            return func(env, *a, **kw)
+        return env.redirect_for('auth')
     return ft.wraps(func)(inner)
 
 
