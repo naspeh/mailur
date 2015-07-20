@@ -240,7 +240,7 @@ $(container.find('input')).each(function() {
 });
 
 function getLabels() {
-    var labels = [];
+    var labels = (box.data('items') || []).slice(),
         checked = $('.email-pick input:checked, .thread .email-pick input');
 
     checked.each(function() {

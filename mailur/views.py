@@ -264,10 +264,10 @@ def emails(env, page):
         'in': str
     })
     args = schema.validate(env.request.args)
-    if args.get('in'):
-        l = args['in']
-        subj = l
-        l = [l] if l in ['\\Trash', '\\Junk'] else [l, '\\All']
+    label = args.get('in')
+    if label:
+        subj = label
+        l = [label] if label in ['\\Trash', '\\Junk'] else [label, '\\All']
         where = env.mogrify('%s::varchar[] <@ labels', [l])
     elif args.get('subj'):
         subj = 'Filter by subj %r' % args['subj']
@@ -323,7 +323,7 @@ def emails(env, page):
             base_subj = dict(msg["subj_list"])
             base_subj = base_subj[sorted(base_subj)[0]]
             msg = dict(msg, **{
-                'labels': list(set(sum(msg['labels'], [])) - {args.get('in')}),
+                'labels': list(set(sum(msg['labels'], [])) - {label}),
                 '_extra': {
                     'count': msg['count'] > 1 and msg['count'],
                     'subj_human': f.humanize_subj(msg['subj'], base_subj)
@@ -342,7 +342,7 @@ def emails(env, page):
             last=page['last'] or ctx['emails?']['items'][0]['time_stamp'],
             page=page['next']
         ))}
-    ctx['header?'] = ctx_header(env, subj)
+    ctx['header?'] = ctx_header(env, subj, label and [label])
     return ctx
 
 
