@@ -15,8 +15,8 @@ class Error(Exception):
 class Client:
     Error = Error
 
-    def __init__(self, env, email):
-        im = gmail.imap_connect(env, email)
+    def __init__(self, env):
+        im = gmail.imap_connect(env, env.email)
 
         im.list = self.wraps(im.list)
         im.select = self.wraps(im.select)

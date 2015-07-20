@@ -126,7 +126,7 @@ class Env:
         if not email:
             raise ValueError('No email')
         if not self.accounts.exists(email):
-            raise ValueError('Wrong email %s' % email)
+            raise ValueError('Wrong email %r' % email)
         return email
 
     @property

@@ -53,10 +53,10 @@ def reqs(dev=False, clear=False):
     not dev and sh('pip freeze | sort > requirements.txt')
 
 
-def sync(env, email, target=None, **kwargs):
+def sync(env, target=None, **kwargs):
     from mailur import syncer
 
-    func = ft.partial(syncer.locked_sync_gmail, env, email, **kwargs)
+    func = ft.partial(syncer.locked_sync_gmail, env, **kwargs)
     if target in (None, 'fast'):
         return func()
     elif target == 'bodies':
@@ -64,7 +64,7 @@ def sync(env, email, target=None, **kwargs):
     elif target == 'thrids':
         syncer.update_thrids(env)
     elif target == 'full':
-        s = ft.partial(sync, env, email, **kwargs)
+        s = ft.partial(sync, env, **kwargs)
 
         labels = s(target='fast')
         s(target='thrids')
@@ -241,7 +241,9 @@ def get_full(argv):
         .arg('-t', '--target', choices=sync.choices)\
         .arg('-l', '--only-labels', nargs='+')\
         .arg('email')\
-        .exe(lambda a: sync(env, a.email, a.target, only_labels=a.only_labels))
+        .exe(lambda a: (
+            sync(Env(email=a.email), a.target, only_labels=a.only_labels)
+        ))
 
     cmd('db-init')\
         .arg('-r', '--reset', action='store_true')\

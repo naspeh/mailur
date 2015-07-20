@@ -15,16 +15,15 @@ from .imap import Client
 FOLDERS = ('\\All', '\\Junk', '\\Trash')
 
 
-def locked_sync_gmail(*args, **kwargs):
-    email = kwargs.get('email') or args[1]
+def locked_sync_gmail(env, *args, **kwargs):
     func = sync_gmail
 
-    with with_lock('%s:%s' % (func.__name__, email), timeout=30):
-        return Timer(func.__name__)(func)(*args, **kwargs)
+    with with_lock('%s:%s' % (func.__name__, env.email), timeout=30):
+        return Timer(func.__name__)(func)(env, *args, **kwargs)
 
 
-def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
-    imap = Client(env, email)
+def sync_gmail(env, bodies=False, only_labels=None, labels=None):
+    imap = Client(env)
     folders = imap.folders()
     if not only_labels:
         only_labels = FOLDERS
@@ -49,7 +48,7 @@ def sync_gmail(env, email, bodies=False, only_labels=None, labels=None):
         elif bodies:
             fetch_bodies(env, imap, uids)
         else:
-            fetch_headers(env, email, imap, uids)
+            fetch_headers(env, imap, uids)
             fetch_labels(env, imap, uids, label, only_labels == FOLDERS)
             if label in FOLDERS:
                 sync_marks(env, imap, uids)
@@ -118,7 +117,7 @@ def get_parsed(env, data, msgid=None):
     return ((field, clean(field, msg[key])) for key, field in pairs)
 
 
-def fetch_headers(env, email, imap, map_uids):
+def fetch_headers(env, imap, map_uids):
     gids = get_gids(env, map_uids.values())
     uids = [uid for uid, gid in map_uids.items() if gid not in gids]
     if not uids:
@@ -129,7 +128,7 @@ def fetch_headers(env, email, imap, map_uids):
     for data in imap.fetch_batch(uids, q, 'add emails with headers'):
         emails = []
         for uid, row in data:
-            gm_uid = '%s\r%s' % (email, row['X-GM-MSGID'])
+            gm_uid = '%s\r%s' % (env.email, row['X-GM-MSGID'])
             fields = {
                 'id': uuid5(NAMESPACE_URL, gm_uid),
                 'header': row['RFC822.HEADER'],
