@@ -152,6 +152,7 @@ $('.compose-preview').click(function() {
 
 (function() {
 var box = $('.email-labels-input'),
+    container = box.parents('.email-labels-edit'),
     url = box.data('baseUrl');
 
 if (box.length === 0) return;
@@ -198,7 +199,7 @@ var getLabels = function() {
             }
         });
     });
-    box.parents('.email-labels-edit').toggle(checked.length !== 0);
+    container.toggle(checked.length !== 0);
     return labels;
 };
 var selectize = box[0].selectize;
@@ -208,15 +209,31 @@ $('.emails').on('change', '.email-pick', function() {
     selectize.setValue(getLabels());
 });
 
-$('.email-labels-ok').on('click', function() {
+var ok = $('.email-labels-ok'),
+    cancel = $('.email-labels-cancel');
+
+ok.on('click', function() {
     mark({
         action: '=',
         name: selectize.getValue().split(','),
         old_name: getLabels()
     });
+    return false;
 });
-$('.email-labels-cancel').on('click', function() {
+cancel.on('click', function() {
     selectize.setValue(getLabels());
+});
+$(container.find('input')).each(function() {
+    Mousetrap(this)
+        .bind('backspace', function() {
+            selectize.close();
+        })
+        .bind('ctrl+enter', function() {
+            ok.focus().click();
+        })
+        .bind('esc', function() {
+            cancel.focus().click();
+        });
 });
 })();
 function mark(params) {
