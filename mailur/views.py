@@ -195,7 +195,7 @@ def ctx_header(env, subj, labels=None):
     return {
         'subj': subj,
         'labels': {
-            'items_json': json.dumps(list(labels or [])),
+            'items_json': ctx_labels(env, list(labels or []))['names_json'],
             'all_json': ctx_all_labels(env)['items_json'],
             'base_url': env.url_for('emails', {'in': ''})
         }
