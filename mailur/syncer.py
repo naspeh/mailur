@@ -2,6 +2,7 @@ import re
 from collections import OrderedDict
 from contextlib import contextmanager
 from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 from uuid import uuid5, NAMESPACE_URL
 
 import requests
@@ -143,9 +144,9 @@ def fetch_headers(env, imap, map_uids):
 
 
 @contextmanager
-def async_runner(count=0):
+def async_runner(count=0, threads=True):
     if count:
-        pool = Pool(count)
+        pool = ThreadPool(count) if threads else Pool(count)
         results = []
 
         def run(func, *a, **kw):

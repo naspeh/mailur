@@ -63,7 +63,7 @@ def sync(env, target, **kw):
             SELECT datname FROM pg_database
             WHERE datistemplate = false;
             ''')
-            with syncer.async_runner(env('async_pool')) as run:
+            with syncer.async_runner(env('async_pool'), threads=False) as run:
                 for row in cur:
                     username = row[0].find('mailur_') == 0 and row[0][7:]
                     if not username:

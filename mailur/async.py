@@ -12,7 +12,7 @@ def login_required(func):
     def inner(request, *a, **kw):
         env = request.app['env']
         env.request = request
-        if env.valid_username or env.valid_token:
+        if env.valid_token or env.valid_username:
             return func(env, request, *a, **kw)
         return web.Response(body=b'403 Forbidden', status=403)
     return ft.wraps(func)(inner)
