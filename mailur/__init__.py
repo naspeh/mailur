@@ -112,7 +112,7 @@ class Env:
         result = self.db.cursor().mogrify(sql, params)
         return result.decode()
 
-    @property
+    @cached_property
     def session(self):
         if self.request is None:
             return {}

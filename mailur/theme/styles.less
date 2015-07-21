@@ -29,7 +29,7 @@
     display: block;
     width: 100%;
     border: 0;
-    passing: 0;
+    padding: 0;
     border-bottom: 1px solid @Color0b;
 
     &:hover, &:active, &:focus {
@@ -48,7 +48,7 @@
 /* General */
 body {
     font-size: @Size;
-    max-width: 800px;
+    min-width: 600px
 }
 .emails {
     .mix_reset_list();
@@ -197,6 +197,8 @@ body {
 .email-text {
     padding: @Space/2 @Space;
     position: relative;
+    max-width: 800px;
+    overflow: hidden;
 
     .email-quote {
         display: none;
