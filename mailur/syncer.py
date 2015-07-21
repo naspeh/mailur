@@ -286,7 +286,7 @@ def mark(env, data, new=False, inner=False):
     def name(value):
         if isinstance(value, str):
             value = [value]
-        return list(value)
+        return [v for v in value if v]
 
     schema = v.parse({
         '+action': v.Enum(('+', '-', '=')),
