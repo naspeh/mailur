@@ -1,6 +1,8 @@
 Unidecode==0.4.18
 Werkzeug==0.10.4
 aiohttp==0.16.6
+bcrypt==2.0.0
+cffi==1.1.2
 chardet==2.3.0
 cssselect==0.9.1
 cssutils==1.0
@@ -8,9 +10,11 @@ decorator==3.4.2
 dnspython3==1.12.0
 gunicorn==19.3.0
 lxml==3.4.4
-mistune==0.6
+mistune==0.7
 psycopg2==2.6.1
+pycparser==2.14
 pystache==0.5.4
 requests==2.7.0
+six==1.9.0
 toronado==0.0.7
 valideer==0.4.1

@@ -46,9 +46,11 @@ def auth_callback(env):
 
 def login_required(func):
     def inner(env, *a, **kw):
-        if env.valid_email:
+        if env.valid_username:
             return func(env, *a, **kw)
-        return env.redirect_for('auth')
+        return env.make_response(status=401, headers={
+            'WWW-Authenticate': 'Basic realm="mailur"'
+        })
     return ft.wraps(func)(inner)
 
 

@@ -15,22 +15,22 @@ class Error(Exception):
 class Client:
     Error = Error
 
-    def __init__(self, env):
-        im = gmail.imap_connect(env, env.email)
+    def __init__(self, env, email):
+        self.email = email
 
+        im = gmail.imap_connect(env, email)
         im.list = self.wraps(im.list)
         im.select = self.wraps(im.select)
         im.status = self.wraps(im.status)
         im.uid = self.wraps(im.uid)
 
+        self.uid = im.uid
         self.folders = ft.partial(folders, im)
         self.select = ft.partial(select, im)
         self.status = ft.partial(status, im)
         self.search = ft.partial(search, im)
         self.fetch_batch = ft.partial(fetch_batch, im)
         self.fetch = ft.partial(fetch, im)
-
-        self.uid = im.uid
 
     def wraps(self, func):
         def inner(*a, **kw):

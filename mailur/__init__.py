@@ -4,6 +4,7 @@ import logging.config
 from pathlib import Path
 from uuid import uuid4
 
+import bcrypt
 import psycopg2
 import valideer as v
 from werkzeug.contrib.securecookie import SecureCookie
@@ -27,7 +28,6 @@ def get_conf(conf):
             'debug': v.Nullable(bool, False),
             '+pg_username': str,
             '+pg_password': str,
-            'pg_dbname': v.Nullable(str, 'mailur_dev'),
             '+google_id': str,
             '+google_secret': str,
             '+cookie_secret': str,
@@ -59,7 +59,7 @@ def get_conf(conf):
 
 
 class Env:
-    def __init__(self, conf=None, email=None):
+    def __init__(self, username=None, conf=None):
         if not conf:
             with open('conf.json', 'br') as f:
                 conf = json.loads(f.read().decode())
@@ -67,7 +67,7 @@ class Env:
         self.conf = get_conf(conf)
         self.log_conf = setup_logging(self)
 
-        self._email = email
+        self.username = username
         self.request = None
 
         self.accounts = db.Accounts(self)
@@ -79,8 +79,18 @@ class Env:
         return default if value is None else value
 
     @property
+    def username(self):
+        return self.__dict__['username']
+
+    @username.setter
+    def username(self, value):
+        self.__dict__.pop('db', None)  # clear cached db property
+        self.__dict__['username'] = value
+
+    @property
     def db_name(self):
-        return self('pg_dbname')
+        name = 'mailur_%s' % self.username
+        return name
 
     def db_connect(self, **params):
         params = dict({
@@ -121,15 +131,6 @@ class Env:
         return session
 
     @property
-    def email(self):
-        email = self._email or self.session.get('email')
-        if not email:
-            raise ValueError('No email')
-        if not self.accounts.exists(email):
-            raise ValueError('Wrong email %r' % email)
-        return email
-
-    @property
     def valid_token(self):
         if self.request is not None:
             header = self.request.headers.get('authorization')
@@ -139,11 +140,30 @@ class Env:
         return False
 
     @property
-    def valid_email(self):
-        try:
-            return self.email and True
-        except ValueError:
-            return False
+    def valid_username(self):
+        if self.request is not None:
+            username = self.session.get('username')
+            if username:
+                self.username = username
+                return True
+
+            auth = self.request.headers.get('authorization')
+            auth = auth and parse_authorization_header(auth)
+            if not auth:
+                return False
+
+            self.username = auth.username
+            ph = self.accounts.get_data(self.username).get('password_hash')
+            if not ph:
+                return False
+
+            ph = ph.encode()
+            if bcrypt.hashpw(auth.password.encode(), ph) == ph:
+                self.session['username'] = self.username
+                return True
+        elif self.username and self.db:
+            return True
+        return False
 
 
 def setup_logging(env):

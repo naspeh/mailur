@@ -46,7 +46,7 @@ def auth_callback(env, redirect_uri, code):
             'https://www.googleapis.com/oauth2/v1/userinfo',
             headers={'Authorization': 'Bearer %s' % auth['access_token']}
         ).json()
-        env.accounts.add_or_update(info['email'], auth)
+        env.accounts.add_or_update(info['email'], auth, 'gmail')
         env.db.commit()
         return info
     raise AuthError('%s: %s' % (res.reason, res.text))

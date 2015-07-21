@@ -75,7 +75,7 @@ class WebEnv(Env):
     def abort(self, code, *a, **kw):
         abort(code, *a, **kw)
 
-    def make_response(self, response, **kw):
+    def make_response(self, response=None, **kw):
         kw.setdefault('content_type', 'text/html')
         return Response(response, **kw)
 

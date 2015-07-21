@@ -21,6 +21,7 @@ def reqs(dev=False, clear=False):
     requirements = (
         'Werkzeug '
         'aiohttp '
+        'bcrypt '
         'chardet '
         'dnspython3 '
         'gunicorn '
@@ -53,22 +54,41 @@ def reqs(dev=False, clear=False):
     not dev and sh('pip freeze | sort > requirements.txt')
 
 
-def sync(env, target=None, **kwargs):
+def sync(env, target=None, **kw):
     from mailur import syncer
 
-    func = ft.partial(syncer.locked_sync_gmail, env, **kwargs)
-    if target in (None, 'fast'):
-        return func()
-    elif target == 'bodies':
-        return func(bodies=True)
-    elif target == 'thrids':
-        syncer.update_thrids(env)
-    elif target == 'full':
-        s = ft.partial(sync, env, **kwargs)
+    if not env.username:
+        with env.db_connect(dbname='postgres') as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                SELECT datname FROM pg_database
+                WHERE datistemplate = false;
+                ''')
+                for row in cur:
+                    username = row[0].find('mailur_') == 0 and row[0][7:]
+                    if username:
+                        log.info('Sync %r for %r', target, username)
+                        env.username = username
+                        sync(env, target, **kw)
+        return
 
-        labels = s(target='fast')
-        s(target='thrids')
-        s(target='bodies', labels=labels)
+    i = env.sql("SELECT email FROM accounts WHERE type='gmail'")
+    for row in i:
+        email = row[0]
+        log.info('Sync %r for %r', target, email)
+        func = ft.partial(syncer.locked_sync_gmail, env, email, **kw)
+        if target in (None, 'fast'):
+            return func()
+        elif target == 'bodies':
+            return func(bodies=True)
+        elif target == 'thrids':
+            syncer.update_thrids(env)
+        elif target == 'full':
+            s = ft.partial(sync, env, **kw)
+
+            labels = s(target='fast')
+            s(target='thrids')
+            s(target='bodies', labels=labels)
 sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
@@ -154,11 +174,14 @@ def deploy(env, opts):
     if opts['pkgs']:
         cmd.append(
             'pacman --noconfirm -Sy'
-            '  python-virtualenv gcc libxslt'
-            '  postgresql'
-            '  rsync'
-            '  inotify-tools'
-            '  npm'
+            '   python-virtualenv'
+            '   gcc'
+            '   libxslt'  # for lxml
+            '   pkg-config'  # for cffi
+            '   postgresql'
+            '   rsync'
+            '   inotify-tools'
+            '   npm'
         )
 
     cmd.append('''
@@ -239,15 +262,15 @@ def get_full(argv):
     parser, cmd = get_base(argv)
     cmd('sync')\
         .arg('-t', '--target', choices=sync.choices)\
-        .arg('-l', '--only-labels', nargs='+')\
-        .arg('email')\
-        .exe(lambda a: (
-            sync(Env(email=a.email), a.target, only_labels=a.only_labels)
-        ))
+        .arg('-l', '--only', nargs='+', help='sync only these labels')\
+        .arg('-u', '--username')\
+        .exe(lambda a: sync(Env(a.username), a.target, only=a.only))
 
     cmd('db-init')\
         .arg('-r', '--reset', action='store_true')\
-        .exe(lambda a: db.init(env, a.reset))
+        .arg('-u', '--username')\
+        .arg('-p', '--password')\
+        .exe(lambda a: db.init(Env(a.username), a.password, a.reset))
 
     cmd('shell').exe(lambda a: shell(env))
     cmd('run').exe(lambda a: run(env))

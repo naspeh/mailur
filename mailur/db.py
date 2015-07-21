@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import bcrypt
 import psycopg2
 import psycopg2.extras
 
@@ -7,7 +8,7 @@ psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extensions.register_adapter(UUID, psycopg2.extras.UUID_adapter)
 
 
-def init(env, reset=False):
+def init(env, password=None, reset=False):
     if reset:
         with env.db_connect(dbname='postgres') as conn:
             conn.set_isolation_level(0)
@@ -32,6 +33,11 @@ def init(env, reset=False):
     sql += ';'.join(t.table for t in [Accounts, Emails, Tasks])
     env.sql(sql)
     env.db.commit()
+
+    if password:
+        h = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        env.accounts.add_or_update(env.username, {'password_hash': h})
+        env.db.commit()
 
 
 def fill_updated(table, field='updated'):
@@ -150,17 +156,17 @@ class Accounts(Manager):
         i = self.sql('SELECT count(id) FROM accounts WHERE email=%s', (email,))
         return i.fetchone()[0]
 
-    def add_or_update(self, email, data):
+    def add_or_update(self, email, data, type='password'):
         if self.exists(email):
             return self.update(email, data)
 
-        return self.insert([{'type': 'gmail', 'email': email, 'data': data}])
+        return self.insert([{'type': type, 'email': email, 'data': data}])
 
-    def update(self, email, data):
+    def update(self, email, data, type='password'):
         data = dict(self.get_data(email), **data)
         i = self.sql(
-            'UPDATE accounts SET data=%s  WHERE email=%s',
-            (data, email)
+            'UPDATE accounts SET data=%s, type=%s  WHERE email=%s',
+            (data, type, email)
         )
         return i.rowcount
 
