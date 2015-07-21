@@ -36,7 +36,7 @@ def init(env, password=None, reset=False):
 
     if password:
         h = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        env.accounts.add_or_update(env.username, {'password_hash': h})
+        env.accounts.add_or_update(env.username, 'ph', {'password_hash': h})
         env.db.commit()
 
 
@@ -156,19 +156,11 @@ class Accounts(Manager):
         i = self.sql('SELECT count(id) FROM accounts WHERE email=%s', (email,))
         return i.fetchone()[0]
 
-    def add_or_update(self, email, data, type='password'):
+    def add_or_update(self, email, type, data):
         if self.exists(email):
-            return self.update(email, data)
-
+            values = {'type': type, 'data': dict(self.get_data(email), **data)}
+            return self.update(values, 'email=%s', [email])
         return self.insert([{'type': type, 'email': email, 'data': data}])
-
-    def update(self, email, data, type='password'):
-        data = dict(self.get_data(email), **data)
-        i = self.sql(
-            'UPDATE accounts SET data=%s, type=%s  WHERE email=%s',
-            (data, type, email)
-        )
-        return i.rowcount
 
 
 class Emails(Manager):

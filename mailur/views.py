@@ -37,8 +37,7 @@ def auth(env):
 def auth_callback(env):
     redirect_uri = env.url_for('auth_callback', _external=True)
     try:
-        info = gmail.auth_callback(env, redirect_uri, env.request.args['code'])
-        env.session['email'] = info['email']
+        gmail.auth_callback(env, redirect_uri, env.request.args['code'])
         return env.redirect_for('index')
     except gmail.AuthError as e:
         return str(e)

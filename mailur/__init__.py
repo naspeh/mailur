@@ -1,6 +1,7 @@
 import json
 import logging
 import logging.config
+from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -84,23 +85,32 @@ class Env:
 
     @username.setter
     def username(self, value):
-        self.__dict__.pop('db', None)  # clear cached db property
+        self.__dict__.pop('db', None)  # clear cached property
         self.__dict__['username'] = value
 
     @property
     def db_name(self):
-        name = 'mailur_%s' % self.username
-        return name
+        if not self.username:
+            raise ValueError('No username')
+        return 'mailur_%s' % self.username
 
     def db_connect(self, **params):
+        dbname = params.pop('dbname', None)
         params = dict({
             'host': 'localhost',
             'user': self('pg_username'),
             'password': self('pg_password'),
-            'dbname': self.db_name
+            'dbname': dbname or self.db_name
         }, **params)
         conn = psycopg2.connect(**params)
         return conn
+
+    @contextmanager
+    def db_cursor(self, connect_params=None, **params):
+        connect_params = connect_params or {}
+        with self.db_connect(**connect_params) as conn:
+            with conn.cursor(**params) as cur:
+                yield cur
 
     @cached_property
     def db(self):
@@ -121,6 +131,15 @@ class Env:
     def mogrify(self, sql, params):
         result = self.db.cursor().mogrify(sql, params)
         return result.decode()
+
+    @property
+    def request(self):
+        return self.__dict__['request']
+
+    @request.setter
+    def request(self, value):
+        self.__dict__.pop('session', None)  # clear cached property
+        self.__dict__['request'] = value
 
     @cached_property
     def session(self):

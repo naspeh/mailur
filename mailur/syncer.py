@@ -1,7 +1,7 @@
 import re
 from collections import OrderedDict
 from contextlib import contextmanager
-from multiprocessing.dummy import Pool
+from multiprocessing import Pool
 from uuid import uuid5, NAMESPACE_URL
 
 import requests

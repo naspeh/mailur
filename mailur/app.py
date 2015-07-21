@@ -51,6 +51,7 @@ class WebEnv(Env):
     def set_request(self, request):
         self.request = request
         self.adapter = self.url_map.bind_to_environ(request.environ)
+        self.username = self.session.get('username')
 
     def wsgi(self):
         endpoint, values = self.adapter.match()

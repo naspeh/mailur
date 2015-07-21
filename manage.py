@@ -54,22 +54,23 @@ def reqs(dev=False, clear=False):
     not dev and sh('pip freeze | sort > requirements.txt')
 
 
-def sync(env, target=None, **kw):
+def sync(env, target, **kw):
     from mailur import syncer
 
     if not env.username:
-        with env.db_connect(dbname='postgres') as conn:
-            with conn.cursor() as cur:
-                cur.execute('''
-                SELECT datname FROM pg_database
-                WHERE datistemplate = false;
-                ''')
+        with env.db_cursor({'dbname': 'postgres'}) as cur:
+            cur.execute('''
+            SELECT datname FROM pg_database
+            WHERE datistemplate = false;
+            ''')
+            with syncer.async_runner(env('async_pool')) as run:
                 for row in cur:
                     username = row[0].find('mailur_') == 0 and row[0][7:]
-                    if username:
-                        log.info('Sync %r for %r', target, username)
-                        env.username = username
-                        sync(env, target, **kw)
+                    if not username:
+                        continue
+                    log.info('Sync %r for %r', target, username)
+                    env.username = username
+                    run(sync, env, target, **kw)
         return
 
     i = env.sql("SELECT email FROM accounts WHERE type='gmail'")
@@ -77,7 +78,7 @@ def sync(env, target=None, **kw):
         email = row[0]
         log.info('Sync %r for %r', target, email)
         func = ft.partial(syncer.locked_sync_gmail, env, email, **kw)
-        if target in (None, 'fast'):
+        if target == 'fast':
             return func()
         elif target == 'bodies':
             return func(bodies=True)
@@ -143,7 +144,6 @@ def deploy(env, opts):
         'cwd': os.getcwd(),
         'path': path,
         'manage': '{[src]}/m'.format(path),
-        'dbname': env('pg_dbname')
     }
 
     if opts['docker']:
@@ -220,7 +220,6 @@ def deploy(env, opts):
             chown postgres:postgres /run/postgresql
         )) &&
         supervisorctl update && supervisorctl restart postgres &&
-        psql -Upostgres -hlocalhost -c "CREATE DATABASE {dbname}";
         {manage} db-init
         ''')
 
@@ -261,8 +260,8 @@ def get_full(argv):
 
     parser, cmd = get_base(argv)
     cmd('sync')\
-        .arg('-t', '--target', choices=sync.choices)\
-        .arg('-l', '--only', nargs='+', help='sync only these labels')\
+        .arg('-t', '--target', default='fast', choices=sync.choices)\
+        .arg('-l', '--only', nargs='*', help='sync only these labels')\
         .arg('-u', '--username')\
         .exe(lambda a: sync(Env(a.username), a.target, only=a.only))
 
