@@ -84,9 +84,12 @@ body {
             }
         }
         .email-details-toggle {
-            .icon-details;
             display: none;
             font-size: @SizeIcon;
+            &:before {
+                content: 'D';
+                font-weight: bold;
+            }
             &:hover {
                 cursor: pointer;
                 color: @ColorB;

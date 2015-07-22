@@ -46,22 +46,22 @@ $('.emails-byid').on('click', '.email-text a', function() {
 (function() {
 /* Keyboard shortcuts */
 var hotkeys = [
-    [['* a'], 'Select all conversations', function() {
+    [['s a', '* a'], 'Select all conversations', function() {
         $('.email .email-pick input').prop('checked', true);
     }],
-    [['* n'], 'Deselect all conversations', function() {
+    [['s n', '* n'], 'Deselect all conversations', function() {
         $('.email .email-pick input').prop('checked', false);
     }],
-    [['* r'], 'Select read conversations', function() {
+    [['s r', '* r'], 'Select read conversations', function() {
         $('.email:not(.email-unread) .email-pick input').prop('checked', true);
     }],
-    [['* u'], 'Select unread conversations', function() {
+    [['s u', '* u'], 'Select unread conversations', function() {
         $('.email.email-unread .email-pick input').prop('checked', true);
     }],
-    [['* s', '* p'], 'Select pinned conversations', function() {
+    [['s p', '* s'], 'Select pinned conversations', function() {
         $('.email.email-pinned .email-pick input').prop('checked', true);
     }],
-    [['* t', '* shift+p'], 'Select unpinned conversations', function() {
+    [['s shift+p', '* t'], 'Select unpinned conversations', function() {
         $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
     }],
     [['m !', '!'], 'Report as spam', function() {
@@ -81,6 +81,9 @@ var hotkeys = [
     }],
     [['m a', 'm shift+i'], 'Move to Archive', function() {
         mark({action: '-', name: '\\Inbox'});
+    }],
+    [['m l'], 'Edit labels', function() {
+        $('.email-labels-edit input').focus();
     }],
     [['r r'], 'Reply', function() {
         location.href = $('.email:last').data('replyUrl');
@@ -132,7 +135,7 @@ var hotkeys = [
     }]
 ];
 $(hotkeys).each(function(index, item) {
-    Mousetrap.bind(item[0], item[2]);
+    Mousetrap.bind(item[0], item[2], 'keyup');
 });
 function goToLabel(label) {
     return function() {
@@ -233,6 +236,9 @@ $(container.find('input')).each(function() {
     Mousetrap(this)
         .bind(['backspace', 'esc'], function() {
             selectize.close();
+        })
+        .bind('esc esc', function() {
+            cancel.focus().click();
         })
         .bind('ctrl+enter', function() {
             ok.focus().click();
