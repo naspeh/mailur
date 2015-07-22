@@ -1,0 +1,88 @@
+Delivered-To: naspeh@gmail.com
+Received: by 10.202.45.77 with SMTP id t74csp597810oit;
+        Wed, 1 Apr 2015 07:35:13 -0700 (PDT)
+X-Received: by 10.195.13.168 with SMTP id ez8mr83444507wjd.30.1427898912377;
+        Wed, 01 Apr 2015 07:35:12 -0700 (PDT)
+Return-Path: <php-sender-booklya.com.ua@undeliver.mirohost.net>
+Received: from en473.mirohost.net (en473.mirohost.net. [77.87.192.86])
+        by mx.google.com with ESMTPS id k3si3689661wjy.17.2015.04.01.07.35.11
+        for <naspeh@gmail.com>
+        (version=TLSv1.2 cipher=RC4-SHA bits=128/128);
+        Wed, 01 Apr 2015 07:35:12 -0700 (PDT)
+Received-SPF: none (google.com: php-sender-booklya.com.ua@undeliver.mirohost.net does not designate permitted sender hosts) client-ip=77.87.192.86;
+Authentication-Results: mx.google.com;
+       spf=none (google.com: php-sender-booklya.com.ua@undeliver.mirohost.net does not designate permitted sender hosts) smtp.mail=php-sender-booklya.com.ua@undeliver.mirohost.net;
+       dmarc=fail (p=NONE dis=NONE) header.from=gmail.com
+Received: from apache by en473.mirohost.net with local (Exim 4.80)
+	(envelope-from <php-sender-booklya.com.ua@undeliver.mirohost.net>)
+	id 1YdJjb-0000i3-D0
+	for naspeh@gmail.com; Wed, 01 Apr 2015 17:35:11 +0300
+To: <naspeh@gmail.com>
+Subject: =?windows-1251?B?x+Dq4OcgIzEwNjk5NyDiIOrt6Obt7uwg6O3y5fDt5fIt7ODj4Ofo7eUgwfPq6/8=?=
+From: "Букля" <booklya.shop@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; 
+        boundary="----=_NextPart_000_b1f5c7b4d2cd8d80dc8d414afa373bbe"
+Message-Id: <E1YdJjb-0000i3-D0@en473.mirohost.net>
+Date: Wed, 01 Apr 2015 17:35:11 +0300
+
+Content-Type: multipart/mixed; 
+        boundary="----=_NextPart_000_b1f5c7b4d2cd8d80dc8d414afa373bbe"
+
+
+------=_NextPart_000_b1f5c7b4d2cd8d80dc8d414afa373bbe
+Content-Type: multipart/related; 
+        boundary="----=_NextPart_001_b1f5c7b4d2cd8d80dc8d414afa373bbe"
+
+
+------=_NextPart_001_b1f5c7b4d2cd8d80dc8d414afa373bbe
+Content-Type: multipart/alternative; 
+        boundary="----=_NextPart_002_b1f5c7b4d2cd8d80dc8d414afa373bbe"
+
+
+------=_NextPart_002_b1f5c7b4d2cd8d80dc8d414afa373bbe
+Content-Type: text/plain;
+        charset="windows-1251"
+Content-Transfer-Encoding: base64
+
+Csfk8ODi8fLi8+ny5Swgw/Do+OAhIAoKwvsg8eTl6+Dr6CDn4Org5yDiIO3g+OXsIOrt6Obt7uwg
+6O3y5fDt5fIt7ODj4Ofo7eUgwfPq6/8hCs3u7OXwIMLg+OXj7iDn4Org5+AgPGI+MTA2OTk3PC9i
+Pi4KwiDh6+jm4On45eUg4vDl7P8g8SDC4OzoIPHi/+bl8vH/IO7v5fDg8u7wLgoKwuD4IOrt6Obt
+++kg6O3y5fDt5fIt7ODj4Ofo7SDB8+rr/y4KCjxhIGhyZWY9J2h0dHA6Ly9ib29rbHlhLmNvbS51
+YS8nPmh0dHA6Ly9ib29rbHlhLmNvbS51YTwvYT4K8uXrLjogKDA0NCkgNTk5LTEzLTE2LCAoMDUw
+KSAyMi00LTU1NS02LCAoMDkzKSA2NTItNjQtNjIKZW1haWw6IDxhIGhyZWY9J21haWx0bzpib29r
+bHlhLnNob3BAZ21haWwuY29tJz5ib29rbHlhLnNob3BAZ21haWwuY29tPC9hPg==
+
+------=_NextPart_002_b1f5c7b4d2cd8d80dc8d414afa373bbe
+Content-Type: text/html;
+        charset="windows-1251"
+Content-Transfer-Encoding: base64
+
+PGJyPjxkaXYgYWxpZ249J2NlbnRlcic+PGRpdiBzdHlsZT0nd2lkdGg6NTAwcHg7Y29sb3I6IzEy
+MTIxMjtib3JkZXI6I2EyMDUwMCAycHggZGFzaGVkO2JhY2tncm91bmQ6I2ZmZmVmZDsnIGFsaWdu
+PSdsZWZ0Jz48aW1nIHNyYz0naHR0cDovL2Jvb2tseWEuY29tLnVhL2ltZy9sZXR0ZXJfYmFjay5w
+bmcnPjxkaXYgYWxpZ249J2xlZnQnIHN0eWxlPSdwYWRkaW5nOjIwcHg7cGFkZGluZy10b3A6MTVw
+eDsnPsfk8ODi8fLi8+ny5Swgw/Do+OAhIDxicj48YnI+wvsg8eTl6+Dr6CDn4Org5yDiIO3g+OXs
+IOrt6Obt7uwg6O3y5fDt5fIt7ODj4Ofo7eUgwfPq6/8hPGJyPs3u7OXwIMLg+OXj7iDn4Org5+Ag
+PHNwYW4gc3R5bGU9J2ZvbnQtc2l6ZToxNHB4Oyc+PGI+MTA2OTk3PC9iPjwvc3Bhbj4uPGJyPsIg
+4evo5uDp+OXlIOLw5ez/IPEgwuDs6CDx4v/m5fLx/yDu7+Xw4PLu8C48YnI+PGJyPsLg+CDq7ejm
+7fvpIOjt8uXw7eXyLezg4+Dn6O0gPGEgaHJlZj0naHR0cDovL2Jvb2tseWEuY29tLnVhLycgc3R5
+bGU9J2NvbG9yOiM0RjAxMDA7Zm9udC1zaXplOjE0cHg7Jz48Yj7B8+rr/zwvYj48L2E+Ljxicj48
+dGFibGU+PHRyPjx0ZCB2YWxpZ249J3RvcCc+PGltZyBzcmM9J2h0dHA6Ly9ib29rbHlhLmNvbS51
+YS9pbWcvaV9waG9uZS5wbmcnIGhlaWdodD0yMj48L3RkPjx0ZCB2YWxpZ249J3RvcCcgc3R5bGU9
+J2NvbG9yOiM0RjAxMDA7Zm9udC1zaXplOjEycHg7Jz4oMDQ0KSA1OTktMTMtMTY8YnI+KDA1MCkg
+MjItNC01NTUtNjxicj4oMDkzKSA2NTItNjQtNjI8L3RkPjwvdHI+PHRyPjx0ZCB2YWxpZ249J3Rv
+cCc+PGltZyBzcmM9J2h0dHA6Ly9ib29rbHlhLmNvbS51YS9pbWcvaV9tYWlsLnBuZycgaGVpZ2h0
+PTIyPjwvdGQ+PHRkIHZhbGlnbj0ndG9wJz48YSBocmVmPSdtYWlsdG86Ym9va2x5YS5zaG9wQGdt
+YWlsLmNvbScgc3R5bGU9J2NvbG9yOiM0RjAxMDA7Zm9udC1zaXplOjEycHg7Jz5ib29rbHlhLnNo
+b3BAZ21haWwuY29tPC9hPjwvdGQ+PC90cj48L3RhYmxlPjwvZGl2PjwvZGl2PjwvZGl2Pg==
+
+
+------=_NextPart_002_b1f5c7b4d2cd8d80dc8d414afa373bbe--
+
+
+------=_NextPart_001_b1f5c7b4d2cd8d80dc8d414afa373bbe--
+
+
+------=_NextPart_000_b1f5c7b4d2cd8d80dc8d414afa373bbe--
+

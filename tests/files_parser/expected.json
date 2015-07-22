@@ -29,7 +29,7 @@
     "1325207632929727148--text-calendar.txt": {
         "subject": "Invitation: hush#weektalk @ Tue 19 Jan 13:00 - 14:00 (naspeh@pusto.org)",
         "html": "hush#weektalk",
-        "attachments": ["test/0/invite.ics"]
+        "attachments": ["test/0/text_calendar", "test/1/invite.ics"]
     },
     "1462843959998912874--multipart-mixed.txt": {
         "subject": "Thread._stop() behavior changed in Python 3.4",
@@ -37,7 +37,7 @@
     },
     "1462854529964966340--multipart-alternative.txt": {
         "subject": "Re: Thread._stop() behavior changed in Python 3.4",
-        "html": "<div><p dir=\"ltr\"><br>\r\nOn Mar 17, 2014 12:53 PM"
+        "html": "<div><p dir=\"ltr\"><br>&#13;\nOn Mar 17, 2014 12:53 PM"
     },
     "7bcb4914-47c5-53a9-b6f0-3aa35ef0e1e0--cp1251-wo-declaration.txt": {
         "subject": "Оплатите, пожалуйста, счет",
@@ -50,5 +50,10 @@
     "36774361-174b-5c26-af76-8e4d2c7c78bd--cp1251-from-spam.txt": {
         "subject": "Азбука денег",
         "html": "Деньги нельзя рисовать,"
+    },
+    "c329f464-169a-5bc5-958f-ebe37fcb6c6d--cp1251-in-from-field.txt" :{
+        "subject": "Заказ #106997 в книжном интернет-магазине Букля",
+        "html": "В ближайшее время с Вами свяжется оператор.",
+        "from": ["Букля", "booklya.shop@gmail.com"]
     }
 }

@@ -4,7 +4,7 @@ from unittest.mock import patch
 from pytest import mark, fixture
 
 from . import read_file
-from mailur import imap, imap_utf7
+from mailur import gmail, imap, imap_utf7
 
 
 @fixture
@@ -12,7 +12,7 @@ from mailur import imap, imap_utf7
 def client(mok, env):
     '''IMAP client with some patches'''
     with patch.object(env, 'accounts'):
-        return imap.connect(env, 'test@pusto.org')
+        return gmail.imap_connect(env, 'test@pusto.org')
 
 
 def gen_response(filename, query):

@@ -22,3 +22,7 @@ def test_emails(path, expected):
         assert 'attachments' in result
         assert len(expected['attachments']) == len(result['attachments'])
         assert expected['attachments'] == result['attachments']
+
+    if expected.get('from'):
+        assert 'from' in result
+        assert expected['from'] == list(result['from'][0])

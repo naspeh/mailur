@@ -89,8 +89,6 @@ def decode_header(text, msg_id):
 
 
 def decode_addresses(text, msg_id):
-    if not isinstance(text, str):
-        text = str(text)
     text = decode_header(text, msg_id)
     return [(name, addr) for name, addr in email.utils.getaddresses([text])]
 
@@ -197,7 +195,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             elif not re.match('^(https?://|/|data:image/).*', src):
                 del img.attrib['src']
 
-        content['html'] = lhtml.tostring(htm).decode()
+        content['html'] = lhtml.tostring(htm, encoding='utf-8').decode()
         if 'text' not in content or not content['text']:
             htm = Cleaner(links=False, style=True).clean_html(htm)
             text = '\n'.join(htm.xpath('//text()'))
