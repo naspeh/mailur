@@ -43,14 +43,12 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
             imap.status(name)
             log.info('"%s"' % imap_utf7.decode(name))
 
-        uids = labels_[name]
-        if not uids:
-            continue
-        elif bodies:
+        uids = labels_[name] or {}
+        if bodies:
             fetch_bodies(env, imap, uids)
         else:
             fetch_headers(env, imap, uids)
-            fetch_labels(env, imap, uids, label, only == FOLDERS)
+            fetch_labels(env, imap, uids, label, label in FOLDERS)
             if label in FOLDERS:
                 sync_marks(env, imap, uids)
     return labels_
@@ -208,7 +206,7 @@ def refresh_search(env):
 
 
 def fetch_labels(env, imap, map_uids, folder, clean=True):
-    updated = []
+    updated, glabels = [], set()
     folder = '\\Inbox' if folder == 'INBOX' else folder
 
     gids = get_gids(env, map_uids.values())
@@ -217,28 +215,25 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
         updated += update_label(env, gids, '\\All', folder)
 
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
-    if not uids:
-        log.info('  - no labels to update')
-        return
+    if uids:
+        data = tuple(imap.fetch(uids, 'X-GM-LABELS FLAGS'))
+        glabels, gflags = set(), set()
+        for _, row in data:
+            glabels |= set(row['X-GM-LABELS'])
+            gflags |= set(row['FLAGS'])
+        log.info('  * Unique labels %r', glabels)
+        log.info('  * Unique flags %r', gflags)
 
-    data = tuple(imap.fetch(uids, 'X-GM-LABELS FLAGS'))
-    glabels, gflags = set(), set()
-    for _, row in data:
-        glabels |= set(row['X-GM-LABELS'])
-        gflags |= set(row['FLAGS'])
-    log.info('  * Unique labels %r', glabels)
-    log.info('  * Unique flags %r', gflags)
-
-    labels = [
-        (imap_utf7.decode(l), [l], lambda row, l: l in row['X-GM-LABELS'])
-        for l in glabels
-    ] + [
-        ('\\Answered', [], (lambda row: '\\Answered' in row['FLAGS'])),
-        ('\\Unread', [], (lambda row: '\\Seen' not in row['FLAGS'])),
-    ]
-    for label, args, func in labels:
-        gids = [map_uids[uid] for uid, row in data if func(row, *args)]
-        updated += update_label(env, gids, label, folder)
+        labels = [
+            (imap_utf7.decode(l), [l], lambda row, l: l in row['X-GM-LABELS'])
+            for l in glabels
+        ] + [
+            ('\\Answered', [], (lambda row: '\\Answered' in row['FLAGS'])),
+            ('\\Unread', [], (lambda row: '\\Seen' not in row['FLAGS'])),
+        ]
+        for label, args, func in labels:
+            gids = [map_uids[uid] for uid, row in data if func(row, *args)]
+            updated += update_label(env, gids, label, folder)
 
     if clean:
         updated += clean_emails(env, glabels, folder)
