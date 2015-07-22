@@ -107,7 +107,14 @@ def index(env):
     ''')
     labels = (dict(l, url=env.url_for('emails', {'in': l['name']})) for l in i)
     labels = sorted(labels, key=lambda v: v['name'])
-    return {'labels': labels}
+    ctx = {'labels?': bool(labels) and {'items': labels}}
+
+    if not labels:
+        accounts = env.sql('''
+        SELECT count(id) FROM accounts WHERE type='gmail'
+        ''').fetchone()[0]
+        ctx['accounts'] = accounts
+    return ctx
 
 
 def init(env):
@@ -192,10 +199,11 @@ def ctx_all_labels(env):
 
 
 def ctx_header(env, subj, labels=None):
+    labels = ctx_labels(env, list(labels or []))
     return {
         'subj': subj,
         'labels': {
-            'items_json': ctx_labels(env, list(labels or []))['names_json'],
+            'items_json': labels['names_json'] if labels else '""',
             'all_json': ctx_all_labels(env)['items_json'],
             'base_url': env.url_for('emails', {'in': ''})
         }
@@ -277,7 +285,7 @@ def emails(env, page):
         subj = 'Filter by person %r' % args['person']
         where = env.mogrify(
             '(fr[1] LIKE %(fr)s OR "to"[1] LIKE %(fr)s)',
-            {'fr': '%<{}>'.format(args['person'])}
+            {'fr': '%%<{}>'.format(args['person'])}
         )
     else:
         return env.abort(400)

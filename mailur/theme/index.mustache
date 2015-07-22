@@ -1,8 +1,20 @@
+{{#labels?}}
 <ul>
-{{#labels}}
+{{#items}}
 <li><a href="{{url}}">
     {{^unread}}{{name}}{{/unread}}
     {{#unread}}<b>{{name}} ({{unread}}</b>){{/unread}}
 </a></li>
-{{/labels}}
+{{/items}}
 </ul>
+{{/labels?}}
+
+{{^labels?}}
+{{#accounts}}
+Please wait for complete synchronization.
+{{/accounts}}
+
+{{^accounts}}
+<a href="/auth/">Please, connect your gmail account.</a>
+{{/accounts}}
+{{/labels?}}
