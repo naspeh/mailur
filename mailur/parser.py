@@ -170,6 +170,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
 
     if content['html']:
         htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()
+        htm = re.sub(r'<(/?)body([^>]*)>', r'<\1div\2>', htm)
         if not htm:
             content['html'] = ''
             return content
@@ -178,7 +179,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             links=False,
             safe_attrs_only=False,
             kill_tags=['head', 'style'],
-            remove_tags=['html', 'body', 'base']
+            remove_tags=['html', 'base']
         )
         htm = lhtml.fromstring(htm)
         htm = cleaner.clean_html(htm)
