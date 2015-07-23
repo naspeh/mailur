@@ -177,7 +177,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
         cleaner = Cleaner(
             links=False,
             safe_attrs_only=False,
-            kill_tags=['head'],
+            kill_tags=['head', 'style'],
             remove_tags=['html', 'body', 'base']
         )
         htm = lhtml.fromstring(htm)

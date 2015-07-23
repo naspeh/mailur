@@ -65,11 +65,11 @@ def humanize_subj(subj, base=None, empty='(no subject)'):
     return subj or empty
 
 
-def humanize_html(htm, parents=None, class_='email-quote'):
+def humanize_html(htm, parents=None, class_='email-quote', css_inliner=False):
     htm = re.sub(r'(<br[ ]?[/]?>\s*)$', '', htm).strip()
     if htm and parents:
         htm = hide_quote(htm, parents, class_)
-    if htm:
+    if css_inliner and htm:
         htm = toronado.from_string(htm).decode()
     return htm
 
