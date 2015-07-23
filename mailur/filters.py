@@ -5,7 +5,6 @@ from email.utils import parseaddr
 from hashlib import md5
 from urllib.parse import urlencode
 
-import toronado
 import lxml.html as lhtml
 
 
@@ -65,12 +64,10 @@ def humanize_subj(subj, base=None, empty='(no subject)'):
     return subj or empty
 
 
-def humanize_html(htm, parents=None, class_='email-quote', css_inliner=False):
+def humanize_html(htm, parents=None, class_='email-quote'):
     htm = re.sub(r'(<br[ ]?[/]?>\s*)$', '', htm).strip()
     if htm and parents:
         htm = hide_quote(htm, parents, class_)
-    if css_inliner and htm:
-        htm = toronado.from_string(htm).decode()
     return htm
 
 

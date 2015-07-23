@@ -30,7 +30,6 @@ def reqs(dev=False, clear=False):
         'psycopg2 '
         'pystache '
         'requests '
-        'toronado '
         'unidecode '
         'valideer '
     )
