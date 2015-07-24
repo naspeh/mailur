@@ -291,6 +291,7 @@ def get_full(argv):
             '   jquery'
             '   mousetrap'
             '   selectize'
+            '   magnific-popup'
         ))
 
     cmd('static').exe(lambda a: sh(
@@ -300,6 +301,7 @@ def get_full(argv):
         'cat'
         '   node_modules/normalize.css/normalize.css'
         '   {0}selectize.css'
+        '   node_modules/magnific-popup/dist/magnific-popup.css'
         '   {0}build/styles.css'
         '   > {0}build/all.css &&'
         'csso {0}build/all.css {0}build/all.min.css &&'
@@ -308,6 +310,7 @@ def get_full(argv):
         '   node_modules/jquery/dist/jquery.js'
         '   node_modules/mousetrap/mousetrap.js'
         '   node_modules/selectize/dist/js/standalone/selectize.js'
+        '   node_modules/magnific-popup/dist/jquery.magnific-popup.js'
         '   {0}app.js'
         '   > {0}build/all.js &&'
         'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'

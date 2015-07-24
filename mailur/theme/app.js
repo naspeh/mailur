@@ -11,9 +11,9 @@ $('.emails-byid').on('click', '.email-info', function() {
     email.toggleClass('email-show');
     if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
         send(email.data('body-url'), null, function(data) {
-            email.find('.email-body').replaceWith(
-                $(data).find('#' + email.attr('id') + ' .email-body')
-            );
+            var body = $(data).find('#' + email.attr('id') + ' .email-body');
+            email.find('.email-body').replaceWith(body);
+            body.find('.email-attachments').trigger('images');
         });
     }
     return false;
@@ -42,7 +42,24 @@ $('.emails').on('click', '.email-pin', function() {
 $('.emails-byid').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
-
+$('.emails').on('images', '.email-attachments', function() {
+    $(this).magnificPopup({
+        delegate: 'a',
+        type: 'image',
+        tLoading: 'Loading image #%curr%...',
+        gallery: {
+            enabled: true,
+            navigateByImgClick: true,
+            preload: [0, 1]
+        },
+        image: {
+            tError: '<a href="%url%">The image #%curr%</a> could not be loaded.',
+            titleSrc: function(item) {
+                return item.el.html();
+            }
+        }
+    });
+});
 (function() {
 /* Keyboard shortcuts */
 var hotkeys = [
