@@ -192,8 +192,8 @@ class Emails(Manager):
 
         'text text',
         'html text',
-        "attachments varchar[] DEFAULT '{}'",
-        'embedded jsonb',
+        "attachments jsonb",
+        "embedded jsonb",
         'extra jsonb',
     )
     table = create_table(name, fields, after=(

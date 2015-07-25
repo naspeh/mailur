@@ -1,7 +1,6 @@
 import datetime as dt
 import functools as ft
 import json
-import os
 import re
 
 import valideer as v
@@ -211,14 +210,13 @@ def ctx_header(env, subj, labels=None):
 
 
 def ctx_body(env, msg, msgs, show=False):
-    return (show or '\\Unread' in msg['labels']) and {
+    if not show and '\\Unread' in msg['labels']:
+        return False
+    attachments = msg.get('attachments')
+    attachments = bool(attachments) and {'items': list(attachments.values())}
+    return {
         'text': f.humanize_html(msg['html'], msgs),
-        'attachments?': bool(msg.get('attachments')) and {
-            'items': [
-                {'name': os.path.basename(a), 'url': '/attachments/%s' % a}
-                for a in msg['attachments']
-            ]
-        }
+        'attachments?': attachments
     }
 
 

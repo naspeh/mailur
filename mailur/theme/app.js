@@ -44,7 +44,7 @@ $('.emails-byid').on('click', '.email-text a', function() {
 });
 $('.emails').on('images', '.email-attachments', function() {
     $(this).magnificPopup({
-        delegate: 'a',
+        delegate: 'a.email-a-image',
         type: 'image',
         tLoading: 'Loading image #%curr%...',
         gallery: {
@@ -60,6 +60,7 @@ $('.emails').on('images', '.email-attachments', function() {
         }
     });
 });
+$('.emails .email-attachments').trigger('images');
 (function() {
 /* Keyboard shortcuts */
 var hotkeys = [
@@ -302,16 +303,6 @@ function connect() {
             }
         } else if (data.updated) {
             console.log(data);
-            var path = location.pathname + location.search;
-            send(path, null, function(data) {
-                if (path.search('^/thread/') != -1) {
-                    updateEmails(data, true);
-                } else if (path.search('^/emails/') != -1) {
-                    updateEmails(data);
-                } else {
-                    $('body').html(data);
-                }
-            });
         }
     };
     ws.onclose = function(event) {
@@ -343,22 +334,6 @@ function send(url, data, callback) {
     } else {
         messages = [function() {send(url, data, callback);}].concat(messages);
     }
-}
-function updateEmails(data, thread) {
-    var container = $('.emails');
-    $(data).find('.email').each(function() {
-        var $this = $(this);
-        var exists = $('#' + $this.attr('id'));
-        if (exists.length && $this.data('hash') != exists.data('hash')) {
-            exists.replaceWith(this);
-        } else if (!exists.length) {
-            if (thread) {
-                container.append(this);
-            } else {
-                container.prepend(this);
-            }
-        }
-    });
 }
 function mark(params) {
     if ($('.emails').hasClass('thread')) {
