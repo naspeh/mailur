@@ -56,7 +56,8 @@ $('.emails').on('images', '.email-attachments', function() {
             tError: '<a href="%url%">The image #%curr%</a> could not be loaded.',
             titleSrc: function(item) {
                 return item.el.html();
-            }
+            },
+            verticalFit: true
         }
     });
 });

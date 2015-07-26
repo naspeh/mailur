@@ -44,7 +44,10 @@ def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
     return localize_dt(env, value).strftime(fmt)
 
 
-def get_preview(text):
+def get_preview(text, files):
+    files = ', '.join(v['name'] for v in files.values())
+    files = ('[%s]' % files) if files else ''
+    text = ' '.join([text, files])
     return (text or '')[:200].strip() or '>'
 
 

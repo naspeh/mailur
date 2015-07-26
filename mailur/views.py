@@ -136,7 +136,7 @@ def ctx_emails(env, items, domid='id'):
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
-            'preview': f.get_preview(i['text']),
+            'preview': f.get_preview(i['text'], i['attachments']),
             'pinned?': '\\Starred' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
             'body_url': env.url_for('body', id=i['id']),
@@ -210,7 +210,7 @@ def ctx_header(env, subj, labels=None):
 
 
 def ctx_body(env, msg, msgs, show=False):
-    if not show and '\\Unread' in msg['labels']:
+    if not show and '\\Unread' not in msg['labels']:
         return False
     attachments = msg.get('attachments')
     attachments = bool(attachments) and {'items': list(attachments.values())}
@@ -313,7 +313,7 @@ def emails(env, page):
         GROUP BY t.thrid
     )
     SELECT
-        id, t.thrid, subj, t.labels, time, fr, text, updated,
+        id, t.thrid, subj, t.labels, time, fr, text, updated, attachments,
         count, subj_list
     FROM emails e
     JOIN threads t ON e.thrid = t.thrid
