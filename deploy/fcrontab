@@ -1,3 +1,2 @@
 ### sync gmail
-@runas(http),exesev(true) 30s /var/local/mailur/src/m sync -t full -l INBOX "\Sent"
-@runas(http),exesev(true) 5 /var/local/mailur/src/m sync -t full
+@runas(http),exesev(true) 30s /var/local/mailur/src/m sync -t full
