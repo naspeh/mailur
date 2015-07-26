@@ -2,7 +2,7 @@
 
 @Space: 16px;
 @Size: 14px;
-@SizeIcon: @Size+@Space*0.2;
+@SizeIcon: @Size * 0.9;
 
 @ColorA: #777;
 @ColorB: #008000;
@@ -84,12 +84,9 @@ body {
             }
         }
         .email-details-toggle {
+            .icon-details;
             display: none;
             font-size: @SizeIcon;
-            &:before {
-                content: 'D';
-                font-weight: bold;
-            }
             &:hover {
                 cursor: pointer;
                 color: @ColorB;
@@ -176,14 +173,18 @@ body {
         display: block;
     }
     .email-details {
+        .mix_reset_list();
         display: none;
         font-size: 80%;
         padding: @Space/2;
         margin: 0 @Space/2;
         border-bottom: 1px solid @Color1bg;
 
-        li {
-            display: inline-block;
+        .email-urls {
+            margin-bottom: 10px;
+            a {
+                margin-right: 10px;
+            }
         }
     }
     .email-attachments {

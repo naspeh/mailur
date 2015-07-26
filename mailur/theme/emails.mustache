@@ -35,10 +35,10 @@
 >
     <ul class="email-line">
         <li class="email-pin" title="Toggle Pin"></li>
-        <li class="email-details-toggle" title="Details"></li>
+        <li class="email-details-toggle" title="Toggle Details"></li>
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
         <li class="email-pic email-info" style="background-image:url({{gravatar}})"></li>
-        <li class="email-from email-info" title="{{from}}">{{from_short}}</li>
+        <li class="email-from email-info" title="{{fr.full}}">{{fr.short}}</li>
         {{#labels?}}
         <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
         {{/labels?}}
@@ -53,12 +53,17 @@
     <div class="email-body">
         {{#body?}}
         <ul class="email-details">
-            <li><a href="{{reply_url}}">Reply</a></li>
-            <li><a href="{{replyall_url}}">Reply to all</a></li>
-            <li><a href="{{raw_url}}" target="_blank">Raw</a></li>
-            <li><a href="{{from_url}}">Filter by person</a></li>
-            <li><a href="{{subj_url}}">Filter by subject</a></li>
-            <li><a href="{{thread_url}}">View full thread</a></li>
+            <li class="email-urls">
+                <a href="{{reply_url}}">Reply</a>
+                <a href="{{replyall_url}}">Reply to all</a>
+                <a href="{{thread_url}}">View full thread</a>
+                <a href="{{body_url}}">View only this email</a>
+                <a href="{{raw_url}}" target="_blank">Raw</a>
+            </li>
+            <li>Subject: <a href="{{subj_url}}" title="Filter by subject">{{subj}}</a></li>
+            <li>From: <a href="{{fr.url}}" title="Filter by person">{{fr.full}}</a></li>
+            <li>To: {{#to}}<a href="{{url}}" title="Filter by person">{{full}}</a>{{/to}}</li>
+            <li>Cc: {{#cc}}<a href="{{url}}" title="Filter by person">{{full}}</a>{{/cc}}</li>
         </ul>
         <div class="email-text">{{&text}}</div>
         {{#attachments?}}

@@ -147,9 +147,9 @@ def ctx_emails(env, items, domid='id'):
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'time_stamp': i['time'].timestamp(),
-            'from': i['fr'][0],
-            'from_short': f.format_addr(env, i['fr'][0]),
-            'from_url': env.url_for('emails', {'person': fr}),
+            'fr': ctx_person(env, i['fr'][0]),
+            'to': [ctx_person(env, v) for v in i['to'] or []],
+            'cc': [ctx_person(env, v) for v in i['cc'] or []],
             'gravatar': f.get_gravatar(fr),
             'labels?': ctx_labels(env, i['labels'])
         }, **extra)
@@ -164,6 +164,14 @@ def ctx_emails(env, items, domid='id'):
     return {
         'emails?': emails,
         'emails_class': 'emails-byid' if domid == 'id' else ''
+    }
+
+
+def ctx_person(env, addr):
+    return {
+        'full': addr,
+        'short': f.format_addr(env, addr),
+        'url': env.url_for('emails', {'person': f.get_addr(addr)})
     }
 
 
@@ -225,7 +233,7 @@ def ctx_body(env, msg, msgs, show=False):
 def thread(env, id):
     i = env.sql('''
     SELECT
-        id, thrid, subj, labels, time, fr, text, updated,
+        id, thrid, subj, labels, time, fr, "to", text, cc, updated,
         html, attachments
     FROM emails
     WHERE thrid = %s
@@ -313,8 +321,8 @@ def emails(env, page):
         GROUP BY t.thrid
     )
     SELECT
-        id, t.thrid, subj, t.labels, time, fr, text, updated, attachments,
-        count, subj_list
+        id, t.thrid, subj, t.labels, time, fr, text, "to", cc, updated,
+        attachments, count, subj_list
     FROM emails e
     JOIN threads t ON e.thrid = t.thrid
     WHERE id IN (
@@ -365,7 +373,7 @@ def search(env, q):
         LIMIT 100
     )
     SELECT
-        e.id, thrid, subj, labels, time, fr, text, updated,
+        e.id, thrid, subj, labels, time, fr, "to", cc, text, updated,
         html, attachments
     FROM emails e, search s
     WHERE e.id = s.id
@@ -382,7 +390,7 @@ def body(env, id):
 
     row = env.sql('''
     SELECT
-        id, thrid, subj, labels, time, fr, text, updated,
+        id, thrid, subj, labels, time, fr, "to", cc, text, updated,
         raw, attachments
     FROM emails WHERE id=%s LIMIT 1
     ''', [id]).fetchone()
