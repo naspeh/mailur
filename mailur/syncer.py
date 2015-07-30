@@ -14,6 +14,11 @@ from .imap import Client
 
 # Only these folders contain unique emails
 FOLDERS = ('\\All', '\\Junk', '\\Trash')
+LABELS = {
+    'INBOX': '\\Inbox',
+    '\\Junk': '\\Spam',
+    '\\Starred': '\\Pinned'
+}
 
 
 def locked_sync_gmail(env, email, *a, **kw):
@@ -92,6 +97,8 @@ def get_parsed(env, data, msgid=None):
             return value
         elif key in ('to', 'fr', 'cc', 'bcc', 'reply_to', 'sender'):
             return [format_addr(v) for v in value]
+        elif key in ('msgid', 'in_reply_to'):
+            return value.strip()
         else:
             return value
 
@@ -207,7 +214,6 @@ def refresh_search(env):
 
 def fetch_labels(env, imap, map_uids, folder, clean=True):
     updated, glabels = [], set()
-    folder = '\\Inbox' if folder == 'INBOX' else folder
 
     gids = get_gids(env, map_uids.values())
     updated += update_label(env, gids, folder)
@@ -244,6 +250,10 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
 
 
 def clean_emails(env, labels, folder):
+    folder = LABELS.get(folder, folder)
+    labels = {LABELS.get(l, l) for l in labels}
+    labels |= {'\\Answered', '\\Unread', folder}
+
     # Sorted array intersection
     new_labels = env.mogrify('''
     SELECT ARRAY(
@@ -254,7 +264,7 @@ def clean_emails(env, labels, folder):
       ) as dt(i)
       ORDER BY 1
     )
-    ''', [list(labels | {'\\Answered', '\\Unread', folder})])
+    ''', [list(labels)])
     sql = '''
     UPDATE emails SET labels=({0})
     WHERE (SELECT ARRAY(SELECT unnest(labels) ORDER BY 1)) != ({0})
@@ -430,6 +440,7 @@ def update_label(env, gids, label, folder=None):
         log.info('  - %s %d emails for %.2fs', action, i.rowcount, t.time())
         step.ids += tuple(r[0] for r in i)
     step.ids = ()
+    folder, label = (LABELS.get(l, l) for l in [folder, label])
 
     log.info('  * Process %r...', label)
     step('remove from', '''

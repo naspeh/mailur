@@ -47,8 +47,8 @@ def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
 def get_preview(text, files):
     files = ', '.join(v['name'] for v in files.values())
     files = ('[%s]' % files) if files else ''
-    text = ' '.join([text, files])
-    return (text or '')[:200].strip() or '>'
+    text = ' '.join([text or '', files])
+    return text[:200].strip() or '>'
 
 
 def is_subj_changed(subj, base):

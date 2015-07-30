@@ -181,7 +181,7 @@ def ctx_labels(env, labels, ignore=None):
     ignore = ignore or []
     pattern = re.compile('(%s)' % '|'.join(
         [r'(?:\\\\)*(?![\\]).*'] +
-        [re.escape(i) for i in ('\\Inbox', '\\Junk', '\\Trash')]
+        [re.escape(i) for i in ('\\Inbox', '\\Spam', '\\Trash')]
     ))
     labels = [
         l for l in sorted(set(labels))
@@ -282,7 +282,7 @@ def emails(env, page):
     label = args.get('in')
     if label:
         subj = label
-        l = [label] if label in ['\\Trash', '\\Junk'] else [label, '\\All']
+        l = [label] if label in ['\\Trash', '\\Spam'] else [label, '\\All']
         where = env.mogrify('%s::varchar[] <@ labels', [l])
     elif args.get('subj'):
         subj = 'Filter by subj %r' % args['subj']
