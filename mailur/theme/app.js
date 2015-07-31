@@ -28,7 +28,7 @@ $('.emails').on('click', '.email-quote-toggle', function() {
 });
 $('.emails').on('click', '.email-pin', function() {
     var email = $(this).parents('.email'),
-        data = {action: '+', name: '\\Starred', ids: [email.data('id')]};
+        data = {action: '+', name: '\\Pinned', ids: [email.data('id')]};
     if (email.hasClass('email-pinned')) {
         data.action = '-';
         if (email.parents('.emails-byid').length === 0) {
@@ -84,7 +84,7 @@ var hotkeys = [
         $('.email:not(.email-pinned) .email-pick input').prop('checked', true);
     }],
     [['m !', '!'], 'Report as spam', function() {
-        mark({action: '+', name: '\\Junk'});
+        mark({action: '+', name: '\\Spam'});
     }],
     [['m #', '#'] , 'Delete', function() {
         mark({action: '+', name: '\\Trash'});
@@ -117,9 +117,9 @@ var hotkeys = [
     [['g d'], 'Go to Drafts', goToLabel('\\Drafts')],
     [['g s'], 'Go to Sent messages', goToLabel('\\Sent')],
     [['g u'], 'Go to Unread conversations', goToLabel('\\Unread')],
-    [['g p'], 'Go to Pinned conversations', goToLabel('\\Starred')],
+    [['g p'], 'Go to Pinned conversations', goToLabel('\\Pinned')],
     [['g a'], 'Go to All mail', goToLabel('\\All')],
-    [['g !'], 'Go to Spam', goToLabel('\\Junk')],
+    [['g !'], 'Go to Spam', goToLabel('\\Spam')],
     [['g #'], 'Go to Trash', goToLabel('\\Trash')],
     [['?'], 'Toggle keyboard shortcut help', function() {
         var help = $('.help');

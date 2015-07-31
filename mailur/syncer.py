@@ -345,12 +345,12 @@ def mark(env, data, new=False, inner=False):
     updated, tasks = [], []
 
     clean = {
-        ('+', '\\Trash'): [('-', ['\\All', '\\Inbox', '\\Junk'])],
+        ('+', '\\Trash'): [('-', ['\\All', '\\Inbox', '\\Spam'])],
         ('-', '\\Trash'): [('+', ['\\All', '\\Inbox'])],
-        ('+', '\\Junk'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
-        ('-', '\\Junk'): [('+', ['\\All', '\\Inbox'])],
+        ('+', '\\Spam'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
+        ('-', '\\Spam'): [('+', ['\\All', '\\Inbox'])],
         ('+', '\\Inbox'): [
-            ('-', ['\\Trash', '\\Junk']),
+            ('-', ['\\Trash', '\\Spam']),
             ('+', '\\All')
         ],
     }
@@ -382,8 +382,8 @@ def sync_marks(env, imap, map_uids):
     store = {
         ('+', '\\Unread'): ('-FLAGS', '\\Seen'),
         ('-', '\\Unread'): ('+FLAGS', '\\Seen'),
-        '\\Starred': ('FLAGS', '\\Flagged'),
-        '\\Junk': ('X-GM-LABELS', '\\Spam'),
+        '\\Pinned': ('FLAGS', '\\Flagged'),
+        '\\Spam': ('X-GM-LABELS', '\\Spam'),
     }
     tasks = env.sql('SELECT id, data FROM tasks ORDER BY created').fetchall()
     msgids = tuple(map_uids.values())

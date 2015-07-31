@@ -137,7 +137,7 @@ def ctx_emails(env, items, domid='id'):
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
             'preview': f.get_preview(i['text'], i['attachments']),
-            'pinned?': '\\Starred' in i['labels'],
+            'pinned?': '\\Pinned' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
             'body_url': env.url_for('body', id=i['id']),
             'raw_url': env.url_for('raw', id=i['id']),
