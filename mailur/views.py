@@ -451,13 +451,17 @@ def compose(env):
         SELECT thrid, msgid, "to", fr, cc, bcc, subj, reply_to
         FROM emails WHERE id=%s LIMIT 1
         ''', [args['id']]).fetchone()
-        if f.get_addr(parent['fr'][0]) == env.session['email']:
+        if f.get_addr(parent['fr'][0]) in env.addresses:
             to = parent['to']
+            fr = parent['fr'][0]
         else:
             to = parent['reply_to'] or parent['fr']
+            fr = [a for a in parent['to'] if f.get_addr(a) in env.addresses]
+            fr = fr[0] if fr else env.addresses[0]
         if args.get('all'):
             to += parent['cc'] or []
         ctx.update({
+            'fr': fr,
             'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
         })
@@ -482,20 +486,21 @@ def compose(env):
                 v.AdaptBy(lambda v: [i.strip() for i in v.split(',')]),
                 [Email]
             ),
+            '+fr': Email,
             '+subj': str,
             '+body': str
         })
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
         msg['files'] = env.request.files.getlist('files')
-        sendmail(env, env.session['email'], msg)
+        sendmail(env, msg)
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
         return env.redirect_for('emails', {'in': '\\Sent'})
     return env.render_body('compose', ctx)
 
 
-def sendmail(env, fr, msg):
+def sendmail(env, msg):
     from email.encoders import encode_base64
     from email.mime.base import MIMEBase
     from email.mime.multipart import MIMEMultipart
@@ -520,7 +525,7 @@ def sendmail(env, fr, msg):
         encode_base64(a)
         email.attach(a)
 
-    email['From'] = fr
+    email['From'] = msg['fr']
     email['To'] = ', '.join(formataddr(a) for a in getaddresses(msg['to']))
     email['Date'] = formatdate()
     email['Subject'] = msg['subj']
@@ -529,8 +534,8 @@ def sendmail(env, fr, msg):
         email['In-Reply-To'] = in_reply_to
         email['References'] = in_reply_to
 
-    _, sendmail = gmail.smtp_connect(env, fr)
-    sendmail(fr, msg['to'], email.as_string())
+    _, sendmail = gmail.smtp_connect(env, env.addresses[0])
+    sendmail(msg['fr'], msg['to'], email.as_string())
 
 
 @login_required
@@ -554,7 +559,7 @@ def search_email(env):
     SELECT distinct unnest("to") AS addr, time
     FROM emails
     WHERE fr[1] LIKE %s
-    ''', ['%<{}>'.format(env.session['email'])])
+    ''', ['%<{}>'.format(env.addresses[0])])
 
     i = env.sql('''
     WITH addresses AS ({addresses})

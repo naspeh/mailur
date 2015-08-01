@@ -162,6 +162,11 @@ class Accounts(Manager):
             return self.update(values, 'email=%s', [email])
         return self.insert([{'type': type, 'email': email, 'data': data}])
 
+    @property
+    def emails(self):
+        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
+        return [r[0] for r in i]
+
 
 class Emails(Manager):
     name = 'emails'

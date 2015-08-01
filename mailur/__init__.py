@@ -85,8 +85,11 @@ class Env:
 
     @username.setter
     def username(self, value):
-        self.__dict__.pop('db', None)  # clear cached property
         self.__dict__['username'] = value
+
+        # Clear cached properties
+        self.__dict__.pop('addresses', None)
+        self.__dict__.pop('db', None)
 
     @property
     def db_name(self):
@@ -183,6 +186,11 @@ class Env:
         elif self.username and self.db:
             return True
         return False
+
+    @cached_property
+    def addresses(self):
+        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
+        return [r[0] for r in i]
 
 
 def setup_logging(env):
