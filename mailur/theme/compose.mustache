@@ -7,6 +7,10 @@
     <textarea name="body" class="compose-body">{{body}}</textarea>
     <button type="submit" name="send">Send</button>
     <button type="button" class="compose-preview">Preview</button>
+    {{#quote?}}
+    <label><input name="quoted" class="compose-quoted" type="checkbox">Include quote</label>
+    <input name="quote" type="hidden" value="{{html}}" class="compose-quote">
+    {{/quote?}}
     <input type="file" name="files" multiple>
     <div class="email-html"></div>
 </form>

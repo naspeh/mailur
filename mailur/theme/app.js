@@ -186,11 +186,18 @@ box.selectize({
 });
 
 $('.compose-preview').click(function() {
-    send('/preview/', {'body': $('.compose-body').val()}, function(data) {
+    var data = {'body': $('.compose-body').val()};
+    if ($('.compose-quoted').is(':checked')) {
+        data.quote = $('.compose-quote').val();
+    }
+    send('/preview/', data, function(data) {
         $('.email-html').html(data).show();
     });
 });
 $('.compose-body').on('input', function() {
+    $('.compose-preview').click();
+});
+$('.compose-quoted').on('change', function() {
     $('.compose-preview').click();
 });
 })();
@@ -329,7 +336,8 @@ function guid() {
 }
 function send(url, data, callback) {
     if (ws && ws.readyState === ws.OPEN) {
-        url = 'http://localhost' + url + (url.indexOf('?') === -1 ? '?' : '&') + 'fmt=body';
+        url = 'http://localhost' + url;
+        url += (url.indexOf('?') === -1 ? '?' : '&') + 'fmt=body';
         var resp = {url: url, payload: data, uid: guid()};
         ws.send(JSON.stringify(resp));
         if (callback) {

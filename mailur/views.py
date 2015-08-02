@@ -228,6 +228,17 @@ def ctx_body(env, msg, msgs, show=False):
     }
 
 
+def ctx_quote(env, msg):
+    return env.render('quote', {
+        'subj': msg['subj'],
+        'html': msg['html'],
+        'fr': ', '.join(msg['fr']),
+        'to': ', '.join(msg['to'] or []),
+        'cc': ', '.join(msg['cc'] or []),
+        'time': msg['time'],
+    })
+
+
 @login_required
 @adapt_fmt('emails')
 def thread(env, id):
@@ -448,7 +459,7 @@ def compose(env):
     ctx, parent = {}, {}
     if args.get('id'):
         parent = env.sql('''
-        SELECT thrid, msgid, "to", fr, cc, bcc, subj, reply_to
+        SELECT thrid, msgid, "to", fr, cc, bcc, subj, reply_to, html, time
         FROM emails WHERE id=%s LIMIT 1
         ''', [args['id']]).fetchone()
         if f.get_addr(parent['fr'][0]) in env.addresses:
@@ -464,6 +475,7 @@ def compose(env):
             'fr': fr,
             'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
+            'quote?': {'html': ctx_quote(env, parent)}
         })
 
     if env.request.method == 'POST':
@@ -488,7 +500,9 @@ def compose(env):
             ),
             '+fr': Email,
             '+subj': str,
-            '+body': str
+            '+body': str,
+            'quote': v.Nullable(str, ''),
+            'quoted': v.Nullable(str)
         })
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
@@ -508,10 +522,14 @@ def sendmail(env, msg):
     from email.utils import formatdate, formataddr, getaddresses
 
     in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
-
-    text = MIMEMultipart('alternative')
-    text.attach(MIMEText(msg['body'], 'plain'))
-    text.attach(MIMEText(markdown(msg['body']), 'html'))
+    if msg.get('quoted'):
+        text = MIMEMultipart()
+        text.attach(MIMEText(markdown(msg['body']), 'html'))
+        text.attach(MIMEText(msg['quote'], 'html'))
+    else:
+        text = MIMEMultipart('alternative')
+        text.attach(MIMEText(msg['body'], 'plain'))
+        text.attach(MIMEText(markdown(msg['body']), 'html'))
     email = text
 
     files = [i for i in files if i.filename]
@@ -541,9 +559,13 @@ def sendmail(env, msg):
 @login_required
 @adapt_fmt('body')
 def preview(env):
-    schema = v.parse({'+body': str})
-    body = schema.validate(env.request.json)['body']
-    return {'body': markdown(body)}
+    schema = v.parse({'+body': str, 'quote': v.Nullable(str)})
+    data = schema.validate(env.request.json)
+    body = '\n\n'.join([
+        markdown(data['body'], escape=False),
+        data.get('quote', '')
+    ])
+    return {'body': body}
 
 
 @login_required
