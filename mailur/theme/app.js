@@ -186,9 +186,12 @@ box.selectize({
 });
 
 $('.compose-preview').click(function() {
-    $.post('/preview/', {'body': $('.compose-body').val()}, function(data) {
+    send('/preview/', {'body': $('.compose-body').val()}, function(data) {
         $('.email-html').html(data).show();
     });
+});
+$('.compose-body').on('input', function() {
+    $('.compose-preview').click();
 });
 })();
 
@@ -326,7 +329,7 @@ function guid() {
 }
 function send(url, data, callback) {
     if (ws && ws.readyState === ws.OPEN) {
-        url = 'http://localhost' + url;
+        url = 'http://localhost' + url + (url.indexOf('?') === -1 ? '?' : '&') + 'fmt=body';
         var resp = {url: url, payload: data, uid: guid()};
         ws.send(JSON.stringify(resp));
         if (callback) {

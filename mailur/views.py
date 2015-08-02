@@ -539,10 +539,11 @@ def sendmail(env, msg):
 
 
 @login_required
+@adapt_fmt('body')
 def preview(env):
     schema = v.parse({'+body': str})
-    body = schema.validate(env.request.form)['body']
-    return markdown(body)
+    body = schema.validate(env.request.json)['body']
+    return {'body': markdown(body)}
 
 
 @login_required
