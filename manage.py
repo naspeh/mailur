@@ -183,10 +183,6 @@ def deploy(env, opts):
         )
 
     cmd.append('''
-    rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
-    rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
-    rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
-    cat /etc/fcrontab/* | fcrontab - &&
     ([ -d {path[src]} ] || (
        git clone https://github.com/naspeh/mailur.git {path[src]}
     )) &&
@@ -195,6 +191,10 @@ def deploy(env, opts):
         mkdir {path[attachments]} &&
         chown http:http {path[attachments]}
     ))
+    rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
+    rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
+    rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
+    cat /etc/fcrontab/* | fcrontab - &&
     ''')
 
     if opts['env']:
@@ -248,6 +248,15 @@ def get_base(argv):
         .arg('-d', '--dev', action='store_true')\
         .arg('-c', '--clear', action='store_true')\
         .exe(lambda a: reqs(a.dev, a.clear))
+
+    cmd('deploy')\
+        .arg('-s', '--ssh')\
+        .arg('--dot', action='store_true')\
+        .arg('-c', '--docker', action='store_true')\
+        .arg('-e', '--env', action='store_true')\
+        .arg('-p', '--pkgs', action='store_true')\
+        .arg('-d', '--db', action='store_true')\
+        .exe(lambda a: deploy(env, a.__dict__))
     return parser, cmd
 
 
@@ -318,14 +327,6 @@ def get_full(argv):
         '   > {0}build/version'
         .format(env('path_theme') + os.path.sep)
     ))
-    cmd('deploy')\
-        .arg('-s', '--ssh')\
-        .arg('--dot', action='store_true')\
-        .arg('-c', '--docker', action='store_true')\
-        .arg('-e', '--env', action='store_true')\
-        .arg('-p', '--pkgs', action='store_true')\
-        .arg('-d', '--db', action='store_true')\
-        .exe(lambda a: deploy(env, a.__dict__))
 
     cmd('touch').exe(lambda a: sh(
         './manage.py static &&'
