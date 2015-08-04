@@ -4,7 +4,7 @@ aiohttp==0.16.6
 bcrypt==2.0.0
 cffi==1.1.2
 chardet==2.3.0
-decorator==3.4.2
+decorator==4.0.2
 dnspython3==1.12.0
 gunicorn==19.3.0
 lxml==3.4.4

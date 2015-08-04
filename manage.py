@@ -6,6 +6,7 @@ import os
 import subprocess as sp
 from pathlib import Path
 
+logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
@@ -128,7 +129,7 @@ def shell(env):
         interact('', local=namespace)
 
 
-def deploy(env, opts):
+def deploy(opts):
     root = Path('/var/local/mailur')
     path = dict(
         src=str(root / 'src'),
@@ -218,7 +219,6 @@ def deploy(env, opts):
             chown postgres:postgres /run/postgresql
         )) &&
         supervisorctl update && supervisorctl restart postgres &&
-        {manage} db-init
         ''')
 
     cmd.append(
@@ -256,7 +256,7 @@ def get_base(argv):
         .arg('-e', '--env', action='store_true')\
         .arg('-p', '--pkgs', action='store_true')\
         .arg('-d', '--db', action='store_true')\
-        .exe(lambda a: deploy(env, a.__dict__))
+        .exe(lambda a: deploy(a.__dict__))
     return parser, cmd
 
 
