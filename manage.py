@@ -297,6 +297,7 @@ def get_full(argv):
             '   jshint'
             # js libs
             '   jquery'
+            '   normalize.css'
             '   mousetrap'
             '   selectize'
             '   magnific-popup'

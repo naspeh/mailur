@@ -6,7 +6,9 @@
     "jquery": "2.1.4",
     "jshint": "2.7.0",
     "less": "2.5.1",
+    "magnific-popup": "1.0.0",
     "mousetrap": "1.5.2",
+    "normalize.css": "3.0.3",
     "selectize": "0.12.1",
     "uglify-js": "2.4.23"
   },
