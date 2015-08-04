@@ -4,7 +4,6 @@ import json
 import re
 
 import valideer as v
-from mistune import markdown
 from werkzeug.routing import Map, Rule
 
 from . import parser, syncer, gmail, filters as f
@@ -514,6 +513,12 @@ def compose(env):
     return env.render_body('compose', ctx)
 
 
+def markdown(html):
+    from mistune import markdown
+
+    return markdown(html, escape=False)
+
+
 def sendmail(env, msg):
     from email.encoders import encode_base64
     from email.mime.base import MIMEBase
@@ -521,15 +526,16 @@ def sendmail(env, msg):
     from email.mime.text import MIMEText
     from email.utils import formatdate, formataddr, getaddresses
 
+    html = markdown(msg['body'])
     in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
     if msg.get('quoted'):
         text = MIMEMultipart()
-        text.attach(MIMEText(markdown(msg['body']), 'html'))
+        text.attach(MIMEText(html, 'html'))
         text.attach(MIMEText(msg['quote'], 'html'))
     else:
         text = MIMEMultipart('alternative')
         text.attach(MIMEText(msg['body'], 'plain'))
-        text.attach(MIMEText(markdown(msg['body']), 'html'))
+        text.attach(MIMEText(html, 'html'))
     email = text
 
     files = [i for i in files if i.filename]
@@ -561,10 +567,7 @@ def sendmail(env, msg):
 def preview(env):
     schema = v.parse({'+body': str, 'quote': v.Nullable(str)})
     data = schema.validate(env.request.json)
-    body = '\n\n'.join([
-        markdown(data['body'], escape=False),
-        data.get('quote', '')
-    ])
+    body = '\n\n'.join([markdown(data['body']), data.get('quote', '')])
     return {'body': body}
 
 
