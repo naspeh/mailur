@@ -46,7 +46,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
             labels_[name] = get_label_uids(imap, name)
         else:
             imap.status(name)
-            log.info('"%s"' % imap_utf7.decode(name))
+            log.info('"%s"', imap_utf7.decode(name))
 
         uids = labels_[name] or {}
         if bodies:
