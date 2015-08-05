@@ -61,7 +61,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
 
 def get_label_uids(imap, name):
     uids = imap.search(name)
-    log.info('"%s" has %i messages' % (imap_utf7.decode(name), len(uids)))
+    log.info('"%s" has %i messages', imap_utf7.decode(name), len(uids))
     if not uids:
         return None
 
