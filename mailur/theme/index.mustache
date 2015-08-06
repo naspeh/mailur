@@ -1,4 +1,8 @@
-<nav><a href="/logout/">Logout</a></nav>
+<nav>
+    <b>{{username}} ({{email}})</b>
+    <a href="#" class="help-toggle" title="Keyboard shortcut help">?</a>
+    <a href="/logout/">Logout</a>
+</nav>
 {{#labels?}}
 <form action="/search/">
     <input name="q" type="text">

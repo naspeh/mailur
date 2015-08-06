@@ -3,6 +3,7 @@ var ws = null, handlers = {}, messages = [];
 
 connect();
 
+$.get('/init/', {'offset': new Date().getTimezoneOffset() / 60});
 if ($('.thread .email-unread').length !== 0) {
     mark({action: '-', name: '\\Unread'});
 }
@@ -122,39 +123,42 @@ var hotkeys = [
     [['g !'], 'Go to Spam', goToLabel('\\Spam')],
     [['g #'], 'Go to Trash', goToLabel('\\Trash')],
     [['?'], 'Toggle keyboard shortcut help', function() {
-        var help = $('.help');
-        if (!help.hasClass('help-loaded')) {
-            var html = '';
-            $(hotkeys).each(function(index, item) {
-                html += '<div><b>' + item[0][0] + '</b>: ' + item[1] + '</div>';
-            });
-            help.append(html);
-            help.addClass('help-loaded');
-            help.find('.help-close').on('click', function() {
-                help.trigger('hide');
-            });
-        }
-        help.on({
-            'hide': function() {
-                Mousetrap.unbind('esc');
-                help.hide();
-            },
-            'show': function() {
-                Mousetrap.bind('esc', function() {
-                    help.hide();
-                });
-                help.show();
-            }
-        });
-        if (help.is(':hidden')) {
-            help.trigger('show');
-        } else {
-            help.trigger('hide');
-        }
+        $('.help-toggle').click();
     }]
 ];
 $(hotkeys).each(function(index, item) {
     Mousetrap.bind(item[0], item[2], 'keyup');
+});
+$('body').on('click', '.help-toggle', function() {
+    var help = $('.help');
+    if (!help.hasClass('help-loaded')) {
+        var html = '';
+        $(hotkeys).each(function(index, item) {
+            html += '<div><b>' + item[0][0] + '</b>: ' + item[1] + '</div>';
+        });
+        help.append(html);
+        help.addClass('help-loaded');
+        help.find('.help-close').on('click', function() {
+            help.trigger('hide');
+        });
+    }
+    help.on({
+        'hide': function() {
+            Mousetrap.unbind('esc');
+            help.hide();
+        },
+        'show': function() {
+            Mousetrap.bind('esc', function() {
+                help.hide();
+            });
+            help.show();
+        }
+    });
+    if (help.is(':hidden')) {
+        help.trigger('show');
+    } else {
+        help.trigger('hide');
+    }
 });
 function goToLabel(label) {
     return function() {
@@ -347,7 +351,7 @@ function send(url, data, callback) {
         messages = [function() {send(url, data, callback);}].concat(messages);
     }
 }
-function mark(params) {
+function mark(params, callback) {
     if ($('.emails').hasClass('thread')) {
         params.ids = [$('.email').first().data('thrid')];
         params.thread = true;
@@ -362,7 +366,14 @@ function mark(params) {
             .get()
         );
     }
-    send('/mark/', params);
+    callback = callback || function(data) {
+        location.reload();
+        // var path = location.pathname + location.search;
+        // send(path, null, function(data) {
+        //     $('body').html(data);
+        // });
+    };
+    send('/mark/', params, callback);
 }
 
 })();

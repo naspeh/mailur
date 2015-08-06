@@ -141,7 +141,11 @@ def index(env):
     ''')
     labels = (dict(l, url=env.url_for('emails', {'in': l['name']})) for l in i)
     labels = sorted(labels, key=lambda v: v['name'])
-    ctx = {'labels?': bool(labels) and {'items': labels}}
+    ctx = {
+        'username': env.username,
+        'email': env.addresses and env.addresses[0],
+        'labels?': bool(labels) and {'items': labels}
+    }
 
     if not labels:
         accounts = env.sql('''
