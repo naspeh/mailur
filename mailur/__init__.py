@@ -179,7 +179,11 @@ class Env:
         return False
 
     def check_auth(self, username, password):
-        self.username = username
+        try:
+            self.username = username
+            self.db
+        except (ValueError, psycopg2.OperationalError):
+            return False
         ph = self.accounts.get_data(self.username).get('password_hash')
         if not ph:
             return False

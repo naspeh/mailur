@@ -66,14 +66,14 @@ def new_pwd(env, username, token):
 
 
 def login(env):
-    error = False
+    ctx = {}
     if env.request.method == 'POST':
         schema = v.parse({'+username': str, '+password': str})
         args = schema.validate(env.request.form)
         if env.check_auth(args['username'], args['password']):
             return env.redirect_for('index')
-        error = True
-    return env.render_body('login', {'error': error})
+        ctx = {'username': args['username'], 'error': True}
+    return env.render_body('login', ctx)
 
 
 def logout(env):
