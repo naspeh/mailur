@@ -69,7 +69,10 @@ def sync(env, target, **kw):
                     continue
                 log.info('Sync %r for %r', target, username)
                 env.username = username
-                sync(env, target, **kw)
+                try:
+                    sync(env, target, **kw)
+                except Exception as e:
+                    log.exception(e)
         return
 
     i = env.sql("SELECT email FROM accounts WHERE type='gmail'")
