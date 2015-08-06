@@ -5,7 +5,7 @@ connect();
 
 $.get('/init/', {'offset': new Date().getTimezoneOffset() / 60});
 if ($('.thread .email-unread').length !== 0) {
-    mark({action: '-', name: '\\Unread', function() {}});
+    mark({action: '-', name: '\\Unread'}, function() {});
 }
 $('.emails-byid').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
