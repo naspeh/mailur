@@ -9,9 +9,11 @@ from werkzeug.routing import Map, Rule
 from . import parser, syncer, gmail, filters as f
 
 rules = [
+    Rule('/login/', endpoint='login'),
+    Rule('/logout/', endpoint='logout'),
+    Rule('/pwd/<username>/<token>/', endpoint='new_pwd'),
     Rule('/gmail/', endpoint='gmail_connect'),
     Rule('/gmail-callback/', endpoint='gmail_callback'),
-    Rule('/pwd/<username>/<token>/', endpoint='new_pwd'),
 
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
@@ -19,7 +21,7 @@ rules = [
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
     Rule('/emails/', endpoint='emails'),
-    Rule('/search/<q>/', endpoint='search'),
+    Rule('/search/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
     Rule('/compose/', endpoint='compose'),
     Rule('/preview/', endpoint='preview'),
@@ -63,13 +65,27 @@ def new_pwd(env, username, token):
     return env.render_body('new_pwd')
 
 
+def login(env):
+    error = False
+    if env.request.method == 'POST':
+        schema = v.parse({'+username': str, '+password': str})
+        args = schema.validate(env.request.form)
+        if env.check_auth(args['username'], args['password']):
+            return env.redirect_for('index')
+        error = True
+    return env.render_body('login', {'error': error})
+
+
+def logout(env):
+    del env.session['username']
+    return env.redirect_for('index')
+
+
 def login_required(func):
     def inner(env, *a, **kw):
         if env.valid_username:
             return func(env, *a, **kw)
-        return env.make_response(status=401, headers={
-            'WWW-Authenticate': 'Basic realm="mailur"'
-        })
+        return env.redirect_for('login')
     return ft.wraps(func)(inner)
 
 
@@ -395,7 +411,10 @@ def emails(env, page):
 
 @login_required
 @adapt_fmt('emails')
-def search(env, q):
+def search(env):
+    schema = v.parse({'+q': str})
+    q = schema.validate(env.request.args)['q']
+
     i = env.sql('''
     WITH search AS (
         SELECT id

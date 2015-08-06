@@ -1,5 +1,10 @@
+<nav><a href="/logout/">Logout</a></nav>
 {{#labels?}}
-<ul>
+<form action="/search/">
+    <input name="q" type="text">
+    <input type="submit" value="Go">
+</form>
+<ul class="labels">
 {{#items}}
 <li><a href="{{url}}">
     {{^unread}}{{name}}{{/unread}}

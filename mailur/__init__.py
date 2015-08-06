@@ -152,6 +152,11 @@ class Env:
         session = SecureCookie.load_cookie(self.request, secret_key=secret_key)
         return session
 
+    @cached_property
+    def addresses(self):
+        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
+        return [r[0] for r in i]
+
     @property
     def valid_token(self):
         if self.request is not None:
@@ -169,28 +174,21 @@ class Env:
                 self.username = username
                 return True
 
-            auth = self.request.headers.get('authorization')
-            auth = auth and parse_authorization_header(auth)
-            if not auth:
-                return False
-
-            self.username = auth.username
-            ph = self.accounts.get_data(self.username).get('password_hash')
-            if not ph:
-                return False
-
-            ph = ph.encode()
-            if bcrypt.hashpw(auth.password.encode(), ph) == ph:
-                self.session['username'] = self.username
-                return True
         elif self.username and self.db:
             return True
         return False
 
-    @cached_property
-    def addresses(self):
-        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
-        return [r[0] for r in i]
+    def check_auth(self, username, password):
+        self.username = username
+        ph = self.accounts.get_data(self.username).get('password_hash')
+        if not ph:
+            return False
+
+        ph = ph.encode()
+        if bcrypt.hashpw(password.encode(), ph) == ph:
+            self.session['username'] = self.username
+            return True
+        return False
 
 
 def setup_logging(env):
