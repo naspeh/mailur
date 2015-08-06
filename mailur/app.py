@@ -91,12 +91,3 @@ class WebEnv(Env):
         with open(os.path.join(self('path_theme'), '%s.mustache' % name)) as f:
             tpl = f.read()
         return render(tpl, ctx)
-
-    def render_body(self, name, ctx=None):
-        body = self.render(name, ctx)
-        name = 'all' if self('debug') else 'all.min'
-        return self.render('base', {
-            'body': body,
-            'cssfile': '/theme/build/%s.css?%s' % (name, self.theme_version),
-            'jsfile': '/theme/build/%s.js?%s' % (name, self.theme_version)
-        })

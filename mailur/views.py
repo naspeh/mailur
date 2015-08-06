@@ -17,6 +17,7 @@ rules = [
 
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
+    Rule('/sidebar/', endpoint='sidebar'),
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
@@ -60,7 +61,7 @@ def new_pwd(env, username, token):
         env.db.commit()
         return env.redirect_for('index')
 
-    return env.render_body('new_pwd')
+    return render_body(env, 'new_pwd')
 
 
 def login(env):
@@ -71,12 +72,19 @@ def login(env):
         if env.check_auth(args['username'], args['password']):
             return env.redirect_for('index')
         ctx = {'username': args['username'], 'error': True}
-    return env.render_body('login', ctx)
+    return render_body(env, 'login', ctx)
 
 
 def logout(env):
     del env.session['username']
     return env.redirect_for('index')
+
+
+def init(env):
+    schema = v.parse({'+offset': v.AdaptTo(int)})
+    args = schema.validate(env.request.args)
+    env.session['tz_offset'] = args['offset']
+    return 'OK'
 
 
 def login_required(func):
@@ -114,7 +122,7 @@ def adapt_page():
 
 def adapt_fmt(tpl):
     def inner(env, *a, **kw):
-        default = 'body' if env.request.is_xhr else 'html'
+        default = 'body' if env.request.is_xhr else kw.pop('fmt', 'html')
         fmt = env.request.args.get('fmt', default)
 
         ctx = wrapper.func(env, *a, **kw)
@@ -122,7 +130,7 @@ def adapt_fmt(tpl):
             return env.to_json(ctx)
         elif fmt == 'body':
             return env.render(tpl, ctx)
-        return env.render_body(tpl, ctx)
+        return render_body(env, tpl, ctx, with_sidebar=True)
 
     def wrapper(func):
         wrapper.func = func
@@ -130,13 +138,32 @@ def adapt_fmt(tpl):
     return wrapper
 
 
+def render_body(env, name, ctx=None, with_sidebar=False):
+    body = env.render(name, ctx)
+    name = 'all' if env('debug') else 'all.min'
+    ctx = {
+        'body': body,
+        'cssfile': '/theme/build/%s.css?%s' % (name, env.theme_version),
+        'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version)
+    }
+    if with_sidebar:
+        ctx['sidebar'] = sidebar(env)
+
+    return env.render('base', ctx)
+
+
 @login_required
-@adapt_fmt('index')
 def index(env):
+    return env.redirect_for('emails', {'in': '\Inbox'})
+
+
+@login_required
+def sidebar(env):
     i = env.sql('''
     WITH labels(name) AS (SELECT DISTINCT unnest(labels) FROM emails)
     SELECT l.name, count(e.id) AS unread FROM labels l
-    LEFT JOIN emails e ON l.name = ANY(labels) AND '\\Unread' = ANY(labels)
+    LEFT JOIN emails e ON l.name = ANY(labels)
+        AND ARRAY['\\Unread', '\\All']::varchar[] <@ labels
     GROUP BY l.name
     ''')
     labels = (dict(l, url=env.url_for('emails', {'in': l['name']})) for l in i)
@@ -152,14 +179,7 @@ def index(env):
         SELECT count(id) FROM accounts WHERE type='gmail'
         ''').fetchone()[0]
         ctx['accounts'] = accounts
-    return ctx
-
-
-def init(env):
-    schema = v.parse({'+offset': v.AdaptTo(int)})
-    args = schema.validate(env.request.args)
-    env.session['tz_offset'] = args['offset']
-    return 'OK'
+    return env.render('sidebar', ctx)
 
 
 def ctx_emails(env, items, domid='id'):
@@ -253,7 +273,7 @@ def ctx_header(env, subj, labels=None):
             'items_json': labels['names_json'] if labels else '""',
             'all_json': ctx_all_labels(env)['items_json'],
             'base_url': env.url_for('emails', {'in': ''})
-        }
+        },
     }
 
 
@@ -554,7 +574,7 @@ def compose(env):
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
         return env.redirect_for('emails', {'in': '\\Sent'})
-    return env.render_body('compose', ctx)
+    return render_body(env, 'compose', ctx, with_sidebar=True)
 
 
 def markdown(html):

@@ -5,7 +5,7 @@ connect();
 
 $.get('/init/', {'offset': new Date().getTimezoneOffset() / 60});
 if ($('.thread .email-unread').length !== 0) {
-    mark({action: '-', name: '\\Unread'});
+    mark({action: '-', name: '\\Unread', function() {}});
 }
 $('.emails-byid').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
@@ -91,10 +91,10 @@ var hotkeys = [
         mark({action: '+', name: '\\Trash'});
     }],
     [['m u', 'm shift+r'], 'Mark as unread', function() {
-        mark({action: '+', name: '\\Unread'});
+        mark({action: '+', name: '\\Unread'}, function() {});
     }],
     [['m r', 'm shift+u'], 'Mark as read', function() {
-        mark({action: '-', name: '\\Unread'});
+        mark({action: '-', name: '\\Unread'}, function() {});
     }],
     [['m i', 'm shift+a'], 'Move to Inbox', function() {
         mark({action: '+', name: '\\Inbox'});
@@ -110,9 +110,6 @@ var hotkeys = [
     }],
     [['r a'], 'Reply all', function() {
         location.href = $('.email:last').data('replyallUrl');
-    }],
-    [['g l'], 'Go to Labels', function() {
-        location.href = '/';
     }],
     [['g i'], 'Go to Inbox', goToLabel('\\Inbox')],
     [['g d'], 'Go to Drafts', goToLabel('\\Drafts')],
@@ -328,6 +325,9 @@ function connect() {
             }
         } else if (data.updated) {
             console.log(data);
+            send('/sidebar/', null, function(data) {
+                $('.labels').html($(data).find('.labels'));
+            });
         }
     };
     ws.onclose = function(event) {
@@ -385,5 +385,4 @@ function mark(params, callback) {
     };
     send('/mark/', params, callback);
 }
-
 })();
