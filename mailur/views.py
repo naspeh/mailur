@@ -9,8 +9,9 @@ from werkzeug.routing import Map, Rule
 from . import parser, syncer, gmail, filters as f
 
 rules = [
-    Rule('/auth/', endpoint='auth'),
-    Rule('/auth-callback/', endpoint='auth_callback'),
+    Rule('/gmail/', endpoint='gmail_connect'),
+    Rule('/gmail-callback/', endpoint='gmail_callback'),
+    Rule('/pwd/<username>/<token>/', endpoint='new_pwd'),
 
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
@@ -27,18 +28,39 @@ rules = [
 url_map = Map(rules)
 
 
-def auth(env):
-    redirect_uri = env.url_for('auth_callback', _external=True)
+def gmail_connect(env):
+    if env.addresses:
+        return env.abort(400)
+
+    redirect_uri = env.url_for('gmail_callback', _external=True)
     return env.redirect(gmail.auth_url(env, redirect_uri))
 
 
-def auth_callback(env):
-    redirect_uri = env.url_for('auth_callback', _external=True)
+def gmail_callback(env):
+    redirect_uri = env.url_for('gmail_callback', _external=True)
     try:
         gmail.auth_callback(env, redirect_uri, env.request.args['code'])
         return env.redirect_for('index')
     except gmail.AuthError as e:
         return str(e)
+
+
+def new_pwd(env, username, token):
+    env.username = username
+    reset_token = env.accounts.get_data().get('reset_token')
+    if not reset_token or reset_token != token:
+        return env.abort(400)
+
+    if env.request.method == 'POST':
+        schema = v.parse({'+password': str, '+password_confirm': str})
+        args = schema.validate(env.request.form)
+        if args['password'] != args['password_confirm']:
+            raise v.SchemaError('Passwords aren\'t the same')
+        env.accounts.update_pwd(args['password'])
+        env.db.commit()
+        return env.redirect_for('index')
+
+    return env.render_body('new_pwd')
 
 
 def login_required(func):

@@ -273,8 +273,8 @@ def get_full(argv):
         .exe(lambda a: sync(Env(a.username), a.target, only=a.only))
 
     cmd('db-init')\
+        .arg('username')\
         .arg('-r', '--reset', action='store_true')\
-        .arg('-u', '--username')\
         .arg('-p', '--password')\
         .exe(lambda a: db.init(Env(a.username), a.password, a.reset))
 

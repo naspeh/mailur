@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import bcrypt
 import psycopg2
@@ -35,9 +35,13 @@ def init(env, password=None, reset=False):
     env.db.commit()
 
     if password:
-        h = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        env.accounts.add_or_update(env.username, 'ph', {'password_hash': h})
+        env.accounts.update_pwd(password)
         env.db.commit()
+    else:
+        token = str(uuid4())
+        env.accounts.add_or_update(env.username, 'ph', {'reset_token': token})
+        env.db.commit()
+        print('Reset password: /pwd/%s/%s/' % (env.username, token))
 
 
 def fill_updated(table, field='updated'):
@@ -147,7 +151,13 @@ class Accounts(Manager):
         create_seq(name, 'id')
     ))
 
-    def get_data(self, email):
+    @property
+    def emails(self):
+        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
+        return [r[0] for r in i]
+
+    def get_data(self, email=None):
+        email = email or self.env.username
         i = self.sql('SELECT data FROM accounts WHERE email=%s', (email,))
         data = i.fetchone()
         return data['data'] if data else {}
@@ -158,14 +168,17 @@ class Accounts(Manager):
 
     def add_or_update(self, email, type, data):
         if self.exists(email):
-            values = {'type': type, 'data': dict(self.get_data(email), **data)}
-            return self.update(values, 'email=%s', [email])
+            return self.update_data(email, type, data)
         return self.insert([{'type': type, 'email': email, 'data': data}])
 
-    @property
-    def emails(self):
-        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
-        return [r[0] for r in i]
+    def update_data(self, email, type, data, clear=True):
+        data = data if clear else dict(self.get_data(email), **data)
+        values = {'type': type, 'data': data}
+        return self.update(values, 'email=%s', [email])
+
+    def update_pwd(self, password):
+        h = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        self.update_data(self.env.username, 'ph', {'password_hash': h})
 
 
 class Emails(Manager):
