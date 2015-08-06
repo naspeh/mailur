@@ -247,6 +247,13 @@ box.selectize({
 var selectize = box[0].selectize;
 selectize.setValue(getLabels());
 
+var refreshOptions = selectize.refreshOptions;
+selectize.refreshOptions = function(triggerDropdown) {
+    if (this.$control_input.val()) {
+        refreshOptions.bind(this)(triggerDropdown);
+    }
+};
+
 $('.emails').on('change', '.email-pick', function() {
     selectize.setValue(getLabels());
 });
@@ -267,8 +274,11 @@ cancel.on('click', function() {
 });
 $(container.find('input')).each(function() {
     Mousetrap(this)
-        .bind(['backspace', 'esc'], function() {
+        .bind(['esc'], function() {
             selectize.close();
+        })
+        .bind(['backspace'], function() {
+            refreshOptions(true);
         })
         .bind('esc esc', function() {
             cancel.focus().click();

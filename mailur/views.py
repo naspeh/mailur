@@ -241,6 +241,7 @@ def ctx_labels(env, labels, ignore=None):
 def ctx_all_labels(env):
     i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
     items = sorted(r[0] for r in i.fetchall())
+    items = set(items) | {'\\Spam', '\\Trash'}
     return ctx_labels(env, items)
 
 
