@@ -1,11 +1,11 @@
 <div>
 <nav>
-    <b>{{username}} ({{email}})</b>
-    <a href="#" class="help-toggle" title="Keyboard shortcut help">?</a>
     <a href="/logout/" title="Logout">X</a>
+    <a href="#" class="help-toggle" title="Keyboard shortcut help">?</a>
+    <b>{{username}} ({{email}})</b>
 </nav>
 {{#labels?}}
-<form action="/search/">
+<form class="search-form" action="/search/">
     <input name="q" type="text">
     <input type="submit" value="Go">
 </form>
