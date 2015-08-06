@@ -31,11 +31,9 @@ url_map = Map(rules)
 
 
 def gmail_connect(env):
-    if env.addresses:
-        return env.abort(400)
-
+    email = env.addresses and env.addresses[0]
     redirect_uri = env.url_for('gmail_callback', _external=True)
-    return env.redirect(gmail.auth_url(env, redirect_uri))
+    return env.redirect(gmail.auth_url(env, redirect_uri, email))
 
 
 def gmail_callback(env):

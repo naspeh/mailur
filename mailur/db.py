@@ -168,7 +168,7 @@ class Accounts(Manager):
 
     def add_or_update(self, email, type, data):
         if self.exists(email):
-            return self.update_data(email, type, data)
+            return self.update_data(email, type, data, False)
         return self.insert([{'type': type, 'email': email, 'data': data}])
 
     def update_data(self, email, type, data, clear=True):

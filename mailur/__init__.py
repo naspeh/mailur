@@ -105,8 +105,10 @@ class Env:
             'password': self('pg_password'),
             'dbname': dbname or self.db_name
         }, **params)
-        conn = psycopg2.connect(**params)
-        return conn
+        try:
+            return psycopg2.connect(**params)
+        except psycopg2.OperationalError:
+            raise ValueError('Wrong username or credentials')
 
     @contextmanager
     def db_cursor(self, connect_params=None, **params):
@@ -118,6 +120,11 @@ class Env:
     @cached_property
     def db(self):
         return self.db_connect()
+
+    @cached_property
+    def addresses(self):
+        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
+        return [r[0] for r in i]
 
     def _sql(self, method, sql, *args, **opts):
         opts = dict({'cursor_factory': psycopg2.extras.DictCursor}, **opts)
@@ -147,15 +154,10 @@ class Env:
     @cached_property
     def session(self):
         if self.request is None:
-            return {}
+            return
         secret_key = self('cookie_secret').encode()
         session = SecureCookie.load_cookie(self.request, secret_key=secret_key)
         return session
-
-    @cached_property
-    def addresses(self):
-        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
-        return [r[0] for r in i]
 
     @property
     def valid_token(self):
@@ -168,31 +170,35 @@ class Env:
 
     @property
     def valid_username(self):
-        if self.request is not None:
-            username = self.session.get('username')
-            if username:
-                self.username = username
-                return True
+        if not self.username:
+            username = self.session and self.session.get('username')
+            if not username:
+                return False
 
-        elif self.username and self.db:
+            self.username = username
+
+        # check db_connect
+        try:
+            self.db
             return True
-        return False
+        except ValueError:
+            return False
 
     def check_auth(self, username, password):
-        try:
-            self.username = username
-            self.db
-        except (ValueError, psycopg2.OperationalError):
+        self.username = username
+        if not self.valid_username:
             return False
+
         ph = self.accounts.get_data(self.username).get('password_hash')
         if not ph:
             return False
 
         ph = ph.encode()
-        if bcrypt.hashpw(password.encode(), ph) == ph:
-            self.session['username'] = self.username
-            return True
-        return False
+        if bcrypt.hashpw(password.encode(), ph) != ph:
+            return False
+
+        self.session['username'] = self.username
+        return True
 
 
 def setup_logging(env):
