@@ -247,7 +247,7 @@ def parse(text, msg_id=None, attachments_dir=None):
 
 
 link_regexes = [
-    r'(https?://|www\.)[^ ]+',
+    r'(https?://|www\.)[^\s]+',
     r'mailto:([a-z0-9._-]+@[a-z0-9_._]+[a-z])',
 ]
 link_re = re.compile('(?i)(%s)' % '|'.join(link_regexes))
