@@ -71,8 +71,8 @@ def sync(env, target, **kw):
                 env.username = username
                 try:
                     sync(env, target, **kw)
-                except Exception as e:
-                    log.exception(e)
+                except:
+                    pass
         return
 
     i = env.sql("SELECT email FROM accounts WHERE type='gmail'")
