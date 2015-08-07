@@ -140,7 +140,8 @@ def deploy(opts):
         attachments=str(root / 'attachments'),
         wheels=str(root / 'wheels'),
         pgdata='/var/lib/postgres/data',
-        dotfiles='/home/dotfiles'
+        log='/var/log',
+        dotfiles='/home/dotfiles',
     )
     ctx = {
         'cwd': os.getcwd(),
@@ -153,14 +154,18 @@ def deploy(opts):
         r="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
         ([ "true" == "$r" ] || (
             docker run -d --net=host --name=mailur \
-                -v {cwd}:{path[src]} naspeh/web \
+                -v {cwd}:{path[src]} \
+                -v {cwd}/../attachments:{path[attachments]} \
+                -v {cwd}/../pgdata:{path[pgdata]} \
+                -v {cwd}/../log:{path[log]} \
+                {docker_image} \
             &&
             docker exec -i mailur \
                 /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
                 < ~/.ssh/id_rsa.pub
             sleep 5
         ))
-        '''.format(**ctx))
+        '''.format(docker_image=opts['docker_image'], **ctx))
         opts['ssh'] = 'root@localhost -p2200'
 
     cmd = []
@@ -213,6 +218,7 @@ def deploy(opts):
 
     if opts['db']:
         cmd.append('''
+        ([ -d {path[pgdata]} ] && chown -R postgres:postgres {path[pgdata]}) &&
         ([ -f {path[pgdata]}/postgresql.conf ] ||
             sudo -upostgres \
                 initdb --locale en_US.UTF-8 -E UTF8 -D {path[pgdata]}
@@ -256,6 +262,7 @@ def get_base(argv):
         .arg('-s', '--ssh')\
         .arg('--dot', action='store_true')\
         .arg('-c', '--docker', action='store_true')\
+        .arg('-i', '--docker-image', default='naspeh/web')\
         .arg('-e', '--env', action='store_true')\
         .arg('-p', '--pkgs', action='store_true')\
         .arg('-d', '--db', action='store_true')\

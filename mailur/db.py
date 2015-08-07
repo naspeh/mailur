@@ -178,7 +178,7 @@ class Accounts(Manager):
 
     def update_pwd(self, password):
         h = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        self.update_data(self.env.username, 'ph', {'password_hash': h})
+        self.add_or_update(self.env.username, 'ph', {'password_hash': h})
 
 
 class Emails(Manager):

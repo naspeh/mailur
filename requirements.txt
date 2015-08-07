@@ -1,6 +1,6 @@
 Unidecode==0.4.18
 Werkzeug==0.10.4
-aiohttp==0.16.6
+aiohttp==0.17.0
 bcrypt==2.0.0
 cffi==1.1.2
 chardet==2.3.0
