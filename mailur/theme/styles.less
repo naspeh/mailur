@@ -306,17 +306,24 @@ body {
     width: 200px;
     overflow: hidden;
     padding: 0 10px;
-    white-space: nowrap;
 
+    nav {
+        white-space: nowrap;
+    }
     .search-form {
         margin: 5px 0;
+        white-space: nowrap;
     }
     .labels {
         .mix_reset_list();
+        li {
+            white-space: nowrap;
+        }
     }
 }
 .body {
-    padding-left: 220px;
+    position: absolute;
+    left: 220px;
 }
 .error {
     color: red;
