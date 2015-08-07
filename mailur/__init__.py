@@ -92,6 +92,10 @@ class Env:
         self.__dict__.pop('db', None)
 
     @property
+    def attachments_dir(self):
+        return str(Path(self('path_attachments')) / self.username)
+
+    @property
     def db_name(self):
         if not self.username:
             raise ValueError('No username')

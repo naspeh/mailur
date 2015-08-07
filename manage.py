@@ -71,7 +71,9 @@ def sync(env, target, **kw):
                 env.username = username
                 try:
                     sync(env, target, **kw)
-                except:
+                except Exception as e:
+                    log.exception(e)
+                except SystemExit:
                     pass
         return
 
@@ -166,7 +168,6 @@ def deploy(opts):
             sleep 5
         ))
         '''.format(docker_image=opts['docker_image'], **ctx))
-        opts['ssh'] = 'root@localhost -p2200'
 
     cmd = []
     if opts['dot']:
@@ -196,10 +197,8 @@ def deploy(opts):
        git clone https://github.com/naspeh/mailur.git {path[src]}
     )) &&
     cd {path[src]} && git pull;
-    ([ -d {path[attachments]} ] || (
-        mkdir {path[attachments]} &&
-        chown http:http {path[attachments]}
-    ))
+    ([ -d {path[attachments]} ] || mkdir {path[attachments]}) &&
+    chown http:http {path[attachments]}
     rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
@@ -259,7 +258,7 @@ def get_base(argv):
         .exe(lambda a: reqs(a.dev, a.clear))
 
     cmd('deploy')\
-        .arg('-s', '--ssh')\
+        .arg('-s', '--ssh', default="root@localhost -p2200")\
         .arg('--dot', action='store_true')\
         .arg('-c', '--docker', action='store_true')\
         .arg('-i', '--docker-image', default='naspeh/web')\

@@ -38,8 +38,7 @@ def init(env, password=None, reset=False):
         env.accounts.update_pwd(password)
         env.db.commit()
     else:
-        token = str(uuid4())
-        env.accounts.add_or_update(env.username, 'ph', {'reset_token': token})
+        token = env.accounts.reset_pwd()
         env.db.commit()
         print('Reset password: /pwd/%s/%s/' % (env.username, token))
 
@@ -179,6 +178,11 @@ class Accounts(Manager):
     def update_pwd(self, password):
         h = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
         self.add_or_update(self.env.username, 'ph', {'password_hash': h})
+
+    def reset_pwd(self):
+        token = str(uuid4())
+        self.add_or_update(self.env.username, 'ph', {'reset_token': token})
+        return token
 
 
 class Emails(Manager):

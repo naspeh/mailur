@@ -11,12 +11,13 @@ from . import parser, syncer, gmail, filters as f
 rules = [
     Rule('/login/', endpoint='login'),
     Rule('/logout/', endpoint='logout'),
-    Rule('/pwd/<username>/<token>/', endpoint='new_pwd'),
     Rule('/gmail/', endpoint='gmail_connect'),
     Rule('/gmail-callback/', endpoint='gmail_callback'),
 
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
+    Rule('/pwd/<username>/<token>/', endpoint='new_pwd'),
+    Rule('/reset-pwd/', endpoint='reset_pwd'),
     Rule('/sidebar/', endpoint='sidebar'),
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
@@ -44,24 +45,6 @@ def gmail_callback(env):
         return env.redirect_for('index')
     except gmail.AuthError as e:
         return str(e)
-
-
-def new_pwd(env, username, token):
-    env.username = username
-    reset_token = env.accounts.get_data().get('reset_token')
-    if not reset_token or reset_token != token:
-        return env.abort(400)
-
-    if env.request.method == 'POST':
-        schema = v.parse({'+password': str, '+password_confirm': str})
-        args = schema.validate(env.request.form)
-        if args['password'] != args['password_confirm']:
-            raise v.SchemaError('Passwords aren\'t the same')
-        env.accounts.update_pwd(args['password'])
-        env.db.commit()
-        return env.redirect_for('index')
-
-    return render_body(env, 'new_pwd')
 
 
 def login(env):
@@ -150,6 +133,31 @@ def render_body(env, name, ctx=None, with_sidebar=False):
         ctx['sidebar'] = sidebar(env)
 
     return env.render('base', ctx)
+
+
+def new_pwd(env, username, token):
+    env.username = username
+    reset_token = env.accounts.get_data().get('reset_token')
+    if not reset_token or reset_token != token:
+        return env.abort(400)
+
+    if env.request.method == 'POST':
+        schema = v.parse({'+password': str, '+password_confirm': str})
+        args = schema.validate(env.request.form)
+        if args['password'] != args['password_confirm']:
+            raise v.SchemaError('Passwords aren\'t the same')
+        env.accounts.update_pwd(args['password'])
+        env.db.commit()
+        return env.redirect_for('index')
+
+    return render_body(env, 'new_pwd')
+
+
+@login_required
+def reset_pwd(env):
+    token = env.accounts.reset_pwd()
+    env.db.commit()
+    return env.redirect_for('new_pwd', username=env.username, token=token)
 
 
 @login_required
@@ -460,7 +468,7 @@ def search(env):
 @adapt_fmt('emails')
 def body(env, id):
     def parse(raw, id):
-        return parser.parse(raw.tobytes(), id, env('path_attachments'))
+        return parser.parse(raw.tobytes(), id, env.attachments_dir)
 
     row = env.sql('''
     SELECT

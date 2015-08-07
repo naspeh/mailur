@@ -119,7 +119,7 @@ def get_parsed(env, data, msgid=None):
         ('attachments', 'attachments'),
         ('embedded', 'embedded'),
     )
-    msg = parser.parse(data, msgid, env('path_attachments'))
+    msg = parser.parse(data, msgid, env.attachments_dir)
     return ((field, clean(field, msg[key])) for key, field in pairs)
 
 
