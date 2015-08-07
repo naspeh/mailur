@@ -15,10 +15,11 @@ def with_lock(target, timeout=10):
         if not os.path.exists(path):
             return
 
+        with open(path) as f:
+            pid = f.read()
+
         minutes_out = (time.time() - os.path.getctime(path)) / 60
         if minutes_out > timeout:
-            with open(path) as f:
-                pid = f.read()
             try:
                 os.kill(int(pid), signal.SIGQUIT)
             except:
@@ -26,6 +27,12 @@ def with_lock(target, timeout=10):
             finally:
                 os.remove(path)
             return
+        else:
+            try:
+                os.kill(int(pid), 0)
+            except OSError:
+                os.remove(path)
+                return
         log.warn(
             '%r is locked (for %.2f minutes). Remove file %r to run',
             target, minutes_out, path
