@@ -23,9 +23,9 @@ LABELS = {
 
 def locked_sync_gmail(env, email, *a, **kw):
     func = sync_gmail
-
-    with with_lock('%s:%s' % (func.__name__, email), timeout=30):
-        return Timer(func.__name__)(func)(env, email, *a, **kw)
+    target = ':'.join([func.__name__, email])
+    with with_lock(target, timeout=30):
+        return Timer(target)(func)(env, email, *a, **kw)
 
 
 def sync_gmail(env, email, bodies=False, only=None, labels=None):
