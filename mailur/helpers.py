@@ -18,21 +18,21 @@ def with_lock(target, timeout=10):
         with open(path) as f:
             pid = f.read()
 
+        # Check if process exists
+        try:
+            os.kill(int(pid), 0)
+        except OSError:
+            os.remove(path)
+            return
+
         minutes_out = (time.time() - os.path.getctime(path)) / 60
         if minutes_out > timeout:
             try:
                 os.kill(int(pid), signal.SIGQUIT)
+                os.remove(path)
             except:
                 pass
-            finally:
-                os.remove(path)
             return
-        else:
-            try:
-                os.kill(int(pid), 0)
-            except OSError:
-                os.remove(path)
-                return
         log.warn(
             '%r is locked (for %.2f minutes). Remove file %r to run',
             target, minutes_out, path
