@@ -110,13 +110,15 @@ def parse(env, limit=1000, offset=0):
     done = 0
     for offset in range(offset, count, limit):
         i = env.sql('''
-        SELECT id, raw FROM emails
+        SELECT id FROM emails
         WHERE raw IS NOT NULL
         ORDER BY id
         LIMIT %s OFFSET %s
         ''' % (limit, offset))
         for row in i:
-            data = syncer.get_parsed(env, row['raw'].tobytes(), row['id'])
+            raw = env.sql('SELECT raw FROM emails WHERE id=%s', [row['id']])
+            raw = raw.fetchone()[0].tobytes()
+            data = syncer.get_parsed(env, raw, row['id'])
             env.emails.update(dict(data), 'id=%s', [row['id']])
             env.db.commit()
             done += 1
