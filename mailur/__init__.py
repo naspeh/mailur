@@ -80,6 +80,20 @@ class Env:
         return default if value is None else value
 
     @property
+    def users(self):
+        with self.db_cursor({'dbname': 'postgres'}) as cur:
+            cur.execute('''
+            SELECT datname FROM pg_database
+            WHERE datistemplate = false;
+            ''')
+            for row in cur:
+                username = row[0].find('mailur_') == 0 and row[0][7:]
+                if not username:
+                    continue
+
+                yield username
+
+    @property
     def username(self):
         return self.__dict__['username']
 

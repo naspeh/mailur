@@ -54,29 +54,27 @@ def reqs(dev=False, clear=False):
     not dev and sh('pip freeze | sort > requirements.txt')
 
 
-def sync(env, target, **kw):
-    from mailur import syncer
-
-    if not env.username:
-        with env.db_cursor({'dbname': 'postgres'}) as cur:
-            cur.execute('''
-            SELECT datname FROM pg_database
-            WHERE datistemplate = false;
-            ''')
-            for row in cur:
-                username = row[0].find('mailur_') == 0 and row[0][7:]
-                if not username:
-                    continue
-                log.info('Sync %r for %r', target, username)
+def for_all(func):
+    def inner(env, *a, **kw):
+        if not env.username:
+            for username in env.users:
                 env.username = username
                 try:
-                    sync(env, target, **kw)
+                    func(env, *a, **kw)
                 except Exception as e:
                     log.exception(e)
                 except SystemExit:
                     pass
-        return
+            return
+        func(env, *a, **kw)
+    return ft.wraps(func)(inner)
 
+
+@for_all
+def sync(env, target, **kw):
+    from mailur import syncer
+
+    log.info('Sync %r for %r', target, env.username)
     i = env.sql("SELECT email FROM accounts WHERE type='gmail'")
     for row in i:
         email = row[0]
@@ -94,7 +92,28 @@ def sync(env, target, **kw):
             labels = s(target='fast')
             s(target='thrids')
             s(target='bodies', labels=labels)
+
 sync.choices = ['fast', 'thrids', 'bodies', 'full']
+
+
+@for_all
+def parse(env):
+    from mailur import syncer
+
+    count = env.sql('SELECT count(id) FROM emails').fetchone()[0]
+    log.info('Parse %s emails for %r', count, env.username)
+
+    num, batch = 0, 1000
+    i = env.sql('SELECT id, raw FROM emails')
+    for row in i:
+        if not row['raw']:
+            continue
+        data = syncer.get_parsed(env, row['raw'].tobytes(), row['id'])
+        env.emails.update(dict(data), 'id=%s', [row['id']])
+        env.db.commit()
+        num += 1
+        if not num % batch:
+            log.info('  - done %s' % num)
 
 
 def grun(name, extra):
@@ -280,6 +299,10 @@ def get_full(argv):
         .arg('-l', '--only', nargs='*', help='sync only these labels')\
         .arg('-u', '--username')\
         .exe(lambda a: sync(Env(a.username), a.target, only=a.only))
+
+    cmd('parse')\
+        .arg('-u', '--username')\
+        .exe(lambda a: parse(Env(a.username)))
 
     cmd('db-init')\
         .arg('username')\
