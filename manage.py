@@ -103,17 +103,18 @@ def parse(env):
     count = env.sql('SELECT count(id) FROM emails').fetchone()[0]
     log.info('Parse %s emails for %r', count, env.username)
 
-    num, batch = 0, 1000
-    i = env.sql('SELECT id, raw FROM emails')
-    for row in i:
-        if not row['raw']:
-            continue
-        data = syncer.get_parsed(env, row['raw'].tobytes(), row['id'])
-        env.emails.update(dict(data), 'id=%s', [row['id']])
-        env.db.commit()
-        num += 1
-        if not num % batch:
-            log.info('  - done %s' % num)
+    batch = 1000
+    for limit in range(0, count, batch):
+        i = env.sql('''
+        SELECT id, raw FROM emails LIMIT %s OFFSET %s
+        ''' % (limit, batch))
+        for row in i:
+            if not row['raw']:
+                continue
+            data = syncer.get_parsed(env, row['raw'].tobytes(), row['id'])
+            env.emails.update(dict(data), 'id=%s', [row['id']])
+            env.db.commit()
+        log.info('  - done %s' % (limit + batch))
 
 
 def grun(name, extra):
