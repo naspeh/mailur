@@ -99,6 +99,7 @@ sync.choices = ['fast', 'thrids', 'bodies', 'full']
 @for_all
 def parse(env, limit=1000, offset=0):
     from mailur import syncer
+    from mailur.helpers import Timer
 
     sql = 'SELECT count(id) FROM emails WHERE raw IS NOT NULL'
     count = env.sql(sql).fetchone()[0] - offset
@@ -107,7 +108,7 @@ def parse(env, limit=1000, offset=0):
 
     log.info('Parse %s emails for %r', count, env.username)
 
-    done = 0
+    timer, done = Timer(), 0
     for offset in range(offset, count, limit):
         i = env.sql('''
         SELECT id FROM emails
@@ -122,7 +123,7 @@ def parse(env, limit=1000, offset=0):
             env.emails.update(dict(data), 'id=%s', [row['id']])
             env.db.commit()
             done += 1
-        log.info('  - done %s', done)
+        log.info('  - done %s for %.2f', done, timer.time())
 
 
 def grun(name, extra):
