@@ -97,24 +97,27 @@ sync.choices = ['fast', 'thrids', 'bodies', 'full']
 
 
 @for_all
-def parse(env):
+def parse(env, limit=1000, offset=0):
     from mailur import syncer
 
-    count = env.sql('SELECT count(id) FROM emails').fetchone()[0]
+    sql = 'SELECT count(id) FROM emails WHERE raw IS NOT NULL'
+    count = env.sql(sql).fetchone()[0] - offset
+    if count <= 0:
+        return
+
     log.info('Parse %s emails for %r', count, env.username)
 
-    batch = 1000
-    for limit in range(0, count, batch):
+    done = 0
+    for offset in range(offset, count, limit):
         i = env.sql('''
-        SELECT id, raw FROM emails LIMIT %s OFFSET %s
-        ''' % (limit, batch))
+        SELECT id, raw FROM emails WHERE raw IS NOT NULL LIMIT %s OFFSET %s
+        ''' % (limit, offset))
         for row in i:
-            if not row['raw']:
-                continue
             data = syncer.get_parsed(env, row['raw'].tobytes(), row['id'])
             env.emails.update(dict(data), 'id=%s', [row['id']])
             env.db.commit()
-        log.info('  - done %s' % (limit + batch))
+            done += 1
+        log.info('  - done %s', done)
 
 
 def grun(name, extra):
@@ -303,7 +306,9 @@ def get_full(argv):
 
     cmd('parse')\
         .arg('-u', '--username')\
-        .exe(lambda a: parse(Env(a.username)))
+        .arg('-l', '--limit', type=int, default=1000)\
+        .arg('-o', '--offset', type=int, default=0)\
+        .exe(lambda a: parse(Env(a.username), a.limit, a.offset))
 
     cmd('db-init')\
         .arg('username')\
