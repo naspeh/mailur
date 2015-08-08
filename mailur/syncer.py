@@ -401,7 +401,7 @@ def sync_marks(env, imap, map_uids):
         key = t['action'] + key
         key, value = store.get((t['action'], t['name']), (key, value))
         value = [value] if isinstance(value, str) else value
-        value = (imap_utf7.decode(v) for v in value)
+        value = (imap_utf7.encode(v) for v in value)
         value = (
             '"%s"' % v.replace('\\', '\\\\').replace('"', '\\"')
             for v in value
