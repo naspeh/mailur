@@ -123,7 +123,7 @@ def parse(env, limit=1000, offset=0):
             env.emails.update(dict(data), 'id=%s', [row['id']])
             env.db.commit()
             done += 1
-        log.info('  - done %s for %.2f', done, timer.time())
+        log.info('  - done %s for %.2f', done, timer.duration)
 
 
 def grun(name, extra):
