@@ -110,7 +110,10 @@ def parse(env, limit=1000, offset=0):
     done = 0
     for offset in range(offset, count, limit):
         i = env.sql('''
-        SELECT id, raw FROM emails WHERE raw IS NOT NULL LIMIT %s OFFSET %s
+        SELECT id, raw FROM emails
+        WHERE raw IS NOT NULL
+        ORDER BY id
+        LIMIT %s OFFSET %s
         ''' % (limit, offset))
         for row in i:
             data = syncer.get_parsed(env, row['raw'].tobytes(), row['id'])
