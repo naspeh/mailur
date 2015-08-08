@@ -6,8 +6,8 @@ import os
 import subprocess as sp
 from pathlib import Path
 
-logging.basicConfig()
 log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 def sh(cmd):
