@@ -150,20 +150,20 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
     if inner:
         return content
 
-    content.update(attachments={}, embedded={})
+    content.update(attachments=[], embedded={})
     for index, item in enumerate(content['files']):
         if item['payload']:
             name = slugify(item['filename'] or item['id'])
             url = '/'.join([slugify(msg_id), str(index), name])
             obj = {
-                'url': '/attachments/%s' % url,
+                'url': url,
                 'name': item['filename'],
                 'type': item['maintype']
             }
             if item['id']:
                 content['embedded'][item['id']] = obj
             elif item['filename']:
-                content['attachments'][url] = obj
+                content['attachments'].append(obj)
             else:
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue

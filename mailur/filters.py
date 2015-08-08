@@ -45,7 +45,7 @@ def format_dt(env, value, fmt='%a, %d %b, %Y at %H:%M'):
 
 
 def get_preview(text, files):
-    files = ', '.join(v['name'] for v in files.values())
+    files = ', '.join(v['name'] for v in files)
     files = ('[%s]' % files) if files else ''
     text = re.sub(r'\s+', ' ', text)
     text = ' '.join([text or '', files])

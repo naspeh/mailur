@@ -1,3 +1,4 @@
+import json
 import re
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -99,6 +100,8 @@ def get_parsed(env, data, msgid=None):
             return [format_addr(v) for v in value]
         elif key in ('msgid', 'in_reply_to'):
             return value.strip()
+        elif key in ('attachments',):
+            return json.dumps(value)
         else:
             return value
 
