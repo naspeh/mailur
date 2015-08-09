@@ -530,13 +530,13 @@ def compose(env):
         SELECT thrid, msgid, "to", fr, cc, bcc, subj, reply_to, html, time
         FROM emails WHERE id=%s LIMIT 1
         ''', [args['id']]).fetchone()
-        if f.get_addr(parent['fr'][0]) in env.addresses:
+        if f.get_addr(parent['fr'][0]) == env.email:
             to = parent['to']
             fr = parent['fr'][0]
         else:
             to = parent['reply_to'] or parent['fr']
-            fr = [a for a in parent['to'] if f.get_addr(a) in env.addresses]
-            fr = fr[0] if fr else env.addresses[0]
+            fr = [a for a in parent['to'] if f.get_addr(a) == env.email]
+            fr = fr[0] if fr else env.email
         if args.get('all'):
             to += parent['cc'] or []
         ctx.update({
@@ -627,7 +627,12 @@ def sendmail(env, msg):
         email['In-Reply-To'] = in_reply_to
         email['References'] = in_reply_to
 
-    _, sendmail = gmail.smtp_connect(env, env.addresses[0])
+    env.storage.set('send:%s' % dt.datetime.now(), email.as_string())
+    env.db.commit()
+    if env('readonly'):
+        return
+
+    _, sendmail = gmail.smtp_connect(env, env.email)
     sendmail(msg['fr'], msg['to'], email.as_string())
 
 
@@ -654,7 +659,7 @@ def search_email(env):
     SELECT distinct unnest("to") AS addr, time
     FROM emails
     WHERE fr[1] LIKE %s
-    ''', ['%<{}>'.format(env.addresses[0])])
+    ''', ['%<{}>'.format(env.email)])
 
     i = env.sql('''
     WITH addresses AS ({addresses})

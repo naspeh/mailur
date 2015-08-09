@@ -17,7 +17,11 @@ from . import db
 log = logging.getLogger(__name__)
 
 
-def get_conf(conf):
+def get_conf(conf=None):
+    if not conf:
+        with open('conf.json', 'br') as f:
+            conf = json.loads(f.read().decode())
+
     def exists(v):
         return Path(v).exists()
 
@@ -27,6 +31,8 @@ def get_conf(conf):
     with v.parsing(additional_properties=False):
         schema = v.parse({
             'debug': v.Nullable(bool, False),
+            'readonly': v.Nullable(bool, True),
+            'enabled': v.Nullable(bool, True),
             '+pg_username': str,
             '+pg_password': str,
             '+google_id': str,
@@ -43,7 +49,6 @@ def get_conf(conf):
             'imap_body_maxsize': v.Nullable(int, 50 * 1024 * 1024),
             'imap_batch_size': v.Nullable(int, 2000),
             'imap_debug': v.Nullable(int, 0),
-            'imap_readonly': v.Nullable(bool, True),
             'smtp_debug': v.Nullable(bool, False),
             'async_pool': v.Nullable(int, 0),
             'ui_ga_id': str,
@@ -61,19 +66,22 @@ def get_conf(conf):
 
 class Env:
     def __init__(self, username=None, conf=None):
-        if not conf:
-            with open('conf.json', 'br') as f:
-                conf = json.loads(f.read().decode())
-
-        self.conf = get_conf(conf)
-        self.log_conf = setup_logging(self)
-
-        self.username = username
-        self.request = None
+        conf = get_conf(conf)
+        self.conf_default = conf
+        self.conf_logging = setup_logging(conf)
+        self.conf_custom = {}
 
         self.storage = db.Storage(self)
         self.emails = db.Emails(self)
         self.tasks = db.Tasks(self)
+
+        # General setup
+        self.username = None
+        self.request = None
+
+        # User specific setup
+        if username is not None:
+            self.username = username
 
     def __call__(self, key, default=None):
         value = self.conf[key]
@@ -100,18 +108,16 @@ class Env:
     @username.setter
     def username(self, value):
         self.__dict__['username'] = value
+        self.db = value and self.db_connect()
 
-        # Clear cached properties
-        self.__dict__.pop('db', None)
-        self.__dict__.pop('email', None)
+        email, conf = None, {}
+        if self.db:
+            email = self.storage.get('gmail_info', {}).get('email')
+            conf = self.storage.get('conf', {})
 
-    @cached_property
-    def db(self):
-        return self.db_connect()
-
-    @cached_property
-    def email(self):
-        return self.storage.get('gmail_info', {}).get('email')
+        self.email = email
+        self.conf = get_conf(dict(self.conf_default, **conf))
+        self.conf_custom = conf
 
     @property
     def attachments_dir(self):
@@ -218,8 +224,8 @@ class Env:
         return True
 
 
-def setup_logging(env):
-    conf = {
+def setup_logging(conf):
+    config = {
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
@@ -256,15 +262,15 @@ def setup_logging(env):
         },
         'loggers': {
             '': {
-                'handlers': env('log_handlers', ['console_detail']),
-                'level': env('log_level', 'INFO'),
+                'handlers': conf.get('log_handlers', ['console_detail']),
+                'level': conf.get('log_level', 'INFO'),
                 'propagate': True
             }
         }
     }
-    log_file = env('log_file')
+    log_file = conf.get('log_file')
     if log_file:
-        conf['handlers'].update(file={
+        config['handlers'].update(file={
             'class': 'logging.handlers.RotatingFileHandler',
             'level': 'INFO',
             'formatter': 'detail',
@@ -273,6 +279,6 @@ def setup_logging(env):
             'backupCount': 20,
             'encoding': 'utf8'
         })
-        conf['loggers']['']['handlers'].append('file')
-    logging.config.dictConfig(conf)
-    return conf
+        config['loggers']['']['handlers'].append('file')
+    logging.config.dictConfig(config)
+    return config

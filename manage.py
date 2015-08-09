@@ -56,17 +56,27 @@ def reqs(dev=False, clear=False):
 
 def for_all(func):
     def inner(env, *a, **kw):
-        if not env.username:
-            for username in env.users:
-                env.username = username
-                try:
-                    func(env, *a, **kw)
-                except Exception as e:
-                    log.exception(e)
-                except SystemExit:
-                    pass
+        if env.username:
+            func(env, *a, **kw)
             return
-        func(env, *a, **kw)
+
+        for username in env.users:
+            env.username = username
+            skip = (
+                'no email' if not env.email else
+                'disabled' if not env('enabled') else
+                None
+            )
+            if skip:
+                log.warn('Skip for %r, cause %r', func.__name__, skip)
+                continue
+
+            try:
+                func(env, *a, **kw)
+            except Exception as e:
+                log.exception(e)
+            except SystemExit:
+                pass
     return ft.wraps(func)(inner)
 
 
@@ -74,11 +84,7 @@ def for_all(func):
 def sync(env, target, **kw):
     from mailur import syncer
 
-    if not env.email:
-        log.info('Skip sync %r for %r; no email', target, env.username)
-        return
-
-    log.info('Sync %r for %s(%s)', target, env.username, env.email)
+    log.info('Sync %r for %r; %s', target, env.username, env.email)
     func = ft.partial(syncer.locked_sync_gmail, env, env.email, **kw)
     if target == 'fast':
         return func()

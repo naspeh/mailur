@@ -178,7 +178,7 @@ class Storage(Manager):
         return value or default
 
     def set(self, key, value):
-        value = json.dumps(value)
+        value = json.dumps(value, ensure_ascii=False)
         self.upsert({'key': key, 'value': value}, 'key=%s', [key])
 
     def rm(self, key):

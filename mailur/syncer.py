@@ -42,7 +42,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
         if not label:
             continue
 
-        imap.select(name, env('imap_readonly'))
+        imap.select(name, env('readonly'))
         if not labels:
             labels_[name] = get_label_uids(imap, name)
         else:
