@@ -62,15 +62,6 @@ def for_all(func):
 
         for username in env.users:
             env.username = username
-            skip = (
-                'no email' if not env.email else
-                'disabled' if not env('enabled') else
-                None
-            )
-            if skip:
-                log.warn('Skip for %r, cause %r', func.__name__, skip)
-                continue
-
             try:
                 func(env, *a, **kw)
             except Exception as e:
@@ -81,10 +72,19 @@ def for_all(func):
 
 
 @for_all
-def sync(env, target, **kw):
+def sync(env, target, disabled, **kw):
     from mailur import syncer
 
-    log.info('Sync %r for %r; %s', target, env.username, env.email)
+    skip = (
+        'no email' if not env.email else
+        'disabled' if not disabled and not env('enabled') else
+        None
+    )
+    ending = 'Skip couse %r' % skip if skip else env.email
+    log.info('Sync %r for %r; %s', target, env.username, ending)
+    if skip:
+        return
+
     func = ft.partial(syncer.locked_sync_gmail, env, env.email, **kw)
     if target == 'fast':
         return func()
@@ -313,8 +313,11 @@ def get_full(argv):
     cmd('sync')\
         .arg('-t', '--target', default='fast', choices=sync.choices)\
         .arg('-l', '--only', nargs='*', help='sync only these labels')\
+        .arg('-d', '--disabled', action='store_true')\
         .arg('-u', '--username')\
-        .exe(lambda a: sync(Env(a.username), a.target, only=a.only))
+        .exe(lambda a: (
+            sync(Env(a.username), a.target, a.disabled, only=a.only))
+        )
 
     cmd('parse')\
         .arg('-u', '--username')\
