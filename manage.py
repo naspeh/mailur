@@ -72,7 +72,7 @@ def for_all(func):
 
 
 @for_all
-def sync(env, target, disabled, **kw):
+def sync(env, target, disabled=False, **kw):
     from mailur import syncer
 
     skip = (
@@ -93,7 +93,7 @@ def sync(env, target, disabled, **kw):
     elif target == 'thrids':
         syncer.update_thrids(env)
     elif target == 'full':
-        s = ft.partial(sync, env, **kw)
+        s = ft.partial(sync, env, disabled=disabled, **kw)
 
         labels = s(target='fast')
         s(target='thrids')
@@ -167,6 +167,26 @@ def shell(env):
     except ImportError:
         from code import interact
         interact('', local=namespace)
+
+
+@for_all
+def migrate(env):
+    from mailur import db
+
+    db.init(env)
+    env.username = env.username  # reset db connection
+
+    i = env.sql('SELECT email, type, data FROM accounts').fetchall()
+    for row in i:
+        if row['type'] == 'ph':
+            env.storage.set('password_hash', row['data']['password_hash'])
+        elif row['type'] == 'gmail':
+            env.storage.set('gmail', row['data'])
+            env.storage.set('gmail_info', {'email': row['email']})
+    env.db.commit()
+
+    env.sql('DROP TABLE accounts')
+    env.db.commit()
 
 
 def deploy(opts):
@@ -331,6 +351,7 @@ def get_full(argv):
         .arg('-p', '--password')\
         .exe(lambda a: db.init(Env(a.username), a.password, a.reset))
 
+    cmd('migrate').exe(lambda a: migrate(env))
     cmd('shell').exe(lambda a: shell(env))
     cmd('run').exe(lambda a: run(env))
     cmd('web', add_help=False).exe(lambda a: grun('web', ' '.join(a)))

@@ -112,8 +112,12 @@ class Env:
 
         email, conf = None, {}
         if self.db:
-            email = self.storage.get('gmail_info', {}).get('email')
-            conf = self.storage.get('conf', {})
+            try:
+                email = self.storage.get('gmail_info', {}).get('email')
+                conf = self.storage.get('conf', {})
+            except psycopg2.ProgrammingError as e:
+                log.error(e)
+                self.db.rollback()
 
         self.email = email
         self.conf = get_conf(dict(self.conf_default, **conf))

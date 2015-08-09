@@ -66,7 +66,8 @@ def auth_refresh(env, email):
         'grant_type': 'refresh_token',
     })
     if res.ok:
-        env.storage.set('gmail', env.storage.get('gmail'), **res.json())
+        value = dict(env.storage.get('gmail'), **res.json())
+        env.storage.set('gmail', value)
         env.db.commit()
         return
     raise AuthError('%s: %s' % (res.reason, res.text))
