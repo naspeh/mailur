@@ -21,7 +21,8 @@ def auth_url(env, redirect_uri, email=None):
         'client_id': env('google_id'),
         'scope': (
             'https://mail.google.com/ '
-            'https://www.googleapis.com/auth/userinfo.email'
+            'email '
+            'profile'
         ),
         'login_hint': email,
         'redirect_uri': redirect_uri,
@@ -46,14 +47,15 @@ def auth_callback(env, redirect_uri, code):
             'https://www.googleapis.com/oauth2/v1/userinfo',
             headers={'Authorization': 'Bearer %s' % auth['access_token']}
         ).json()
-        env.accounts.add_or_update(info['email'], 'gmail', auth)
+        env.storage.set('gmail', auth)
+        env.storage.set('gmail_info', info)
         env.db.commit()
         return info
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
 def auth_refresh(env, email):
-    refresh_token = env.accounts.get_data(email).get('refresh_token')
+    refresh_token = env.storage.get('gmail').get('refresh_token')
     if not refresh_token:
         raise AuthError('refresh_token is empty')
 
@@ -64,14 +66,14 @@ def auth_refresh(env, email):
         'grant_type': 'refresh_token',
     })
     if res.ok:
-        env.accounts.add_or_update(email, 'gmail', res.json())
+        env.storage.set('gmail', res.json())
         env.db.commit()
         return
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
 def xoauth2(env, email):
-    token = env.accounts.get_data(email).get('access_token')
+    token = env.storage.get('gmail').get('access_token')
     if not token:
         raise AuthError('No account for %r' % email)
 

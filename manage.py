@@ -74,24 +74,24 @@ def for_all(func):
 def sync(env, target, **kw):
     from mailur import syncer
 
-    log.info('Sync %r for %r', target, env.username)
-    i = env.sql("SELECT email FROM accounts WHERE type='gmail'")
-    for row in i:
-        email = row[0]
-        log.info('Sync %r for %r', target, email)
-        func = ft.partial(syncer.locked_sync_gmail, env, email, **kw)
-        if target == 'fast':
-            return func()
-        elif target == 'bodies':
-            return func(bodies=True)
-        elif target == 'thrids':
-            syncer.update_thrids(env)
-        elif target == 'full':
-            s = ft.partial(sync, env, **kw)
+    if not env.email:
+        log.info('Skip sync %r for %r; no email', target, env.username)
+        return
 
-            labels = s(target='fast')
-            s(target='thrids')
-            s(target='bodies', labels=labels)
+    log.info('Sync %r for %s(%s)', target, env.username, env.email)
+    func = ft.partial(syncer.locked_sync_gmail, env, env.email, **kw)
+    if target == 'fast':
+        return func()
+    elif target == 'bodies':
+        return func(bodies=True)
+    elif target == 'thrids':
+        syncer.update_thrids(env)
+    elif target == 'full':
+        s = ft.partial(sync, env, **kw)
+
+        labels = s(target='fast')
+        s(target='thrids')
+        s(target='bodies', labels=labels)
 
 sync.choices = ['fast', 'thrids', 'bodies', 'full']
 

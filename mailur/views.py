@@ -16,8 +16,8 @@ rules = [
 
     Rule('/', endpoint='index'),
     Rule('/init/', endpoint='init'),
-    Rule('/pwd/<username>/<token>/', endpoint='new_pwd'),
-    Rule('/reset-pwd/', endpoint='reset_pwd'),
+    Rule('/pwd/', endpoint='reset_password'),
+    Rule('/pwd/<username>/<token>/', endpoint='reset_password'),
     Rule('/sidebar/', endpoint='sidebar'),
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
@@ -33,9 +33,8 @@ url_map = Map(rules)
 
 
 def gmail_connect(env):
-    email = env.addresses and env.addresses[0]
     redirect_uri = env.url_for('gmail_callback', _external=True)
-    return env.redirect(gmail.auth_url(env, redirect_uri, email))
+    return env.redirect(gmail.auth_url(env, redirect_uri, env.email))
 
 
 def gmail_callback(env):
@@ -135,29 +134,27 @@ def render_body(env, name, ctx=None, with_sidebar=False):
     return env.render('base', ctx)
 
 
-def new_pwd(env, username, token):
+def reset_password(env, username=None, token=None):
+    def inner(env):
+        if env.request.method == 'POST':
+            schema = v.parse({'+password': str, '+password_confirm': str})
+            args = schema.validate(env.request.form)
+            if args['password'] != args['password_confirm']:
+                raise v.SchemaError('Passwords aren\'t the same')
+            env.storage.set_password(args['password'])
+            env.storage.rm('password_token')
+            env.db.commit()
+            return env.redirect_for('index')
+        return render_body(env, 'reset_password')
+
+    if not username and not token:
+        return login_required(inner)(env)
+
     env.username = username
-    reset_token = env.accounts.get_data().get('reset_token')
-    if not reset_token or reset_token != token:
+    password_token = env.storage.get('password_token')
+    if not password_token or password_token != token:
         return env.abort(400)
-
-    if env.request.method == 'POST':
-        schema = v.parse({'+password': str, '+password_confirm': str})
-        args = schema.validate(env.request.form)
-        if args['password'] != args['password_confirm']:
-            raise v.SchemaError('Passwords aren\'t the same')
-        env.accounts.update_pwd(args['password'])
-        env.db.commit()
-        return env.redirect_for('index')
-
-    return render_body(env, 'new_pwd')
-
-
-@login_required
-def reset_pwd(env):
-    token = env.accounts.reset_pwd()
-    env.db.commit()
-    return env.redirect_for('new_pwd', username=env.username, token=token)
+    return inner(env)
 
 
 @login_required
@@ -178,15 +175,12 @@ def sidebar(env):
     labels = sorted(labels, key=lambda v: v['name'])
     ctx = {
         'username': env.username,
-        'email': env.addresses and env.addresses[0],
+        'email': env.email,
         'labels?': bool(labels) and {'items': labels}
     }
 
     if not labels:
-        accounts = env.sql('''
-        SELECT count(id) FROM accounts WHERE type='gmail'
-        ''').fetchone()[0]
-        ctx['accounts'] = accounts
+        ctx['gmail'] = bool(env.email)
     return env.render('sidebar', ctx)
 
 

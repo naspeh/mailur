@@ -71,7 +71,7 @@ class Env:
         self.username = username
         self.request = None
 
-        self.accounts = db.Accounts(self)
+        self.storage = db.Storage(self)
         self.emails = db.Emails(self)
         self.tasks = db.Tasks(self)
 
@@ -102,8 +102,16 @@ class Env:
         self.__dict__['username'] = value
 
         # Clear cached properties
-        self.__dict__.pop('addresses', None)
         self.__dict__.pop('db', None)
+        self.__dict__.pop('email', None)
+
+    @cached_property
+    def db(self):
+        return self.db_connect()
+
+    @cached_property
+    def email(self):
+        return self.storage.get('gmail_info', {}).get('email')
 
     @property
     def attachments_dir(self):
@@ -134,15 +142,6 @@ class Env:
         with self.db_connect(**connect_params) as conn:
             with conn.cursor(**params) as cur:
                 yield cur
-
-    @cached_property
-    def db(self):
-        return self.db_connect()
-
-    @cached_property
-    def addresses(self):
-        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
-        return [r[0] for r in i]
 
     def _sql(self, method, sql, *args, **opts):
         opts = dict({'cursor_factory': psycopg2.extras.DictCursor}, **opts)
@@ -207,7 +206,7 @@ class Env:
         if not self.valid_username:
             return False
 
-        ph = self.accounts.get_data(self.username).get('password_hash')
+        ph = self.storage.get('password_hash')
         if not ph:
             return False
 

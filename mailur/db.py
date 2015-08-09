@@ -1,3 +1,4 @@
+import json
 from uuid import UUID, uuid4
 
 import bcrypt
@@ -30,15 +31,15 @@ def init(env, password=None, reset=False):
     END;
     $$ language 'plpgsql';
     '''
-    sql += ';'.join(t.table for t in [Accounts, Emails, Tasks])
+    sql += ';'.join(t.table for t in [Storage, Emails, Tasks])
     env.sql(sql)
     env.db.commit()
 
     if password:
-        env.accounts.update_pwd(password)
+        env.storage.set_password(password)
         env.db.commit()
-    else:
-        token = env.accounts.reset_pwd()
+    elif reset:
+        token = env.storage.set_password_token()
         env.db.commit()
         print('Reset password: /pwd/%s/%s/' % (env.username, token))
 
@@ -95,93 +96,101 @@ class Manager():
     def db(self):
         return self.env.db
 
+    def get_fields(self, fields):
+        fields = sorted(f for f in fields)
+        error = set(fields) - set(self.field_names)
+        if error:
+            raise ValueError('No fields: %s' % error)
+        return fields
+
+    def sql_fields(self, fields):
+        fields = self.get_fields(fields)
+        return '(%s)' % ', '.join('"%s"' % i for i in fields)
+
+    def sql_values(self, items):
+        if isinstance(items, dict):
+            items = [items]
+
+        fields = self.get_fields(items[0])
+        pattern = '(%s)' % ', '.join('%%(%s)s' % i for i in fields)
+        values = ','.join([self.mogrify(pattern, v) for v in items])
+        return values
+
     def insert(self, items):
         if isinstance(items, dict):
             items = [items]
 
-        fields = sorted(f for f in items[0])
-        error = set(fields) - set(self.field_names)
-        if error:
-            raise ValueError('No fields: %s' % error)
-
-        values = '(%s)' % (', '.join('%%(%s)s' % i for i in fields))
-        values = ','.join([self.mogrify(values, v) for v in items])
-        sql = 'INSERT INTO {table} ({fields}) VALUES '.format(
-            table=self.name,
-            fields=', '.join('"%s"' % i for i in fields),
-        )
-        sql += values + 'RETURNING id'
-        return [r[0] for r in self.sql(sql)]
-
-    def update(self, values, where, params=None):
-        fields = sorted(f for f in values)
-        error = set(fields) - set(self.field_names)
-        if error:
-            raise ValueError('No fields: %s' % error)
-        values_ = ', '.join('%%(%s)s' % i for i in fields)
-        values_ = self.mogrify(values_, values)
-        where_ = self.mogrify(where, params)
-        sql = '''
-        UPDATE {table} SET ({fields}) = ({values})
-          WHERE {where}
-          RETURNING id
+        i = self.sql('''
+        INSERT INTO {table} {fields} VALUES {values} RETURNING id
         '''.format(
             table=self.name,
-            fields=', '.join('"%s"' % i for i in fields),
-            values=values_,
-            where=where_
-        )
-        return [r[0] for r in self.sql(sql)]
+            fields=self.sql_fields(items[0].keys()),
+            values=self.sql_values(items)
+        ))
+        return [r[0] for r in i]
+
+    def update(self, values, where, params=None):
+        i = self.sql('''
+        UPDATE {table} SET {fields} = {values}
+            WHERE {where}
+            RETURNING id
+        '''.format(
+            table=self.name,
+            fields=self.sql_fields(values.keys()),
+            values=self.sql_values(values),
+            where=self.mogrify(where, params)
+        ))
+        return [r[0] for r in i]
+
+    def upsert(self, values, where, params=None):
+        return self.sql('''
+        UPDATE {table} SET {fields} = {values} WHERE {where};
+        INSERT INTO {table} {fields}
+            SELECT {select}
+            WHERE NOT EXISTS (SELECT 1 FROM {table} WHERE {where});
+        '''.format(
+            table=self.name,
+            fields=self.sql_fields(values.keys()),
+            values=self.sql_values(values),
+            select=self.sql_values(values)[1:-1:],
+            where=self.mogrify(where, params)
+        ))
 
 
-class Accounts(Manager):
-    name = 'accounts'
+class Storage(Manager):
+    name = 'storage'
     fields = (
-        'id int PRIMARY KEY',
-        'email varchar UNIQUE',
-        'type varchar',
-        'data jsonb',
+        'key varchar PRIMARY KEY',
+        'value jsonb',
 
         'created timestamp NOT NULL DEFAULT current_timestamp',
         'updated timestamp NOT NULL DEFAULT current_timestamp'
     )
     table = create_table(name, fields, after=(
         fill_updated(name),
-        create_seq(name, 'id')
     ))
 
-    @property
-    def emails(self):
-        i = self.sql("SELECT email FROM accounts WHERE type='gmail'")
-        return [r[0] for r in i]
+    def get(self, key, default=None):
+        value = self.sql('''
+        SELECT value FROM storage WHERE key=%s
+        ''', (key,)).fetchall()
+        value = value and value[0][0]
+        return value or default
 
-    def get_data(self, email=None):
-        email = email or self.env.username
-        i = self.sql('SELECT data FROM accounts WHERE email=%s', (email,))
-        data = i.fetchone()
-        return data['data'] if data else {}
+    def set(self, key, value):
+        value = json.dumps(value)
+        self.upsert({'key': key, 'value': value}, 'key=%s', [key])
 
-    def exists(self, email):
-        i = self.sql('SELECT count(id) FROM accounts WHERE email=%s', (email,))
-        return i.fetchone()[0]
+    def rm(self, key):
+        self.sql('DELETE FROM storage WHERE key=%s', [key])
 
-    def add_or_update(self, email, type, data):
-        if self.exists(email):
-            return self.update_data(email, type, data, False)
-        return self.insert([{'type': type, 'email': email, 'data': data}])
+    def set_password(self, value):
+        h = bcrypt.hashpw(value.encode(), bcrypt.gensalt()).decode()
+        self.set('password_hash', h)
 
-    def update_data(self, email, type, data, clear=True):
-        data = data if clear else dict(self.get_data(email), **data)
-        values = {'type': type, 'data': data}
-        return self.update(values, 'email=%s', [email])
-
-    def update_pwd(self, password):
-        h = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        self.add_or_update(self.env.username, 'ph', {'password_hash': h})
-
-    def reset_pwd(self):
+    def set_password_token(self):
         token = str(uuid4())
-        self.add_or_update(self.env.username, 'ph', {'reset_token': token})
+        self.set('password_token', token)
         return token
 
 
@@ -192,7 +201,6 @@ class Emails(Manager):
         'created timestamp NOT NULL DEFAULT current_timestamp',
         'updated timestamp NOT NULL DEFAULT current_timestamp',
         'thrid uuid REFERENCES emails(id)',
-        # 'account_id int NOT NULL REFERENCES accounts(id)',
 
         'header bytea',
         'raw bytea',

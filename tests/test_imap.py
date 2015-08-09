@@ -11,7 +11,7 @@ from mailur import gmail, imap, imap_utf7
 @patch('imaplib.IMAP4_SSL')
 def client(mok, env):
     '''IMAP client with some patches'''
-    with patch.object(env, 'accounts'):
+    with patch.object(env, 'storage'):
         return gmail.imap_connect(env, 'test@pusto.org')
 
 
