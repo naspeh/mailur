@@ -473,7 +473,7 @@ def update_thrids(env):
         return ids
 
     # step('clear', 'UPDATE emails SET thrid = NULL RETURNING id')
-    step('no "in_reply_to" and "references"', '''
+    step('no "in_reply_to" and no "references"', '''
     UPDATE emails SET thrid = id
     WHERE thrid IS NULL
       AND (in_reply_to IS NULL OR in_reply_to != ALL(SELECT msgid FROM emails))
@@ -481,7 +481,28 @@ def update_thrids(env):
     RETURNING id
     ''')
 
-    step('flat query by "in_reply_to" and "references"', '''
+    step('flat query by "in_reply_to"', '''
+    UPDATE emails e SET thrid=t.thrid
+      FROM emails t
+      WHERE e.in_reply_to = t.msgid AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      RETURNING e.id;
+    ''')
+
+    step('reqursive query by "in_reply_to"', '''
+    WITH RECURSIVE thrids(id, msgid, thrid) AS (
+      SELECT id, msgid, thrid
+      FROM emails WHERE thrid IS NOT NULL
+    UNION
+      SELECT e.id, e.msgid, t.thrid
+      FROM emails e, thrids t
+      WHERE e.in_reply_to = t.msgid AND e.thrid IS NULL AND t.thrid IS NOT NULL
+    )
+    UPDATE emails e SET thrid=t.thrid
+    FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
+    RETURNING e.id
+    ''')
+
+    step('flat query by "references"', '''
     UPDATE emails e SET thrid=t.thrid
       FROM emails t
       WHERE (e.in_reply_to = t.msgid OR t.msgid = ANY(e.refs))
@@ -489,15 +510,14 @@ def update_thrids(env):
       RETURNING e.id;
     ''')
 
-    step('reqursive query by "in_reply_to" and "references"', '''
+    step('reqursive query by "references"', '''
     WITH RECURSIVE thrids(id, msgid, thrid) AS (
       SELECT id, msgid, thrid
       FROM emails WHERE thrid IS NOT NULL
     UNION
       SELECT e.id, e.msgid, t.thrid
       FROM emails e, thrids t
-      WHERE (e.in_reply_to = t.msgid OR t.msgid = ANY(e.refs))
-        AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      WHERE t.msgid = ANY(e.refs) AND e.thrid IS NULL AND t.thrid IS NOT NULL
     )
     UPDATE emails e SET thrid=t.thrid
     FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
