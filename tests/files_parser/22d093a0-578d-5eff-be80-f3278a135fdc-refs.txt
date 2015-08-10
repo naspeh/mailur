@@ -1,0 +1,113 @@
+Delivered-To: mailr@pusto.org
+Received: by 10.202.105.197 with SMTP id e188csp419740oic;
+        Fri, 7 Aug 2015 07:18:38 -0700 (PDT)
+X-Received: by 10.194.122.168 with SMTP id lt8mr14655450wjb.35.1438957118806;
+        Fri, 07 Aug 2015 07:18:38 -0700 (PDT)
+Return-Path: <python-list-bounces+mailr=pusto.org@python.org>
+Received: from mail.python.org (mail.python.org. [82.94.164.166])
+        by mx.google.com with ESMTPS id g9si11311362wix.19.2015.08.07.07.18.38
+        for <mailr@pusto.org>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 07 Aug 2015 07:18:38 -0700 (PDT)
+Received-SPF: pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 82.94.164.166 as permitted sender) client-ip=82.94.164.166;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 82.94.164.166 as permitted sender) smtp.mailfrom=python-list-bounces+mailr=pusto.org@python.org
+Received: from albatross.python.org (localhost [127.0.0.1])
+	by mail.python.org (Postfix) with ESMTP id 3mnphF5KSjzNyy
+	for <mailr@pusto.org>; Fri,  7 Aug 2015 16:18:37 +0200 (CEST)
+X-Original-To: python-list@python.org
+Delivered-To: python-list@mail.python.org
+Received: from albatross.python.org (localhost [127.0.0.1])
+ by mail.python.org (Postfix) with ESMTP id 3mnpgm38hVzNGP
+ for <python-list@python.org>; Fri,  7 Aug 2015 16:18:12 +0200 (CEST)
+X-Spam-Status: OK 0.000
+X-Spam-Evidence: '*H*': 1.00; '*S*': 0.00; 'subject:Python': 0.05;
+ 'cc:addr:python-list': 0.09; 'scripts': 0.09;
+ 'received:openend.se': 0.09; 'received:theraft.openend.se': 0.09;
+ 'scripting': 0.09; 'python': 0.10; '>on': 0.16; 'cc:addr:lac':
+ 0.16; 'cc:addr:openend.se': 0.16; 'from:addr:lac': 0.16;
+ 'from:addr:openend.se': 0.16; 'from:name:laura creighton': 0.16;
+ 'message-id:@fido.openend.se': 0.16; 'received:89.233': 0.16;
+ 'received:89.233.217': 0.16; 'received:89.233.217.133': 0.16;
+ 'received:fido': 0.16; 'received:fido.openend.se': 0.16;
+ 'subject:Scheduling': 0.16; 'wrote:': 0.16; 'laura': 0.18; 'gui':
+ 0.18; 'windows': 0.20; '2015': 0.20; 'cc:addr:python.org': 0.20;
+ 'aug': 0.20; 'cc:2**1': 0.22; 'programming': 0.22; 'am,': 0.23;
+ 'tried': 0.24; 'header:In-Reply-To:1': 0.24; 'script': 0.25;
+ "doesn't": 0.26; 'van': 0.26; 'fri,': 0.27; 'this.': 0.28; 'fine':
+ 0.28; '-0700,': 0.29; 'kumar': 0.29; 'received:se': 0.29; 'cc:no
+ real name:2**1': 0.29; 'task': 0.30; 'anyone': 0.32; 'problem':
+ 0.33; 'schedule': 0.34; 'could': 0.35; 'but': 0.36; 'there': 0.36;
+ 'subject:: ': 0.37; 'two': 0.37; 'being': 0.37; 'charset:us-
+ ascii': 0.37; 'wrong': 0.38; 'some': 0.40; 'header:Message-Id:1':
+ 0.61; 'received:89': 0.80; 'sitting': 0.93
+Received: from localhost (HELO mail.python.org) (127.0.0.1)
+ by albatross.python.org with SMTP; 07 Aug 2015 16:18:12 +0200
+Received: from theraft.openend.se (theraft.ipv6.openend.se
+ [IPv6:2001:16d8:ffca::2])
+ (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+ (No client certificate requested)
+ by mail.python.org (Postfix) with ESMTPS
+ for <python-list@python.org>; Fri,  7 Aug 2015 16:18:12 +0200 (CEST)
+Received: from fido.openend.se (root@fido.openend.se [89.233.217.133])
+ by theraft.openend.se (8.14.4/8.14.4/Debian-4) with ESMTP id t77EI0sK018851
+ (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=FAIL);
+ Fri, 7 Aug 2015 16:18:02 +0200
+Received: from fido (lac@localhost [127.0.0.1])
+ by fido.openend.se (8.14.9/8.14.9/Debian-1) with ESMTP id t77EHxla005652;
+ Fri, 7 Aug 2015 16:17:59 +0200
+Message-Id: <201508071417.t77EHxla005652@fido.openend.se>
+To: Emile van Sebille <emile@fenx.com>
+From: Laura Creighton <lac@openend.se>
+Subject: Re: Python Scheduling
+In-Reply-To: Message from Emile van Sebille <emile@fenx.com>
+ of "Fri, 07 Aug 2015 06:48:32 -0700." <mq2cvk$i1c$1@ger.gmane.org>
+References: <CADt7dgkuecsFG22HzF1SCvPq10zFx+BkhbtvyH7XpU_YJ8Sp9A@mail.gmail.com><mq2cvk$i1c$1@ger.gmane.org>
+MIME-Version: 1.0
+Content-ID: <5650.1438957079.1@fido>
+Date: Fri, 07 Aug 2015 16:17:59 +0200
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9
+ (theraft.openend.se [89.233.217.130]); Fri, 07 Aug 2015 16:18:02 +0200 (CEST)
+X-BeenThere: python-list@python.org
+X-Mailman-Version: 2.1.20+
+Precedence: list
+List-Id: General discussion list for the Python programming language
+ <python-list.python.org>
+List-Unsubscribe: <https://mail.python.org/mailman/options/python-list>,
+ <mailto:python-list-request@python.org?subject=unsubscribe>
+List-Archive: <http://mail.python.org/pipermail/python-list/>
+List-Post: <mailto:python-list@python.org>
+List-Help: <mailto:python-list-request@python.org?subject=help>
+List-Subscribe: <https://mail.python.org/mailman/listinfo/python-list>,
+ <mailto:python-list-request@python.org?subject=subscribe>
+Cc: python-list@python.org, lac@openend.se
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Errors-To: python-list-bounces+mailr=pusto.org@python.org
+Sender: "Python-list" <python-list-bounces+mailr=pusto.org@python.org>
+
+In a message of Fri, 07 Aug 2015 06:48:32 -0700, Emile van Sebille writes:
+>On 8/6/2015 11:06 AM, sairam kumar wrote:
+>> Hi Experts,
+>>
+>>      I am Automating some repetitive works through Sikuli and Python
+>> scripting languages.I have multiple workflows.i need to schedule this
+>> script for every two hours.can anyone guide me how to schedule the scripts
+>> for every two hours.
+>>
+>> is there any way to schedule the python programming through Task scheduler
+>> in windows platform.
+>>
+>
+>The windows task scheduler works fine -- have you tried it?
+>
+>Emile
+
+I think his problem is that he wants  a way to do this that doesn't
+involve having a human being sitting at a console using a gui to communicate
+with the task scheduler, but I could be wrong about this.
+
+Laura
+
+-- 
+https://mail.python.org/mailman/listinfo/python-list

@@ -1,16 +1,18 @@
+import json
+
 from pytest import mark
 
 from . import read_file
-from mailur import parser
+from mailur import syncer
 
 emails = read_file('files_parser', 'expected.json').items()
 
 
 @mark.parametrize('path, expected', emails)
-def test_emails(path, expected):
+def test_emails(env, path, expected):
     raw = read_file('files_parser', path)
-    result = parser.parse(raw, 'test')
-    assert expected['subject'] == result['subject']
+    result = dict(syncer.get_parsed(env, raw, 'test'))
+    assert expected['subject'] == result['subj']
 
     for type_ in ['html']:
         if expected.get(type_):
@@ -20,9 +22,14 @@ def test_emails(path, expected):
 
     if expected.get('attachments'):
         assert 'attachments' in result
-        assert len(expected['attachments']) == len(result['attachments'])
-        assert expected['attachments'] == result['attachments']
+        attachments = json.loads(result['attachments'])
+        assert len(expected['attachments']) == len(attachments)
+        assert expected['attachments'] == attachments
 
     if expected.get('from'):
-        assert 'from' in result
-        assert expected['from'] == list(result['from'][0])
+        assert 'fr' in result
+        assert expected['from'] == list(result['fr'])
+
+    if expected.get('refs'):
+        assert 'refs' in result
+        assert expected['refs'] == result['refs']

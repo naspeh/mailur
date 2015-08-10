@@ -1,0 +1,121 @@
+Delivered-To: mailr@pusto.org
+Received: by 10.202.105.197 with SMTP id e188csp461684oic;
+        Fri, 7 Aug 2015 08:38:18 -0700 (PDT)
+X-Received: by 10.180.75.243 with SMTP id f19mr7501826wiw.52.1438961898040;
+        Fri, 07 Aug 2015 08:38:18 -0700 (PDT)
+Return-Path: <python-list-bounces+mailr=pusto.org@python.org>
+Received: from mail.python.org (mail.python.org. [2001:888:2000:d::a6])
+        by mx.google.com with ESMTPS id uu6si20552881wjc.6.2015.08.07.08.38.17
+        for <mailr@pusto.org>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 07 Aug 2015 08:38:18 -0700 (PDT)
+Received-SPF: pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 2001:888:2000:d::a6 as permitted sender) client-ip=2001:888:2000:d::a6;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of python-list-bounces+mailr=pusto.org@python.org designates 2001:888:2000:d::a6 as permitted sender) smtp.mail=python-list-bounces+mailr=pusto.org@python.org
+Received: from albatross.python.org (localhost [127.0.0.1])
+	by mail.python.org (Postfix) with ESMTP id 3mnrS91z4jzNmT
+	for <mailr@pusto.org>; Fri,  7 Aug 2015 17:38:17 +0200 (CEST)
+X-Original-To: python-list@python.org
+Delivered-To: python-list@mail.python.org
+Received: from albatross.python.org (localhost [127.0.0.1])
+ by mail.python.org (Postfix) with ESMTP id 3mnrRh1dymzMrx
+ for <python-list@python.org>; Fri,  7 Aug 2015 17:37:52 +0200 (CEST)
+X-Spam-Status: OK 0.001
+X-Spam-Evidence: '*H*': 1.00; '*S*': 0.00; 'subject:Python': 0.05;
+ 'scripts': 0.09; 'creighton': 0.09; 'received:80.91': 0.09;
+ 'received:80.91.229': 0.09; 'received:gmane.org': 0.09;
+ 'received:list': 0.09; 'scripting': 0.09; 'python': 0.10;
+ 'received:80.91.229.3': 0.16; 'received:plane.gmane.org': 0.16;
+ 'subject:Scheduling': 0.16; 'wrote:': 0.16; 'laura': 0.18; 'gui':
+ 0.18; '>>>': 0.20; 'windows': 0.20; '2015': 0.20; 'aug': 0.20;
+ 'programming': 0.22; 'am,': 0.23; 'tried': 0.24; 'header:In-Reply-
+ To:1': 0.24; 'script': 0.25; 'header:User-Agent:1': 0.26;
+ "doesn't": 0.26; 'command': 0.26; 'header:X-Complaints-To:1':
+ 0.26; 'van': 0.26; 'fri,': 0.27; 'this.': 0.28; 'fine': 0.28;
+ 'interface': 0.29; '-0700,': 0.29; 'kumar': 0.29; 'task': 0.30;
+ 'anyone': 0.32; 'problem': 0.33; 'case,': 0.34; 'schedule': 0.34;
+ 'could': 0.35; 'but': 0.36; 'there': 0.36; 'to:addr:python-list':
+ 0.36; 'subject:: ': 0.37; 'two': 0.37; 'being': 0.37;
+ 'received:org': 0.37; 'wrong': 0.38; 'to:addr:python.org': 0.40;
+ 'some': 0.40; 'charset:windows-1252': 0.62; 'received:12': 0.81;
+ 'sitting': 0.93
+Received: from localhost (HELO mail.python.org) (127.0.0.1)
+ by albatross.python.org with SMTP; 07 Aug 2015 17:37:52 +0200
+Received: from plane.gmane.org (plane.gmane.org [80.91.229.3])
+ (using TLSv1 with cipher AES256-SHA (256/256 bits))
+ (No client certificate requested)
+ by mail.python.org (Postfix) with ESMTPS
+ for <python-list@python.org>; Fri,  7 Aug 2015 17:37:52 +0200 (CEST)
+Received: from list by plane.gmane.org with local (Exim 4.69)
+ (envelope-from <python-python-list@m.gmane.org>) id 1ZNjiQ-0007WH-NY
+ for python-list@python.org; Fri, 07 Aug 2015 17:37:50 +0200
+Received: from www.westernstatesglass.com ([12.111.83.14])
+ by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+ id 1AlnuQ-0007hv-00
+ for <python-list@python.org>; Fri, 07 Aug 2015 17:37:50 +0200
+Received: from emile by www.westernstatesglass.com with local (Gmexim 0.1
+ (Debian)) id 1AlnuQ-0007hv-00
+ for <python-list@python.org>; Fri, 07 Aug 2015 17:37:50 +0200
+X-Injected-Via-Gmane: http://gmane.org/
+To: python-list@python.org
+From: Emile van Sebille <emile@fenx.com>
+Subject: Re: Python Scheduling
+Date: Fri, 7 Aug 2015 08:37:39 -0700
+Lines: 28
+Message-ID: <mq2jc7$17q$1@ger.gmane.org>
+References: <CADt7dgkuecsFG22HzF1SCvPq10zFx+BkhbtvyH7XpU_YJ8Sp9A@mail.gmail.com><mq2cvk$i1c$1@ger.gmane.org>
+ <201508071417.t77EHxla005652@fido.openend.se>
+Mime-Version: 1.0
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: www.westernstatesglass.com
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:38.0) Gecko/20100101
+ Thunderbird/38.1.0
+In-Reply-To: <201508071417.t77EHxla005652@fido.openend.se>
+X-BeenThere: python-list@python.org
+X-Mailman-Version: 2.1.20+
+Precedence: list
+List-Id: General discussion list for the Python programming language
+ <python-list.python.org>
+List-Unsubscribe: <https://mail.python.org/mailman/options/python-list>,
+ <mailto:python-list-request@python.org?subject=unsubscribe>
+List-Archive: <http://mail.python.org/pipermail/python-list/>
+List-Post: <mailto:python-list@python.org>
+List-Help: <mailto:python-list-request@python.org?subject=help>
+List-Subscribe: <https://mail.python.org/mailman/listinfo/python-list>,
+ <mailto:python-list-request@python.org?subject=subscribe>
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"; Format="flowed"
+Errors-To: python-list-bounces+mailr=pusto.org@python.org
+Sender: "Python-list" <python-list-bounces+mailr=pusto.org@python.org>
+
+On 8/7/2015 7:17 AM, Laura Creighton wrote:
+> In a message of Fri, 07 Aug 2015 06:48:32 -0700, Emile van Sebille writes:
+>> On 8/6/2015 11:06 AM, sairam kumar wrote:
+>>> Hi Experts,
+>>>
+>>>       I am Automating some repetitive works through Sikuli and Python
+>>> scripting languages.I have multiple workflows.i need to schedule this
+>>> script for every two hours.can anyone guide me how to schedule the scripts
+>>> for every two hours.
+>>>
+>>> is there any way to schedule the python programming through Task scheduler
+>>> in windows platform.
+>>>
+>>
+>> The windows task scheduler works fine -- have you tried it?
+>>
+>> Emile
+>
+> I think his problem is that he wants  a way to do this that doesn't
+> involve having a human being sitting at a console using a gui to communicate
+> with the task scheduler, but I could be wrong about this.
+
+In that case, 'at' provides a command line interface for the windows 
+task scheduler...
+
+Emile
+
+
+
+-- 
+https://mail.python.org/mailman/listinfo/python-list

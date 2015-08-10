@@ -65,6 +65,21 @@
     "c329f464-169a-5bc5-958f-ebe37fcb6c6d--cp1251-in-from-field.txt" :{
         "subject": "Заказ #106997 в книжном интернет-магазине Букля",
         "html": "В ближайшее время с Вами свяжется оператор.",
-        "from": ["Букля", "booklya.shop@gmail.com"]
+        "from": ["\"Букля\" <booklya.shop@gmail.com>"]
+    },
+    "22d093a0-578d-5eff-be80-f3278a135fdc-refs.txt": {
+        "subject": "Re: Python Scheduling",
+        "refs": [
+            "<CADt7dgkuecsFG22HzF1SCvPq10zFx+BkhbtvyH7XpU_YJ8Sp9A@mail.gmail.com>",
+            "<mq2cvk$i1c$1@ger.gmane.org>"
+        ]
+    },
+    "044732a8-7a08-5e4f-b807-0df9e678dce9-refs.txt": {
+        "subject": "Re: Python Scheduling",
+        "refs": [
+            "<CADt7dgkuecsFG22HzF1SCvPq10zFx+BkhbtvyH7XpU_YJ8Sp9A@mail.gmail.com>",
+            "<mq2cvk$i1c$1@ger.gmane.org>",
+            "<201508071417.t77EHxla005652@fido.openend.se>"
+        ]
     }
 }
