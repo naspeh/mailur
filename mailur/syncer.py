@@ -103,7 +103,7 @@ def get_parsed(env, data, msgid=None):
         elif key in ('attachments',):
             return json.dumps(value)
         elif key in ('refs',):
-            return ['<%s>' % v for v in re.split('[<>]+', value) if v.strip()]
+            return ['<%s>' % v for v in re.split('[<>\s]+', value) if v]
         else:
             return value
 
