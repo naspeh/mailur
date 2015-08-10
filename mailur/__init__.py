@@ -55,6 +55,7 @@ def get_conf(conf=None):
             'ui_is_public': v.Nullable(bool, False),
             'ui_use_names': v.Nullable(bool, True),
             'ui_per_page': v.Nullable(int, 100),
+            'ui_greeting': v.Nullable(str, ''),
         })
     conf = schema.validate(conf)
 

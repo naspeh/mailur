@@ -47,7 +47,7 @@ def gmail_callback(env):
 
 
 def login(env):
-    ctx = {}
+    ctx = {'greeting': env('ui_greeting')}
     if env.request.method == 'POST':
         schema = v.parse({'+username': str, '+password': str})
         args = schema.validate(env.request.form)
