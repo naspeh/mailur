@@ -512,8 +512,7 @@ def update_thrids(env, clear=False):
     step('flat query by "references"', '''
     UPDATE emails e SET thrid=t.thrid
       FROM emails t
-      WHERE (e.in_reply_to = t.msgid OR t.msgid = ANY(e.refs))
-        AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      WHERE t.msgid = ANY(e.refs) AND e.thrid IS NULL AND t.thrid IS NOT NULL
       RETURNING e.id;
     ''')
 
