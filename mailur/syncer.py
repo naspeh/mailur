@@ -381,6 +381,9 @@ def mark(env, data, new=False, inner=False):
 
 
 def sync_marks(env, imap, map_uids):
+    if not map_uids:
+        return
+
     log.info('  * Sync marks')
     store = {
         ('+', '\\Unread'): ('-FLAGS', '\\Seen'),
