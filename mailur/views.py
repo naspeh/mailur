@@ -148,6 +148,8 @@ def reset_password(env, username=None, token=None):
         return render_body(env, 'reset_password')
 
     if not username and not token:
+        if env('readonly'):
+            return env.abort(400)
         return login_required(inner)(env)
 
     env.username = username

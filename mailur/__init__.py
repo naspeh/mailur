@@ -69,7 +69,6 @@ class Env:
         conf = get_conf(conf)
         self.conf_default = conf
         self.conf_logging = setup_logging(conf)
-        self.conf_custom = {}
 
         self.storage = db.Storage(self)
         self.emails = db.Emails(self)
@@ -108,20 +107,28 @@ class Env:
     @username.setter
     def username(self, value):
         self.__dict__['username'] = value
-        self.db = value and self.db_connect()
 
-        email, conf = None, {}
-        if self.db:
-            try:
-                email = self.storage.get('gmail_info', {}).get('email')
-                conf = self.storage.get('conf', {})
-            except psycopg2.ProgrammingError as e:
-                log.error(e)
-                self.db.rollback()
+        # Clear cached properties
+        self.__dict__.pop('db', None)
+        self.__dict__.pop('conf', None)
+        self.__dict__.pop('email', None)
 
-        self.email = email
-        self.conf = get_conf(dict(self.conf_default, **conf))
-        self.conf_custom = conf
+    @cached_property
+    def db(self):
+        return self.db_connect()
+
+    @cached_property
+    def conf(self):
+        try:
+            custom = self.storage.get('gmail_info', {}).get('email')
+        except psycopg2.ProgrammingError as e:
+            log.error(e)
+            self.db.rollback()
+        return get_conf(dict(self.conf_default, **custom))
+
+    @cached_property
+    def email(self):
+        return self.storage.get('gmail_info', {}).get('email')
 
     @property
     def attachments_dir(self):
@@ -137,8 +144,8 @@ class Env:
         dbname = params.pop('dbname', None)
         params = dict({
             'host': 'localhost',
-            'user': self('pg_username'),
-            'password': self('pg_password'),
+            'user': self.conf_default['pg_username'],
+            'password': self.conf_default['pg_password'],
             'dbname': dbname or self.db_name
         }, **params)
         try:
@@ -206,7 +213,7 @@ class Env:
 
         # check db_connect
         try:
-            self.db
+            self.db_connect()
             return True
         except ValueError:
             return False
