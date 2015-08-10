@@ -130,7 +130,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
         text = decode_str(text, part.get_content_charset(), msg_id=msg_id)
         if ctype == 'text/html':
             content['html'] = text
-        elif ctype == 'text/plain' and 'html' not in content:
+        elif ctype == 'text/plain' and not content['html']:
             text = text2html(text)
             content['html'] = text
     else:
