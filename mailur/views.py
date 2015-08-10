@@ -172,6 +172,10 @@ def sidebar(env):
     GROUP BY l.name
     ''')
     labels = (dict(l, url=env.url_for('emails', {'in': l['name']})) for l in i)
+    labels = (
+        dict(l, unread=0) if l['name'] in ['\\Pinned', '\\All'] else l
+        for l in labels
+    )
     labels = sorted(labels, key=lambda v: v['name'])
     ctx = {
         'username': env.username,
