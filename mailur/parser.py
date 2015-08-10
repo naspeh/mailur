@@ -128,9 +128,11 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
     elif ctype in ['text/html', 'text/plain']:
         text = part.get_payload(decode=True)
         text = decode_str(text, part.get_content_charset(), msg_id=msg_id)
-        if ctype == 'text/plain':
+        if ctype == 'text/html':
+            content['html'] = text
+        elif ctype == 'text/plain' and 'html' not in content:
             text = text2html(text)
-        content['html'] = text
+            content['html'] = text
     else:
         payload = part.get_payload(decode=True)
         filename = part.get_filename()
