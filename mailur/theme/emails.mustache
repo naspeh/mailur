@@ -34,7 +34,12 @@
     data-replyall-url="{{replyall_url}}"
 >
     <ul class="email-line">
+        {{#draft?}}
+        <li class="email-draft">Draft</li>
+        {{/draft?}}
+        {{^draft?}}
         <li class="email-pin" title="Toggle Pin"></li>
+        {{/draft?}}
         <li class="email-details-toggle" title="Toggle Details"></li>
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
         <li class="email-pic email-info" style="background-image:url({{gravatar}})"></li>

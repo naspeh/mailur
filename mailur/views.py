@@ -206,6 +206,7 @@ def ctx_emails(env, items, domid='id'):
             'preview': f.get_preview(i['text'], i['attachments']),
             'pinned?': '\\Pinned' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
+            'draft?': '\\Draft' in i['labels'],
             'body_url': env.url_for('body', id=i['id']),
             'raw_url': env.url_for('raw', id=i['id']),
             'thread_url': env.url_for('thread', id=i['thrid']),

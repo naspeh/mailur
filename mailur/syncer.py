@@ -258,6 +258,7 @@ def clean_emails(env, labels, folder):
     folder = LABELS.get(folder, folder)
     labels = {LABELS.get(l, l) for l in labels}
     labels |= {'\\Answered', '\\Unread', folder}
+    labels = [imap_utf7.decode(l) for l in labels]
 
     # Sorted array intersection
     new_labels = env.mogrify('''
@@ -269,7 +270,7 @@ def clean_emails(env, labels, folder):
       ) as dt(i)
       ORDER BY 1
     )
-    ''', [list(labels)])
+    ''', [labels])
     sql = '''
     UPDATE emails SET labels=({0})
     WHERE (SELECT ARRAY(SELECT unnest(labels) ORDER BY 1)) != ({0})
