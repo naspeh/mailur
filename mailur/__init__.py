@@ -120,7 +120,7 @@ class Env:
     @cached_property
     def conf(self):
         try:
-            custom = self.storage.get('gmail_info', {}).get('email')
+            custom = self.storage.get('conf', {})
         except (psycopg2.ProgrammingError, ValueError) as e:
             log.error(e)
             custom = {}
