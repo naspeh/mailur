@@ -121,9 +121,9 @@ class Env:
     def conf(self):
         try:
             custom = self.storage.get('gmail_info', {}).get('email')
-        except psycopg2.ProgrammingError as e:
+        except (psycopg2.ProgrammingError, ValueError) as e:
             log.error(e)
-            self.db.rollback()
+            custom = {}
         return get_conf(dict(self.conf_default, **custom))
 
     @cached_property
