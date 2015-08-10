@@ -178,7 +178,7 @@ def sidebar(env):
         dict(l, unread=0) if l['name'] in ['\\Pinned', '\\All'] else l
         for l in labels
     )
-    labels = sorted(labels, key=lambda v: v['name'])
+    labels = sorted(labels, key=lambda v: v['name'].lower())
     ctx = {
         'username': env.username,
         'email': env.email,
