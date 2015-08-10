@@ -230,7 +230,7 @@ def parse(text, msg_id=None, attachments_dir=None):
         'date': decode_date,
         'message-id': lambda t, *a: str(t),
         'in-reply-to': lambda t, *a: str(t),
-        'references': lambda t, *a: str.split(t),
+        'references': lambda t, *a: str(t),
     }
     data = {}
     for key, decode in decoders.items():

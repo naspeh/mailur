@@ -131,6 +131,8 @@ def parse(env, limit=1000, offset=0):
             done += 1
         log.info('  - done %s for %.2f', done, timer.duration)
 
+    syncer.update_thrids(env, clear=True)
+
 
 def grun(name, extra):
     extra = '--timeout=300 --graceful-timeout=0 %s' % (extra or '')

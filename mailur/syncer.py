@@ -102,6 +102,8 @@ def get_parsed(env, data, msgid=None):
             return value.strip()
         elif key in ('attachments',):
             return json.dumps(value)
+        elif key in ('refs',):
+            return ['<%s>' % v for v in re.split('[<>]+', value) if v.strip()]
         else:
             return value
 
@@ -461,7 +463,7 @@ def update_label(env, gids, label, folder=None):
     return step.ids
 
 
-def update_thrids(env):
+def update_thrids(env, clear=False):
     log.info('Update thread ids')
 
     def step(label, sql, args=None, log_ids=False):
@@ -475,7 +477,9 @@ def update_thrids(env):
             log.info('  - ids: %s', ids)
         return ids
 
-    # step('clear', 'UPDATE emails SET thrid = NULL RETURNING id')
+    if clear:
+        step('clear', 'UPDATE emails SET thrid = NULL RETURNING id')
+
     step('no "in_reply_to" and no "references"', '''
     UPDATE emails SET thrid = id
     WHERE thrid IS NULL
