@@ -480,7 +480,7 @@ def body(env, id):
     ''', [id]).fetchone()
     if row:
         i = env.sql('''
-        SELECT id, raw FROM emails
+        SELECT id, raw, labels FROM emails
         WHERE thrid=%s AND id!=%s AND time<%s
         ORDER BY time DESC
         ''', [row['thrid'], id, row['time']])
@@ -497,10 +497,14 @@ def body(env, id):
                     msgs = [parse(p['raw'], p['id'])['html'] for p in i]
                     msg['_extra'] = {
                         'body?': ctx_body(env, msg, msgs, show=True),
+                        'labels': msg['labels']
                     }
                 yield msg
 
-        return ctx_emails(env, emails())
+        ctx = ctx_emails(env, emails())
+        email = ctx['emails?']['items'][0]
+        ctx['header?'] = ctx_header(env, email['subj'], email['labels'])
+        return ctx
 
     env.abort(404)
 
