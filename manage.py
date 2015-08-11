@@ -116,7 +116,7 @@ def parse(env, limit=1000, offset=0):
         i = env.sql('''
         SELECT id FROM emails
         WHERE raw IS NOT NULL
-        ORDER BY id
+        ORDER BY created DESC
         LIMIT %s OFFSET %s
         ''' % (limit, offset))
         for row in i:
