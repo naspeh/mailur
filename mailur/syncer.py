@@ -522,6 +522,15 @@ def update_thrids(env, folder=None):
       RETURNING e.id;
     ''', {'folder': folder})
 
+    step('flat query by "references"', '''
+    UPDATE emails e SET thrid=t.thrid
+      FROM emails t
+      WHERE t.msgid = ANY(e.refs)
+        AND %(folder)s = ANY(e.labels) AND %(folder)s = ANY(t.labels)
+        AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      RETURNING e.id;
+    ''', {'folder': folder})
+
     step('reqursive query by "in_reply_to"', '''
     WITH RECURSIVE thrids(id, msgid, thrid, labels) AS (
       SELECT id, msgid, thrid, labels
@@ -536,15 +545,6 @@ def update_thrids(env, folder=None):
     UPDATE emails e SET thrid=t.thrid
     FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     RETURNING e.id
-    ''', {'folder': folder})
-
-    step('flat query by "references"', '''
-    UPDATE emails e SET thrid=t.thrid
-      FROM emails t
-      WHERE t.msgid = ANY(e.refs)
-        AND %(folder)s = ANY(e.labels) AND %(folder)s = ANY(t.labels)
-        AND e.thrid IS NULL AND t.thrid IS NOT NULL
-      RETURNING e.id;
     ''', {'folder': folder})
 
     step('reqursive query by "references"', '''
