@@ -40,9 +40,8 @@
         {{^draft?}}
         <li class="email-pin" title="Toggle Pin"></li>
         {{/draft?}}
-        <li class="email-details-toggle" title="Toggle Details"></li>
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
-        <li class="email-pic email-info" style="background-image:url({{gravatar}})"></li>
+        <li class="email-pic email-info" style="background-image:url({{fr.image}})"></li>
         <li class="email-from email-info" title="{{fr.full}}">{{fr.short}}</li>
         {{#labels?}}
         <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
@@ -57,19 +56,25 @@
     </ul>
     <div class="email-body">
         {{#body?}}
-        <ul class="email-details">
-            <li class="email-urls">
+        <div class="email-details">
+            <div class="email-actions">
+                <a class="email-details-toggle" href="javascript:void(0)">Details</a>
                 <a href="{{reply_url}}">Reply</a>
                 <a href="{{replyall_url}}">Reply to all</a>
                 <a href="{{thread_url}}">View full thread</a>
                 <a href="{{body_url}}">View only this email</a>
                 <a href="{{raw_url}}" target="_blank">Raw</a>
-            </li>
-            <li>Subject: <a href="{{subj_url}}" title="Filter by subject">{{subj}}</a></li>
-            <li>From: <a href="{{fr.url}}" title="Filter by person">{{fr.full}}</a></li>
-            <li>To: {{#to}}<a href="{{url}}" title="Filter by person">{{full}}</a>{{/to}}</li>
-            <li>Cc: {{#cc}}<a href="{{url}}" title="Filter by person">{{full}}</a>{{/cc}}</li>
-        </ul>
+            </div>
+            <div class="email-extra">
+                <img  src="{{fr.image}}">
+                <ul>
+                    <li>Subject: <a href="{{subj_url}}" title="Filter by subject">{{subj}}</a></li>
+                    <li>From: <a href="{{fr.url}}" title="Filter by person">{{fr.full}}</a></li>
+                    <li>To: {{#to}}<a href="{{url}}" title="Filter by person">{{full}}</a>{{/to}}</li>
+                    <li>Cc: {{#cc}}<a href="{{url}}" title="Filter by person">{{full}}</a>{{/cc}}</li>
+                </ul>
+            </div>
+        </div>
         <div class="email-text">{{&text}}</div>
         {{#attachments?}}
         <div class="email-attachments">

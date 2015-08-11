@@ -1,2 +1,2 @@
 ### sync gmail
-@runas(http),exesev(true) 20s /var/local/mailur/src/m sync -t full
+@runas(http),exesev(true) 30s /var/local/mailur/src/m sync -t full

@@ -196,7 +196,6 @@ def ctx_emails(env, items, domid='id'):
     for i in items:
         last = i['updated'] if not last or i['updated'] > last else last
         extra = i.get('_extra', {})
-        fr = f.get_addr(i['fr'][0])
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
@@ -219,7 +218,6 @@ def ctx_emails(env, items, domid='id'):
             'fr': ctx_person(env, i['fr'][0]),
             'to': [ctx_person(env, v) for v in i['to'] or []],
             'cc': [ctx_person(env, v) for v in i['cc'] or []],
-            'gravatar': f.get_gravatar(fr),
             'labels?': ctx_labels(env, i['labels'])
         }, **extra)
         email['hash'] = f.get_hash(email)
@@ -237,10 +235,12 @@ def ctx_emails(env, items, domid='id'):
 
 
 def ctx_person(env, addr):
+    email = f.get_addr(addr)
     return {
         'full': addr,
         'short': f.format_addr(env, addr),
-        'url': env.url_for('emails', {'person': f.get_addr(addr)})
+        'url': env.url_for('emails', {'person': email}),
+        'image': f.get_gravatar(email, size=75),
     }
 
 

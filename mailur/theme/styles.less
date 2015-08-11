@@ -2,7 +2,7 @@
 
 @Space: 1.25em;
 @Size: 1em;
-@SizeIcon: @Size * 0.9;
+@SizeIcon: @Size * 1.1;
 
 @ColorA: #777;
 @ColorB: #008000;
@@ -78,18 +78,6 @@ body {
             &:hover {
                 cursor: pointer;
                 color: @ColorC;
-            }
-            &:before {
-                margin: 0;
-            }
-        }
-        .email-details-toggle {
-            .icon-details;
-            display: none;
-            font-size: @SizeIcon;
-            &:hover {
-                cursor: pointer;
-                color: @ColorB;
             }
             &:before {
                 margin: 0;
@@ -177,16 +165,27 @@ body {
         display: block;
     }
     .email-details {
-        .mix_reset_list();
-        display: none;
         font-size: 80%;
         padding: @Space/2;
         margin: 0 @Space/2;
         border-bottom: 1px solid @Color1bg;
 
-        .email-urls {
-            margin-bottom: 10px;
+        .email-actions {
             a {
+                margin-right: 10px;
+            }
+        }
+        .email-extra {
+            display: none;
+            margin-top: 10px;
+
+            ul {
+                .mix_reset_list();
+                display: inline-block;
+            }
+            img {
+                display: inline-block;
+                vertical-align: top;
                 margin-right: 10px;
             }
         }

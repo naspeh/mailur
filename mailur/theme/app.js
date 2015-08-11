@@ -20,7 +20,7 @@ $('.emails-byid').on('click', '.email-info', function() {
     return false;
 });
 $('.emails').on('click', ' .email-details-toggle', function() {
-    $(this).parents('.email').find('.email-details').toggle();
+    $(this).parents('.email-details').find('.email-extra').toggle();
     return false;
 });
 $('.emails').on('click', '.email-quote-toggle', function() {

@@ -18,7 +18,7 @@ def get_addr(v):
 
 
 def get_gravatar(addr, size=20, default='identicon'):
-    params = urlencode({'s': size, 'd': default})
+    params = urlencode((('d', default), ('s', size)))
     hash = md5(addr.strip().lower().encode()).hexdigest()
     return '//www.gravatar.com/avatar/%s?%s' % (hash, params)
 
