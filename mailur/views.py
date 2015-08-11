@@ -126,7 +126,8 @@ def render_body(env, name, ctx=None, with_sidebar=False):
     ctx = {
         'body': body,
         'cssfile': '/theme/build/%s.css?%s' % (name, env.theme_version),
-        'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version)
+        'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version),
+        'ga_id': env('ui_ga_id')
     }
     if with_sidebar:
         ctx['sidebar'] = sidebar(env)

@@ -46,7 +46,7 @@ class WebEnv(Env):
         self.url_map = views.url_map
 
         with open(os.path.join(self('path_theme'), 'build/version')) as f:
-            self.theme_version = f.read()
+            self.theme_version = f.read().strip()
 
     def set_request(self, request):
         self.request = request
