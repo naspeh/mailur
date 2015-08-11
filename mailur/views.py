@@ -291,10 +291,7 @@ def ctx_body(env, msg, msgs, show=False):
     if not show and '\\Unread' not in msg['labels']:
         return False
     attachments = msg.get('attachments')
-    attachments = bool(attachments) and {'items': [
-        dict(a, url='/attachments/%s/%s' % (env.username, a['url']))
-        for a in attachments
-    ]}
+    attachments = bool(attachments) and {'items': attachments}
     return {
         'text': f.humanize_html(msg['html'], msgs),
         'attachments?': attachments
