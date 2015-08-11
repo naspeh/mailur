@@ -57,6 +57,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
             fetch_labels(env, imap, uids, label, label in FOLDERS)
             if label in FOLDERS:
                 sync_marks(env, imap, uids)
+                update_thrids(env, label)
     return labels_
 
 
@@ -267,12 +268,12 @@ def clean_emails(env, labels, folder):
         SELECT unnest(labels)
         INTERSECT
         SELECT unnest(%s)
-      ) as dt(i)
+      ) AS dt(i)
       ORDER BY 1
     )
     ''', [labels])
     sql = '''
-    UPDATE emails SET labels=({0})
+    UPDATE emails SET labels=({0}), thrid=NULL
     WHERE (SELECT ARRAY(SELECT unnest(labels) ORDER BY 1)) != ({0})
     AND %s = ANY(labels)
     RETURNING id
@@ -352,31 +353,35 @@ def mark(env, data, new=False, inner=False):
 
     clean = {
         ('+', '\\Trash'): [('-', ['\\All', '\\Inbox', '\\Spam'])],
-        ('-', '\\Trash'): [('+', ['\\All', '\\Inbox'])],
         ('+', '\\Spam'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
-        ('-', '\\Spam'): [('+', ['\\All', '\\Inbox'])],
         ('+', '\\Inbox'): [
             ('-', ['\\Trash', '\\Spam']),
             ('+', '\\All')
         ],
     }
+    instead = {
+        ('-', '\\Trash'): ('+', '\\Inbox'),
+        ('-', '\\Spam'): ('+', '\\Inbox'),
+    }
 
+    action = data['action']
     for label in data['name']:
-        extra = [] if inner else clean.get((data['action'], label), [])
-        for action, name in extra:
-            params = {'action': action, 'name': name, 'ids': ids}
-            mark(env, params, inner=True)
+        if not inner:
+            action, label = instead.get((action, label), (action, label))
+            extra = clean.get((action, label), [])
+            for a, name in extra:
+                params = {'action': a, 'name': name, 'ids': ids}
+                mark(env, params, inner=True)
 
-        i = env.sql(actions[data['action']], {'name': label, 'ids': ids})
+        i = env.sql(actions[action], {'name': label, 'ids': ids})
         updated += [r[0] for r in i]
 
-        tasks.append({'data': {
-            'action': data['action'],
-            'name': label,
-            'ids': ids
-        }})
+        tasks.append({'data': {'action': action, 'name': label, 'ids': ids}})
 
     if new:
+        env.emails.update({'thrid': None}, 'id IN %s', [ids])
+        update_thrids(env)
+
         env.tasks.insert(tasks)
         env.db.commit()
         notify(env, updated)
@@ -453,20 +458,18 @@ def update_label(env, gids, label, folder=None):
 
     log.info('  * Process %r...', label)
     step('remove from', '''
-    UPDATE emails SET labels=array_remove(labels, %(label)s)
+    UPDATE emails SET thrid=NULL, labels=array_remove(labels, %(label)s)
     WHERE NOT (msgid = ANY(%(gids)s)) AND %(label)s = ANY(labels)
     ''')
 
     step('add to', '''
-    UPDATE emails SET labels=(labels || %(label)s::varchar)
+    UPDATE emails SET thrid=NULL, labels=(labels || %(label)s::varchar)
     WHERE msgid = ANY(%(gids)s) AND NOT (%(label)s = ANY(labels))
     ''')
     return step.ids
 
 
-def update_thrids(env, clear=False):
-    log.info('Update thread ids')
-
+def update_thrids(env, folder=None):
     def step(label, sql, args=None, log_ids=False):
         i = env.sql(sql, args)
         log.info('  - for %s emails (%s)', i.rowcount, label)
@@ -478,80 +481,103 @@ def update_thrids(env, clear=False):
             log.info('  - ids: %s', ids)
         return ids
 
-    if clear:
-        step('clear', 'UPDATE emails SET thrid = NULL RETURNING id')
+    if not folder:
+        for label in FOLDERS:
+            update_thrids(env, label)
+
+        folders = [LABELS.get(f, f) for f in FOLDERS]
+        step('clean deleted: thrid=null and labels={}', '''
+        UPDATE emails set thrid = NULL, labels='{}'
+        WHERE NOT (labels && %s::varchar[]) AND thrid != id AND labels != '{}'
+        RETURNING id
+        ''', [folders])
+        return
+
+    folder = LABELS.get(folder, folder)
+    log.info('  * Update thread ids %r', folder)
+
+    step('Clean thrid from other folders', '''
+    UPDATE emails SET thrid = NULL
+    WHERE %(folder)s = ANY(labels) AND thrid IS NOT NULL
+      AND thrid NOT IN (
+        SELECT thrid FROM emails WHERE %(folder)s = ANY(labels)
+      )
+    RETURNING id
+    ''', {'folder': folder})
 
     step('no "in_reply_to" and no "references"', '''
     UPDATE emails SET thrid = id
-    WHERE thrid IS NULL
+    WHERE %s = ANY(labels) AND thrid IS NULL
       AND (in_reply_to IS NULL OR in_reply_to != ALL(SELECT msgid FROM emails))
       AND (refs IS NULL OR NOT (refs && (SELECT array_agg(msgid) FROM emails)))
     RETURNING id
-    ''')
+    ''', [folder])
 
     step('flat query by "in_reply_to"', '''
     UPDATE emails e SET thrid=t.thrid
       FROM emails t
-      WHERE e.in_reply_to = t.msgid AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      WHERE e.in_reply_to = t.msgid
+        AND %(folder)s = ANY(e.labels) AND %(folder)s = ANY(t.labels)
+        AND e.thrid IS NULL AND t.thrid IS NOT NULL
       RETURNING e.id;
-    ''')
+    ''', {'folder': folder})
 
     step('reqursive query by "in_reply_to"', '''
-    WITH RECURSIVE thrids(id, msgid, thrid) AS (
-      SELECT id, msgid, thrid
+    WITH RECURSIVE thrids(id, msgid, thrid, labels) AS (
+      SELECT id, msgid, thrid, labels
       FROM emails WHERE thrid IS NOT NULL
     UNION
-      SELECT e.id, e.msgid, t.thrid
+      SELECT e.id, e.msgid, t.thrid, e.labels
       FROM emails e, thrids t
-      WHERE e.in_reply_to = t.msgid AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      WHERE e.in_reply_to = t.msgid
+        AND %(folder)s = ANY(e.labels) AND %(folder)s = ANY(t.labels)
+        AND e.thrid IS NULL AND t.thrid IS NOT NULL
     )
     UPDATE emails e SET thrid=t.thrid
     FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     RETURNING e.id
-    ''')
+    ''', {'folder': folder})
 
     step('flat query by "references"', '''
     UPDATE emails e SET thrid=t.thrid
       FROM emails t
-      WHERE t.msgid = ANY(e.refs) AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      WHERE t.msgid = ANY(e.refs)
+        AND %(folder)s = ANY(e.labels) AND %(folder)s = ANY(t.labels)
+        AND e.thrid IS NULL AND t.thrid IS NOT NULL
       RETURNING e.id;
-    ''')
+    ''', {'folder': folder})
 
     step('reqursive query by "references"', '''
-    WITH RECURSIVE thrids(id, msgid, thrid) AS (
-      SELECT id, msgid, thrid
+    WITH RECURSIVE thrids(id, msgid, thrid, labels) AS (
+      SELECT id, msgid, thrid, labels
       FROM emails WHERE thrid IS NOT NULL
     UNION
-      SELECT e.id, e.msgid, t.thrid
+      SELECT e.id, e.msgid, t.thrid, e.labels
       FROM emails e, thrids t
-      WHERE t.msgid = ANY(e.refs) AND e.thrid IS NULL AND t.thrid IS NOT NULL
+      WHERE t.msgid = ANY(e.refs)
+        AND %(folder)s = ANY(e.labels) AND %(folder)s = ANY(t.labels)
+        AND e.thrid IS NULL AND t.thrid IS NOT NULL
     )
     UPDATE emails e SET thrid=t.thrid
     FROM thrids t WHERE e.id = t.id AND e.thrid IS NULL
     RETURNING e.id
-    ''')
+    ''', {'folder': folder})
 
     step('other: thrid=id', '''
     UPDATE emails SET thrid = id
-    WHERE thrid IS NULL
+    WHERE thrid IS NULL AND %s = ANY(labels)
     RETURNING id
-    ''', log_ids=True)
+    ''', [folder], log_ids=True)
 
-    step('clear deleted: thrid=id and labels={}', '''
-    UPDATE emails set thrid = id, labels='{}'
-    WHERE NOT (labels && %s::varchar[]) AND thrid != id AND labels != '{}'
-    RETURNING id
-    ''', [list(FOLDERS)])
-
-    failed_delivery(env)
+    failed_delivery(env, folder)
 
 
-def failed_delivery(env):
+def failed_delivery(env, folder):
     emails = env.sql('''
     SELECT id, text FROM emails
-    WHERE fr[1] LIKE '%<mailer-daemon@googlemail.com>'
+    WHERE fr[1] LIKE '%%<mailer-daemon@googlemail.com>' AND %s = ANY(labels)
     ORDER BY time
-    ''')
+    ''', [folder])
     ids = []
     for msg in emails:
         msgid = re.search('(?m)^Message-ID:(.*)$', msg['text'])

@@ -90,16 +90,13 @@ def sync(env, target, disabled=False, **kw):
         return func()
     elif target == 'bodies':
         return func(bodies=True)
-    elif target == 'thrids':
-        syncer.update_thrids(env)
     elif target == 'full':
         s = ft.partial(sync, env, disabled=disabled, **kw)
 
         labels = s(target='fast')
-        s(target='thrids')
         s(target='bodies', labels=labels)
 
-sync.choices = ['fast', 'thrids', 'bodies', 'full']
+sync.choices = ['fast', 'bodies', 'full']
 
 
 @for_all
@@ -131,7 +128,17 @@ def parse(env, limit=1000, offset=0):
             done += 1
         log.info('  - done %s for %.2f', done, timer.duration)
 
-    syncer.update_thrids(env, clear=True)
+
+@for_all
+def thrids(env, clear=False):
+    from mailur import syncer
+
+    log.info('Update thread ids for %r', env.username)
+    if clear:
+        log.info('  * Clear thrids')
+        env.sql('UPDATE emails SET thrid = NULL RETURNING id')
+
+    syncer.update_thrids(env)
 
 
 def grun(name, extra):
@@ -346,6 +353,11 @@ def get_full(argv):
         .arg('-l', '--limit', type=int, default=1000)\
         .arg('-o', '--offset', type=int, default=0)\
         .exe(lambda a: parse(Env(a.username), a.limit, a.offset))
+
+    cmd('thrids')\
+        .arg('-u', '--username')\
+        .arg('-c', '--clear', action='store_true')\
+        .exe(lambda a: thrids(Env(a.username), a.clear))
 
     cmd('db-init')\
         .arg('username')\
