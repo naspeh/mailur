@@ -51,7 +51,7 @@ def get_conf(conf=None):
             'imap_debug': v.Nullable(int, 0),
             'smtp_debug': v.Nullable(bool, False),
             'async_pool': v.Nullable(int, 0),
-            'ui_ga_id': str,
+            'ui_ga_id': v.Nullable(str, ''),
             'ui_is_public': v.Nullable(bool, False),
             'ui_use_names': v.Nullable(bool, True),
             'ui_per_page': v.Nullable(int, 100),

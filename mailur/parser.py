@@ -192,16 +192,18 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
         htm = cleaner.clean_html(htm)
 
         # Fix img[@src]
+        embedded = dict(content['embedded'])
         for img in htm.xpath('//img[@src]'):
             src = img.attrib.get('src')
 
             cid = re.match('^cid:(.*)', src)
-            obj = cid and content['embedded'].get('<%s>' % cid.group(1))
+            obj = cid and embedded.pop('<%s>' % cid.group(1))
             if obj:
                 cid = cid.group(1)
                 img.attrib['src'] = obj['url']
             elif not re.match('^(https?://|/|data:image/).*', src):
                 del img.attrib['src']
+        content['attachments'] += embedded.values()
 
         content['html'] = lhtml.tostring(htm, encoding='utf-8').decode()
         if 'text' not in content or not content['text']:
