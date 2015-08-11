@@ -146,8 +146,6 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             'size': len(payload) if payload else None
         }
         content['files'] += [attachment]
-        if not part.get_filename() and mtype != 'image':
-            log.warn('UnknownType(%s) -- %s', ctype, msg_id)
 
     if inner:
         return content
@@ -160,7 +158,8 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             obj = {
                 'url': url,
                 'name': item['filename'],
-                'type': item['maintype']
+                'maintype': item['maintype'],
+                'type': item['type']
             }
             if item['id']:
                 content['embedded'][item['id']] = obj
@@ -197,7 +196,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             src = img.attrib.get('src')
 
             cid = re.match('^cid:(.*)', src)
-            obj = cid and embedded.pop('<%s>' % cid.group(1))
+            obj = cid and embedded.pop('<%s>' % cid.group(1), None)
             if obj:
                 cid = cid.group(1)
                 img.attrib['src'] = obj['url']
