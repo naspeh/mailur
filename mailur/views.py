@@ -473,7 +473,7 @@ def search(env):
 @adapt_fmt('emails')
 def body(env, id):
     def parse(raw, id):
-        return parser.parse(raw.tobytes(), id, env.attachments_dir)
+        return parser.parse(env, raw.tobytes(), id)
 
     row = env.sql('''
     SELECT

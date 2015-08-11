@@ -99,7 +99,7 @@ def decode_date(text, *args):
     return tm
 
 
-def parse_part(part, msg_id, attachments_dir, inner=False):
+def parse_part(env, part, msg_id, inner=False):
     content = OrderedDict([
         ('files', []),
         ('attachments', []),
@@ -112,7 +112,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
     stype = part.get_content_subtype()
     if part.is_multipart():
         for m in part.get_payload():
-            child = parse_part(m, msg_id, attachments_dir, True)
+            child = parse_part(env, m, msg_id, True)
             child_html = child.pop('html', '')
             content.setdefault('html', '')
             if stype != 'alternative':
@@ -156,7 +156,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             name = slugify(item['filename'] or item['id'])
             url = '/'.join([slugify(msg_id), str(index), name])
             obj = {
-                'url': url,
+                'url': '/attachments/%s/%s' % (env.username, url),
                 'name': item['filename'],
                 'maintype': item['maintype'],
                 'type': item['type']
@@ -168,7 +168,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
             else:
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue
-            path = os.path.join(attachments_dir, url)
+            path = os.path.join(env.attachments_dir, url)
             if not os.path.exists(path):
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, 'bw') as f:
@@ -214,9 +214,7 @@ def parse_part(part, msg_id, attachments_dir, inner=False):
     return content
 
 
-def parse(text, msg_id=None, attachments_dir=None):
-    attachments_dir = attachments_dir or '/tmp/mailur'
-
+def parse(env, text, msg_id=None):
     msg = email.message_from_bytes(text)
     charset = [c for c in msg.get_charsets() if c]
     charset = charset[0] if charset else None
@@ -241,7 +239,7 @@ def parse(text, msg_id=None, attachments_dir=None):
         data[key] = decode(value, msg_id) if value else None
 
     msg_id = str(msg_id or data['message-id'])
-    files = parse_part(msg, msg_id, attachments_dir)
+    files = parse_part(env, msg, msg_id)
     data['attachments'] = files['attachments']
     data['embedded'] = files['embedded']
     data['html'] = files.get('html', None)

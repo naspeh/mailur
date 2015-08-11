@@ -44,7 +44,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
 
         imap.select(name, env('readonly'))
         if not labels:
-            labels_[name] = get_label_uids(imap, name)
+            labels_[name] = get_label_uids(env, imap, name)
         else:
             imap.status(name)
             log.info('"%s"', imap_utf7.decode(name))
@@ -61,7 +61,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
     return labels_
 
 
-def get_label_uids(imap, name):
+def get_label_uids(env, imap, name):
     uids = imap.search(name)
     log.info('"%s" has %i messages', imap_utf7.decode(name), len(uids))
     if not uids:
@@ -70,7 +70,7 @@ def get_label_uids(imap, name):
     q = 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]'
     data = imap.fetch(uids, [q])
     uids = OrderedDict(
-        (k, parser.parse(v[q])['message-id']) for k, v in data
+        (k, parser.parse(env, v[q])['message-id']) for k, v in data
     )
     return uids
 
@@ -125,7 +125,7 @@ def get_parsed(env, data, msgid=None):
         ('attachments', 'attachments'),
         ('embedded', 'embedded'),
     )
-    msg = parser.parse(data, msgid, env.attachments_dir)
+    msg = parser.parse(env, data, msgid)
     return ((field, clean(field, msg[key])) for key, field in pairs)
 
 
