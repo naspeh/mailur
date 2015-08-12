@@ -313,6 +313,9 @@ body {
     overflow: hidden;
     padding: 0 10px;
 
+    a {
+        text-decoration: none;
+    }
     nav {
         white-space: nowrap;
     }
@@ -328,6 +331,18 @@ body {
         .mix_reset_list();
         li {
             white-space: nowrap;
+        }
+    }
+    .help-toggle {
+        .icon-help();
+        &:before {
+            margin: 0;
+        }
+    }
+    .logout {
+        .icon-logout();
+        &:before {
+            margin: 0;
         }
     }
 }
