@@ -205,6 +205,13 @@ $('.compose-quoted').on('change', function() {
 
 (function() {
 /* Edit labels */
+$('.email-mark-del, .email-mark-spam').on('click', function() {
+    mark({
+        action: '+',
+        name: $(this).data('label')
+    });
+});
+
 var box = $('.email-labels-input'),
     container = box.parents('.email-labels-edit'),
     url = box.data('baseUrl');

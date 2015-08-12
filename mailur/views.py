@@ -276,9 +276,18 @@ def ctx_all_labels(env):
 
 
 def ctx_header(env, subj, labels=None):
+    buttons = (
+        ([] if '\\Trash' in labels else [
+            {'name': 'del', 'label': '\\Trash', 'title': 'Delete'}
+        ]) +
+        ([] if '\\Spam' in labels else [
+            {'name': 'spam', 'label': '\\Spam', 'title': 'Report spam'}
+        ])
+    )
     labels = ctx_labels(env, list(labels or []))
     return {
         'subj': subj,
+        'buttons': buttons,
         'labels': {
             'items_json': labels['names_json'] if labels else '""',
             'all_json': ctx_all_labels(env)['items_json'],
