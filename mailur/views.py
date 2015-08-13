@@ -542,7 +542,8 @@ def mark(env):
 def compose(env):
     schema = v.parse({'id': str, 'all': v.Nullable(v.AdaptTo(bool), False)})
     args = schema.validate(env.request.args)
-    ctx, parent = {}, {}
+    fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
+    ctx, parent = {'fr': fr}, {}
     if args.get('id'):
         parent = env.sql('''
         SELECT thrid, msgid, "to", fr, cc, bcc, subj, reply_to, html, time

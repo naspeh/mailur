@@ -54,7 +54,9 @@ $('.emails').on('images', '.email-attachments', function() {
             preload: [0, 1]
         },
         image: {
-            tError: '<a href="%url%">The image #%curr%</a> could not be loaded.',
+            tError: (
+                '<a href="%url%">The image #%curr%</a> could not be loaded.'
+            ),
             titleSrc: function(item) {
                 return item.el.html();
             },
@@ -111,6 +113,9 @@ var hotkeys = [
     [['r a'], 'Reply all', function() {
         location.href = $('.email:last').data('replyallUrl');
     }],
+    [['c'], 'Compose', function() {
+        location.href = '/compose/';
+    }],
     [['g i'], 'Go to Inbox', goToLabel('\\Inbox')],
     [['g d'], 'Go to Drafts', goToLabel('\\Drafts')],
     [['g s'], 'Go to Sent messages', goToLabel('\\Sent')],
@@ -166,10 +171,12 @@ function goToLabel(label) {
 
 (function() {
 /* Compose */
-var box = $('.compose-to');
+var form = $('.compose'),
+    text = form.find('textarea'),
+    ok = form.find('.compose-send');
 
-if (box.length === 0) return;
-box.selectize({
+if (form.length === 0) return;
+form.find('.compose-to').selectize({
     plugins: ['remove_button', 'restore_on_backspace'],
     delimiter: ',',
     persist: true,
@@ -186,6 +193,18 @@ box.selectize({
     }
 });
 
+ok.click(function() {
+    form.submit();
+});
+text.each(function() {
+    Mousetrap(this)
+        .bind('ctrl+enter', function() {
+            ok.focus().click();
+        });
+});
+text.on('input', function() {
+    $('.compose-preview').click();
+});
 $('.compose-preview').click(function() {
     var data = {'body': $('.compose-body').val()};
     if ($('.compose-quoted').is(':checked')) {
@@ -194,9 +213,6 @@ $('.compose-preview').click(function() {
     send('/preview/', data, function(data) {
         $('.email-html').html(data).show();
     });
-});
-$('.compose-body').on('input', function() {
-    $('.compose-preview').click();
 });
 $('.compose-quoted').on('change', function() {
     $('.compose-preview').click();
