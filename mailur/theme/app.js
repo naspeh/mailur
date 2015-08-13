@@ -262,6 +262,13 @@ box.selectize({
             name: input,
             url: url + input
         };
+    },
+    onChange: function(val) {
+        if (val.split(',').sort().toString() == getLabels().sort().toString()) {
+            $('.email-labels-wrap').removeClass('changed');
+        } else {
+            $('.email-labels-wrap').addClass('changed');
+        }
     }
 });
 
