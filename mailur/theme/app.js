@@ -193,6 +193,9 @@ form.find('.compose-to').selectize({
     }
 });
 
+var editor = new Behave({
+    textarea: text[0]
+});
 ok.click(function() {
     form.submit();
 });

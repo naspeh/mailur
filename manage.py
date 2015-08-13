@@ -408,6 +408,7 @@ def get_full(argv):
         '   node_modules/mousetrap/mousetrap.js'
         '   node_modules/selectize/dist/js/standalone/selectize.js'
         '   node_modules/magnific-popup/dist/jquery.magnific-popup.js'
+        '   {0}behave.js'
         '   {0}app.js'
         '   > {0}build/all.js &&'
         'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'
