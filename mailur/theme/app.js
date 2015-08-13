@@ -193,12 +193,10 @@ form.find('.compose-to').selectize({
     }
 });
 
-var editor = new Behave({
-    textarea: text[0]
-});
 ok.click(function() {
     form.submit();
 });
+tabOverride.set(text[0]);
 text.each(function() {
     Mousetrap(this)
         .bind('ctrl+enter', function() {
