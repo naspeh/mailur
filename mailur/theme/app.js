@@ -246,7 +246,7 @@ box.selectize({
     hideSelected: true,
     openOnFocus: false,
     closeAfterSelect: true,
-    copyClassesToDropdown: true,
+    copyClassesToDropdown: false,
     render: {
         item: function(i, e) {
             return (
@@ -268,10 +268,10 @@ box.selectize({
 var selectize = box[0].selectize;
 selectize.setValue(getLabels());
 
-var refreshOptions = selectize.refreshOptions;
+var refreshOptions = selectize.refreshOptions.bind(selectize);
 selectize.refreshOptions = function(triggerDropdown) {
     if (this.$control_input.val()) {
-        refreshOptions.bind(this)(triggerDropdown);
+        refreshOptions(triggerDropdown);
     }
 };
 

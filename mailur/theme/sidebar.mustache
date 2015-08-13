@@ -1,13 +1,14 @@
 <div class="sidebar">
+<b>{{username}} ({{#email}}{{email}}{{/email}}{{^email}}<a href="/gmail/">connect</a>{{/email}})</b>
 <nav>
     <a href="/logout/" class="logout" title="Logout"></a>
     <a href="#" class="help-toggle" title="Keyboard shortcut help"></a>
-    <b>{{username}} ({{#email}}{{email}}{{/email}}{{^email}}<a href="/gmail/">connect</a>{{/email}})</b>
+    <a href="/compose/" class="compose-new">Compose</a>
 </nav>
 {{#labels?}}
 <form class="search-form" action="/search/">
     <input name="q" type="text">
-    <input type="submit" value="Go">
+    <button type="submit" class="search"></button>
 </form>
 <ul class="labels">
 {{#items}}

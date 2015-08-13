@@ -6,14 +6,16 @@
         <button class="email-mark-{{name}}" title="{{title}}" data-label="{{label}}"></button>
         {{/buttons}}
         {{#labels}}
+        <div class="email-labels-wrap">
         <input
             class="email-labels-input"
             data-items="{{items_json}}"
             data-all="{{all_json}}"
             data-base-url="{{base_url}}"
         >
-        <button class="email-labels-ok">Ok</button>
-        <button class="email-labels-cancel">Cancel</button>
+        <button class="email-labels-ok"></button>
+        <button class="email-labels-cancel"></button>
+        </div>
         {{/labels}}
     </div>
 </div>

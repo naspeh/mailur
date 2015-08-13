@@ -16,13 +16,14 @@
 .mix_button() {
     color: @ColorA;
     border: 1px solid @Color0b;
-    background-color: @Color0bg;
-    border-radius: 3px;
-    padding: 0 5px;
+    background-color: @Color1bg;
+    border-radius: 5px;
+    padding: 2px 5px;
     margin: 0.2em 0;
+    font-weight: bold;
     &:hover {
         cursor: pointer;
-        background-color: @Color1bg;
+        background-color: @Color0bg;
     }
 }
 .mix_input() {
@@ -224,33 +225,55 @@ body {
     }
 }
 .header {
-    margin: 10px;
+    margin: 5px;
+    height: 30px;
 
     h3 {
         display: inline-block;
         font-size: 120%;
         font-weight: bold;
-        margin: 0;
+        margin: 0 10px 0 0;
         padding: 0;
+        line-height: 30px;
     }
     button {
-        line-height: 15px;
-    }
-    .email-labels-edit {
-        display: inline-block;
-
-    }
-    .email-labels-input {
-        vertical-align: bottom;
-        display: inline-block;
-        min-width: 150px;
-        margin-bottom: -5px;
+        .mix_button()
     }
     .email-mark-spam {
         .icon-spam();
     }
     .email-mark-del {
         .icon-trash();
+    }
+    .email-labels-edit {
+        display: inline-block;
+    }
+    .email-labels-wrap {
+        display: inline-block;
+        border-bottom: 1px solid #ccc;
+        margin-left: 10px;
+    }
+    .email-labels-input {
+        display: inline-block;
+        min-width: 150px;
+        vertical-align: middle;
+        height: 30px;
+        line-height: 30px;
+        &:hover {
+            cursor: pointer;
+            background-color: @Color0bg;
+        }
+    }
+    .selectize-input {
+        border: none;
+        line-height: 22px;
+        height: 30px;
+    }
+    .email-labels-ok {
+        .icon-ok();
+    }
+    .email-labels-cancel {
+        .icon-cancel();
     }
 }
 .thread {
@@ -287,6 +310,13 @@ body {
         margin: 5px 0;
         border: 1px solid #ccc;
     }
+    .compose-send {
+        .icon-send();
+        .mix_button();
+    }
+    .compose-preview {
+        .mix_button();
+    }
 }
 .help {
     display: none;
@@ -314,7 +344,7 @@ body {
     }
 }
 .help-toggle {
-    .icon-help();
+    .icon-keyboard();
     &:before {
         margin: 0;
     }
@@ -335,9 +365,18 @@ body {
     a {
         text-decoration: none;
     }
+    nav a {
+        display: inline-block;
+        .mix_button();
+    }
+    .compose-new {
+        .icon-compose();
+    }
+    .search {
+        .icon-search();
+        .mix_button()
+    }
     .search-form {
-        margin: 5px 0;
-
         input[type="text"] {
             width: 150px;
         }
@@ -353,6 +392,8 @@ body {
     color: red;
     font-weight: bold;
 }
+
+/* magnific-popup */
 .mfp-content {
     min-width: 50%;
     min-height: 50%;
