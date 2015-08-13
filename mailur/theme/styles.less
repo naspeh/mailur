@@ -248,6 +248,7 @@ body {
     }
     .email-labels-edit {
         display: inline-block;
+        white-space: nowrap;
     }
     .email-labels-wrap {
         display: inline-block;
@@ -263,9 +264,10 @@ body {
     .email-labels-input {
         display: inline-block;
         min-width: 150px;
-        vertical-align: middle;
-        height: 30px;
+        vertical-align: bottom;
+        min-height: 30px;
         line-height: 30px;
+        margin-bottom: -7px;
         &:hover {
             cursor: pointer;
             background-color: @Color0bg;
@@ -273,8 +275,6 @@ body {
     }
     .selectize-input {
         border: none;
-        line-height: 22px;
-        height: 30px;
     }
     .email-labels-ok {
         .icon-ok();
