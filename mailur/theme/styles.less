@@ -362,11 +362,14 @@ body {
     }
 }
 .sidebar {
-    float: left;
-    width: 200px;
-    overflow: hidden;
+    position: fixed;
+    top: 0;
     padding: 0 10px;
     white-space: nowrap;
+    width: 200px;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
 
     a {
         text-decoration: none;
