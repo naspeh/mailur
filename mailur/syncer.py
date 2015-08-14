@@ -14,8 +14,8 @@ from .helpers import Timer, with_lock
 from .imap import Client
 
 # Only these folders contain unique emails
-FOLDERS = ('\\All', '\\Junk', '\\Trash')
-LABELS = {
+FOLDERS = ('\\All', '\\Spam', '\\Trash')
+ALIASES = {
     'INBOX': '\\Inbox',
     '\\Junk': '\\Spam',
     '\\Starred': '\\Pinned'
@@ -37,7 +37,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
 
     labels_ = labels or {}
     for attrs, delim, name in folders:
-        label = set(only) & set(attrs + (name,))
+        label = set(only) & set(ALIASES.get(l, l) for l in (attrs + (name,)))
         label = label and label.pop()
         if not label:
             continue
@@ -245,6 +245,7 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
         ]
         for label, args, func in labels:
             gids = [map_uids[uid] for uid, row in data if func(row, *args)]
+            label = ALIASES.get(label, label)
             updated += update_label(env, gids, label, folder)
 
     if clean:
@@ -256,8 +257,6 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
 
 
 def clean_emails(env, labels, folder):
-    folder = LABELS.get(folder, folder)
-    labels = {LABELS.get(l, l) for l in labels}
     labels |= {'\\Answered', '\\Unread', folder}
     labels = [imap_utf7.decode(l) for l in labels]
 
@@ -454,7 +453,6 @@ def update_label(env, gids, label, folder=None):
         log.info('  - %s %d emails for %.2fs', action, i.rowcount, t.time())
         step.ids += tuple(r[0] for r in i)
     step.ids = ()
-    folder, label = (LABELS.get(l, l) for l in [folder, label])
 
     log.info('  * Process %r...', label)
     step('remove from', '''
@@ -485,15 +483,13 @@ def update_thrids(env, folder=None):
         for label in FOLDERS:
             update_thrids(env, label)
 
-        folders = [LABELS.get(f, f) for f in FOLDERS]
         step('clean deleted: thrid=null and labels={}', '''
         UPDATE emails set thrid = NULL, labels='{}'
         WHERE NOT (labels && %s::varchar[]) AND thrid != id AND labels != '{}'
         RETURNING id
-        ''', [folders])
+        ''', [FOLDERS])
         return
 
-    folder = LABELS.get(folder, folder)
     log.info('  * Update thread ids %r', folder)
 
     step('Clean thrid from other folders', '''
