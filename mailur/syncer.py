@@ -249,7 +249,8 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
             updated += update_label(env, gids, label, folder)
 
     if clean:
-        updated += clean_emails(env, glabels, folder)
+        glabels_ = [ALIASES.get(l, l) for l in glabels]
+        updated += clean_emails(env, glabels_, folder)
     updated += process_tasks(env)
 
     env.db.commit()
