@@ -273,6 +273,7 @@ def ctx_all_labels(env):
 
 
 def ctx_header(env, subj, labels=None):
+    labels = list(labels) if labels else []
     buttons = (
         ([] if '\\Trash' in labels else [
             {'name': 'del', 'label': '\\Trash', 'title': 'Delete'}
@@ -281,7 +282,7 @@ def ctx_header(env, subj, labels=None):
             {'name': 'spam', 'label': '\\Spam', 'title': 'Report spam'}
         ])
     )
-    labels = ctx_labels(env, list(labels or []))
+    labels = ctx_labels(env, labels)
     return {
         'subj': subj,
         'buttons': buttons,
