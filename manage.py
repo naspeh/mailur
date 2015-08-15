@@ -57,8 +57,7 @@ def reqs(dev=False, clear=False):
 def for_all(func):
     def inner(env, *a, **kw):
         if env.username:
-            func(env, *a, **kw)
-            return
+            return func(env, *a, **kw)
 
         for username in env.users:
             env.username = username
