@@ -142,9 +142,7 @@ def reset_password(env, username=None, token=None):
             args = schema.validate(env.request.form)
             if args['password'] != args['password_confirm']:
                 raise v.SchemaError('Passwords aren\'t the same')
-            env.storage.set_password(args['password'])
-            env.storage.rm('password_token')
-            env.db.commit()
+            env.set_password(args['password'])
             return env.redirect_for('index')
         return render_body(env, 'reset_password')
 
@@ -154,10 +152,9 @@ def reset_password(env, username=None, token=None):
         return login_required(inner)(env)
 
     env.username = username
-    password_token = env.storage.get('password_token')
-    if not password_token or password_token != token:
-        return env.abort(400)
-    return inner(env)
+    if env.check_password_token(token):
+        return inner(env)
+    return env.abort(400)
 
 
 @login_required

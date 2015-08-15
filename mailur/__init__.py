@@ -1,9 +1,9 @@
 import json
 import logging
 import logging.config
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from uuid import uuid4
 
 import bcrypt
 import psycopg2
@@ -38,7 +38,7 @@ def get_conf(conf=None):
             '+google_id': str,
             '+google_secret': str,
             '+cookie_secret': str,
-            '+token': v.Nullable(str, str(uuid4())),
+            '+token': v.Nullable(str, str(uuid.uuid4())),
             'log_handlers': (
                 v.Nullable([v.Enum(log_handlers)], log_handlers[:1])
             ),
@@ -234,6 +234,35 @@ class Env:
 
         self.session['username'] = self.username
         return True
+
+    def set_password(self, value=None, reset=False):
+        if reset:
+            token = str(uuid.uuid4())
+            self.storage.set('password_token', token)
+            self.db.commit()
+            return token
+
+        if not value:
+            raise ValueError('Password should set')
+        h = bcrypt.hashpw(value.encode(), bcrypt.gensalt()).decode()
+        self.storage.set('password_hash', h)
+        self.storage.rm('password_token')
+        self.db.commit()
+
+    def check_password_token(self, token):
+        password_token = self.storage.get('password_token')
+        if password_token and password_token == token:
+            return True
+        return False
+
+    def add_tasks(self, tasks, name='mark'):
+        items = [
+            {'key': 'task:%s:%s' % (name, uuid.uuid4()), 'value': t}
+            for t in tasks
+        ]
+        if not items:
+            return []
+        return self.storage.insert(items)
 
 
 def setup_logging(conf):

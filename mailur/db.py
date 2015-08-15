@@ -1,12 +1,11 @@
 import json
-from uuid import UUID, uuid4
+import uuid
 
-import bcrypt
 import psycopg2
 import psycopg2.extras
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
-psycopg2.extensions.register_adapter(UUID, psycopg2.extras.UUID_adapter)
+psycopg2.extensions.register_adapter(uuid.UUID, psycopg2.extras.UUID_adapter)
 
 
 def init(env, password=None, reset=False):
@@ -36,11 +35,9 @@ def init(env, password=None, reset=False):
     env.db.commit()
 
     if password:
-        env.storage.set_password(password)
-        env.db.commit()
+        env.set_password(password)
     elif reset:
-        token = env.storage.set_password_token()
-        env.db.commit()
+        token = env.set_password(reset=True)
         print('Reset password: /pwd/%s/%s/' % (env.username, token))
 
 
@@ -83,6 +80,8 @@ def create_table(name, body, before=None, after=None):
 
 
 class Manager():
+    pk = 'id'
+
     def __init__(self, env):
         self.env = env
         self.field_names = tuple(f.split()[0].strip('"') for f in self.fields)
@@ -121,9 +120,10 @@ class Manager():
             items = [items]
 
         i = self.sql('''
-        INSERT INTO {table} {fields} VALUES {values} RETURNING id
+        INSERT INTO {table} {fields} VALUES {values} RETURNING {pk}
         '''.format(
             table=self.name,
+            pk=self.pk,
             fields=self.sql_fields(items[0].keys()),
             values=self.sql_values(items)
         ))
@@ -133,9 +133,10 @@ class Manager():
         i = self.sql('''
         UPDATE {table} SET {fields} = {values}
             WHERE {where}
-            RETURNING id
+            RETURNING {pk}
         '''.format(
             table=self.name,
+            pk=self.pk,
             fields=self.sql_fields(values.keys()),
             values=self.sql_values(values),
             where=self.mogrify(where, params)
@@ -159,6 +160,7 @@ class Manager():
 
 class Storage(Manager):
     name = 'storage'
+    pk = 'key'
     fields = (
         'key varchar PRIMARY KEY',
         'value jsonb',
@@ -183,15 +185,6 @@ class Storage(Manager):
 
     def rm(self, key):
         self.sql('DELETE FROM storage WHERE key=%s', [key])
-
-    def set_password(self, value):
-        h = bcrypt.hashpw(value.encode(), bcrypt.gensalt()).decode()
-        self.set('password_hash', h)
-
-    def set_password_token(self):
-        token = str(uuid4())
-        self.set('password_token', token)
-        return token
 
 
 class Emails(Manager):

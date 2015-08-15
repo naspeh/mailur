@@ -1,10 +1,10 @@
 import json
 import re
+import uuid
 from collections import OrderedDict
 from contextlib import contextmanager
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
-from uuid import uuid5, NAMESPACE_URL
 
 import requests
 import valideer as v
@@ -142,7 +142,7 @@ def fetch_headers(env, imap, map_uids):
         for uid, row in data:
             gm_uid = '%s\r%s' % (imap.email, row['X-GM-MSGID'])
             fields = {
-                'id': uuid5(NAMESPACE_URL, gm_uid),
+                'id': uuid.uuid5(uuid.NAMESPACE_URL, gm_uid),
                 'header': row['RFC822.HEADER'],
                 'size': row['RFC822.SIZE'],
                 'time': row['INTERNALDATE'],
@@ -285,10 +285,14 @@ def clean_emails(env, labels, folder):
 
 def process_tasks(env):
     updated = []
-    tasks = env.sql('SELECT data FROM tasks ORDER BY created').fetchall()
+    tasks = env.sql('''
+    SELECT value FROM storage
+    WHERE key LIKE 'task:mark:%'
+    ORDER BY created
+    ''').fetchall()
     log.info('  * Process %s tasks', len(tasks))
     for row in tasks:
-        data = row['data']
+        data = row[0]
         updated += mark(env, data)
         log.info('  - done %s', data)
     return updated
@@ -376,13 +380,13 @@ def mark(env, data, new=False, inner=False):
         i = env.sql(actions[action], {'name': label, 'ids': ids})
         updated += [r[0] for r in i]
 
-        tasks.append({'data': {'action': action, 'name': label, 'ids': ids}})
+        tasks.append({'action': action, 'name': label, 'ids': ids})
 
     if new:
         env.emails.update({'thrid': None}, 'id IN %s', [ids])
         update_thrids(env)
 
-        env.tasks.insert(tasks)
+        env.add_tasks(tasks)
         env.db.commit()
         notify(env, updated)
     return updated
@@ -399,7 +403,11 @@ def sync_marks(env, imap, map_uids):
         '\\Pinned': ('FLAGS', '\\Flagged'),
         '\\Spam': ('X-GM-LABELS', '\\Spam'),
     }
-    tasks = env.sql('SELECT id, data FROM tasks ORDER BY created').fetchall()
+    tasks = env.sql('''
+    SELECT key, value FROM storage
+    WHERE key LIKE 'task:mark:%'
+    ORDER BY created
+    ''').fetchall()
     msgids = tuple(map_uids.values())
     for task_id, t in tasks:
         emails = env.sql('''
@@ -428,7 +436,7 @@ def sync_marks(env, imap, map_uids):
             log.warn('  ! %r', e)
             return
 
-        env.sql('DELETE FROM tasks WHERE id = %s', [task_id])
+        env.sql('DELETE FROM storage WHERE key = %s', [task_id])
 
 
 def notify(env, ids):

@@ -3,7 +3,9 @@
 <nav>
     <a href="/logout/" class="logout" title="Logout"></a>
     <a href="#" class="help-toggle" title="Keyboard shortcut help"></a>
+    {{#email}}
     <a href="/compose/" class="compose-new">Compose</a>
+    {{/email}}
 </nav>
 {{#labels?}}
 <form class="search-form" action="/search/">
@@ -20,13 +22,15 @@
 </ul>
 {{/labels?}}
 </div>
-
 {{^labels?}}
-{{#gmail}}
-Please wait for complete synchronization.
-{{/gmail}}
+<div class="body">
+    {{#email}}
+    Please wait for complete synchronization.
+    {{/email}}
 
-{{^gmail}}
-<a href="/gmail/">Please, connect your gmail account.</a>
-{{/gmail}}
+    {{^email}}
+    <a href="/gmail/">Please, connect your gmail account.</a>
+    {{/email}}
+    {{&body}}
+</div>
 {{/labels?}}
