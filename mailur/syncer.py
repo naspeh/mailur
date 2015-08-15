@@ -488,7 +488,7 @@ def update_thrids(env, folder=None):
         UPDATE emails set thrid = NULL, labels='{}'
         WHERE NOT (labels && %s::varchar[]) AND thrid != id AND labels != '{}'
         RETURNING id
-        ''', [FOLDERS])
+        ''', [list(FOLDERS)])
         return
 
     log.info('  * Update thread ids %r', folder)
