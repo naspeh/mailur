@@ -44,24 +44,8 @@ $('.emails-byid').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
 $('.emails').on('images', '.email-attachments', function() {
-    $(this).magnificPopup({
-        delegate: 'a.email-a-image',
-        type: 'image',
-        tLoading: 'Loading image #%curr%...',
-        gallery: {
-            enabled: true,
-            navigateByImgClick: true,
-            preload: [0, 1]
-        },
-        image: {
-            tError: (
-                '<a href="%url%">The image #%curr%</a> could not be loaded.'
-            ),
-            titleSrc: function(item) {
-                return item.el.html();
-            },
-            verticalFit: true
-        }
+    $('.email-a-image').swipebox({
+        hideBarsDelay: 3000
     });
 });
 $('.emails .email-attachments').trigger('images');

@@ -384,27 +384,27 @@ def get_full(argv):
             '   normalize.css'
             '   mousetrap'
             '   selectize'
-            '   magnific-popup'
+            '   wjbryant/taboverride'
+            '   naskoro/swipebox'
         ))
 
     cmd('static').exe(lambda a: sh(
         # all.css
         'lessc {0}styles.less {0}build/styles.css &&'
-        'autoprefixer {0}build/styles.css {0}build/styles.css &&'
         'cat'
         '   node_modules/normalize.css/normalize.css'
-        '   {0}selectize.css'
-        '   node_modules/magnific-popup/dist/magnific-popup.css'
+        '   {0}lib/selectize.css'
         '   {0}build/styles.css'
         '   > {0}build/all.css &&'
+        'autoprefixer {0}build/all.css {0}build/all.css &&'
         'csso {0}build/all.css {0}build/all.min.css &&'
         # all.js
         'cat'
         '   node_modules/jquery/dist/jquery.js'
         '   node_modules/mousetrap/mousetrap.js'
         '   node_modules/selectize/dist/js/standalone/selectize.js'
-        '   node_modules/magnific-popup/dist/jquery.magnific-popup.js'
-        '   {0}taboverride.js'
+        '   node_modules/taboverride/build/output/taboverride.js'
+        '   node_modules/swipebox/src/js/jquery.swipebox.js'
         '   {0}app.js'
         '   > {0}build/all.js &&'
         'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'

@@ -6,10 +6,11 @@
     "jquery": "2.1.4",
     "jshint": "2.7.0",
     "less": "2.5.1",
-    "magnific-popup": "1.0.0",
-    "mousetrap": "1.5.2",
+    "mousetrap": "1.5.3",
     "normalize.css": "3.0.3",
     "selectize": "0.12.1",
+    "swipebox": "git://github.com/naskoro/swipebox.git#8b34ec61cbd31ab15e8b86b2caa9c24c253bb92b",
+    "taboverride": "git://github.com/wjbryant/taboverride.git#01b79331aa2a7fd401c14a533e516cd3526a4e99",
     "uglify-js": "2.4.23"
   },
   "repository": {},
