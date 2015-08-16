@@ -15,6 +15,7 @@ rules = [
     Rule('/gmail-callback/', endpoint='gmail_callback'),
 
     Rule('/', endpoint='index'),
+    Rule('/check-auth/', endpoint='check_auth'),
     Rule('/init/', endpoint='init'),
     Rule('/pwd/', endpoint='reset_password'),
     Rule('/pwd/<username>/<token>/', endpoint='reset_password'),
@@ -71,7 +72,7 @@ def init(env):
 
 def login_required(func):
     def inner(env, *a, **kw):
-        if env.valid_username:
+        if env.valid_username or env.valid_token:
             return func(env, *a, **kw)
         return env.redirect_for('login')
     return ft.wraps(func)(inner)
@@ -160,6 +161,11 @@ def reset_password(env, username=None, token=None):
 @login_required
 def index(env):
     return env.redirect_for('emails', {'in': '\Inbox'})
+
+
+@login_required
+def check_auth(env):
+    return 'OK'
 
 
 @login_required

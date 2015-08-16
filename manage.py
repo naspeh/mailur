@@ -4,6 +4,7 @@ import functools as ft
 import logging
 import os
 import subprocess as sp
+import uuid
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -184,13 +185,7 @@ def migrate(env):
     db.init(env)
     env.username = env.username  # reset db connection
 
-    i = env.sql('SELECT data FROM tasks ORDER BY created')
-    env.add_tasks((r[0] for r in i))
-    env.db.commit()
-
-    env.sql('DROP TABLE IF EXISTS tasks')
-    env.sql('DROP SEQUENCE IF EXISTS seq_tasks_id')
-    env.sql('DROP SEQUENCE IF EXISTS seq_accounts_id')
+    env.storage.set('token', str(uuid.uuid4()))
     env.db.commit()
 
 

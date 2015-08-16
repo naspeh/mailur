@@ -444,9 +444,9 @@ def notify(env, ids):
         return
 
     url = 'http://localhost:9000/notify/'
-    data = {'ids': set(ids)}
+    d = {'ids': set(ids)}
     try:
-        requests.post(url, data=data, timeout=5, auth=(env('token'), ''))
+        requests.post(url, data=d, timeout=5, auth=(env.username, env.token))
     except IOError as e:
         log.error(e)
 

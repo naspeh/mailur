@@ -1,5 +1,4 @@
 import asyncio
-import functools as ft
 import json
 
 import aiohttp
@@ -8,19 +7,30 @@ import aiohttp.web as web
 from . import Env, log
 
 
-def login_required(func):
-    def inner(request, *a, **kw):
-        env = request.app['env']
-        env.request = request
-        if env.valid_token or env.valid_username:
-            return func(env, request, *a, **kw)
+@asyncio.coroutine
+def bad_auth(request):
+    resp = yield from aiohttp.request(
+        'GET', 'http://localhost:8000/check-auth/',
+        headers=request.headers,
+        cookies=request.cookies.items(),
+        allow_redirects=False
+    )
+    if resp.status == 200:
+        resp.close()
+        return None
+    elif resp.status in (301, 302, 403):
         return web.Response(body=b'403 Forbidden', status=403)
-    return ft.wraps(func)(inner)
+
+    body = yield from resp.read()
+    return web.Response(body=body, status=resp.status)
 
 
 @asyncio.coroutine
-@login_required
-def wshandler(env, request):
+def wshandler(request):
+    error = yield from bad_auth(request)
+    if error:
+        return error
+
     ws = web.WebSocketResponse()
     ws.start(request)
 
@@ -55,8 +65,11 @@ def wshandler(env, request):
 
 
 @asyncio.coroutine
-@login_required
-def notify(env, request):
+def notify(request):
+    error = yield from bad_auth(request)
+    if error:
+        return error
+
     yield from request.post()
     msg = json.dumps({'updated': request.POST.getall('ids')})
     for ws in request.app['sockets']:

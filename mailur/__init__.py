@@ -9,7 +9,6 @@ import bcrypt
 import psycopg2
 import valideer as v
 from werkzeug.contrib.securecookie import SecureCookie
-from werkzeug.http import parse_authorization_header
 from werkzeug.utils import cached_property
 
 from . import db
@@ -38,7 +37,6 @@ def get_conf(conf=None):
             '+google_id': str,
             '+google_secret': str,
             '+cookie_secret': str,
-            '+token': v.Nullable(str, str(uuid.uuid4())),
             'log_handlers': (
                 v.Nullable([v.Enum(log_handlers)], log_handlers[:1])
             ),
@@ -131,6 +129,10 @@ class Env:
     def email(self):
         return self.storage.get('gmail_info', {}).get('email')
 
+    @cached_property
+    def token(self):
+        return self.storage.get('token')
+
     @property
     def attachments_dir(self):
         return str(Path(self('path_attachments')) / self.username)
@@ -197,10 +199,10 @@ class Env:
     @property
     def valid_token(self):
         if self.request is not None:
-            header = self.request.headers.get('authorization')
-            if header:
-                auth = parse_authorization_header(header)
-                return auth and auth.username == self('token')
+            auth = self.request.authorization
+            if auth:
+                self.username = auth.username
+                return self.valid_username and auth.password == self.token
         return False
 
     @property
@@ -246,6 +248,7 @@ class Env:
             raise ValueError('Password should set')
         h = bcrypt.hashpw(value.encode(), bcrypt.gensalt()).decode()
         self.storage.set('password_hash', h)
+        self.storage.set('token', str(uuid.uuid4()))
         self.storage.rm('password_token')
         self.db.commit()
 
