@@ -1,6 +1,5 @@
 import asyncio
 import json
-
 import aiohttp
 import aiohttp.web as web
 
@@ -8,7 +7,7 @@ from . import Env, log
 
 
 @asyncio.coroutine
-def bad_auth(request):
+def get_env(request):
     resp = yield from aiohttp.request(
         'GET', 'http://localhost:8000/check-auth/',
         headers=request.headers,
@@ -16,25 +15,25 @@ def bad_auth(request):
         allow_redirects=False
     )
     if resp.status == 200:
-        resp.close()
-        return None
+        data = yield from resp.json()
+        return Env(data['username']), None
     elif resp.status in (301, 302, 403):
-        return web.Response(body=b'403 Forbidden', status=403)
+        return None, web.Response(body=b'403 Forbidden', status=403)
 
     body = yield from resp.read()
-    return web.Response(body=body, status=resp.status)
+    return None, web.Response(body=body, status=resp.status)
 
 
 @asyncio.coroutine
 def wshandler(request):
-    error = yield from bad_auth(request)
+    env, error = yield from get_env(request)
     if error:
         return error
 
     ws = web.WebSocketResponse()
     ws.start(request)
 
-    request.app['sockets'].append(ws)
+    request.app['sockets'].append((env.username, ws))
     while True:
         msg = yield from ws.receive()
         if msg.tp == web.MsgType.text:
@@ -60,20 +59,21 @@ def wshandler(request):
         elif msg.tp == web.MsgType.error:
             log.exception(ws.exception())
 
-    request.app['sockets'].remove(ws)
+    request.app['sockets'].remove((env.username, ws))
     return ws
 
 
 @asyncio.coroutine
 def notify(request):
-    error = yield from bad_auth(request)
+    env, error = yield from get_env(request)
     if error:
         return error
 
     yield from request.post()
     msg = json.dumps({'updated': request.POST.getall('ids')})
-    for ws in request.app['sockets']:
-        ws.send_str(msg)
+    for username, ws in request.app['sockets']:
+        if username == env.username:
+            ws.send_str(msg)
     return web.Response(body=b'OK')
 
 
@@ -82,6 +82,5 @@ def create_app():
     app.router.add_route('GET', '/', wshandler)
     app.router.add_route('POST', '/notify/', notify)
 
-    app['env'] = Env()
     app['sockets'] = []
     return app

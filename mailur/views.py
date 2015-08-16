@@ -165,7 +165,7 @@ def index(env):
 
 @login_required
 def check_auth(env):
-    return 'OK'
+    return env.to_json({'username': env.username})
 
 
 @login_required
