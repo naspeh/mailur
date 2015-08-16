@@ -88,8 +88,27 @@ html.swipebox-html.swipebox-touch {
   top: 0;
   left: 0;
 }
+@keyframes load {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
 #swipebox-slider .slide-loading {
   .icon-loading();
+  position: relative;
+  &:before {
+    position: absolute;
+    top: 50%;
+    display: inline-block;
+    color: #fff;
+    font-size: 25px;
+    height: 25px;
+    width: 25px;
+    animation: load 2s infinite ease;
+  }
 }
 
 #swipebox-bottom-bar,
@@ -164,7 +183,7 @@ html.swipebox-html.swipebox-touch {
   line-height: 50px;
   top: 0;
   &:before {
-    font-size: 50px;
+    font-size: 25px;
     color: #fff;
     vertical-align: middle;
     margin: 0;
