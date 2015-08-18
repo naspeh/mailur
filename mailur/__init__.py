@@ -111,6 +111,7 @@ class Env:
         self.__dict__.pop('db', None)
         self.__dict__.pop('conf', None)
         self.__dict__.pop('email', None)
+        self.__dict__.pop('token', None)
 
     @cached_property
     def db(self):
