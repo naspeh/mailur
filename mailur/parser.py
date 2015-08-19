@@ -1,6 +1,7 @@
 import datetime as dt
 import email
 import email.header
+import html
 import os
 import re
 from collections import OrderedDict
@@ -131,6 +132,7 @@ def parse_part(env, part, msg_id, inner=False):
         if ctype == 'text/html':
             content['html'] = text
         elif ctype == 'text/plain' and not content['html']:
+            text = html.escape(text)
             text = text2html(text)
             content['html'] = text
     else:
