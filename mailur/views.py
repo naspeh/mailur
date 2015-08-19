@@ -538,7 +538,42 @@ def raw(env, id):
 
 @login_required
 def mark(env):
-    syncer.mark(env, env.request.json, new=True)
+    def name(value):
+        if isinstance(value, str):
+            value = [value]
+        return [v for v in value if v]
+
+    schema = v.parse({
+        '+action': v.Enum(('+', '-', '=')),
+        '+name': v.AdaptBy(name),
+        '+ids': [str],
+        'old_name': v.AdaptBy(name),
+        'thread': v.Nullable(bool, False),
+        'last': v.Nullable(v.AdaptBy(dt.datetime.fromtimestamp))
+    })
+    data = schema.validate(env.request.json)
+    if not data['ids']:
+        return 'OK'
+
+    ids = tuple(data['ids'])
+    if data['thread']:
+        i = env.sql('''
+        SELECT id FROM emails WHERE thrid IN %s AND created <= %s
+        ''', [ids, data['last']])
+        ids = tuple(r[0] for r in i)
+
+    mark = ft.partial(syncer.mark, env, ids=ids, new=True)
+    if data['action'] == '=':
+        if data.get('old_name') is None:
+            raise ValueError('Missing parameter "old_name" for %r' % data)
+        if data['old_name'] == data['name']:
+            return []
+
+        mark('-', set(data['old_name']) - set(data['name']))
+        mark('+', set(data['name']) - set(data['old_name']))
+        return 'OK'
+
+    mark(data['action'], data['name'])
     return 'OK'
 
 

@@ -1,4 +1,3 @@
-import datetime as dt
 import json
 import re
 import uuid
@@ -8,7 +7,6 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 
 import requests
-import valideer as v
 
 from . import imap_utf7, parser, log
 from .helpers import Timer, with_lock
@@ -294,53 +292,18 @@ def process_tasks(env):
     log.info('  * Process %s tasks', len(tasks))
     for row in tasks:
         data = row[0]
-        updated += mark(env, data)
+        updated += mark(env, data['action'], data['name'], data['ids'])
         log.info('  - done %s', data)
     return updated
 
 
-def mark(env, data, new=False, inner=False):
-    def name(value):
-        if isinstance(value, str):
-            value = [value]
-        return [v for v in value if v]
-
-    schema = v.parse({
-        '+action': v.Enum(('+', '-', '=')),
-        '+name': v.AdaptBy(name),
-        '+ids': [str],
-        'old_name': v.AdaptBy(name),
-        'thread': v.Nullable(bool, False),
-        'last': v.Nullable(v.AdaptBy(dt.datetime.fromtimestamp))
-    })
-    data = schema.validate(data)
-    if not data['ids']:
+def mark(env, action, name, ids, new=False, inner=False):
+    if not name or not ids:
         return []
+    if not isinstance(name, str):
+        return sum((mark(env, action, n, ids, new, inner) for n in name), [])
 
-    ids = tuple(data['ids'])
-    if data['thread']:
-        i = env.sql('''
-        SELECT id FROM emails WHERE thrid IN %s AND created <= %s
-        ''', [ids, data['last']])
-        ids = tuple(r[0] for r in i)
-
-    if data['action'] == '=':
-        if data.get('old_name') is None:
-            raise ValueError('Missing parameter "old_name" for %r' % data)
-        if data['old_name'] == data['name']:
-            return []
-
-        def do(action, name):
-            if not name:
-                return []
-            data = {'action': action, 'ids': ids, 'name': name}
-            return mark(env, data, new=True)
-
-        return (
-            do('-', set(data['old_name']) - set(data['name'])) +
-            do('+', set(data['name']) - set(data['old_name']))
-        )
-
+    ids = tuple(ids)
     actions = {
         '-': (
             '''
@@ -357,8 +320,6 @@ def mark(env, data, new=False, inner=False):
             '''
         ),
     }
-    updated, tasks = [], []
-
     clean = {
         ('+', '\\Trash'): [('-', ['\\All', '\\Inbox', '\\Spam'])],
         ('+', '\\Spam'): [('-', ['\\All', '\\Inbox', '\\Trash'])],
@@ -372,25 +333,19 @@ def mark(env, data, new=False, inner=False):
         ('-', '\\Spam'): ('+', '\\Inbox'),
     }
 
-    action = data['action']
-    for label in data['name']:
-        if not inner:
-            action, label = instead.get((action, label), (action, label))
-            extra = clean.get((action, label), [])
-            for a, name in extra:
-                params = {'action': a, 'name': name, 'ids': ids}
-                mark(env, params, inner=True)
+    if not inner:
+        action, name = instead.get((action, name), (action, name))
+        extra = clean.get((action, name), [])
+        for a, n in extra:
+            mark(env, a, n, ids, inner=True)
 
-        i = env.sql(actions[action], {'name': label, 'ids': ids})
-        updated += [r[0] for r in i]
-
-        tasks.append({'action': action, 'name': label, 'ids': ids})
-
+    i = env.sql(actions[action], {'name': name, 'ids': ids})
+    updated = [r[0] for r in i]
     if new:
         env.emails.update({'thrid': None}, 'id IN %s', [ids])
         update_thrids(env)
 
-        env.add_tasks(tasks)
+        env.add_tasks([{'action': action, 'name': name, 'ids': ids}])
         env.db.commit()
         notify(env, updated)
     return updated
