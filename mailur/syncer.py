@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import re
 import uuid
@@ -309,7 +310,8 @@ def mark(env, data, new=False, inner=False):
         '+name': v.AdaptBy(name),
         '+ids': [str],
         'old_name': v.AdaptBy(name),
-        'thread': v.Nullable(bool, False)
+        'thread': v.Nullable(bool, False),
+        'last': v.Nullable(v.AdaptBy(dt.datetime.fromtimestamp))
     })
     data = schema.validate(data)
     if not data['ids']:
@@ -317,7 +319,9 @@ def mark(env, data, new=False, inner=False):
 
     ids = tuple(data['ids'])
     if data['thread']:
-        i = env.sql('SELECT id FROM emails WHERE thrid IN %s', [ids])
+        i = env.sql('''
+        SELECT id FROM emails WHERE thrid IN %s AND created <= %s
+        ''', [ids, data['last']])
         ids = tuple(r[0] for r in i)
 
     if data['action'] == '=':

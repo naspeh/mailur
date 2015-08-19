@@ -197,7 +197,7 @@ def sidebar(env):
 def ctx_emails(env, items, domid='id'):
     emails, last = [], None
     for i in items:
-        last = i['updated'] if not last or i['updated'] > last else last
+        last = i['created'] if not last or i['created'] > last else last
         extra = i.get('_extra', {})
         email = dict({
             'id': i['id'],
@@ -327,7 +327,7 @@ def ctx_quote(env, msg):
 def thread(env, id):
     i = env.sql('''
     SELECT
-        id, thrid, subj, labels, time, fr, "to", text, cc, updated,
+        id, thrid, subj, labels, time, fr, "to", text, cc, created,
         html, attachments
     FROM emails
     WHERE thrid = %s
@@ -391,7 +391,7 @@ def emails(env, page):
         return env.abort(400)
 
     if page['last']:
-        where = env.mogrify(where + ' AND time < %s', [page['last_dt']])
+        where = env.mogrify(where + ' AND created < %s', [page['last_dt']])
 
     i = env.sql('''
     WITH
@@ -415,7 +415,7 @@ def emails(env, page):
         GROUP BY t.thrid
     )
     SELECT
-        id, t.thrid, subj, t.labels, time, fr, text, "to", cc, updated,
+        id, t.thrid, subj, t.labels, time, fr, text, "to", cc, created,
         attachments, count, subj_list
     FROM emails e
     JOIN threads t ON e.thrid = t.thrid
@@ -470,7 +470,7 @@ def search(env):
         LIMIT 100
     )
     SELECT
-        e.id, thrid, subj, labels, time, fr, "to", cc, text, updated,
+        e.id, thrid, subj, labels, time, fr, "to", cc, text, created,
         html, attachments
     FROM emails e, search s
     WHERE e.id = s.id
@@ -487,7 +487,7 @@ def body(env, id):
 
     row = env.sql('''
     SELECT
-        id, thrid, subj, labels, time, fr, "to", cc, text, updated,
+        id, thrid, subj, labels, time, fr, "to", cc, text, created,
         raw, attachments
     FROM emails WHERE id=%s LIMIT 1
     ''', [id]).fetchone()

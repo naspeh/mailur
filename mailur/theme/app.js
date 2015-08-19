@@ -35,6 +35,7 @@ $('.emails').on('click', '.email-pin', function() {
         if (email.parents('.emails-byid').length === 0) {
             data.ids = [email.data('thrid')];
             data.thread = true;
+            data.last = $('.emails').data('last');
         }
     }
     send('/mark/', data);
@@ -377,6 +378,8 @@ function send(url, data, callback) {
     }
 }
 function mark(params, callback) {
+    params.last = $('.emails').data('last');
+
     if ($('.emails').hasClass('thread')) {
         params.ids = [$('.email').first().data('thrid')];
         params.thread = true;
