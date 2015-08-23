@@ -5,7 +5,6 @@ import html
 import os
 import re
 from collections import OrderedDict
-from html import escape as html_escape
 
 import chardet
 from lxml import html as lhtml
@@ -132,7 +131,6 @@ def parse_part(env, part, msg_id, inner=False):
         if ctype == 'text/html':
             content['html'] = text
         elif ctype == 'text/plain' and not content['html']:
-            text = html.escape(text)
             text = text2html(text)
             content['html'] = text
     else:
@@ -264,7 +262,7 @@ def text2html(txt):
     def fill_link(match):
         return '<a href="{0}" target_="_blank">{0}</a>'.format(match.group())
 
-    htm = html_escape(txt)
+    htm = html.escape(txt)
     htm = link_re.sub(fill_link, htm)
     htm = '<pre class="email-text2html">%s</pre>' % htm
     return htm
