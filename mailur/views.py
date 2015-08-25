@@ -596,7 +596,8 @@ def compose(env):
     ctx, parent = {'fr': fr}, {}
     if args.get('id'):
         parent = env.sql('''
-        SELECT thrid, msgid, "to", fr, cc, bcc, subj, reply_to, html, time
+        SELECT
+            thrid, msgid, "to", fr, cc, bcc, subj, reply_to, refs, html, time
         FROM emails WHERE id=%s LIMIT 1
         ''', [args['id']]).fetchone()
         if f.get_addr(parent['fr'][0]) == env.email:
@@ -649,6 +650,7 @@ def compose(env):
         })
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
+        msg['refs'] = parent.get('refs')[-10:]
         msg['files'] = env.request.files.getlist('files')
         sendmail(env, msg)
         if parent.get('thrid'):
@@ -700,7 +702,7 @@ def sendmail(env, msg):
 
     if in_reply_to:
         email['In-Reply-To'] = in_reply_to
-        email['References'] = in_reply_to
+        email['References'] = '\n'.join([in_reply_to] + msg.get('refs', []))
 
     env.storage.set('send:%s' % dt.datetime.now(), email.as_string())
     env.db.commit()
