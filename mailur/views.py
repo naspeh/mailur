@@ -196,9 +196,7 @@ def sidebar(env):
 def ctx_emails(env, items, domid='id'):
     emails, last = [], None
     for i in items:
-        last = i['created'] if not last or i['created'] > last else last
         extra = i.get('_extra', {})
-        reply_url = env.url_for('compose', {'id': i['id']})
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
@@ -210,12 +208,7 @@ def ctx_emails(env, items, domid='id'):
             'pinned?': '\\Pinned' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
             'draft?': '\\Draft' in i['labels'],
-            'body_url': env.url_for('body', id=i['id']),
-            'raw_url': env.url_for('raw', id=i['id']),
-            'thread_url': env.url_for('thread', id=i['thrid']),
-            'reply_url': reply_url,
-            'replyall_url': reply_url + '&target=all',
-            'forward_url': reply_url + '&target=forward',
+            'links': ctx_links(env, i['id'], domid != 'id' and i['thrid']),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'time_str': str(i['time']),
@@ -224,6 +217,7 @@ def ctx_emails(env, items, domid='id'):
             'cc': [ctx_person(env, v) for v in i['cc'] or []],
             'labels?': ctx_labels(env, i['labels'])
         }, **extra)
+        last = i['created'] if not last or i['created'] > last else last
         email['hash'] = f.get_hash(email)
         emails.append(email)
 
@@ -236,6 +230,47 @@ def ctx_emails(env, items, domid='id'):
         'emails?': emails,
         'emails_class': 'emails-byid' if domid == 'id' else ''
     }
+
+
+def ctx_links(env, id, thrid=None):
+    reply_url = env.url_for('compose', {'id': id})
+    links = [
+        {'title': 'Details', 'name': 'details'},
+        {'title': 'Reply', 'name': 'reply', 'href': reply_url},
+        {
+            'name': 'replyall',
+            'title': 'Reply to all',
+            'href': reply_url + '&target=all'
+        },
+        {
+            'name': 'forward',
+            'title': 'Forward',
+            'href': reply_url + '&target=forward'}
+    ]
+
+    links.append(
+        {
+            'name': 'thread',
+            'title': 'Show full thread',
+            'href': env.url_for('thread', id=thrid),
+            'ifmany': True
+        } if thrid else
+        {
+            'name': 'body',
+            'title': 'Show this message',
+            'href': env.url_for('body', id=id),
+            'ifmany': True
+        }
+    )
+
+    links += [
+        {'title': 'Delete this message', 'name': 'delete'},
+        {
+            'name': 'raw',
+            'title': 'Show original',
+            'href': env.url_for('raw', id=id)},
+    ]
+    return links
 
 
 def ctx_person(env, addr):

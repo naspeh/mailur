@@ -34,9 +34,11 @@
     data-thrid="{{thrid}}"
     data-labels="{{#labels?}}{{names_json}}{{/labels?}}"
     data-hash="{{hash}}"
-    data-body-url="{{body_url}}"
-    data-reply-url="{{reply_url}}"
-    data-replyall-url="{{replyall_url}}"
+    {{#links}}
+    {{#href}}{{#name}}
+    data-{{name}}-url="{{href}}"
+    {{/name}}{{/href}}
+    {{/links}}
 >
     <ul class="email-line">
         {{#draft?}}
@@ -53,7 +55,7 @@
         {{/labels?}}
         {{#count}}<li class="email-count email-info">{{count}}</li>{{/count}}
         <li class="email-subj email-info{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
-            <a href="{{thread_url}}">{{subj_human}}</a>
+            <a href="#">{{subj_human}}</a>
         </li>
         <li class="email-preview email-info">{{preview}}</li>
         <li class="email-expander email-info">&nbsp;</li>
@@ -63,13 +65,11 @@
         {{#body?}}
         <div class="email-details">
             <div class="email-actions">
-                <a class="email-details-toggle" href="javascript:void(0)">Details</a>
-                <a href="{{reply_url}}">Reply</a>
-                <a href="{{replyall_url}}">Reply to all</a>
-                <a href="{{forward_url}}">Forward</a>
-                <a href="{{thread_url}}" title="Show full thread">[T]</a>
-                <a href="{{body_url}}" title="Show only this email">[M]</a>
-                <a href="{{raw_url}}" target="_blank" title="Show original">[O]</a>
+            {{#links}}
+                <a class="email-a-{{name}}" href="{{href}}{{^href}}javascript:void(0){{/href}}">
+                    {{title}}
+                </a>
+            {{/links}}
             </div>
             <div class="email-extra">
                 <img  src="{{fr.image}}">
@@ -86,7 +86,7 @@
         <div class="email-attachments">
             <ul>
                 {{#items}}
-                <li><a class="email-a-{{maintype}}" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a></li>
+                <li><a class="email-f-{{maintype}}" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a></li>
                 {{/items}}
             </ul>
         </div>

@@ -7,6 +7,12 @@ $.get('/init/', {'offset': new Date().getTimezoneOffset() / 60});
 if ($('.thread .email-unread').length !== 0) {
     mark({action: '-', name: '\\Unread'}, function() {});
 }
+if ($('.emails-byid').length === 0) {
+    $('.emails').on('click', '.email-info', function() {
+        var email = $(this).parents('.email');
+        location.href = email.data('thread-url');
+    });
+}
 $('.emails-byid').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
@@ -19,8 +25,16 @@ $('.emails-byid').on('click', '.email-info', function() {
     }
     return false;
 });
-$('.emails').on('click', ' .email-details-toggle', function() {
+$('.emails').on('click', ' .email-a-details', function() {
     $(this).parents('.email-details').find('.email-extra').toggle();
+    return false;
+});
+$('.emails').on('click', ' .email-a-delete', function() {
+    mark({
+        action: '+',
+        name: '\\Trash',
+        ids: [$(this).parents('.email').data('id')]
+    });
     return false;
 });
 $('.emails').on('click', '.email-quote-toggle', function() {
@@ -38,14 +52,14 @@ $('.emails').on('click', '.email-pin', function() {
             data.last = $('.emails').data('last');
         }
     }
-    send('/mark/', data);
+    mark(data);
     return false;
 });
 $('.emails-byid').on('click', '.email-text a', function() {
     $(this).attr('target', '_blank');
 });
 $('.emails').on('images', '.email-attachments', function() {
-    $('.email-a-image').swipebox({
+    $('.email-f-image').swipebox({
         hideBarsDelay: 3000
     });
 });
@@ -93,10 +107,10 @@ var hotkeys = [
         $('.email-labels-edit input').focus();
     }],
     [['r r'], 'Reply', function() {
-        location.href = $('.email:last').data('replyUrl');
+        location.href = $('.email:last').data('reply-url');
     }],
     [['r a'], 'Reply all', function() {
-        location.href = $('.email:last').data('replyallUrl');
+        location.href = $('.email:last').data('replyall-url');
     }],
     [['c'], 'Compose', function() {
         location.href = '/compose/';
@@ -207,13 +221,14 @@ $('.compose-quoted').on('change', function() {
 
 (function() {
 /* Edit labels */
-$('.email-mark-del, .email-mark-spam, .email-mark-arch').on('click', function() {
-    $this = $(this);
-    mark({
-        action: $this.data('action') || '+',
-        name: $this.data('label')
+$('.email-mark-del, .email-mark-spam, .email-mark-arch')
+    .on('click', function() {
+        $this = $(this);
+        mark({
+            action: $this.data('action') || '+',
+            name: $this.data('label')
+        });
     });
-});
 
 var box = $('.email-labels-input'),
     container = box.parents('.email-labels-edit'),
@@ -381,19 +396,21 @@ function send(url, data, callback) {
 function mark(params, callback) {
     params.last = $('.emails').data('last');
 
-    if ($('.emails').hasClass('thread')) {
-        params.ids = [$('.email').first().data('thrid')];
-        params.thread = true;
-    } else {
-        var field = $('.emails-byid').length > 0 ? 'id' : 'thrid';
-        params.thread = field == 'thrid';
-        params.ids = (
-            $('.email .email-pick input:checked')
-            .map(function() {
-                return $(this).parents('.email').data(field);
-            })
-            .get()
-        );
+    if (!params.ids) {
+        if ($('.emails').hasClass('thread')) {
+            params.ids = [$('.email').first().data('thrid')];
+            params.thread = true;
+        } else {
+            var field = $('.emails-byid').length > 0 ? 'id' : 'thrid';
+            params.thread = field == 'thrid';
+            params.ids = (
+                $('.email .email-pick input:checked')
+                .map(function() {
+                    return $(this).parents('.email').data(field);
+                })
+                .get()
+            );
+        }
     }
     callback = callback || function(data) {
         location.reload();
