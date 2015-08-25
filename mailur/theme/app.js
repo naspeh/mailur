@@ -207,10 +207,11 @@ $('.compose-quoted').on('change', function() {
 
 (function() {
 /* Edit labels */
-$('.email-mark-del, .email-mark-spam').on('click', function() {
+$('.email-mark-del, .email-mark-spam, .email-mark-arch').on('click', function() {
+    $this = $(this);
     mark({
-        action: '+',
-        name: $(this).data('label')
+        action: $this.data('action') || '+',
+        name: $this.data('label')
     });
 });
 

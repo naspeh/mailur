@@ -280,6 +280,12 @@ def ctx_all_labels(env):
 def ctx_header(env, subj, labels=None):
     labels = list(labels) if labels else []
     buttons = (
+        ([] if '\\Inbox' not in labels else [{
+            'name': 'arch',
+            'label': '\\Inbox',
+            'action': '-',
+            'title': 'Archive'
+        }]) +
         ([] if '\\Trash' in labels else [
             {'name': 'del', 'label': '\\Trash', 'title': 'Delete'}
         ]) +
