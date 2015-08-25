@@ -8,7 +8,10 @@
     <button type="button" class="compose-send">Send</button>
     <button type="button" class="compose-preview">Preview</button>
     {{#quote?}}
-    <label><input name="quoted" class="compose-quoted" type="checkbox">Include quote</label>
+    <label>
+        <input name="quoted" class="compose-quoted" type="checkbox" {{#forward}}disabled checked{{/forward}}>
+        Include quote
+    </label>
     <input name="quote" type="hidden" value="{{html}}" class="compose-quote">
     {{/quote?}}
     <input type="file" name="files" multiple>

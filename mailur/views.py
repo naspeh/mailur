@@ -198,6 +198,7 @@ def ctx_emails(env, items, domid='id'):
     for i in items:
         last = i['created'] if not last or i['created'] > last else last
         extra = i.get('_extra', {})
+        reply_url = env.url_for('compose', {'id': i['id']})
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
@@ -212,8 +213,9 @@ def ctx_emails(env, items, domid='id'):
             'body_url': env.url_for('body', id=i['id']),
             'raw_url': env.url_for('raw', id=i['id']),
             'thread_url': env.url_for('thread', id=i['thrid']),
-            'reply_url': env.url_for('compose', {'id': i['id']}),
-            'replyall_url': env.url_for('compose', {'id': i['id'], 'all': 1}),
+            'reply_url': reply_url,
+            'replyall_url': reply_url + '&target=all',
+            'forward_url': reply_url + '&target=forward',
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'time_str': str(i['time']),
@@ -316,7 +318,7 @@ def ctx_body(env, msg, msgs, show=False):
     }
 
 
-def ctx_quote(env, msg):
+def ctx_quote(env, msg, forward=False):
     return env.render('quote', {
         'subj': msg['subj'],
         'html': msg['html'],
@@ -324,6 +326,7 @@ def ctx_quote(env, msg):
         'to': ', '.join(msg['to'] or []),
         'cc': ', '.join(msg['cc'] or []),
         'time': msg['time'],
+        'type': 'Forwarded' if forward else 'Original'
     })
 
 
@@ -584,7 +587,10 @@ def mark(env):
 
 @login_required
 def compose(env):
-    schema = v.parse({'id': str, 'all': v.Nullable(v.AdaptTo(bool), False)})
+    schema = v.parse({
+        'id': str,
+        'target': v.Nullable(v.Enum(('all', 'forward')))
+    })
     args = schema.validate(env.request.args)
     fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
     ctx, parent = {'fr': fr}, {}
@@ -600,13 +606,19 @@ def compose(env):
             to = parent['reply_to'] or parent['fr']
             fr = [a for a in parent['to'] if f.get_addr(a) == env.email]
             fr = fr[0] if fr else env.email
-        if args.get('all'):
+
+        forward = args.get('target') == 'forward'
+        if forward:
+            to = []
+        elif args.get('target') == 'all':
             to += parent['cc'] or []
+
         ctx.update({
             'fr': fr,
             'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
-            'quote?': {'html': ctx_quote(env, parent)}
+            'quote?': {'html': ctx_quote(env, parent, forward)},
+            'forward': forward
         })
 
     if env.request.method == 'POST':

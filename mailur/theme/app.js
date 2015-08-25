@@ -199,7 +199,7 @@ $('.compose-preview').click(function() {
     send('/preview/', data, function(data) {
         $('.email-html').html(data).show();
     });
-});
+}).click();
 $('.compose-quoted').on('change', function() {
     $('.compose-preview').click();
 });
