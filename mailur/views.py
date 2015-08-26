@@ -737,7 +737,9 @@ def sendmail(env, msg):
 
     if in_reply_to:
         email['In-Reply-To'] = in_reply_to
-        email['References'] = '\n'.join([in_reply_to] + msg.get('refs', []))
+        email['References'] = '\n'.join(
+            [in_reply_to] + msg.get('refs', [])[-10:]
+        )
 
     env.storage.set('send:%s' % dt.datetime.now(), email.as_string())
     env.db.commit()
