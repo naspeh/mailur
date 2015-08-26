@@ -685,7 +685,7 @@ def compose(env):
         })
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
-        msg['refs'] = parent.get('refs')[-10:]
+        msg['refs'] = (parent.get('refs') or [])[-10:]
         msg['files'] = env.request.files.getlist('files')
         sendmail(env, msg)
         if parent.get('thrid'):
@@ -710,9 +710,9 @@ def sendmail(env, msg):
     html = markdown(msg['body'])
     in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
     if msg.get('quoted'):
+        html = ('\n\n').join(i for i in (html, msg['quote']) if i)
         text = MIMEMultipart()
         text.attach(MIMEText(html, 'html'))
-        text.attach(MIMEText(msg['quote'], 'html'))
     else:
         text = MIMEMultipart('alternative')
         text.attach(MIMEText(msg['body'], 'plain'))
@@ -737,9 +737,7 @@ def sendmail(env, msg):
 
     if in_reply_to:
         email['In-Reply-To'] = in_reply_to
-        email['References'] = '\n'.join(
-            [in_reply_to] + msg.get('refs', [])[-10:]
-        )
+        email['References'] = ' '.join([in_reply_to] + msg.get('refs'))
 
     env.storage.set('send:%s' % dt.datetime.now(), email.as_string())
     env.db.commit()
