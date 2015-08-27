@@ -3,7 +3,10 @@
     <h3>{{subj}}</h3>
     <div class="email-labels-edit">
         {{#buttons}}
-        <button class="email-mark-{{name}}" title="{{title}}" data-label="{{label}}" {{#action}}data-action="{{action}}"{{/action}}></button>
+        <button class="email-b-{{name}}" title="{{title}}"
+            {{#label}}data-label="{{label}}"{{/label}}
+            {{#action}}data-action="{{action}}"{{/action}}
+        ></button>
         {{/buttons}}
         {{#labels}}
         <div class="email-labels-wrap">

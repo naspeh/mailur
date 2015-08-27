@@ -344,7 +344,7 @@ def mark(env, action, name, ids, new=False, inner=False):
     updated = [r[0] for r in i]
     if new:
         env.emails.update({'thrid': None}, 'id IN %s', [ids])
-        update_thrids(env)
+        updated += update_thrids(env, commit=False)
 
         env.add_tasks([{'action': action, 'name': name, 'ids': ids}])
         env.db.commit()
@@ -436,28 +436,29 @@ def update_label(env, gids, label, folder=None):
     return step.ids
 
 
-def update_thrids(env, folder=None):
-    def step(label, sql, args=None, log_ids=False):
-        i = env.sql(sql, args)
-        log.info('  - for %s emails (%s)', i.rowcount, label)
-        env.db.commit()
+def update_thrids(env, folder=None, manual=True, commit=True):
+    updated = []
 
-        ids = tuple(r[0] for r in i)
-        notify(env, ids)
+    def step(label, sql, args=None, log_ids=False):
+        ids = tuple(r[0] for r in env.sql(sql, args))
+        log.info('  - for %s emails (%s)', len(ids), label)
+
         if log_ids and ids:
             log.info('  - ids: %s', ids)
+
+        updated.extend(ids)
         return ids
 
     if not folder:
         for label in FOLDERS:
-            update_thrids(env, label)
+            updated += update_thrids(env, label, manual, commit)
 
         step('clean deleted: thrid=null and labels={}', '''
         UPDATE emails set thrid = NULL, labels='{}'
         WHERE NOT (labels && %s::varchar[]) AND thrid != id AND labels != '{}'
         RETURNING id
         ''', [list(FOLDERS)])
-        return
+        return updated
 
     log.info('  * Update thread ids %r', folder)
 
@@ -534,34 +535,14 @@ def update_thrids(env, folder=None):
     RETURNING id
     ''', [folder], log_ids=True)
 
-    failed_delivery(env, folder)
-    manual_threads(env, folder)
+    updated += failed_delivery(env, folder)
+    if manual:
+        updated += manual_threads(env, folder)
 
-
-def manual_threads(env, folder):
-    i = env.sql(r'''
-    WITH il(id, label) as (
-        SELECT id, unnest(labels) FROM emails
-        WHERE %s = ANY(labels)
-    )
-    SELECT label, array_agg(id) ids FROM il
-    WHERE label LIKE '{}/%%'
-    GROUP BY label
-    '''.format(re.escape(THRID)), [folder])
-    updated = []
-    for row in i:
-        thrid = row['label'].replace('%s/' % THRID, '')
-        i = env.sql('''
-        UPDATE emails SET thrid=%(thrid)s
-        WHERE id = ANY(%(ids)s) AND thrid!=%(thrid)s
-        RETURNING id
-        ''', {'thrid': thrid, 'ids': row['ids']})
-        updated += [r[0] for r in i]
-
-    if updated:
+    if commit:
         env.db.commit()
         notify(env, updated)
-        log.info('  - update %s emails with manual threads', len(updated))
+    return updated
 
 
 def failed_delivery(env, folder):
@@ -590,7 +571,73 @@ def failed_delivery(env, folder):
         ''', {'thrid': thrid[0][0], 'id': msg['id']})
         ids += [r['id'] for r in i]
 
-    if ids:
-        env.db.commit()
-        notify(env, ids)
-        log.info('  - merge threads by failed delivery: %s', ids)
+    log.info('  - merge threads by failed delivery: %s', ids)
+    return ids
+
+
+def mark_thread(env, thrid, ids):
+    i = env.sql('''
+    SELECT unnest(labels), array_agg(id)::text[] ids FROM emails
+    WHERE id = ANY(%s::uuid[])
+    GROUP BY 1
+    ''', [ids])
+    for row in i:
+        label = row[0]
+        if not label.startswith('%s/' % THRID):
+            continue
+        mark(env, '-', label, row[1], new=True)
+
+    mark(env, '+', [THRID, '%s/%s' % (THRID, thrid)], ids, new=True)
+
+
+def new_thread(env, id):
+    thrid = env.sql('''
+    SELECT thrid FROM emails WHERE id=%s LIMIT 1
+    ''', [id]).fetchone()[0]
+
+    env.sql('''
+    UPDATE emails SET thrid = NULL WHERE thrid = %(thrid)s;
+    UPDATE emails SET thrid = id WHERE id = %(id)s;
+    ''', {'thrid': thrid, 'id': id})
+    update_thrids(env, manual=False, commit=False)
+
+    i = env.sql('SELECT id FROM emails WHERE thrid=%s', [id])
+    ids = [r[0] for r in i]
+    mark_thread(env, id, ids)
+
+
+def merge_threads(env, ids):
+    thrid = env.sql('''
+    SELECT thrid FROM emails WHERE thrid = ANY(%s::uuid[])
+    ORDER BY time LIMIT 1
+    ''', [ids]).fetchone()[0]
+
+    i = env.sql('SELECT id FROM emails WHERE thrid = ANY(%s::uuid[])', [ids])
+    ids = [r[0] for r in i]
+
+    mark_thread(env, thrid, ids)
+    return thrid
+
+
+def manual_threads(env, folder):
+    i = env.sql(r'''
+    WITH il(id, label) as (
+        SELECT id, unnest(labels) FROM emails
+        WHERE %s = ANY(labels)
+    )
+    SELECT label, array_agg(id) ids FROM il
+    WHERE label LIKE '{}/%%'
+    GROUP BY label
+    '''.format(re.escape(THRID)), [folder])
+    updated = []
+    for row in i:
+        thrid = row['label'].replace('%s/' % THRID, '')
+        i = env.sql('''
+        UPDATE emails SET thrid=%(thrid)s
+        WHERE id = ANY(%(ids)s) AND thrid!=%(thrid)s
+        RETURNING id
+        ''', {'thrid': thrid, 'ids': row['ids']})
+        updated += [r[0] for r in i]
+
+    log.info('  - update %s emails with manual threads', len(updated))
+    return updated

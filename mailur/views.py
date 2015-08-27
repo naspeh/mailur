@@ -26,7 +26,7 @@ rules = [
     Rule('/emails/', endpoint='emails'),
     Rule('/search/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
-    Rule('/new-thread/<id>/', endpoint='new_thread'),
+    Rule('/new-thread/', endpoint='new_thread'),
     Rule('/compose/', endpoint='compose'),
     Rule('/preview/', endpoint='preview'),
     Rule('/search-email/', endpoint='search_email')
@@ -268,7 +268,6 @@ def ctx_links(env, id, thrid=None):
         {
             'name': 'extract',
             'title': 'Extract new thread',
-            'href': env.url_for('new_thread', id=id),
             'ifmany': True
         },
         {'title': 'Delete this message', 'name': 'delete'},
@@ -336,7 +335,8 @@ def ctx_header(env, subj, labels=None):
         ]) +
         ([] if '\\Spam' in labels else [
             {'name': 'spam', 'label': '\\Spam', 'title': 'Report spam'}
-        ])
+        ]) +
+        [{'name': 'merge', 'title': 'Merge threads to one'}]
     )
     labels = ctx_labels(env, labels)
     return {
@@ -628,23 +628,19 @@ def mark(env):
     return 'OK'
 
 
-def new_thread(env, id):
-    from .syncer import THRID
+@login_required
+def new_thread(env):
+    schema = v.parse({'+ids': [str], '+action': v.Enum(('new', 'merge'))})
+    params = schema.validate(env.request.json)
 
-    thrid = env.sql('''
-    SELECT thrid FROM emails WHERE id=%s LIMIT 1
-    ''', [id]).fetchone()[0]
-
-    env.sql('''
-    UPDATE emails SET thrid = NULL WHERE thrid = %(thrid)s;
-    UPDATE emails SET thrid = id WHERE id = %(id)s;
-    ''', {'thrid': thrid, 'id': id})
-    syncer.update_thrids(env)
-
-    i = env.sql('SELECT id FROM emails WHERE thrid=%s', [id])
-    ids = [r[0] for r in i]
-    syncer.mark(env, '+', [THRID, '%s/%s' % (THRID, id)], ids, new=True)
-    return env.redirect_for('thread', id=id)
+    action = params['action']
+    if action == 'new':
+        id = params['ids'][0]
+        syncer.new_thread(env, id)
+        return env.to_json({'url': env.url_for('thread', id=id)})
+    elif action == 'merge':
+        thrid = syncer.merge_threads(env, params['ids'])
+        return env.to_json({'url': env.url_for('thread', id=thrid)})
 
 
 @login_required

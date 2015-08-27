@@ -37,6 +37,19 @@ $('.emails').on('click', ' .email-a-delete', function() {
     });
     return false;
 });
+$('.emails').on('click', ' .email-a-extract', function() {
+    var id = $(this).parents('.email').data('id');
+    send('/new-thread/', {action: 'new', ids: [id]}, function(data) {
+        location.href = JSON.parse(data).url;
+    });
+    return false;
+});
+$('.body').on('click', ' .email-b-merge', function() {
+    send('/new-thread/', {action: 'merge', ids: getSelected()}, function(data) {
+        location.href = JSON.parse(data).url;
+    });
+    return false;
+});
 $('.emails').on('click', '.email-quote-toggle', function() {
     $(this).next('.email-quote').toggle();
     return false;
@@ -221,7 +234,7 @@ $('.compose-quoted').on('change', function() {
 
 (function() {
 /* Edit labels */
-$('.email-mark-del, .email-mark-spam, .email-mark-arch')
+$('.email-b-del, .email-b-spam, .email-b-arch')
     .on('click', function() {
         $this = $(this);
         mark({
@@ -393,6 +406,16 @@ function send(url, data, callback) {
         messages = [function() {send(url, data, callback);}].concat(messages);
     }
 }
+function getSelected(field) {
+    field = field || 'thrid';
+    return (
+        $('.email .email-pick input:checked')
+        .map(function() {
+            return $(this).parents('.email').data(field);
+        })
+        .get()
+    );
+}
 function mark(params, callback) {
     params.last = $('.emails').data('last');
 
@@ -403,13 +426,7 @@ function mark(params, callback) {
         } else {
             var field = $('.emails-byid').length > 0 ? 'id' : 'thrid';
             params.thread = field == 'thrid';
-            params.ids = (
-                $('.email .email-pick input:checked')
-                .map(function() {
-                    return $(this).parents('.email').data(field);
-                })
-                .get()
-            );
+            params.ids = getSelected(field);
         }
     }
     callback = callback || function(data) {
