@@ -26,6 +26,7 @@ rules = [
     Rule('/emails/', endpoint='emails'),
     Rule('/search/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
+    Rule('/new-thread/<id>/', endpoint='new_thread'),
     Rule('/compose/', endpoint='compose'),
     Rule('/preview/', endpoint='preview'),
     Rule('/search-email/', endpoint='search_email')
@@ -264,11 +265,18 @@ def ctx_links(env, id, thrid=None):
     )
 
     links += [
+        {
+            'name': 'extract',
+            'title': 'Extract new thread',
+            'href': env.url_for('new_thread', id=id),
+            'ifmany': True
+        },
         {'title': 'Delete this message', 'name': 'delete'},
         {
             'name': 'raw',
             'title': 'Show original',
-            'href': env.url_for('raw', id=id)},
+            'href': env.url_for('raw', id=id)
+        },
     ]
     return links
 
@@ -618,6 +626,25 @@ def mark(env):
 
     mark(data['action'], data['name'])
     return 'OK'
+
+
+def new_thread(env, id):
+    from .syncer import THRID
+
+    thrid = env.sql('''
+    SELECT thrid FROM emails WHERE id=%s LIMIT 1
+    ''', [id]).fetchone()[0]
+
+    env.sql('''
+    UPDATE emails SET thrid = NULL WHERE thrid = %(thrid)s;
+    UPDATE emails SET thrid = id WHERE id = %(id)s;
+    ''', {'thrid': thrid, 'id': id})
+    syncer.update_thrids(env)
+
+    i = env.sql('SELECT id FROM emails WHERE thrid=%s', [id])
+    ids = [r[0] for r in i]
+    syncer.mark(env, '+', [THRID, '%s/%s' % (THRID, id)], ids, new=True)
+    return env.redirect_for('thread', id=id)
 
 
 @login_required

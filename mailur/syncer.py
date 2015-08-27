@@ -19,6 +19,7 @@ ALIASES = {
     '\\Junk': '\\Spam',
     '\\Starred': '\\Pinned'
 }
+THRID = 'mlr/thrid'
 
 
 def locked_sync_gmail(env, email, *a, **kw):
@@ -534,6 +535,33 @@ def update_thrids(env, folder=None):
     ''', [folder], log_ids=True)
 
     failed_delivery(env, folder)
+    manual_threads(env, folder)
+
+
+def manual_threads(env, folder):
+    i = env.sql(r'''
+    WITH il(id, label) as (
+        SELECT id, unnest(labels) FROM emails
+        WHERE %s = ANY(labels)
+    )
+    SELECT label, array_agg(id) ids FROM il
+    WHERE label LIKE '{}/%%'
+    GROUP BY label
+    '''.format(re.escape(THRID)), [folder])
+    updated = []
+    for row in i:
+        thrid = row['label'].replace('%s/' % THRID, '')
+        i = env.sql('''
+        UPDATE emails SET thrid=%(thrid)s
+        WHERE id = ANY(%(ids)s) AND thrid!=%(thrid)s
+        RETURNING id
+        ''', {'thrid': thrid, 'ids': row['ids']})
+        updated += [r[0] for r in i]
+
+    if updated:
+        env.db.commit()
+        notify(env, updated)
+        log.info('  - update %s emails with manual threads', len(updated))
 
 
 def failed_delivery(env, folder):
