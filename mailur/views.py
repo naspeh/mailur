@@ -293,14 +293,17 @@ def ctx_person(env, addr):
 def ctx_labels(env, labels, ignore=None):
     if not labels:
         return False
-    ignore = ignore or []
+    ignore_pattern = re.compile('(%s)' % '|'.join(
+        [r'^%s.*' % re.escape(syncer.THRID)] +
+        [re.escape(i) for i in ignore or []]
+    ))
     pattern = re.compile('(%s)' % '|'.join(
         [r'(?:\\\\)*(?![\\]).*'] +
         [re.escape(i) for i in ('\\Inbox', '\\Spam', '\\Trash')]
     ))
     labels = [
         l for l in sorted(set(labels))
-        if l not in ignore and pattern.match(l)
+        if not ignore_pattern.match(l) and pattern.match(l)
     ]
     items = [
         {'name': l, 'url': env.url_for('emails', {'in': l})}
@@ -343,7 +346,7 @@ def ctx_header(env, subj, labels=None):
         'subj': subj,
         'buttons': buttons,
         'labels': {
-            'items_json': labels['names_json'] if labels else '""',
+            'items_json': labels['names_json'] if labels else '[]',
             'all_json': ctx_all_labels(env)['items_json'],
             'base_url': env.url_for('emails', {'in': ''})
         },
@@ -527,7 +530,10 @@ def search(env):
     WHERE e.id = s.id
     ''', {'query': q})
 
-    return ctx_emails(env, i)
+    subj = 'Search by %r' % q
+    ctx = ctx_emails(env, i)
+    ctx['header?'] = ctx_header(env, subj)
+    return ctx
 
 
 @login_required
