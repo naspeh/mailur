@@ -521,8 +521,16 @@ def search(env):
     WITH search AS (
         SELECT id
         FROM emails_search
-        WHERE document @@ plainto_tsquery('simple', %(query)s)
-        ORDER BY ts_rank(document, plainto_tsquery('simple', %(query)s)) DESC
+        WHERE document @@ (
+            to_tsquery('simple', %(query)s) ||
+            to_tsquery('english', %(query)s) ||
+            to_tsquery('russian', %(query)s)
+        )
+        ORDER BY ts_rank(document, (
+            to_tsquery('simple', %(query)s) ||
+            to_tsquery('english', %(query)s) ||
+            to_tsquery('russian', %(query)s)
+        )) DESC
         LIMIT 100
     )
     SELECT

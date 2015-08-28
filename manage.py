@@ -4,7 +4,6 @@ import functools as ft
 import logging
 import os
 import subprocess as sp
-import uuid
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -179,14 +178,12 @@ def shell(env):
 
 
 @for_all
-def migrate(env):
+def migrate(env, init=False):
     from mailur import db
 
-    db.init(env)
+    if init:
+        db.init(env)
     env.username = env.username  # reset db connection
-
-    env.storage.set('token', str(uuid.uuid4()))
-    env.db.commit()
 
 
 def deploy(opts):
@@ -356,7 +353,10 @@ def get_full(argv):
         .arg('-p', '--password')\
         .exe(lambda a: db.init(Env(a.username), a.password, a.reset))
 
-    cmd('migrate').exe(lambda a: migrate(env))
+    cmd('migrate')\
+        .arg('-i', '--init', action='store_true')\
+        .exe(lambda a: migrate(env, a.init))
+
     cmd('shell').exe(lambda a: shell(env))
     cmd('run').exe(lambda a: run(env))
     cmd('web', add_help=False).exe(lambda a: grun('web', ' '.join(a)))
