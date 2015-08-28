@@ -1,82 +1,10 @@
 (function() {
 var ws = null, handlers = {}, messages = [];
 
-connect();
-
 $.get('/init/', {'offset': new Date().getTimezoneOffset() / 60});
-if ($('.thread .email-unread').length !== 0) {
-    mark({action: '-', name: '\\Unread'}, function() {});
-}
-if ($('.emails-byid').length === 0) {
-    $('.emails').on('click', '.email-info', function() {
-        var email = $(this).parents('.email');
-        location.href = email.data('thread-url');
-    });
-}
-$('.emails-byid').on('click', '.email-info', function() {
-    var email = $(this).parents('.email');
-    email.toggleClass('email-show');
-    if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
-        send(email.data('body-url'), null, function(data) {
-            var body = $(data).find('#' + email.attr('id') + ' .email-body');
-            email.find('.email-body').replaceWith(body);
-            body.find('.email-attachments').trigger('images');
-        });
-    }
-    return false;
-});
-$('.emails').on('click', ' .email-a-details', function() {
-    $(this).parents('.email-details').find('.email-extra').toggle();
-    return false;
-});
-$('.emails').on('click', ' .email-a-delete', function() {
-    mark({
-        action: '+',
-        name: '\\Trash',
-        ids: [$(this).parents('.email').data('id')]
-    });
-    return false;
-});
-$('.emails').on('click', ' .email-a-extract', function() {
-    var id = $(this).parents('.email').data('id');
-    send('/new-thread/', {action: 'new', ids: [id]}, function(data) {
-        location.href = JSON.parse(data).url;
-    });
-    return false;
-});
-$('.body').on('click', ' .email-b-merge', function() {
-    send('/new-thread/', {action: 'merge', ids: getSelected()}, function(data) {
-        location.href = JSON.parse(data).url;
-    });
-    return false;
-});
-$('.emails').on('click', '.email-quote-toggle', function() {
-    $(this).next('.email-quote').toggle();
-    return false;
-});
-$('.emails').on('click', '.email-pin', function() {
-    var email = $(this).parents('.email'),
-        data = {action: '+', name: '\\Pinned', ids: [email.data('id')]};
-    if (email.hasClass('email-pinned')) {
-        data.action = '-';
-        if (email.parents('.emails-byid').length === 0) {
-            data.ids = [email.data('thrid')];
-            data.thread = true;
-            data.last = $('.emails').data('last');
-        }
-    }
-    mark(data);
-    return false;
-});
-$('.emails-byid').on('click', '.email-text a', function() {
-    $(this).attr('target', '_blank');
-});
-$('.emails').on('images', '.email-attachments', function() {
-    $('.email-f-image').swipebox({
-        hideBarsDelay: 3000
-    });
-});
-$('.emails .email-attachments').trigger('images');
+connect();
+init();
+
 (function() {
 /* Keyboard shortcuts */
 var hotkeys = [
@@ -180,6 +108,89 @@ function goToLabel(label) {
     };
 }
 })();
+
+/* Init function */
+function init() {
+
+if ($('.thread .email-unread').length !== 0) {
+    mark({action: '-', name: '\\Unread'}, function() {});
+}
+if ($('.emails-byid').length === 0) {
+    $('.emails').on('click', '.email-info', function() {
+        var email = $(this).parents('.email');
+        location.href = email.data('thread-url');
+    });
+}
+$('.emails-byid').on('click', '.email-info', function() {
+    var email = $(this).parents('.email');
+    email.toggleClass('email-show');
+    if (email.hasClass('email-show') && !email.hasClass('email-showed')) {
+        send(email.data('body-url'), null, function(data) {
+            var body = $(data).find('#' + email.attr('id') + ' .email-body');
+            email.find('.email-body').html($(body));
+            body.trigger('update');
+        });
+    }
+    return false;
+});
+$('.emails').on('click', ' .email-a-details', function() {
+    $(this).parents('.email-details').find('.email-extra').toggle();
+    return false;
+});
+$('.emails').on('click', ' .email-a-delete', function() {
+    mark({
+        action: '+',
+        name: '\\Trash',
+        ids: [$(this).parents('.email').data('id')]
+    });
+    return false;
+});
+$('.emails').on('click', ' .email-a-extract', function() {
+    var id = $(this).parents('.email').data('id');
+    send('/new-thread/', {action: 'new', ids: [id]}, function(data) {
+        location.href = JSON.parse(data).url;
+    });
+    return false;
+});
+$('.body').on('click', ' .email-b-merge', function() {
+    send('/new-thread/', {action: 'merge', ids: getSelected()}, function(data) {
+        location.href = JSON.parse(data).url;
+    });
+    return false;
+});
+$('.emails').on('click', '.email-quote-toggle', function() {
+    $(this).next('.email-quote').toggle();
+    return false;
+});
+$('.emails').on('click', '.email-pin', function() {
+    var email = $(this).parents('.email'),
+        data = {action: '+', name: '\\Pinned', ids: [email.data('id')]};
+    if (email.hasClass('email-pinned')) {
+        data.action = '-';
+        if (email.parents('.emails-byid').length === 0) {
+            data.ids = [email.data('thrid')];
+            data.thread = true;
+            data.last = $('.emails').data('last');
+        }
+    }
+    mark(data);
+    return false;
+});
+$('.emails-byid').on('click', '.email-text a', function() {
+    $(this).attr('target', '_blank');
+});
+$('.email-body').on('update', function() {
+    var $this = $(this);
+    $this.find('.email-attachments .email-f-image').swipebox({
+        hideBarsDelay: 3000
+    });
+
+    if ($('.emails').hasClass('thread')) {
+        $this.find('.email-a-thread').hide();
+    } else {
+        $this.find('.email-a-body').hide();
+    }
+}).trigger('update');
 
 (function() {
 /* Compose */
@@ -346,6 +357,7 @@ function getLabels() {
     return labels;
 }
 })();
+} // End of init
 
 /* Related functions */
 function connect() {
@@ -430,11 +442,11 @@ function mark(params, callback) {
         }
     }
     callback = callback || function(data) {
-        location.reload();
-        // var path = location.pathname + location.search;
-        // send(path, null, function(data) {
-        //     $('body').html(data);
-        // });
+        var path = location.pathname + location.search;
+        send(path, null, function(data) {
+            $('.body').html(data);
+            init();
+        });
     };
     send('/mark/', params, callback);
 }

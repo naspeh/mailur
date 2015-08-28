@@ -212,7 +212,7 @@ def ctx_emails(env, items, domid='id'):
             'pinned?': '\\Pinned' in i['labels'],
             'unread?': '\\Unread' in i['labels'],
             'draft?': '\\Draft' in i['labels'],
-            'links': ctx_links(env, i['id'], domid != 'id' and i['thrid']),
+            'links': ctx_links(env, i['id'], i['thrid']),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'time_str': str(i['time']),
@@ -249,25 +249,20 @@ def ctx_links(env, id, thrid=None):
         {
             'name': 'forward',
             'title': 'Forward',
-            'href': reply_url + '&target=forward'}
-    ]
-
-    links.append(
+            'href': reply_url + '&target=forward'
+        },
         {
             'name': 'thread',
             'title': 'Show full thread',
             'href': env.url_for('thread', id=thrid),
             'ifmany': True
-        } if thrid else
+        },
         {
             'name': 'body',
             'title': 'Show this message',
             'href': env.url_for('body', id=id),
             'ifmany': True
-        }
-    )
-
-    links += [
+        },
         {
             'name': 'extract',
             'title': 'Extract new thread',
