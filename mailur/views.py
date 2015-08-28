@@ -516,9 +516,11 @@ def emails(env, page):
 def search(env):
     schema = v.parse({'+q': str})
     q = schema.validate(env.request.args)['q']
-
-    i = env.sql('''
-    WITH search AS (
+    if q.startswith('g '):
+        q = q[2:]
+        ids = syncer.search(env, env.email, q)
+    else:
+        i = env.sql('''
         SELECT id
         FROM emails_search
         WHERE document @@ (
@@ -532,13 +534,16 @@ def search(env):
             to_tsquery('russian', %(query)s)
         )) DESC
         LIMIT 100
-    )
+        ''', {'query': q})
+        ids = [r[0] for r in i]
+
+    i = env.sql('''
     SELECT
-        e.id, thrid, subj, labels, time, fr, "to", cc, text, created,
+        id, thrid, subj, labels, time, fr, "to", cc, text, created,
         html, attachments
-    FROM emails e, search s
-    WHERE e.id = s.id
-    ''', {'query': q})
+    FROM emails
+    WHERE id = ANY(%(ids)s::uuid[])
+    ''', {'ids': ids})
 
     subj = 'Search by %r' % q
     ctx = ctx_emails(env, i)

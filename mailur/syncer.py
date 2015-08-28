@@ -44,12 +44,13 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
 
         imap.select(name, env('readonly'))
         if not labels:
-            labels_[name] = get_label_uids(env, imap, name)
+            uids = imap.search(name)
+            labels_[name] = get_msgids(env, imap, uids)
         else:
             imap.status(name)
-            log.info('"%s"', imap_utf7.decode(name))
 
         uids = labels_[name] or {}
+        log.info('"%s" has %i messages', imap_utf7.decode(name), len(uids))
         if bodies:
             fetch_bodies(env, imap, uids)
         else:
@@ -61,9 +62,21 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
     return labels_
 
 
-def get_label_uids(env, imap, name):
-    uids = imap.search(name)
-    log.info('"%s" has %i messages', imap_utf7.decode(name), len(uids))
+def search(env, email, query):
+    imap = Client(env, email)
+    folder = [n for a, d, n in imap.folders() if '\\All' in a][0]
+    imap.select(folder, True)
+    _, data = imap.uid('SEARCH', None, 'X-GM-RAW %s' % json.dumps(query))
+    if not data[0]:
+        return []
+
+    uids = data[0].decode().split(' ')
+    mids = get_msgids(env, imap, uids)
+    ids = get_ids(env, list(mids.values()))
+    return list(ids.values())
+
+
+def get_msgids(env, imap, uids):
     if not uids:
         return None
 
