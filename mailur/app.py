@@ -25,6 +25,8 @@ def create_app(views):
             response = env.wsgi()
         except HTTPException as e:
             response = e
+        finally:
+            env.db.rollback()
         env.session.save_cookie(response)
         return response
 
