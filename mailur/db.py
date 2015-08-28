@@ -238,19 +238,15 @@ class Emails(Manager):
             setweight(to_tsvector('simple', text), 'C') ||
             setweight(to_tsvector('english', text), 'C') ||
             setweight(to_tsvector('russian', text), 'C') ||
-            setweight(to_tsvector('simple', {fr}), 'C') ||
-            setweight(to_tsvector('simple', {to}), 'C') ||
-            setweight(to_tsvector('simple', {cc}), 'C') ||
-            setweight(to_tsvector('simple', {bcc}), 'C')
+            setweight(to_tsvector('simple', coalesce(
+                array_to_string(("to" || fr || cc || bcc), ','), ''
+            )), 'C')
             AS document
         FROM emails;
 
         DROP INDEX IF EXISTS ix_emails_search;
         CREATE INDEX ix_emails_search ON emails_search USING gin(document);
-        '''.format(**{
-            i: '''coalesce(array_to_string("%s", ','), '')''' % i
-            for i in ('fr', 'to', 'cc', 'bcc')
-        })
+        '''
     ))
 
 
