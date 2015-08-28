@@ -177,7 +177,10 @@ def sidebar(env):
         AND ARRAY['\\Unread', '\\All']::varchar[] <@ labels
     GROUP BY l.name
     ''')
-    labels = (dict(l, url=env.url_for('emails', {'in': l['name']})) for l in i)
+    labels = (
+        dict(l, url=env.url_for('emails', {'in': l['name']}))
+        for l in i if not l['name'].startswith('%s/' % syncer.THRID)
+    )
     labels = (
         dict(l, unread=0) if l['name'] in ['\\Pinned', '\\All'] else l
         for l in labels
@@ -293,8 +296,8 @@ def ctx_person(env, addr):
 def ctx_labels(env, labels, ignore=None):
     if not labels:
         return False
-    ignore_pattern = re.compile('(%s)' % '|'.join(
-        [r'^%s.*' % re.escape(syncer.THRID)] +
+    ignore = re.compile('(%s)' % '|'.join(
+        [r'^%s/.*' % re.escape(syncer.THRID)] +
         [re.escape(i) for i in ignore or []]
     ))
     pattern = re.compile('(%s)' % '|'.join(
@@ -303,7 +306,7 @@ def ctx_labels(env, labels, ignore=None):
     ))
     labels = [
         l for l in sorted(set(labels))
-        if not ignore_pattern.match(l) and pattern.match(l)
+        if not ignore.match(l) and pattern.match(l)
     ]
     items = [
         {'name': l, 'url': env.url_for('emails', {'in': l})}

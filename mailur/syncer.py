@@ -328,6 +328,7 @@ def mark(env, action, name, ids, new=False, inner=False):
             ('-', ['\\Trash', '\\Spam']),
             ('+', '\\All')
         ],
+        ('-', THRID): [clean_thrid]
     }
     instead = {
         ('-', '\\Trash'): ('+', '\\Inbox'),
@@ -337,8 +338,11 @@ def mark(env, action, name, ids, new=False, inner=False):
     if not inner:
         action, name = instead.get((action, name), (action, name))
         extra = clean.get((action, name), [])
-        for a, n in extra:
-            mark(env, a, n, ids, inner=True)
+        for row in extra:
+            if callable(row):
+                row(env, ids)
+                continue
+            mark(env, *row, ids=ids, inner=True)
 
     i = env.sql(actions[action], {'name': name, 'ids': ids})
     updated = [r[0] for r in i]
@@ -575,18 +579,22 @@ def failed_delivery(env, folder):
     return ids
 
 
-def mark_thread(env, thrid, ids):
+def clean_thrid(env, ids):
     i = env.sql('''
-    SELECT unnest(labels), array_agg(id)::text[] ids FROM emails
+    SELECT unnest(labels), array_agg(id)::text[] FROM emails
     WHERE id = ANY(%s::uuid[])
     GROUP BY 1
-    ''', [ids])
+    ''', [list(ids)])
+
     for row in i:
         label = row[0]
         if not label.startswith('%s/' % THRID):
             continue
         mark(env, '-', label, row[1], new=True)
 
+
+def mark_thread(env, thrid, ids):
+    clean_thrid(env, ids)
     mark(env, '+', [THRID, '%s/%s' % (THRID, thrid)], ids, new=True)
 
 
