@@ -194,6 +194,7 @@ def sidebar(env):
         'labels?': bool(labels) and {'items': labels}
     }
 
+    ctx['search_query'] = getattr(env, 'search_query')
     if not labels:
         ctx['gmail'] = bool(env.email)
     return env.render('sidebar', ctx)
@@ -513,6 +514,8 @@ def emails(env, page):
 def search(env):
     schema = v.parse({'+q': str})
     q = schema.validate(env.request.args)['q']
+    env.search_query = q
+
     if q.startswith('g '):
         q = q[2:]
         ids = syncer.search(env, env.email, q)
@@ -521,14 +524,14 @@ def search(env):
         SELECT id
         FROM emails_search
         WHERE document @@ (
-            to_tsquery('simple', %(query)s) ||
-            to_tsquery('english', %(query)s) ||
-            to_tsquery('russian', %(query)s)
+            plainto_tsquery('simple', %(query)s) ||
+            plainto_tsquery('english', %(query)s) ||
+            plainto_tsquery('russian', %(query)s)
         )
         ORDER BY ts_rank(document, (
-            to_tsquery('simple', %(query)s) ||
-            to_tsquery('english', %(query)s) ||
-            to_tsquery('russian', %(query)s)
+            plainto_tsquery('simple', %(query)s) ||
+            plainto_tsquery('english', %(query)s) ||
+            plainto_tsquery('russian', %(query)s)
         )) DESC
         LIMIT 100
         ''', {'query': q})
