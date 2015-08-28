@@ -361,7 +361,7 @@ function getLabels() {
 
 /* Related functions */
 function connect() {
-    ws = new WebSocket('ws://localhost:9000');
+    ws = new WebSocket(conf.host_ws);
     ws.onopen = function() {
         console.log('ws opened');
         while (messages.length > 0) {
@@ -407,7 +407,7 @@ function guid() {
 }
 function send(url, data, callback) {
     if (ws && ws.readyState === ws.OPEN) {
-        url = 'http://localhost' + url;
+        url = conf.host_web + url;
         url += (url.indexOf('?') === -1 ? '?' : '&') + 'fmt=body';
         var resp = {url: url, payload: data, uid: guid()};
         ws.send(JSON.stringify(resp));

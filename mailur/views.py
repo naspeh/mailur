@@ -128,7 +128,9 @@ def render_body(env, name, ctx=None, with_sidebar=False):
         'body': body,
         'cssfile': '/theme/build/%s.css?%s' % (name, env.theme_version),
         'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version),
-        'ga_id': env('ui_ga_id')
+        'ga_id': env('ui_ga_id'),
+        'host_ws': env('host_ws'),
+        'host_web': env('host_web'),
     }
     if with_sidebar:
         ctx['sidebar'] = sidebar(env)

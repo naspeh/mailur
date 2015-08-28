@@ -12,6 +12,11 @@
 </div>
 {{&sidebar}}
 <div class="body">{{&body}}</div>
+<script>
+    var conf= {};
+    conf.host_ws = '{{host_ws}}';
+    conf.host_web = '{{host_web}}';
+</script>
 <script src="{{jsfile}}"></script>
 {{#ga_id}}
 <script>
