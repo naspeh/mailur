@@ -372,8 +372,7 @@ def ctx_quote(env, msg, forward=False):
         'subj': msg['subj'],
         'html': msg['html'],
         'fr': ', '.join(msg['fr']),
-        'to': ', '.join(msg['to'] or []),
-        'cc': ', '.join(msg['cc'] or []),
+        'to': ', '.join(msg['to'] or [] + msg['cc'] or []),
         'time': msg['time'],
         'type': 'Forwarded' if forward else 'Original'
     })
