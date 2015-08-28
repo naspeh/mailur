@@ -194,7 +194,7 @@ def sidebar(env):
         'labels?': bool(labels) and {'items': labels}
     }
 
-    ctx['search_query'] = getattr(env, 'search_query')
+    ctx['search_query'] = getattr(env, 'search_query', None)
     if not labels:
         ctx['gmail'] = bool(env.email)
     return env.render('sidebar', ctx)
