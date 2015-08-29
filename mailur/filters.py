@@ -88,7 +88,7 @@ def hide_quote(msg, msgs, class_):
         if not parent:
             continue
 
-        tokens = re.findall('-{6,10}[ \w]+-{6,10}', msg)
+        tokens = re.findall('-{3,20}[ \w]*-{3,20}', msg)
         xpath = '|'.join(
             ['//blockquote'] +
             ["//*[contains(text(),'%s')]/../*" % t for t in tokens]
@@ -96,7 +96,7 @@ def hide_quote(msg, msgs, class_):
         cp = clean(lhtml.fromstring(parent))
         for block in lmsg.xpath(xpath):
             cb = clean(block)
-            if cp and cb and (cp.endswith(cb) or cb.endswith(cp)):
+            if cp and cb and cb.endswith(cp):
                 block.attrib['class'] = class_
                 parent = block.getparent()
                 toggle = lhtml.fromstring('<div class="%s-toggle"/>' % class_)
