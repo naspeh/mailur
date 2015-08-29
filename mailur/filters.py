@@ -5,7 +5,7 @@ from email.utils import parseaddr
 from hashlib import md5
 from urllib.parse import urlencode
 
-import lxml.html as lhtml
+from lxml import html as lhtml, etree
 
 
 def format_addr(env, v):
@@ -79,30 +79,47 @@ def hide_quote(msg, msgs, class_):
     if not msg or not msgs:
         return msg
 
-    def clean(v):
-        v = re.sub('[\s]+', '', v.text_content())
-        return v.rstrip()
-
     lmsg = lhtml.fromstring(msg)
-    for parent in msgs:
-        if not parent:
+
+    def clean(element):
+        text = element.text_content()
+        text = re.sub('[\s]+', '', text)
+        return text.rstrip()
+
+    def toggle(block):
+        block.attrib['class'] = class_
+        parent = block.getparent()
+        toggle = lhtml.fromstring('<div class="%s-toggle"/>' % class_)
+        block.attrib['class'] = class_
+        parent.insert(parent.index(block), toggle)
+        return lhtml.tostring(lmsg, encoding='utf8').decode()
+
+    for m in msgs:
+        tokens = re.findall('-{3,20}[ \w]*-{3,20}', msg)
+        if not tokens:
             continue
 
-        tokens = re.findall('-{3,20}[ \w]*-{3,20}', msg)
-        xpath = '|'.join(
-            ['//blockquote'] +
-            ["//*[contains(text(),'%s')]/../*" % t for t in tokens]
-        )
-        cp = clean(lhtml.fromstring(parent))
-        for block in lmsg.xpath(xpath):
-            cb = clean(block)
+        cp = clean(lhtml.fromstring(m))
+        s = '(%s)' % '|'.join("//*[contains(text(),'%s')]" % t for t in tokens)
+        for block in lmsg.xpath(s):
+            blocks = [block] + [b for b in block.itersiblings()]
+            cb = ' '.join(clean(b) for b in blocks)
             if cp and cb and cb.endswith(cp):
-                block.attrib['class'] = class_
-                parent = block.getparent()
-                toggle = lhtml.fromstring('<div class="%s-toggle"/>' % class_)
-                block.attrib['class'] = class_
-                parent.insert(parent.index(block), toggle)
-                return lhtml.tostring(lmsg, encoding='utf8').decode()
+                div = etree.Element('div')
+                parent = blocks[0].getparent()
+                index = parent.index(blocks[0])
+                for b in blocks:
+                    parent.remove(b)
+                    div.append(b)
+                parent.insert(index, div)
+                return toggle(div)
+
+    for m in msgs:
+        cp = clean(lhtml.fromstring(m))
+        for block in lmsg.xpath('//blockquote'):
+            cb = clean(block)
+            if cp and cb and (cp.endswith(cb) or cb == cp):
+                return toggle(block)
     return msg
 
 
