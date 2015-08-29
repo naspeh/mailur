@@ -563,35 +563,41 @@ def body(env, id):
         raw, attachments
     FROM emails WHERE id=%s LIMIT 1
     ''', [id]).fetchone()
-    if row:
-        i = env.sql('''
-        SELECT id, raw, labels FROM emails
-        WHERE thrid=%s AND id!=%s AND time<%s
-        ORDER BY time DESC
-        ''', [row['thrid'], id, row['time']])
+    if not row:
+        return env.abort(404)
 
-        def emails():
-            for msg in [row]:
-                if msg['raw']:
-                    parsed = parse(msg['raw'], msg['id'])
-                    msg = dict(msg)
-                    msg['html'] = parsed['html']
-                    msg['text'] = parsed['text']
-                    msg['attachments'] = parsed['attachments']
-                    msg['embedded'] = parsed['embedded']
-                    msgs = [parse(p['raw'], p['id'])['html'] for p in i]
-                    msg['_extra'] = {
-                        'body?': ctx_body(env, msg, msgs, show=True),
-                        'labels': msg['labels']
-                    }
-                yield msg
+    i = env.sql('''
+    SELECT id, raw, labels FROM emails
+    WHERE thrid=%s AND id!=%s AND time<%s
+    ORDER BY time DESC
+    ''', [row['thrid'], id, row['time']])
 
-        ctx = ctx_emails(env, emails())
-        email = ctx['emails?']['items'][0]
-        ctx['header?'] = ctx_header(env, email['subj'], email['labels'])
-        return ctx
+    def emails():
+        for msg in [row]:
+            if not msg['raw']:
+                continue
 
-    env.abort(404)
+            parsed = parse(msg['raw'], msg['id'])
+            msg = dict(msg)
+            msg['html'] = (
+                parser.text2html(parsed['text'])
+                if env.request.args.get('text') else
+                parsed['html']
+            )
+            msg['text'] = parsed['text']
+            msg['attachments'] = parsed['attachments']
+            msg['embedded'] = parsed['embedded']
+            msgs = [parse(p['raw'], p['id'])['html'] for p in i]
+            msg['_extra'] = {
+                'body?': ctx_body(env, msg, msgs, show=True),
+                'labels': msg['labels']
+            }
+            yield msg
+
+    ctx = ctx_emails(env, emails())
+    email = ctx['emails?']['items'][0]
+    ctx['header?'] = ctx_header(env, email['subj'], email['labels'])
+    return ctx
 
 
 @login_required

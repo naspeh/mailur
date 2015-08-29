@@ -263,14 +263,14 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
 
     if clean:
         glabels_ = {ALIASES.get(l, l) for l in glabels}
-        updated += clean_emails(env, glabels_, folder)
+        updated += clean_labels(env, glabels_, folder)
     updated += process_tasks(env)
 
     env.db.commit()
     notify(env, updated)
 
 
-def clean_emails(env, labels, folder):
+def clean_labels(env, labels, folder):
     labels |= {'\\Answered', '\\Unread', folder}
     labels = [imap_utf7.decode(l) for l in labels]
 

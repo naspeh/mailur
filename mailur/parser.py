@@ -114,11 +114,15 @@ def parse_part(env, part, msg_id, inner=False):
         for m in part.get_payload():
             child = parse_part(env, m, msg_id, True)
             child_html = child.pop('html', '')
+            child_text = child.pop('text', '')
             content.setdefault('html', '')
+            content.setdefault('text', '')
             if stype != 'alternative':
                 content['html'] += child_html
-            elif child_html:
-                content['html'] = child_html
+                content['text'] += child_text
+            else:
+                content['html'] = child_html or content['html']
+                content['text'] = child_text or content['text']
             content['files'] += child.pop('files')
             content.update(child)
     elif mtype == 'multipart':
@@ -131,6 +135,7 @@ def parse_part(env, part, msg_id, inner=False):
         if ctype == 'text/html':
             content['html'] = text
         elif ctype == 'text/plain' and not content['html']:
+            content['text'] = text
             text = text2html(text)
             content['html'] = text
     else:
