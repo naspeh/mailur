@@ -194,7 +194,7 @@ def sidebar(env):
         'labels?': bool(labels) and {'items': labels}
     }
 
-    ctx['search_query'] = getattr(env, 'search_query', '')
+    ctx['search_query'] = env.session.get('search_query', '')
     if not labels:
         ctx['gmail'] = bool(env.email)
     return env.render('sidebar', ctx)
@@ -514,7 +514,7 @@ def emails(env, page):
 def search(env):
     schema = v.parse({'+q': str})
     q = schema.validate(env.request.args)['q']
-    env.search_query = q
+    env.session['search_query'] = q
 
     if q.startswith('g '):
         q = q[2:]
