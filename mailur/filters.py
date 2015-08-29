@@ -103,7 +103,7 @@ def hide_quote(msg, msgs, class_):
         s = '(%s)' % '|'.join("//*[contains(text(),'%s')]" % t for t in tokens)
         for block in lmsg.xpath(s):
             blocks = [block] + [b for b in block.itersiblings()]
-            cb = ' '.join(clean(b) for b in blocks)
+            cb = ''.join(clean(b) for b in blocks)
             if cp and cb and cb.endswith(cp):
                 div = etree.Element('div')
                 parent = blocks[0].getparent()
