@@ -518,7 +518,7 @@ def search(env):
 
     if q.startswith('g '):
         q = q[2:]
-        ids = syncer.search(env, env.email, q)
+        ids = syncer.search(env, env.email, q)[:100]
     else:
         i = env.sql('''
         SELECT id

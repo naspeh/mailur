@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 import requests
 
 # FIXME: Hack imaplib limit
-imaplib._MAXLINE = 100000
+imaplib._MAXLINE = 200000
 
 OAUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
 OAUTH_URL_TOKEN = 'https://accounts.google.com/o/oauth2/token'
