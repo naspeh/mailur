@@ -646,18 +646,20 @@ def manual_threads(env, folder):
         SELECT id, unnest(labels) FROM emails
         WHERE %s = ANY(labels)
     )
-    SELECT label, array_agg(id) ids FROM il
+    SELECT label, array_agg(id)::text[] ids FROM il
     WHERE label LIKE '{}/%%'
     GROUP BY label
     '''.format(re.escape(THRID)), [folder])
     updated = []
     for row in i:
         thrid = row['label'].replace('%s/' % THRID, '')
+        i = env.sql('SELECT id FROM emails WHERE thrid = %s', [thrid])
+        ids = list(set(r[0] for r in i) | set(row['ids']))
         i = env.sql('''
         UPDATE emails SET thrid=%(thrid)s
-        WHERE id = ANY(%(ids)s) AND thrid!=%(thrid)s
+        WHERE id = ANY(%(ids)s::uuid[]) AND thrid!=%(thrid)s
         RETURNING id
-        ''', {'thrid': thrid, 'ids': row['ids']})
+        ''', {'thrid': thrid, 'ids': ids})
         updated += [r[0] for r in i]
 
     log.info('  - update %s emails with manual threads', len(updated))
