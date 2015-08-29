@@ -26,7 +26,8 @@ def create_app(views):
         except HTTPException as e:
             response = e
         finally:
-            env.db.rollback()
+            if env.username:
+                env.db.rollback()
         env.session.save_cookie(response)
         return response
 
