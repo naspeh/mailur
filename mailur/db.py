@@ -238,7 +238,7 @@ class Emails(Manager):
             setweight(to_tsvector('simple', text), 'C') ||
             setweight(to_tsvector('english', text), 'C') ||
             setweight(to_tsvector('russian', text), 'C') ||
-            setweight(to_tsvector('simple', encode(header, 'escape')), 'C')
+            setweight(to_tsvector('simple', encode(header, 'escape')), 'D')
             AS document
         FROM emails;
 
