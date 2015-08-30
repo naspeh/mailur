@@ -7,7 +7,7 @@ import re
 from collections import OrderedDict
 
 import chardet
-from lxml import html as lhtml
+from lxml import html as lh
 from lxml.html.clean import Cleaner
 
 from . import log
@@ -192,7 +192,7 @@ def parse_part(env, part, msg_id, inner=False):
             kill_tags=['head', 'style'],
             remove_tags=['html', 'base']
         )
-        htm = lhtml.fromstring(htm)
+        htm = lh.fromstring(htm)
         htm = cleaner.clean_html(htm)
 
         # Fix img[@src]
@@ -209,7 +209,7 @@ def parse_part(env, part, msg_id, inner=False):
                 del img.attrib['src']
         content['attachments'] += embedded.values()
 
-        content['html'] = lhtml.tostring(htm, encoding='utf-8').decode()
+        content['html'] = lh.tostring(htm, encoding='utf-8').decode()
         if 'text' not in content or not content['text']:
             htm = Cleaner(links=False, style=True).clean_html(htm)
             text = '\n'.join(htm.xpath('//text()'))

@@ -1,5 +1,6 @@
 (function() {
 var ws = null, handlers = {}, messages = [];
+var is_thread = $('.emails-byid').length === 0;
 
 $.get('/init/', {'offset': new Date().getTimezoneOffset() / 60});
 connect();
@@ -111,16 +112,21 @@ function goToLabel(label) {
 
 /* Init function */
 function init() {
-
 if ($('.thread .email-unread').length !== 0) {
     mark({action: '-', name: '\\Unread'}, function() {});
 }
-if ($('.emails-byid').length === 0) {
+if (is_thread) {
     $('.emails').on('click', '.email-info', function() {
         var email = $(this).parents('.email');
         location.href = email.data('thread-url');
     });
 }
+$('.email-subj a').each(function() {
+    var $this = $(this);
+    var url = is_thread ? 'thread-url' : 'body-url';
+
+    $this.attr('href', $this.parents('.email').data(url));
+});
 $('.emails-byid').on('click', '.email-info', function() {
     var email = $(this).parents('.email');
     email.toggleClass('email-show');
@@ -167,7 +173,7 @@ $('.emails').on('click', '.email-pin', function() {
         data = {action: '+', name: '\\Pinned', ids: [email.data('id')]};
     if (email.hasClass('email-pinned')) {
         data.action = '-';
-        if (email.parents('.emails-byid').length === 0) {
+        if (is_thread) {
             data.ids = [email.data('thrid')];
             data.thread = true;
             data.last = $('.emails').data('last');
@@ -436,7 +442,7 @@ function mark(params, callback) {
             params.ids = [$('.email').first().data('thrid')];
             params.thread = true;
         } else {
-            var field = $('.emails-byid').length > 0 ? 'id' : 'thrid';
+            var field = is_thread ? 'thrid' : 'id';
             params.thread = field == 'thrid';
             params.ids = getSelected(field);
         }

@@ -5,7 +5,7 @@ from email.utils import parseaddr
 from hashlib import md5
 from urllib.parse import urlencode
 
-from lxml import html as lhtml, etree
+import lxml.html as lh
 
 
 def format_addr(env, v):
@@ -79,7 +79,8 @@ def hide_quote(msg, msgs, class_):
     if not msg or not msgs:
         return msg
 
-    lmsg = lhtml.fromstring(msg)
+    lmsg = lh.fromstring(msg)
+    msgs = [m for m in msgs if m]
 
     def clean(element):
         text = element.text_content()
@@ -89,23 +90,23 @@ def hide_quote(msg, msgs, class_):
     def toggle(block):
         block.attrib['class'] = class_
         parent = block.getparent()
-        toggle = lhtml.fromstring('<div class="%s-toggle"/>' % class_)
+        toggle = lh.fromstring('<div class="%s-toggle"/>' % class_)
         block.attrib['class'] = class_
         parent.insert(parent.index(block), toggle)
-        return lhtml.tostring(lmsg, encoding='utf8').decode()
+        return lh.tostring(lmsg, encoding='utf8').decode()
 
     for m in msgs:
         tokens = re.findall('-{3,20}[ \w]*-{3,20}', msg)
         if not tokens:
             continue
 
-        cp = clean(lhtml.fromstring(m))
+        cp = clean(lh.fromstring(m))
         s = '(%s)' % '|'.join("//*[contains(text(),'%s')]" % t for t in tokens)
         for block in lmsg.xpath(s):
             blocks = [block] + [b for b in block.itersiblings()]
             cb = ''.join(clean(b) for b in blocks)
             if cp and cb and cb.endswith(cp):
-                div = etree.Element('div')
+                div = lh.HtmlElement('div')
                 parent = blocks[0].getparent()
                 index = parent.index(blocks[0])
                 for b in blocks:
@@ -115,7 +116,7 @@ def hide_quote(msg, msgs, class_):
                 return toggle(div)
 
     for m in msgs:
-        cp = clean(lhtml.fromstring(m))
+        cp = clean(lh.fromstring(m))
         for block in lmsg.xpath('//blockquote'):
             cb = clean(block)
             if cp and cb and (cp.endswith(cb) or cb == cp):
