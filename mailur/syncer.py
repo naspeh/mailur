@@ -657,7 +657,7 @@ def manual_threads(env, folder):
         ids = list(set(r[0] for r in i) | set(row['ids']))
         i = env.sql('''
         UPDATE emails SET thrid=%(thrid)s
-        WHERE id = ANY(%(ids)s::uuid[]) AND thrid!=%(thrid)s
+        WHERE thrid = ANY(%(ids)s::uuid[]) AND thrid!=%(thrid)s
         RETURNING id
         ''', {'thrid': thrid, 'ids': ids})
         updated += [r[0] for r in i]
