@@ -106,7 +106,7 @@ def hide_quote(msg, msgs, class_):
             blocks = [block] + [b for b in block.itersiblings()]
             cb = ''.join(clean(b) for b in blocks)
             if cp and cb and cb.endswith(cp):
-                div = lh.HtmlElement('div')
+                div = lh.Element('div')
                 parent = blocks[0].getparent()
                 index = parent.index(blocks[0])
                 for b in blocks:
