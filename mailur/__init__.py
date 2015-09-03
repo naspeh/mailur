@@ -73,7 +73,6 @@ class Env:
 
         self.storage = db.Storage(self)
         self.emails = db.Emails(self)
-        self.tasks = db.Tasks(self)
 
         # General setup
         self.username = None

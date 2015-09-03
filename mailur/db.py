@@ -30,7 +30,7 @@ def init(env, password=None, reset=False):
     END;
     $$ language 'plpgsql';
     '''
-    sql += ';'.join(t.table for t in [Storage, Emails, Tasks])
+    sql += ';'.join(t.table for t in [Storage, Emails])
     env.sql(sql)
     env.db.commit()
 
@@ -245,19 +245,4 @@ class Emails(Manager):
         DROP INDEX IF EXISTS ix_emails_search;
         CREATE INDEX ix_emails_search ON emails_search USING gin(document);
         '''
-    ))
-
-
-class Tasks(Manager):
-    name = 'tasks'
-    fields = (
-        'id int PRIMARY KEY',
-        'data json NOT NULL',
-
-        'created timestamp NOT NULL DEFAULT current_timestamp',
-        'updated timestamp NOT NULL DEFAULT current_timestamp'
-    )
-    table = create_table(name, fields, after=(
-        fill_updated(name),
-        create_seq(name, 'id')
     ))

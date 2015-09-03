@@ -185,6 +185,12 @@ def migrate(env, init=False):
         db.init(env)
     env.username = env.username  # reset db connection
 
+    env.sql('''
+    DROP TABLE tasks;
+    DROP SEQUENCE seq_tasks_id;
+    ''')
+    env.db.commit()
+
 
 def deploy(opts):
     root = Path('/var/local/mailur')
