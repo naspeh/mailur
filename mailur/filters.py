@@ -84,7 +84,7 @@ def hide_quote(msg, msgs, class_):
 
     def clean(element):
         text = element.text_content()
-        text = re.sub('[\s]+', '', text)
+        text = re.sub('[^\w]+', '', text)
         return text.rstrip()
 
     def toggle(block):
@@ -96,11 +96,16 @@ def hide_quote(msg, msgs, class_):
         return lh.tostring(lmsg, encoding='utf8').decode()
 
     for m in msgs:
+        cp = clean(lh.fromstring(m))
+        for block in lmsg.xpath('//blockquote'):
+            cb = clean(block)
+            if cp and cb and cb.endswith(cp):
+                return toggle(block)
+
         tokens = re.findall('-{3,20}[ \w]*-{3,20}', msg)
         if not tokens:
             continue
 
-        cp = clean(lh.fromstring(m))
         s = '(%s)' % '|'.join("//*[contains(text(),'%s')]" % t for t in tokens)
         for block in lmsg.xpath(s):
             blocks = [block] + [b for b in block.itersiblings()]
@@ -115,12 +120,6 @@ def hide_quote(msg, msgs, class_):
                 parent.insert(index, div)
                 return toggle(div)
 
-    for m in msgs:
-        cp = clean(lh.fromstring(m))
-        for block in lmsg.xpath('//blockquote'):
-            cb = clean(block)
-            if cp and cb and (cp.endswith(cb) or cb == cp):
-                return toggle(block)
     return msg
 
 
