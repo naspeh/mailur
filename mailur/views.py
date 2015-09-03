@@ -747,7 +747,7 @@ def compose(env):
 def markdown(html):
     from mistune import markdown
 
-    return markdown(html, escape=False)
+    return markdown(html, escape=False, hard_wrap=True)
 
 
 def sendmail(env, msg):
