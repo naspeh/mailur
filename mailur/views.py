@@ -218,7 +218,7 @@ def ctx_emails(env, items, domid='id'):
             'links': ctx_links(env, i['id'], i['thrid']),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
-            'time_str': str(i['time']),
+            'created': str(i['created']),
             'fr': ctx_person(env, i['fr'][0]),
             'to': [ctx_person(env, v) for v in i['to'] or []],
             'cc': [ctx_person(env, v) for v in i['cc'] or []],
@@ -502,7 +502,7 @@ def emails(env, page):
     if page['count'] < count:
         ctx['next?'] = {'url': env.url(env.request.path, dict(
             env.request.args.to_dict(),
-            last=page['last'] or ctx['emails?']['items'][0]['time_str'],
+            # last=page['last'] or ctx['emails?']['items'][0]['created'],
             page=page['next']
         ))}
     ctx['header?'] = ctx_header(env, subj, label and [label])
