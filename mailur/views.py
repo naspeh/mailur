@@ -103,10 +103,13 @@ def adapt_page():
     return wrapper
 
 
-def adapt_fmt(tpl):
+def adapt_fmt(tpl, formats=None):
+    formats = formats or ['html', 'body', 'json']
+
     def inner(env, *a, **kw):
-        default = 'body' if env.request.is_xhr else kw.pop('fmt', 'html')
+        default = 'body' if env.request.is_xhr else kw.pop('fmt', formats[0])
         fmt = env.request.args.get('fmt', default)
+        assert fmt in formats
 
         ctx = wrapper.func(env, *a, **kw)
         if fmt == 'json':
@@ -171,6 +174,7 @@ def check_auth(env):
 
 
 @login_required
+@adapt_fmt('sidebar', formats=['body', 'json'])
 def sidebar(env):
     i = env.sql('''
     WITH labels(name) AS (SELECT DISTINCT unnest(labels) FROM emails)
@@ -197,7 +201,7 @@ def sidebar(env):
     ctx['search_query'] = env.session.get('search_query', '')
     if not labels:
         ctx['gmail'] = bool(env.email)
-    return env.render('sidebar', ctx)
+    return ctx
 
 
 def ctx_emails(env, items, domid='id'):
