@@ -1,4 +1,4 @@
-{{#header?}}
+{{#header}}
 <div class="header">
     <h3>{{subj}}</h3>
     <div class="email-labels-edit">
@@ -22,20 +22,20 @@
         {{/labels}}
     </div>
 </div>
-{{/header?}}
-{{#emails?}}
+{{/header}}
+{{#emails}}
 <ul class="emails {{emails_class}}" data-last="{{last}}">
 {{#items}}
 <li class="
         email
-        {{#body?}} email-show email-showed{{/body?}}
-        {{#unread?}} email-unread{{/unread?}}
-        {{#pinned?}} email-pinned{{/pinned?}}
+        {{#body}} email-show email-showed{{/body}}
+        {{#unread}} email-unread{{/unread}}
+        {{#pinned}} email-pinned{{/pinned}}
     "
     id="{{domid}}"
     data-id="{{id}}"
     data-thrid="{{thrid}}"
-    data-labels="{{#labels?}}{{names_json}}{{/labels?}}"
+    data-labels="{{#labels}}{{names_json}}{{/labels}}"
     data-hash="{{hash}}"
     {{#links}}
     {{#href}}{{#name}}
@@ -44,20 +44,20 @@
     {{/links}}
 >
     <ul class="email-line">
-        {{#draft?}}
+        {{#draft}}
         <li class="email-draft">Draft</li>
-        {{/draft?}}
-        {{^draft?}}
+        {{/draft}}
+        {{^draft}}
         <li class="email-pin" title="Toggle Pin"></li>
-        {{/draft?}}
+        {{/draft}}
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
         <li class="email-pic email-info" style="background-image:url({{fr.image}})"></li>
         <li class="email-from email-info" title="{{fr.full}}">{{fr.short}}</li>
-        {{#labels?}}
+        {{#labels}}
         <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
-        {{/labels?}}
+        {{/labels}}
         {{#count}}<li class="email-count email-info">{{count}}</li>{{/count}}
-        <li class="email-subj email-info{{#subj_changed?}} email-subj-changed{{/subj_changed?}}">
+        <li class="email-subj email-info{{#subj_changed}} email-subj-changed{{/subj_changed}}">
             <a href="#">{{subj_human}}</a>
         </li>
         <li class="email-preview email-info">{{preview}}</li>
@@ -65,7 +65,7 @@
         <li class="email-time" title="{{time}}">{{time_human}}</li>
     </ul>
     <div class="email-body">
-        {{#body?}}
+        {{#body}}
         <div class="email-details">
             <div class="email-actions">
             {{#links}}
@@ -85,7 +85,7 @@
             </div>
         </div>
         <div class="email-text">{{&text}}</div>
-        {{#attachments?}}
+        {{#attachments}}
         <div class="email-attachments">
             <ul>
                 {{#items}}
@@ -93,18 +93,18 @@
                 {{/items}}
             </ul>
         </div>
-        {{/attachments?}}
-        {{/body?}}
-        {{^body?}}
+        {{/attachments}}
+        {{/body}}
+        {{^body}}
         <div class="email-text">
             <b>Loading...</b>
         </div>
-        {{/body?}}
+        {{/body}}
     </div>
 </li>
 {{/items}}
-{{#next?}}
+{{#next}}
 <li class="emails-more" data-url="{{url}}"><a href="{{url}}">Next page</a></li>
-{{/next?}}
+{{/next}}
 </ul>
-{{/emails?}}
+{{/emails}}

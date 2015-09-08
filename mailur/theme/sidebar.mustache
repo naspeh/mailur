@@ -7,7 +7,7 @@
     <a href="/compose/" class="compose-new">Compose</a>
     {{/email}}
 </nav>
-{{#labels?}}
+{{#labels}}
 <form class="search-form" action="/search/">
     <input name="q" type="text" value="{{search_query}}">
     <button type="submit" class="search"></button>
@@ -20,9 +20,9 @@
 </a></li>
 {{/items}}
 </ul>
-{{/labels?}}
+{{/labels}}
 </div>
-{{^labels?}}
+{{^labels}}
 <div class="body">
     {{#email}}
     Please wait for complete synchronization.
@@ -33,4 +33,4 @@
     {{/email}}
     {{&body}}
 </div>
-{{/labels?}}
+{{/labels}}

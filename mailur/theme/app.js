@@ -1,3 +1,17 @@
+var emails = function(data) {
+    var ractive = new Ractive({
+        el: '.body',
+        template: '#template',
+        data: data
+    });
+    $('.sidebar').on('click', '.labels a', function() {
+        $.get(this.href + '&fmt=json', function(data) {
+            ractive.set(data);
+        });
+        return false;
+    });
+};
+
 (function() {
 var ws = null, handlers = {}, messages = [];
 var is_thread = $('.emails-byid').length === 0;

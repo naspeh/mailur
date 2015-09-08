@@ -406,6 +406,7 @@ def get_full(argv):
         '   node_modules/selectize/dist/js/standalone/selectize.js'
         '   node_modules/taboverride/build/output/taboverride.js'
         '   node_modules/swipebox/src/js/jquery.swipebox.js'
+        '   node_modules/ractive/ractive.js'
         '   {0}app.js'
         '   > {0}build/all.js &&'
         'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'

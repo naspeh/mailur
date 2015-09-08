@@ -103,7 +103,15 @@ def adapt_page():
     return wrapper
 
 
-def adapt_fmt(tpl, formats=None):
+def render(env, name, ctx):
+    return env.render(name, ctx)
+
+
+def render_js(env, name, ctx):
+    return env.render('js', {'name': name, 'ctx': json.dumps(ctx)})
+
+
+def adapt_fmt(tpl, formats=None, render=render):
     formats = formats or ['html', 'body', 'json']
 
     def inner(env, *a, **kw):
@@ -115,8 +123,8 @@ def adapt_fmt(tpl, formats=None):
         if fmt == 'json':
             return env.to_json(ctx)
         elif fmt == 'body':
-            return env.render(tpl, ctx)
-        return render_body(env, tpl, ctx, with_sidebar=True)
+            return render(env, tpl, ctx)
+        return render_body(env, tpl, ctx, render, with_sidebar=True)
 
     def wrapper(func):
         wrapper.func = func
@@ -124,19 +132,23 @@ def adapt_fmt(tpl, formats=None):
     return wrapper
 
 
-def render_body(env, name, ctx=None, with_sidebar=False):
-    body = env.render(name, ctx)
-    name = 'all' if env('debug') else 'all.min'
+def render_body(env, name, ctx=None, render=render, with_sidebar=False):
+    body = render(env, name, ctx)
+    sname = 'all' if env('debug') else 'all.min'
     ctx = {
-        'body': body,
-        'cssfile': '/theme/build/%s.css?%s' % (name, env.theme_version),
-        'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version),
+        'cssfile': '/theme/build/%s.css?%s' % (sname, env.theme_version),
+        'jsfile': '/theme/build/%s.js?%s' % (sname, env.theme_version),
         'ga_id': env('ui_ga_id'),
         'host_ws': env('host_ws'),
         'host_web': env('host_web'),
     }
     if with_sidebar:
         ctx['sidebar'] = sidebar(env)
+    if render == render_js:
+        ctx['template'] = env.templates[name]
+        ctx['script'] = body
+    else:
+        ctx['body'] = body
 
     return env.render('base', ctx)
 
@@ -195,7 +207,7 @@ def sidebar(env):
     ctx = {
         'username': env.username,
         'email': env.email,
-        'labels?': bool(labels) and {'items': labels}
+        'labels': bool(labels) and {'items': labels}
     }
 
     ctx['search_query'] = env.session.get('search_query', '')
@@ -216,9 +228,9 @@ def ctx_emails(env, items, domid='id'):
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
             'preview': f.get_preview(i['text'], i['attachments']),
-            'pinned?': '\\Pinned' in i['labels'],
-            'unread?': '\\Unread' in i['labels'],
-            'draft?': '\\Draft' in i['labels'],
+            'pinned': '\\Pinned' in i['labels'],
+            'unread': '\\Unread' in i['labels'],
+            'draft': '\\Draft' in i['labels'],
             'links': ctx_links(env, i['id'], i['thrid']),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
@@ -226,7 +238,7 @@ def ctx_emails(env, items, domid='id'):
             'fr': ctx_person(env, i['fr'][0]),
             'to': [ctx_person(env, v) for v in i['to'] or []],
             'cc': [ctx_person(env, v) for v in i['cc'] or []],
-            'labels?': ctx_labels(env, i['labels'])
+            'labels': ctx_labels(env, i['labels'])
         }, **extra)
         last = i['created'] if not last or i['created'] > last else last
         email['hash'] = f.get_hash(email)
@@ -238,7 +250,7 @@ def ctx_emails(env, items, domid='id'):
         'last': str(last)
     }
     return {
-        'emails?': emails,
+        'emails': emails,
         'emails_class': 'emails-byid' if domid == 'id' else ''
     }
 
@@ -365,7 +377,7 @@ def ctx_body(env, msg, msgs, show=False):
     attachments = bool(attachments) and {'items': attachments}
     return {
         'text': f.humanize_html(msg['html'], msgs),
-        'attachments?': attachments
+        'attachments': attachments
     }
 
 
@@ -400,29 +412,29 @@ def thread(env, id):
             if n == 0:
                 subj = msg['subj']
             msg['_extra'] = {
-                'subj_changed?': f.is_subj_changed(msg['subj'], subj),
+                'subj_changed': f.is_subj_changed(msg['subj'], subj),
                 'subj_human': f.humanize_subj(msg['subj'], subj),
-                'body?': ctx_body(env, msg, (m['html'] for m in msgs[::-1]))
+                'body': ctx_body(env, msg, (m['html'] for m in msgs[::-1]))
             }
             yield msg
             msgs.append(msg)
 
     ctx = ctx_emails(env, emails())
-    if ctx['emails?']:
-        emails = ctx['emails?']['items']
+    if ctx['emails']:
+        emails = ctx['emails']['items']
         subj = f.humanize_subj(emails[0]['subj'])
 
         last = emails[-1]
         parents = reversed([p['html'] for p in msgs[:-1]])
-        last['body?'] = ctx_body(env, msgs[-1], parents, show=True)
+        last['body'] = ctx_body(env, msgs[-1], parents, show=True)
 
-        ctx['header?'] = ctx_header(env, subj, labels)
+        ctx['header'] = ctx_header(env, subj, labels)
         ctx['emails_class'] = ctx['emails_class'] + ' thread'
     return ctx
 
 
 @login_required
-@adapt_fmt('emails')
+@adapt_fmt('emails', render=render_js)
 @adapt_page()
 def emails(env, page):
     schema = v.parse({
@@ -504,12 +516,12 @@ def emails(env, page):
     ctx = ctx_emails(env, emails(), domid='thrid')
     ctx['count'] = count
     if page['count'] < count:
-        ctx['next?'] = {'url': env.url(env.request.path, dict(
+        ctx['next'] = {'url': env.url(env.request.path, dict(
             env.request.args.to_dict(),
-            # last=page['last'] or ctx['emails?']['items'][0]['created'],
+            # last=page['last'] or ctx['emails']['items'][0]['created'],
             page=page['next']
         ))}
-    ctx['header?'] = ctx_header(env, subj, label and [label])
+    ctx['header'] = ctx_header(env, subj, label and [label])
     return ctx
 
 
@@ -551,7 +563,7 @@ def search(env):
 
     subj = 'Search by %r' % q
     ctx = ctx_emails(env, i)
-    ctx['header?'] = ctx_header(env, subj)
+    ctx['header'] = ctx_header(env, subj)
     return ctx
 
 
@@ -593,14 +605,14 @@ def body(env, id):
             msg['embedded'] = parsed['embedded']
             msgs = [parse(p['raw'], p['id'])['html'] for p in i]
             msg['_extra'] = {
-                'body?': ctx_body(env, msg, msgs, show=True),
+                'body': ctx_body(env, msg, msgs, show=True),
                 'labels': msg['labels']
             }
             yield msg
 
     ctx = ctx_emails(env, emails())
-    email = ctx['emails?']['items'][0]
-    ctx['header?'] = ctx_header(env, email['subj'], email['labels'])
+    email = ctx['emails']['items'][0]
+    ctx['header'] = ctx_header(env, email['subj'], email['labels'])
     return ctx
 
 
@@ -707,7 +719,7 @@ def compose(env):
             'fr': fr,
             'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
-            'quote?': {'html': ctx_quote(env, parent, forward)},
+            'quote': {'html': ctx_quote(env, parent, forward)},
             'forward': forward
         })
 

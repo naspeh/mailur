@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 from urllib.parse import urlencode
 
 from werkzeug.exceptions import HTTPException, abort
@@ -47,9 +47,13 @@ class WebEnv(Env):
         super().__init__()
         self.views = views
         self.url_map = views.url_map
+        self.theme_dir = Path(self('path_theme'))
 
-        with open(os.path.join(self('path_theme'), 'build/version')) as f:
-            self.theme_version = f.read().strip()
+        self.theme_version = self.load_template('build/version', ext='')
+        self.templates = {
+            n.stem: self.load_template(n.stem)
+            for n in self.theme_dir.glob('*.mustache')
+        }
 
     def set_request(self, request):
         self.request = request
@@ -88,9 +92,14 @@ class WebEnv(Env):
         r = json.dumps(response, ensure_ascii=False, default=str, indent=2)
         return Response(r, **kw)
 
-    def render(self, name, ctx=None):
-        from pystache import render
+    def load_template(self, name, ext='.mustache'):
+        path = self.theme_dir / ('%s%s' % (name, ext))
+        with path.open('br') as f:
+            return f.read().decode()
 
-        with open(os.path.join(self('path_theme'), '%s.mustache' % name)) as f:
-            tpl = f.read()
+    def render(self, name, ctx=None):
+        from pystache import Renderer
+
+        render = Renderer(partials=self.templates).render
+        tpl = self.templates[name]
         return render(tpl, ctx)
