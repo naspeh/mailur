@@ -1,4 +1,8 @@
-var emails = function(data) {
+var $ = require('jquery');
+var Mousetrap = require('mousetrap');
+var Ractive = require('ractive');
+
+exports.emails = function(data) {
     var ractive = new Ractive({
         el: '.body',
         template: '#template',

@@ -375,9 +375,12 @@ def get_full(argv):
     cmd('npm', help='update nodejs packages')\
         .exe(lambda a: sh(
             'npm install --save --save-exact'
-            '   autoprefixer'
-            '   csso'
             '   less'
+            '   postcss-cli'
+            '   autoprefixer'
+            '   clean-css'
+            '   browserify'
+            '   babelify'
             '   uglify-js'
             '   jshint'
             # js libs
@@ -387,6 +390,7 @@ def get_full(argv):
             '   selectize'
             '   wjbryant/taboverride'
             '   naskoro/swipebox'
+            '   ractive'
         ))
 
     cmd('static').exe(lambda a: sh(
@@ -397,18 +401,19 @@ def get_full(argv):
         '   {0}lib/selectize.css'
         '   {0}build/styles.css'
         '   > {0}build/all.css &&'
-        'autoprefixer {0}build/all.css {0}build/all.css &&'
-        'csso {0}build/all.css {0}build/all.min.css &&'
+        'postcss --use autoprefixer -o {0}build/all.css {0}build/all.css &&'
+        'cleancss {0}build/all.css -o {0}build/all.min.css &&'
         # all.js
-        'cat'
-        '   node_modules/jquery/dist/jquery.js'
-        '   node_modules/mousetrap/mousetrap.js'
-        '   node_modules/selectize/dist/js/standalone/selectize.js'
-        '   node_modules/taboverride/build/output/taboverride.js'
-        '   node_modules/swipebox/src/js/jquery.swipebox.js'
-        '   node_modules/ractive/ractive.js'
-        '   {0}app.js'
-        '   > {0}build/all.js &&'
+        'browserify -d -r {0}app.js:app -o {0}build/all.js &&'
+        # 'cat'
+        # '   node_modules/jquery/dist/jquery.js'
+        # '   node_modules/mousetrap/mousetrap.js'
+        # '   node_modules/selectize/dist/js/standalone/selectize.js'
+        # '   node_modules/taboverride/build/output/taboverride.js'
+        # '   node_modules/swipebox/src/js/jquery.swipebox.js'
+        # '   node_modules/ractive/ractive.js'
+        # '   {0}app.js'
+        # '   > {0}build/all.js &&'
         'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'
         # theme version
         'cat mailur/theme/build/all.min.* | md5sum - | cut -c-32'
