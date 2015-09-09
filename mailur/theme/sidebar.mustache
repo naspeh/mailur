@@ -4,7 +4,7 @@
     <a href="/logout/" class="logout" title="Logout"></a>
     <a href="#" class="help-toggle" title="Keyboard shortcut help"></a>
     {{#email}}
-    <a href="/compose/" class="compose-new">Compose</a>
+    <a href="/compose/" on-click="go" class="compose-new">Compose</a>
     {{/email}}
 </nav>
 {{#labels}}
@@ -14,7 +14,7 @@
 </form>
 <ul class="labels">
 {{#items}}
-<li><a href="{{url}}">
+<li><a href="{{url}}" on-click="go">
     {{^unread}}{{name}}{{/unread}}
     {{#unread}}<b>{{name}} ({{unread}}</b>){{/unread}}
 </a></li>

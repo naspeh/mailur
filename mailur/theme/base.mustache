@@ -7,22 +7,22 @@
     <link rel="stylesheet" type="text/css" href="{{cssfile}}">
 </head>
 <body>
+{{#body}}{{&body}}{{/body}}
+{{^body}}
 <div class="help">
     <h3>Keyboard shortcuts <a class="help-close" title="Close">X</a></h3>
 </div>
-{{&sidebar}}
-<div class="body">{{&body}}</div>
-<script>
-    var conf= {};
-    conf.host_ws = '{{host_ws}}';
-    conf.host_web = '{{host_web}}';
+<div class="sidebar"></div>
+<div class="emails body"></div>
+<div class="compose body"></div>
+<script>var conf= {{&conf}};</script>
+{{#templates}}
+<script id="{{name}}" type="text/ractive">
+{{&body}}
 </script>
-<script id="template" type="text/ractive">
-{{&template}}
-</script>
+{{/templates}}
 <script src="{{jsfile}}"></script>
-{{&script}}
-
+{{/body}}
 {{#ga_id}}
 <script>
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

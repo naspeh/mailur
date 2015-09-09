@@ -54,6 +54,7 @@ def get_conf(conf=None):
             'ui_use_names': v.Nullable(bool, True),
             'ui_per_page': v.Nullable(int, 100),
             'ui_greeting': v.Nullable(str, ''),
+            'ui_use_ws': v.Nullable(bool, True),
             'host_ws': v.Nullable(str, 'ws://localhost/async/'),
             'host_web': v.Nullable(str, 'http://localhost/'),
         })

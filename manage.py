@@ -384,12 +384,9 @@ def get_full(argv):
             '   uglify-js'
             '   jshint'
             # js libs
-            '   jquery'
             '   normalize.css'
             '   mousetrap'
-            '   selectize'
             '   wjbryant/taboverride'
-            '   naskoro/swipebox'
             '   ractive'
         ))
 
@@ -404,7 +401,7 @@ def get_full(argv):
         'postcss --use autoprefixer -o {0}build/all.css {0}build/all.css &&'
         'cleancss {0}build/all.css -o {0}build/all.min.css &&'
         # all.js
-        'browserify -d -r {0}app.js:app -o {0}build/all.js &&'
+        'browserify -d -t [ babelify ] -o {0}build/all.js {0}app2.js &&'
         # 'cat'
         # '   node_modules/jquery/dist/jquery.js'
         # '   node_modules/mousetrap/mousetrap.js'

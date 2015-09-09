@@ -54,7 +54,9 @@
         <li class="email-pic email-info" style="background-image:url({{fr.image}})"></li>
         <li class="email-from email-info" title="{{fr.full}}">{{fr.short}}</li>
         {{#labels}}
-        <li class="email-labels">{{#items}}<a href="{{url}}">{{name}}</a> {{/items}}</li>
+        <li class="email-labels">
+            {{#items}}<a href="{{url}}" on-click="go">{{name}}</a>&nbsp;{{/items}}
+        </li>
         {{/labels}}
         {{#count}}<li class="email-count email-info">{{count}}</li>{{/count}}
         <li class="email-subj email-info{{#subj_changed}} email-subj-changed{{/subj_changed}}">

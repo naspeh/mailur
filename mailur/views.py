@@ -48,6 +48,30 @@ def gmail_callback(env):
         return str(e)
 
 
+def adapt_fmt(tpl=None):
+    def inner(env, *a, **kw):
+        default = 'json' if env.request.is_xhr else kw.pop('fmt', 'html')
+        fmt = env.request.args.get('fmt', default)
+        if fmt == 'html' and tpl:
+            return render_base(env)
+
+        ctx = wrapper.func(env, *a, **kw)
+        if isinstance(ctx, env.Response):
+            return ctx
+
+        if fmt == 'json':
+            if tpl:
+                ctx['_name'] = tpl
+            return env.to_json(ctx)
+        return render_base(env, ctx)
+
+    def wrapper(func):
+        wrapper.func = func
+        return ft.wraps(func)(inner)
+    return wrapper
+
+
+@adapt_fmt()
 def login(env):
     ctx = {'greeting': env('ui_greeting')}
     if env.request.method == 'POST':
@@ -56,7 +80,7 @@ def login(env):
         if env.check_auth(args['username'], args['password']):
             return env.redirect_for('index')
         ctx = {'username': args['username'], 'error': True}
-    return render_body(env, 'login', ctx)
+    return env.render('login', ctx)
 
 
 def logout(env):
@@ -103,53 +127,23 @@ def adapt_page():
     return wrapper
 
 
-def render(env, name, ctx):
-    return env.render(name, ctx)
-
-
-def render_js(env, name, ctx):
-    return env.render('js', {'name': name, 'ctx': json.dumps(ctx)})
-
-
-def adapt_fmt(tpl, formats=None, render=render):
-    formats = formats or ['html', 'body', 'json']
-
-    def inner(env, *a, **kw):
-        default = 'body' if env.request.is_xhr else kw.pop('fmt', formats[0])
-        fmt = env.request.args.get('fmt', default)
-        assert fmt in formats
-
-        ctx = wrapper.func(env, *a, **kw)
-        if fmt == 'json':
-            return env.to_json(ctx)
-        elif fmt == 'body':
-            return render(env, tpl, ctx)
-        return render_body(env, tpl, ctx, render, with_sidebar=True)
-
-    def wrapper(func):
-        wrapper.func = func
-        return ft.wraps(func)(inner)
-    return wrapper
-
-
-def render_body(env, name, ctx=None, render=render, with_sidebar=False):
-    body = render(env, name, ctx)
-    sname = 'all' if env('debug') else 'all.min'
+def render_base(env, body=None):
+    name = 'all' if env('debug') else 'all.min'
     ctx = {
-        'cssfile': '/theme/build/%s.css?%s' % (sname, env.theme_version),
-        'jsfile': '/theme/build/%s.js?%s' % (sname, env.theme_version),
+        'body': body,
+        'cssfile': '/theme/build/%s.css?%s' % (name, env.theme_version),
+        'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version),
         'ga_id': env('ui_ga_id'),
-        'host_ws': env('host_ws'),
-        'host_web': env('host_web'),
+        'conf': json.dumps({
+            'host_ws': env('host_ws'),
+            'host_web': env('host_web'),
+            'use_ws': env('ui_use_ws'),
+        }),
+        'templates': [
+            {'name': name, 'body': env.templates[name]}
+            for name in ['emails', 'sidebar', 'compose']
+        ]
     }
-    if with_sidebar:
-        ctx['sidebar'] = sidebar(env)
-    if render == render_js:
-        ctx['template'] = env.templates[name]
-        ctx['script'] = body
-    else:
-        ctx['body'] = body
-
     return env.render('base', ctx)
 
 
@@ -162,7 +156,7 @@ def reset_password(env, username=None, token=None):
                 raise v.SchemaError('Passwords aren\'t the same')
             env.set_password(args['password'])
             return env.redirect_for('index')
-        return render_body(env, 'reset_password')
+        return env.render('reset_password')
 
     if not username and not token:
         if env('readonly'):
@@ -186,7 +180,7 @@ def check_auth(env):
 
 
 @login_required
-@adapt_fmt('sidebar', formats=['body', 'json'])
+@adapt_fmt('sidebar')
 def sidebar(env):
     i = env.sql('''
     WITH labels(name) AS (SELECT DISTINCT unnest(labels) FROM emails)
@@ -434,7 +428,7 @@ def thread(env, id):
 
 
 @login_required
-@adapt_fmt('emails', render=render_js)
+@adapt_fmt('emails')
 @adapt_page()
 def emails(env, page):
     schema = v.parse({
@@ -515,12 +509,14 @@ def emails(env, page):
 
     ctx = ctx_emails(env, emails(), domid='thrid')
     ctx['count'] = count
-    if page['count'] < count:
-        ctx['next'] = {'url': env.url(env.request.path, dict(
+    ctx['next'] = page['count'] < count and {'url': env.url(
+        env.request.path,
+        dict(
             env.request.args.to_dict(),
             # last=page['last'] or ctx['emails']['items'][0]['created'],
             page=page['next']
-        ))}
+        )
+    )}
     ctx['header'] = ctx_header(env, subj, label and [label])
     return ctx
 
@@ -687,6 +683,7 @@ def new_thread(env):
 
 
 @login_required
+@adapt_fmt('compose')
 def compose(env):
     schema = v.parse({
         'id': str,
@@ -757,7 +754,7 @@ def compose(env):
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
         return env.redirect_for('emails', {'in': '\\Sent'})
-    return render_body(env, 'compose', ctx, with_sidebar=True)
+    return ctx
 
 
 def markdown(html):
@@ -815,12 +812,12 @@ def sendmail(env, msg):
 
 
 @login_required
-@adapt_fmt('body')
+@adapt_fmt()
 def preview(env):
     schema = v.parse({'+body': str, 'quote': v.Nullable(str)})
     data = schema.validate(env.request.json)
     body = '\n\n'.join([markdown(data['body']), data.get('quote', '')])
-    return {'body': body}
+    return body
 
 
 @login_required

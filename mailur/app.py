@@ -43,15 +43,17 @@ def create_app(views):
 
 
 class WebEnv(Env):
+    Response = Response
+
     def __init__(self, views):
         super().__init__()
         self.views = views
         self.url_map = views.url_map
         self.theme_dir = Path(self('path_theme'))
 
-        self.theme_version = self.load_template('build/version', ext='')
+        self.theme_version = self.load_asset('build/version').strip()
         self.templates = {
-            n.stem: self.load_template(n.stem)
+            n.stem: self.load_asset(n)
             for n in self.theme_dir.glob('*.mustache')
         }
 
@@ -85,15 +87,15 @@ class WebEnv(Env):
 
     def make_response(self, response=None, **kw):
         kw.setdefault('content_type', 'text/html')
-        return Response(response, **kw)
+        return self.Response(response, **kw)
 
     def to_json(self, response, **kw):
         kw.setdefault('content_type', 'application/json')
-        r = json.dumps(response, ensure_ascii=False, default=str, indent=2)
-        return Response(r, **kw)
+        r = json.dumps(response, ensure_ascii=False, default=str)
+        return self.Response(r, **kw)
 
-    def load_template(self, name, ext='.mustache'):
-        path = self.theme_dir / ('%s%s' % (name, ext))
+    def load_asset(self, name):
+        path = (self.theme_dir / name) if isinstance(name, str) else name
         with path.open('br') as f:
             return f.read().decode()
 
