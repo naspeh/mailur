@@ -271,7 +271,7 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
     process_tasks(env)
 
     env.db.commit()
-    notify(env, updated)
+    notify(env, updated, True)
 
 
 def clean_labels(env, labels, folder):
@@ -420,8 +420,8 @@ def sync_marks(env, imap, map_uids):
         env.sql('DELETE FROM storage WHERE key = %s', [task_id])
 
 
-def notify(env, ids):
-    if not ids:
+def notify(env, ids, skip):
+    if not ids or skip:
         return
 
     url = 'http://localhost:9000/notify/'
@@ -562,7 +562,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
 
     if commit:
         env.db.commit()
-        notify(env, updated)
+        notify(env, updated, True)
     return updated
 
 
