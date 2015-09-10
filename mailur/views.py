@@ -247,44 +247,14 @@ def ctx_emails(env, items, thread=False):
 
 def ctx_links(env, id, thrid=None, to=None):
     reply_url = env.url_for('compose', {'id': id})
-    links = [
-        {'title': 'Details', 'name': 'details'},
-        {
-            'name': 'replyall',
-            'title': 'Reply to all',
-            'href': reply_url + '&target=all'
-        } if len(to) > 1 else None,
-        {'title': 'Reply', 'name': 'reply', 'href': reply_url},
-        {
-            'name': 'forward',
-            'title': 'Forward',
-            'href': reply_url + '&target=forward'
-        },
-        {
-            'name': 'thread',
-            'title': 'Show full thread',
-            'href': env.url_for('thread', id=thrid),
-            'ifmany': True
-        },
-        {
-            'name': 'body',
-            'title': 'Show this message',
-            'href': env.url_for('body', id=id),
-            'ifmany': True
-        },
-        {
-            'name': 'extract',
-            'title': 'Extract new thread',
-            'ifmany': True
-        },
-        {'title': 'Delete this message', 'name': 'delete'},
-        {
-            'name': 'raw',
-            'title': 'Show original',
-            'href': env.url_for('raw', id=id)
-        },
-    ]
-    return [l for l in links if l]
+    return {
+        'replyall': reply_url + '&target=all',
+        'reply': reply_url,
+        'forward': reply_url + '&target=forward',
+        'thread': env.url_for('thread', id=thrid),
+        'body': env.url_for('body', id=id),
+        'raw': env.url_for('raw', id=id)
+    }
 
 
 def ctx_person(env, addr):
@@ -368,7 +338,8 @@ def ctx_body(env, msg, msgs, show=False):
     return {
         'text': f.humanize_html(msg['html'], msgs),
         'attachments': attachments,
-        'show': True
+        'show': True,
+        'details': False
     }
 
 

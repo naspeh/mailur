@@ -62,11 +62,16 @@
         {{#body}}{{#show}}
         <div class="email-details">
             <div class="email-actions">
-            {{#links}}
-                <a class="email-a-{{name}}" href="{{href}}{{^href}}javascript:void(0){{/href}}">
-                    {{title}}
-                </a>
-            {{/links}}
+                <a href="#" on-click="details">Details</a>
+                {{#emails.length}}
+                <a href="{{links.replyall}}" on-click="go">Reply to all</a>
+                {{/emails.length}}
+                <a href="{{links.reply}}" on-click="go">Reply</a>
+                <a href="{{links.forward}}" on-click="go">Reply</a>
+                <a href="{{links.body}}" on-click="go">Show this message</a>
+                <a href="#" on-click="extract">Extract new thread</a>
+                <a href="#" on-click="delete">Delete this message</a>
+                <a href="{{links.raw}}" on-click="go">Show original</a>
             </div>
             {{#details}}
             <div class="email-extra">

@@ -9,7 +9,6 @@ if (conf.use_ws) {
 let history = createHistory();
 history.listen((location) => {
     let path = location.pathname + location.search;
-    console.log(path);
     send(path, null, function(data) {
         if (!data._name) {
             document.querySelector('.body').innerHTML = data;
@@ -37,7 +36,7 @@ let Component = Ractive.extend({
         send(this.url, null, (data) => {
             self.set(data);
         });
-    }
+    },
 });
 
 let emails = new Component({
@@ -60,12 +59,11 @@ let emails = new Component({
         let url = event.context.url;
         if (this.get('thread')) {
             if (event.context.body) {
-                event.context.body.show = !event.context.body.show;
-                this.set(event.keypath, event.context);
+                this.toggle(event.keypath + '.body.show');
             } else {
-                send(url, null, ((data) => {
+                send(url, null, (data) => {
                     this.set(event.keypath + '.body', data.emails.items[0].body);
-                }).bind(this));
+                });
             }
         } else {
             this.go(url);
@@ -73,6 +71,11 @@ let emails = new Component({
         return false;
     }
 });
+emails.on('details', function(event) {
+    this.toggle(event.keypath + '.details');
+    return false;
+});
+
 let sidebar = new Component({
     el: '.sidebar',
     template: require('./sidebar.mustache'),
@@ -82,6 +85,7 @@ let sidebar = new Component({
         this.fetch();
     }
 });
+
 let compose = new Component({
     // el: '.compose.body',
     template: require('./compose.mustache'),
@@ -91,6 +95,7 @@ let compose = new Component({
         this.fetch();
     }
 });
+
 let views = {
     emails: emails,
     sidebar: sidebar,
