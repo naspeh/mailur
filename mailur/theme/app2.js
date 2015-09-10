@@ -7,7 +7,7 @@ if (conf.use_ws) {
 }
 
 let history = createHistory();
-history.listen(function(location) {
+history.listen((location) => {
     let path = location.pathname + location.search;
     console.log(path);
     send(path, null, function(data) {
@@ -34,7 +34,7 @@ let Component = Ractive.extend({
     },
     fetch() {
         let self = this;
-        send(this.url, null, function(data) {
+        send(this.url, null, (data) => {
             self.set(data);
         });
     }
@@ -63,7 +63,7 @@ let emails = new Component({
                 event.context.body.show = !event.context.body.show;
                 this.set(event.keypath, event.context);
             } else {
-                send(url, null, (function(data) {
+                send(url, null, ((data) => {
                     this.set(event.keypath + '.body', data.emails.items[0].body);
                 }).bind(this));
             }
@@ -100,13 +100,13 @@ let views = {
 /* Related functions */
 function connect() {
     ws = new WebSocket(conf.host_ws);
-    ws.onopen = function() {
+    ws.onopen = () => {
         console.log('ws opened');
     };
-    ws.onerror = function(error) {
+    ws.onerror = (error) => {
         console.log('ws error', error);
     };
-    ws.onmessage = function(e) {
+    ws.onmessage = (e) => {
         let data = JSON.parse(e.data);
         if (data.uid) {
             console.log('response for ' + data.uid);
@@ -121,7 +121,7 @@ function connect() {
             history.replaceState({}, location.pathname + location.search);
         }
     };
-    ws.onclose = function(event) {
+    ws.onclose = (event) => {
         ws = null;
         console.log('ws closed', event);
         setTimeout(connect, 10000);
@@ -132,7 +132,7 @@ function guid() {
     var d = new Date().getTime();
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
         /[xy]/g,
-        function(c) {
+        (c) => {
             var r = (d + Math.random() * 16) % 16 | 0;
             d = Math.floor(d / 16);
             return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
@@ -154,6 +154,9 @@ function send(url, data, callback) {
             credentials: 'same-origin',
             method: data ? 'POST': 'GET',
             body: data
-        }).then(r => r.json()).then(callback);
+        })
+            .then(r => r.json())
+            .then(callback)
+            .catch(ex => console.log(url, ex));
     }
 }
