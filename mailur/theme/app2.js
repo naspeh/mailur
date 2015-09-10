@@ -1,4 +1,4 @@
-import Ractive from 'ractive';
+import Ractive from 'ractive/ractive.runtime';
 import createHistory from 'history/lib/createBrowserHistory';
 
 let ws, handlers = {};
@@ -19,6 +19,8 @@ history.listen(function(location) {
     });
 });
 let Component = Ractive.extend({
+    twoway: false,
+    modifyArrays: false,
     go(url) {
         history.pushState({}, url.replace(location.origin, ''));
         return false;
@@ -40,7 +42,7 @@ let Component = Ractive.extend({
 
 let emails = new Component({
     el: '.emails.body',
-    template: '#emails',
+    template: require('./emails.mustache'),
     data: {},
     ongo(event) {
         let url = event.context.url;
@@ -61,7 +63,7 @@ let emails = new Component({
 });
 let sidebar = new Component({
     el: '.sidebar',
-    template: '#sidebar',
+    template: require('./sidebar.mustache'),
     data: {},
     oninit() {
         this.url = '/sidebar/';
@@ -70,7 +72,7 @@ let sidebar = new Component({
 });
 let compose = new Component({
     // el: '.compose.body',
-    template: '#compose',
+    template: require('./compose.mustache'),
     data: {},
     oninit() {
         this.url = '/compose/';

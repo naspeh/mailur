@@ -10,6 +10,7 @@
     "mousetrap": "1.5.3",
     "normalize.css": "3.0.3",
     "postcss-cli": "2.1.0",
+    "ractivate": "0.2.0",
     "ractive": "0.7.3",
     "taboverride": "git://github.com/wjbryant/taboverride.git#01b79331aa2a7fd401c14a533e516cd3526a4e99",
     "uglify-js": "2.4.24"
@@ -18,5 +19,20 @@
   "license": "GPL-2.0",
   "jshintConfig": {
     "esnext": true
+  },
+  "browserify": {
+    "transform": [
+      [
+        "babelify"
+      ],
+      [
+        "ractivate",
+        {
+          "extensions": [
+            ".mustache"
+          ]
+        }
+      ]
+    ]
   }
 }

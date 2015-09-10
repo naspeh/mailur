@@ -138,11 +138,7 @@ def render_base(env, body=None):
             'host_ws': env('host_ws'),
             'host_web': env('host_web'),
             'use_ws': env('ui_use_ws'),
-        }),
-        'templates': [
-            {'name': name, 'body': env.templates[name]}
-            for name in ['emails', 'sidebar', 'compose']
-        ]
+        })
     }
     return env.render('base', ctx)
 
