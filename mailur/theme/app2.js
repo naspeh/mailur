@@ -105,9 +105,8 @@ function connect() {
             }
         } else if (data.updated) {
             console.log(data);
-            send('/sidebar/', null, function(data) {
-                $('.labels').html($(data).find('.labels'));
-            });
+            sidebar.fetch();
+            history.replaceState({}, location.pathname + location.search);
         }
     };
     ws.onclose = function(event) {
