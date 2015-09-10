@@ -266,7 +266,9 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
     if clean:
         glabels_ = {ALIASES.get(l, l) for l in glabels}
         updated += clean_labels(env, glabels_, folder)
-    updated += process_tasks(env)
+
+    # Process saved task without notification
+    process_tasks(env)
 
     env.db.commit()
     notify(env, updated)

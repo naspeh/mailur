@@ -231,6 +231,7 @@ def ctx_emails(env, items, thread=False):
             'fr': ctx_person(env, i['fr'][0]),
             'to': [ctx_person(env, v) for v in i['to']],
             'cc': [ctx_person(env, v) for v in i['cc']],
+            'to_all': len(i['to'] + i['cc']),
             'labels': ctx_labels(env, i['labels'])
         }, **extra)
         last = i['created'] if not last or i['created'] > last else last
@@ -485,6 +486,7 @@ def emails(env, page):
         )
     )}
     ctx['header'] = ctx_header(env, subj, label and [label])
+    ctx['threads'] = True
     return ctx
 
 
@@ -594,6 +596,7 @@ def raw(env, id):
 
 
 @login_required
+@adapt_fmt()
 def mark(env):
     def name(value):
         if isinstance(value, str):

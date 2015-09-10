@@ -71,9 +71,26 @@ let emails = new Component({
         return false;
     }
 });
-emails.on('details', function(event) {
-    this.toggle(event.keypath + '.details');
-    return false;
+emails.on({
+    'details': function(event) {
+        this.toggle(event.keypath + '.details');
+        return false;
+    },
+    'pin': function(event) {
+        let email = event.context,
+            data = {action: '+', name: '\\Pinned', ids: [email.id]};
+
+        if (email.pinned) {
+            data.action = '-';
+            if (this.get('threads')) {
+                data.ids = [email.thrid];
+                data.thread = true;
+            }
+        }
+        this.toggle(event.keypath + '.pinned');
+        mark(data);
+        return false;
+    }
 });
 
 let sidebar = new Component({
@@ -103,6 +120,24 @@ let views = {
 };
 
 /* Related functions */
+function mark(params, callback) {
+    if (params.thread) {
+        params.last = emails.get('emails.last');
+    }
+
+    // if (!params.ids) {
+    //     if ($('.emails').hasClass('thread')) {
+    //         params.ids = [$('.email').first().data('thrid')];
+    //         params.thread = true;
+    //     } else {
+    //         var field = is_thread ? 'thrid' : 'id';
+    //         params.thread = field == 'thrid';
+    //         params.ids = getSelected(field);
+    //     }
+    // }
+    callback = callback || ((data) => {});
+    send('/mark/', params, callback);
+}
 function connect() {
     ws = new WebSocket(conf.host_ws);
     ws.onopen = () => {
@@ -158,7 +193,11 @@ function send(url, data, callback) {
         fetch(url, {
             credentials: 'same-origin',
             method: data ? 'POST': 'GET',
-            body: data
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: data && JSON.stringify(data)
         })
             .then(r => r.json())
             .then(callback)

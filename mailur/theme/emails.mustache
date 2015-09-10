@@ -38,7 +38,7 @@
         <li class="email-draft">Draft</li>
         {{/draft}}
         {{^draft}}
-        <li class="email-pin" title="Toggle Pin"></li>
+        <li class="email-pin" on-click="pin" title="Toggle Pin"></li>
         {{/draft}}
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
         <li class="email-pic" style="background-image:url({{fr.image}})"></li>
@@ -63,13 +63,15 @@
         <div class="email-details">
             <div class="email-actions">
                 <a href="#" on-click="details">Details</a>
-                {{#emails.length}}
+                {{#if to_all}}
                 <a href="{{links.replyall}}" on-click="go">Reply to all</a>
-                {{/emails.length}}
+                {{/if}}
                 <a href="{{links.reply}}" on-click="go">Reply</a>
-                <a href="{{links.forward}}" on-click="go">Reply</a>
+                <a href="{{links.forward}}" on-click="go">Forward</a>
+                {{#if emails.length > 1}}
                 <a href="{{links.body}}" on-click="go">Show this message</a>
                 <a href="#" on-click="extract">Extract new thread</a>
+                {{/if}}
                 <a href="#" on-click="delete">Delete this message</a>
                 <a href="{{links.raw}}" on-click="go">Show original</a>
             </div>
