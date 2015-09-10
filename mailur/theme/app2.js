@@ -44,6 +44,18 @@ let emails = new Component({
     el: '.emails.body',
     template: require('./emails.mustache'),
     data: {},
+    decorators: {
+        'quotes': (node) => {
+            let quotes = node.querySelectorAll('.email-quote-toggle');
+            for (let t of Array.from(quotes)) {
+                t.addEventListener('click', (event) => {
+                    let q = event.target.nextSibling;
+                    q.style.display = q.style.display == 'block' ? 'none' : 'block';
+                });
+            }
+            return {teardown: () => {}};
+        }
+    },
     ongo(event) {
         let url = event.context.url;
         if (this.get('thread')) {
