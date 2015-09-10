@@ -109,6 +109,8 @@ def get_parsed(env, data, msgid=None):
 
     def clean(key, value):
         if not value:
+            if key in ('to', 'fr', 'cc', 'bcc', 'reply_to', 'sender', 'refs'):
+                return []
             return value
         elif key in ('to', 'fr', 'cc', 'bcc', 'reply_to', 'sender'):
             return [format_addr(v) for v in value]

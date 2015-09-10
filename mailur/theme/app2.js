@@ -19,17 +19,18 @@ history.listen(function(location) {
     });
 });
 let Component = Ractive.extend({
-    go: function(url) {
+    go(url) {
         history.pushState({}, url.replace(location.origin, ''));
         return false;
     },
-    onrender: function() {
-        this.on('go', function(event) {
-            this.go(event.context.url || event.node.href);
-            return false;
-        });
+    ongo(event) {
+        this.go(event.context.url || event.node.href);
+        return false;
     },
-    fetch: function() {
+    onrender() {
+        this.on('go', this.ongo);
+    },
+    fetch() {
         let self = this;
         send(this.url, null, function(data) {
             self.set(data);
@@ -40,22 +41,38 @@ let Component = Ractive.extend({
 let emails = new Component({
     el: '.emails.body',
     template: '#emails',
-    data: {}
+    data: {},
+    ongo(event) {
+        let url = event.context.url;
+        if (this.get('thread')) {
+            if (event.context.body) {
+                event.context.body.show = !event.context.body.show;
+                this.set(event.keypath, event.context);
+            } else {
+                send(url, null, (function(data) {
+                    this.set(event.keypath + '.body', data.emails.items[0].body);
+                }).bind(this));
+            }
+        } else {
+            this.go(url);
+        }
+        return false;
+    }
 });
 let sidebar = new Component({
     el: '.sidebar',
     template: '#sidebar',
     data: {},
-    oninit: function() {
+    oninit() {
         this.url = '/sidebar/';
         this.fetch();
     }
 });
 let compose = new Component({
-    el: '.compose.body',
+    // el: '.compose.body',
     template: '#compose',
     data: {},
-    oninit: function() {
+    oninit() {
         this.url = '/compose/';
         this.fetch();
     }
@@ -111,6 +128,7 @@ function guid() {
 }
 function send(url, data, callback) {
     url += (url.indexOf('?') === -1 ? '?' : '&') + 'fmt=json';
+    console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web + url;
         var resp = {url: url, payload: data, uid: guid()};

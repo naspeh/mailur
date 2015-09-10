@@ -24,24 +24,14 @@
 </div>
 {{/header}}
 {{#emails}}
-<ul class="emails {{emails_class}}" data-last="{{last}}">
+<ul class="emails {{#thread}}thread{{/thread}}" data-last="{{last}}">
 {{#items}}
 <li class="
         email
-        {{#body}} email-show email-showed{{/body}}
+        {{#body.show}} email-show email-showed{{/body.show}}
         {{#unread}} email-unread{{/unread}}
         {{#pinned}} email-pinned{{/pinned}}
     "
-    id="{{domid}}"
-    data-id="{{id}}"
-    data-thrid="{{thrid}}"
-    data-labels="{{#labels}}{{names_json}}{{/labels}}"
-    data-hash="{{hash}}"
-    {{#links}}
-    {{#href}}{{#name}}
-    data-{{name}}-url="{{href}}"
-    {{/name}}{{/href}}
-    {{/links}}
 >
     <ul class="email-line">
         {{#draft}}
@@ -51,23 +41,25 @@
         <li class="email-pin" title="Toggle Pin"></li>
         {{/draft}}
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
-        <li class="email-pic email-info" style="background-image:url({{fr.image}})"></li>
-        <li class="email-from email-info" title="{{fr.full}}">{{fr.short}}</li>
-        {{#labels}}
+        <li class="email-pic" style="background-image:url({{fr.image}})"></li>
+        <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>
+        {{#.labels}}
         <li class="email-labels">
             {{#items}}<a href="{{url}}" on-click="go">{{name}}</a>&nbsp;{{/items}}
         </li>
-        {{/labels}}
-        {{#count}}<li class="email-count email-info">{{count}}</li>{{/count}}
-        <li class="email-subj email-info{{#subj_changed}} email-subj-changed{{/subj_changed}}">
-            <a href="#">{{subj_human}}</a>
+        {{/.labels}}
+        <li class="email-info" on-click="go">
+            {{#count}}<span class="email-count">{{count}}</span>{{/count}}
+            <a href="{{url}}" class="email-subj {{#subj_changed}} email-subj-changed{{/subj_changed}}">
+                {{subj_human}}
+            </a>
+        <span class="email-preview">{{preview}}</span>
+        <span class="email-expander">&nbsp;</span>
+        <span class="email-time" title="{{time}}">{{time_human}}</span>
         </li>
-        <li class="email-preview email-info">{{preview}}</li>
-        <li class="email-expander email-info">&nbsp;</li>
-        <li class="email-time" title="{{time}}">{{time_human}}</li>
     </ul>
     <div class="email-body">
-        {{#body}}
+        {{#body}}{{#show}}
         <div class="email-details">
             <div class="email-actions">
             {{#links}}
@@ -76,6 +68,7 @@
                 </a>
             {{/links}}
             </div>
+            {{#details}}
             <div class="email-extra">
                 <img  src="{{fr.image}}">
                 <ul>
@@ -85,6 +78,7 @@
                     <li>Cc: {{#cc}}<a href="{{url}}" title="Filter by person">{{full}}</a>{{/cc}}</li>
                 </ul>
             </div>
+            {{/details}}
         </div>
         <div class="email-text">{{&text}}</div>
         {{#attachments}}
@@ -96,7 +90,7 @@
             </ul>
         </div>
         {{/attachments}}
-        {{/body}}
+        {{/show}}{{/body}}
         {{^body}}
         <div class="email-text">
             <b>Loading...</b>

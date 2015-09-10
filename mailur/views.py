@@ -210,14 +210,17 @@ def sidebar(env):
     return ctx
 
 
-def ctx_emails(env, items, domid='id'):
+def ctx_emails(env, items, thread=False):
     emails, last = [], None
     for i in items:
         extra = i.get('_extra', {})
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
-            'domid': i[domid],
+            'url': (
+                env.url_for('body', id=i['id']) if thread else
+                env.url_for('thread', id=i['thrid'])
+            ),
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
@@ -225,13 +228,13 @@ def ctx_emails(env, items, domid='id'):
             'pinned': '\\Pinned' in i['labels'],
             'unread': '\\Unread' in i['labels'],
             'draft': '\\Draft' in i['labels'],
-            'links': ctx_links(env, i['id'], i['thrid']),
+            'links': ctx_links(env, i['id'], i['thrid'], i['to'] + i['cc']),
             'time': f.format_dt(env, i['time']),
             'time_human': f.humanize_dt(env, i['time']),
             'created': str(i['created']),
             'fr': ctx_person(env, i['fr'][0]),
-            'to': [ctx_person(env, v) for v in i['to'] or []],
-            'cc': [ctx_person(env, v) for v in i['cc'] or []],
+            'to': [ctx_person(env, v) for v in i['to']],
+            'cc': [ctx_person(env, v) for v in i['cc']],
             'labels': ctx_labels(env, i['labels'])
         }, **extra)
         last = i['created'] if not last or i['created'] > last else last
@@ -243,22 +246,19 @@ def ctx_emails(env, items, domid='id'):
         'length': len(emails),
         'last': str(last)
     }
-    return {
-        'emails': emails,
-        'emails_class': 'emails-byid' if domid == 'id' else ''
-    }
+    return {'emails': emails, 'thread': thread}
 
 
-def ctx_links(env, id, thrid=None):
+def ctx_links(env, id, thrid=None, to=None):
     reply_url = env.url_for('compose', {'id': id})
     links = [
         {'title': 'Details', 'name': 'details'},
-        {'title': 'Reply', 'name': 'reply', 'href': reply_url},
         {
             'name': 'replyall',
             'title': 'Reply to all',
             'href': reply_url + '&target=all'
-        },
+        } if len(to) > 1 else None,
+        {'title': 'Reply', 'name': 'reply', 'href': reply_url},
         {
             'name': 'forward',
             'title': 'Forward',
@@ -288,7 +288,7 @@ def ctx_links(env, id, thrid=None):
             'href': env.url_for('raw', id=id)
         },
     ]
-    return links
+    return [l for l in links if l]
 
 
 def ctx_person(env, addr):
@@ -371,7 +371,8 @@ def ctx_body(env, msg, msgs, show=False):
     attachments = bool(attachments) and {'items': attachments}
     return {
         'text': f.humanize_html(msg['html'], msgs),
-        'attachments': attachments
+        'attachments': attachments,
+        'show': True
     }
 
 
@@ -380,7 +381,7 @@ def ctx_quote(env, msg, forward=False):
         'subj': msg['subj'],
         'html': msg['html'],
         'fr': ', '.join(msg['fr']),
-        'to': ', '.join(msg['to'] or [] + msg['cc'] or []),
+        'to': ', '.join(msg['to'] + msg['cc']),
         'time': msg['time'],
         'type': 'Forwarded' if forward else 'Original'
     })
@@ -413,7 +414,7 @@ def thread(env, id):
             yield msg
             msgs.append(msg)
 
-    ctx = ctx_emails(env, emails())
+    ctx = ctx_emails(env, emails(), True)
     if ctx['emails']:
         emails = ctx['emails']['items']
         subj = f.humanize_subj(emails[0]['subj'])
@@ -423,7 +424,6 @@ def thread(env, id):
         last['body'] = ctx_body(env, msgs[-1], parents, show=True)
 
         ctx['header'] = ctx_header(env, subj, labels)
-        ctx['emails_class'] = ctx['emails_class'] + ' thread'
     return ctx
 
 
@@ -507,7 +507,7 @@ def emails(env, page):
     sql = 'SELECT count(distinct thrid) FROM emails WHERE %s' % where
     count = env.sql(sql).fetchone()[0]
 
-    ctx = ctx_emails(env, emails(), domid='thrid')
+    ctx = ctx_emails(env, emails())
     ctx['count'] = count
     ctx['next'] = page['count'] < count and {'url': env.url(
         env.request.path,
@@ -558,7 +558,7 @@ def search(env):
     ''', {'ids': ids})
 
     subj = 'Search by %r' % q
-    ctx = ctx_emails(env, i)
+    ctx = ctx_emails(env, i, True)
     ctx['header'] = ctx_header(env, subj)
     return ctx
 
@@ -685,6 +685,9 @@ def new_thread(env):
 @login_required
 @adapt_fmt('compose')
 def compose(env):
+    if not env.storage.get('gmail_info'):
+        return env.abort(400)
+
     schema = v.parse({
         'id': str,
         'target': v.Nullable(v.Enum(('all', 'forward')))
@@ -710,7 +713,7 @@ def compose(env):
         if forward:
             to = []
         elif args.get('target') == 'all':
-            to += parent['cc'] or []
+            to += parent['cc']
 
         ctx.update({
             'fr': fr,
@@ -748,7 +751,7 @@ def compose(env):
         })
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
-        msg['refs'] = (parent.get('refs') or [])[-10:]
+        msg['refs'] = parent.get('refs')[-10:]
         msg['files'] = env.request.files.getlist('files')
         sendmail(env, msg)
         if parent.get('thrid'):

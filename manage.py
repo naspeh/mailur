@@ -411,7 +411,7 @@ def get_full(argv):
         # '   node_modules/ractive/ractive.js'
         # '   {0}app.js'
         # '   > {0}build/all.js &&'
-        'uglifyjs -v -o {0}build/all.min.js {0}build/all.js &&'
+        'uglifyjs -vcm -o {0}build/all.min.js {0}build/all.js &&'
         # theme version
         'cat mailur/theme/build/all.min.* | md5sum - | cut -c-32'
         '   > {0}build/version'
