@@ -1,6 +1,8 @@
 import Ractive from 'ractive/ractive.runtime';
 import createHistory from 'history/lib/createBrowserHistory';
 
+require('es6-promise').polyfill();
+require('whatwg-fetch');
 Ractive.DEBUG = conf.debug;
 
 let ws, ws_try = 0, handlers = {};

@@ -391,6 +391,9 @@ def get_full(argv):
             '   wjbryant/taboverride'
             '   ractive'
             '   history'
+            # polyfills
+            '   es6-promise'
+            '   whatwg-fetch'
         ))
 
     cmd('static').exe(lambda a: sh(
