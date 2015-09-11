@@ -420,7 +420,7 @@ def sync_marks(env, imap, map_uids):
         env.sql('DELETE FROM storage WHERE key = %s', [task_id])
 
 
-def notify(env, ids, skip):
+def notify(env, ids, skip=False):
     if not ids or skip:
         return
 

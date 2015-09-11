@@ -55,6 +55,7 @@ def get_conf(conf=None):
             'ui_per_page': v.Nullable(int, 100),
             'ui_greeting': v.Nullable(str, ''),
             'ui_use_ws': v.Nullable(bool, True),
+            'ui_ws_timeout': v.Nullable(int, 1000),
             'host_ws': v.Nullable(str, 'ws://localhost/async/'),
             'host_web': v.Nullable(str, 'http://localhost/'),
         })

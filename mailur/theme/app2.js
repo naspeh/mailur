@@ -1,7 +1,7 @@
 import Ractive from 'ractive/ractive.runtime';
 import createHistory from 'history/lib/createBrowserHistory';
 
-let ws, handlers = {};
+let ws, ws_try = 0, handlers = {};
 if (conf.use_ws) {
     connect();
 }
@@ -20,16 +20,11 @@ history.listen((location) => {
 let Component = Ractive.extend({
     twoway: false,
     modifyArrays: false,
-    go(url) {
-        history.pushState({}, url.replace(location.origin, ''));
-        return false;
-    },
-    ongo(event) {
-        this.go(event.context.url || event.node.href);
-        return false;
-    },
     onrender() {
-        this.on('go', this.ongo);
+        this.on('go', (event) => {
+            go(event.context.url || event.node.href);
+            return false;
+        });
     },
     fetch() {
         let self = this;
@@ -54,8 +49,10 @@ let emails = new Component({
             }
             return {teardown: () => {}};
         }
-    },
-    ongo(event) {
+    }
+});
+emails.on({
+    'get-or-go': function(event) {
         let url = event.context.url;
         if (this.get('thread')) {
             if (event.context.body) {
@@ -66,12 +63,10 @@ let emails = new Component({
                 });
             }
         } else {
-            this.go(url);
+            go(url);
         }
         return false;
-    }
-});
-emails.on({
+    },
     'details': function(event) {
         this.toggle(event.keypath + '.details');
         return false;
@@ -120,6 +115,12 @@ let views = {
 };
 
 /* Related functions */
+function go(url) {
+    return history.pushState({}, url.replace(location.origin, ''));
+}
+function reload() {
+    return history.replaceState({}, location.pathname + location.search);
+}
 function mark(params, callback) {
     if (params.thread) {
         params.last = emails.get('emails.last');
@@ -142,6 +143,7 @@ function connect() {
     ws = new WebSocket(conf.host_ws);
     ws.onopen = () => {
         console.log('ws opened');
+        ws_try = 0;
     };
     ws.onerror = (error) => {
         console.log('ws error', error);
@@ -158,13 +160,16 @@ function connect() {
         } else if (data.updated) {
             console.log(data);
             sidebar.fetch();
-            history.replaceState({}, location.pathname + location.search);
+            if (emails.get('threads')) {
+                reload();
+            }
         }
     };
     ws.onclose = (event) => {
         ws = null;
         console.log('ws closed', event);
-        setTimeout(connect, 10000);
+        setTimeout(connect, conf.ws_timeout * Math.pow(2, ws_try));
+        ws_try++;
     };
 }
 // Ref: http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -183,11 +188,11 @@ function send(url, data, callback) {
     url += (url.indexOf('?') === -1 ? '?' : '&') + 'fmt=json';
     console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
-        url = conf.host_web + url;
-        var resp = {url: url, payload: data, uid: guid()};
-        ws.send(JSON.stringify(resp));
+        url = conf.host_web.replace(/\/$/, '') + url;
+        data = {url: url, payload: data, uid: guid()};
+        ws.send(JSON.stringify(data));
         if (callback) {
-            handlers[resp.uid] = callback;
+            handlers[data.uid] = callback;
         }
     } else {
         fetch(url, {

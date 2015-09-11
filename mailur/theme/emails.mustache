@@ -48,7 +48,7 @@
             {{#items}}<a href="{{url}}" on-click="go">{{name}}</a>&nbsp;{{/items}}
         </li>
         {{/.labels}}
-        <li class="email-info" on-click="go">
+        <li class="email-info" on-click="get-or-go">
             {{#count}}<span class="email-count">{{count}}</span>{{/count}}
             <a href="{{url}}" class="email-subj {{#subj_changed}} email-subj-changed{{/subj_changed}}">
                 {{subj_human}}
