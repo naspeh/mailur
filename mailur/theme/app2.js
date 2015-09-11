@@ -1,8 +1,10 @@
 import Ractive from 'ractive/ractive.runtime';
 import createHistory from 'history/lib/createBrowserHistory';
 
+Ractive.DEBUG = conf.debug;
+
 let ws, ws_try = 0, handlers = {};
-if (conf.use_ws) {
+if (conf.ws_enabled) {
     connect();
 }
 

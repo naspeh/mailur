@@ -129,17 +129,21 @@ def adapt_page():
 
 def render_base(env, body=None):
     name = 'all' if env('debug') else 'all.min'
+    conf = {
+        'debug': env('debug'),
+        'host_ws': env('host_ws'),
+        'host_web': env('host_web'),
+        'ga_id': env('ui_ga_id'),
+        'ws_enabled': env('ui_ws_enabled'),
+        'ws_timeout': env('ui_ws_timeout'),
+        'firebug': env('ui_firebug'),
+    }
     ctx = {
         'body': body,
         'cssfile': '/theme/build/%s.css?%s' % (name, env.theme_version),
         'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version),
-        'ga_id': env('ui_ga_id'),
-        'conf': json.dumps({
-            'host_ws': env('host_ws'),
-            'host_web': env('host_web'),
-            'use_ws': env('ui_use_ws'),
-            'ws_timeout': env('ui_ws_timeout')
-        })
+        'conf_json': json.dumps(conf),
+        'conf': conf
     }
     return env.render('base', ctx)
 

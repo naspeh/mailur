@@ -15,10 +15,20 @@
 <div class="sidebar"></div>
 <div class="emails body"></div>
 <div class="compose body"></div>
-<script>var conf= {{&conf}};</script>
+<script>var conf= {{&conf_json}};</script>
+{{#conf.firebug}}
+<script src="https://getfirebug.com/firebug-lite.js">
+{
+    overrideConsole: true,
+    startInNewWindow: false,
+    startOpened: true,
+    enableTrace: true
+}
+</script>
+{{/conf.firebug}}
 <script src="{{jsfile}}"></script>
 {{/body}}
-{{#ga_id}}
+{{#conf.ga_id}}
 <script>
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -28,6 +38,6 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 ga('create', '{{ga_id}}', 'auto');
 ga('send', 'pageview');
 </script>
-{{/ga_id}}
+{{/conf.ga_id}}
 </body>
 </html>
