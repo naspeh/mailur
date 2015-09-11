@@ -390,6 +390,7 @@ def get_full(argv):
             '   mousetrap'
             '   wjbryant/taboverride'
             '   ractive'
+            '   history'
         ))
 
     cmd('static').exe(lambda a: sh(
