@@ -185,10 +185,11 @@ def migrate(env, init=False):
         db.init(env)
     env.username = env.username  # reset db connection
 
-    env.sql('''
-    DROP TABLE tasks;
-    DROP SEQUENCE seq_tasks_id;
-    ''')
+    for col in ('to', 'fr', 'cc', 'bcc', 'reply_to', 'sender', 'refs'):
+        env.sql('''
+        UPDATE emails SET "{col}" = '{{}}' WHERE "{col}" IS NULL;
+        ALTER TABLE emails ALTER COLUMN "{col}" SET NOT NULL;
+        '''.format(col=col))
     env.db.commit()
 
 
