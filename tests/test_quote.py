@@ -1,12 +1,13 @@
 from lxml import etree
-from pytest import mark
+from pytest import mark, skip
 
 from . import open_file
 from mailur.filters import hide_quote
 
 
-@mark.parametrize('id', [1457489417718057053, 1456781505677497494])
+@mark.parametrize('id', [1457489417718057053])
 def test_thread_with_quotes(id):
+    skip('Need new ones')
     with open_file('files_quote', '%s.html' % id) as f:
         thread = etree.fromstring(f.read().decode())
 

@@ -15,6 +15,5 @@ def env():
             'google_id': '',
             'google_secret': '',
             'cookie_secret': 'secret',
-            'token': '',
             'path_attachments': '/tmp/attachments'
         })
