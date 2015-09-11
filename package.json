@@ -5,6 +5,7 @@
     "babelify": "6.3.0",
     "browserify": "11.0.1",
     "clean-css": "3.4.1",
+    "es6-promise": "3.0.2",
     "history": "1.8.5",
     "jshint": "2.8.0",
     "less": "2.5.1",
@@ -14,7 +15,8 @@
     "ractivate": "0.2.0",
     "ractive": "0.7.3",
     "taboverride": "git://github.com/wjbryant/taboverride.git#01b79331aa2a7fd401c14a533e516cd3526a4e99",
-    "uglify-js": "2.4.24"
+    "uglify-js": "2.4.24",
+    "whatwg-fetch": "0.9.0"
   },
   "repository": {},
   "license": "GPL-2.0",
