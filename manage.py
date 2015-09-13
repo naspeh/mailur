@@ -387,10 +387,10 @@ def get_full(argv):
             '   jshint'
             # js libs
             '   normalize.css'
-            '   mousetrap'
-            '   wjbryant/taboverride'
-            '   ractive'
             '   history'
+            '   mousetrap'
+            '   vue'
+            '   wjbryant/taboverride'
             # polyfills
             '   es6-promise'
             '   whatwg-fetch'

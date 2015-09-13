@@ -1,9 +1,9 @@
-import Ractive from 'ractive/ractive.runtime';
+import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
 
 require('es6-promise').polyfill();
 require('whatwg-fetch');
-Ractive.DEBUG = conf.debug;
+Vue.config.debug = conf.debug;
 
 let ws, ws_try = 0, handlers = {};
 if (conf.ws_enabled) {
@@ -17,31 +17,57 @@ history.listen((location) => {
         if (!data._name) {
             document.querySelector('.body').innerHTML = data;
         } else {
-            views[data._name].set(data);
+            views[data._name].$data = data;
         }
     });
 });
-let Component = Ractive.extend({
-    twoway: false,
-    modifyArrays: false,
-    onrender() {
-        this.on('go', (event) => {
-            go(event.context.url || event.node.href);
-            return false;
-        });
-    },
-    fetch() {
-        let self = this;
-        send(this.url, null, (data) => {
-            self.set(data);
-        });
-    },
+
+let Component = Vue.extend({
+    replace: false,
+    mixins: [{
+        methods: {
+            fetch() {
+                let self = this;
+                send(this.url, null, (data) => {
+                    self.set(data);
+                });
+            },
+            go(e, url) {
+                if(e) e.preventDefault();
+                url = url ? url : e.target.href;
+                go(url);
+            }
+        }
+        }
+    ]
 });
 
 let emails = new Component({
     el: '.emails.body',
-    template: require('./emails.mustache'),
+    template: require('./emails.html'),
     data: {},
+    methods: {
+        details: function(e) {
+            if(e) e.preventDefault();
+            let body = e.targetVM.$data.body;
+            body.details = !body.details;
+        },
+        getOrGo: function(url, ctx) {
+            if (this.$data.thread) {
+                if (ctx.body) {
+                    ctx.body.show = ctx.body.show;
+                } else {
+                    send(url, null, (data) => {
+                        ctx.body = data.emails.items[0].body;
+                    });
+                }
+            } else {
+                go(url);
+            }
+            return false;
+        },
+    }
+    /*
     decorators: {
         'quotes': (node) => {
             let quotes = node.querySelectorAll('.email-quote-toggle');
@@ -54,7 +80,9 @@ let emails = new Component({
             return {teardown: () => {}};
         }
     }
+    */
 });
+/*
 emails.on({
     'get-or-go': function(event) {
         let url = event.context.url;
@@ -111,11 +139,11 @@ let compose = new Component({
         this.fetch();
     }
 });
-
+*/
 let views = {
     emails: emails,
-    sidebar: sidebar,
-    compose: compose
+    // sidebar: sidebar,
+    // compose: compose
 };
 
 /* Related functions */
@@ -189,7 +217,6 @@ function guid() {
     return uuid;
 }
 function send(url, data, callback) {
-    url += (url.indexOf('?') === -1 ? '?' : '&') + 'fmt=json';
     console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web.replace(/\/$/, '') + url;
@@ -203,6 +230,7 @@ function send(url, data, callback) {
             credentials: 'same-origin',
             method: data ? 'POST': 'GET',
             headers: {
+                'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },

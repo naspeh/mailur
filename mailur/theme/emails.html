@@ -1,0 +1,85 @@
+<div v-if="header" class="header">
+    <h3>{{subj}}</h3>
+    <div class="email-labels-edit">
+        <button v-repeat="buttons" class="email-b-{{name}}" title="{{title}}"></button>
+        <div v-if="labels" class="email-labels-wrap">
+            <input v-repeat="labels"
+                class="email-labels-input"
+                data-items="{{items_json}}"
+                data-all="{{all_json}}"
+                data-base-url="{{base_url}}"
+            >
+            <button class="email-labels-ok"></button>
+            <button class="email-labels-cancel"></button>
+        </div>
+    </div>
+</div>
+<ul v-if="emails" v-class="emails: 1, thread: thread" data-last="{{last}}">
+<li v-repeat="emails.items" v-class="
+        email: 1,
+        email-show: body.show,
+        email-showed: body.show,
+        email-unread: unread,
+        email-pinned: pinned,
+    "
+>
+    <ul class="email-line">
+        <li v-if="draft" class="email-draft">Draft</li>
+        <li v-if="!draft" class="email-pin" on-click="pin" title="Toggle Pin"></li>
+        <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
+        <li class="email-pic" style="background-image:url({{fr.image}})"></li>
+        <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>
+        <li v-if="labels" class="email-labels">
+            <a v-repeat="labels.items" href="{{url}}" on-click="go">{{name}}&nbsp;</a>
+        </li>
+        <li class="email-info" v-on="click: getOrGo(url, $data)">
+            <span v-if="count" class="email-count">{{count}}</span>
+            <a href="{{url}}" v-class="email-subj: 1, email-subj-changed: subj_changed">
+                {{subj_human}}
+            </a>
+        <span class="email-preview">{{preview}}</span>
+        <span class="email-expander">&nbsp;</span>
+        <span class="email-time" title="{{time}}">{{time_human}}</span>
+        </li>
+    </ul>
+    <div class="email-body">
+        <div v-if="body.show" class="email-details">
+            <div class="email-actions">
+                <a href="#" v-on="click: details">Details</a>
+                <a v-if="to_all" href="{{links.replyall}}" v-on="click: go">Reply to all</a>
+                <a href="{{links.reply}}" v-on="click: go">Reply</a>
+                <a href="{{links.forward}}" v-on="click: go">Forward</a>
+                <template v-if="emails.length > 1"}}>
+                <a href="{{links.body}}" v-on="click: go">Show this message</a>
+                <a href="#" on-click="extract">Extract new thread</a>
+                </template>
+                <a href="#" on-click="delete">Delete this message</a>
+                <a href="{{links.raw}}" target="_blank">Show original</a>
+            </div>
+            <div class="email-extra" v-show="body.details">
+                <img  v-attr="src: fr.image">
+                <ul>
+                    <li>Subject: <a v-on="click: go" href="{{subj_url}}" title="Filter by subject">{{subj}}</a></li>
+                    <li>From: <a v-on="click: go" href="{{fr.url}}" title="Filter by person">{{fr.full}}</a></li>
+                    <li>To: <a v-repeat="to" v-on="click: go" href="{{url}}" title="Filter by person">{{full}}</a>&nbsp;</li>
+                    <li>Cc: <a v-repeat="cc" v-on="click: go" href="{{url}}" title="Filter by person">{{full}}</a>&nbsp;</li>
+                </ul>
+            </div>
+        </div>
+        <div class="email-text" v-html=>{{{body.text}}}</div>
+        <div v-if="attachments" class="email-attachments">
+            <ul>
+                <li v-repeat="attachments.items">
+                    <a class="email-f-{{maintype}}" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a>
+                </li>
+            </ul>
+        </div>
+        <div v-if="!body" class="email-text">
+            <b>Loading...</b>
+        </div>
+    </div>
+</li>
+<li v-if="next" class="emails-more">
+    <a v-on="click: go" href="{{next.url}}">Next page</a>
+</li>
+</ul>

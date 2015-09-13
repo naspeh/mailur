@@ -45,6 +45,7 @@ def wshandler(request):
             resp = yield from aiohttp.request(
                 'POST' if payload else 'GET',
                 data['url'],
+                headers={'X-Requested-With': 'XMLHttpRequest'},
                 data=payload,
                 cookies=request.cookies.items()
             )

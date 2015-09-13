@@ -226,6 +226,7 @@ def ctx_emails(env, items, thread=False):
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
             'preview': f.get_preview(i['text'], i['attachments']),
+            'body': False,
             'pinned': '\\Pinned' in i['labels'],
             'unread': '\\Unread' in i['labels'],
             'draft': '\\Draft' in i['labels'],
