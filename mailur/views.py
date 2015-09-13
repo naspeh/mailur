@@ -237,7 +237,7 @@ def ctx_emails(env, items, thread=False):
             'fr': ctx_person(env, i['fr'][0]),
             'to': [ctx_person(env, v) for v in i['to']],
             'cc': [ctx_person(env, v) for v in i['cc']],
-            'to_all': len(i['to'] + i['cc']),
+            'to_all': len(i['to'] + i['cc']) > 1,
             'labels': ctx_labels(env, i['labels'])
         }, **extra)
         last = i['created'] if not last or i['created'] > last else last
