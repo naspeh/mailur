@@ -24,6 +24,8 @@ history.listen((location) => {
 
 let Component = Vue.extend({
     replace: false,
+    proto: false,
+    silent: true,
     mixins: [{
         methods: {
             fetch() {
@@ -40,7 +42,6 @@ let Component = Vue.extend({
         },
     }]
 });
-
 let emails = new Component({
     el: '.emails.body',
     template: require('./emails.html'),
@@ -79,22 +80,14 @@ let emails = new Component({
             email.pinned = !email.pinned;
             mark(data);
             return false;
-        }
-    }
-    /*
-    decorators: {
-        'quotes': (node) => {
-            let quotes = node.querySelectorAll('.email-quote-toggle');
-            for (let t of Array.from(quotes)) {
-                t.addEventListener('click', (event) => {
-                    let q = event.target.nextSibling;
-                    q.style.display = q.style.display == 'block' ? 'none' : 'block';
-                });
+        },
+        quotes: function(e) {
+            if (e.target.className == 'email-quote-toggle') {
+                let q = e.target.nextSibling;
+                q.style.display = q.style.display == 'block' ? 'none' : 'block';
             }
-            return {teardown: () => {}};
         }
     }
-    */
 });
 let sidebar = new Component({
     replace: true,
@@ -106,31 +99,19 @@ let sidebar = new Component({
         this.fetch();
     }
 });
-/*
-let sidebar = new Component({
-    el: '.sidebar',
-    template: require('./sidebar.mustache'),
-    data: {},
-    oninit() {
-        this.url = '/sidebar/';
-        this.fetch();
-    }
-});
-
 let compose = new Component({
-    // el: '.compose.body',
-    template: require('./compose.mustache'),
+    el: '.compose.body',
+    template: require('./compose.html'),
     data: {},
-    oninit() {
+    created() {
         this.url = '/compose/';
         this.fetch();
     }
 });
-*/
 let views = {
     emails: emails,
-    // sidebar: sidebar,
-    // compose: compose
+    sidebar: sidebar,
+    compose: compose
 };
 
 /* Related functions */

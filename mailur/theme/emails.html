@@ -66,7 +66,9 @@
                 </ul>
             </div>
         </div>
-        <div class="email-text" v-html=>{{{body.text}}}</div>
+        <div class="email-text" v-on="click: quotes">
+            {{{body.text}}}
+        </div>
         <div v-if="attachments" class="email-attachments">
             <ul>
                 <li v-repeat="attachments.items">
