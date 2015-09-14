@@ -308,7 +308,7 @@ def ctx_all_labels(env):
     return ctx_labels(env, items)
 
 
-def ctx_header(env, subj, labels=None):
+def ctx_header(env, title, labels=None):
     labels = list(labels) if labels else []
     buttons = (
         ([] if '\\Inbox' not in labels else [{
@@ -327,7 +327,7 @@ def ctx_header(env, subj, labels=None):
     )
     labels = ctx_labels(env, labels)
     return {
-        'subj': subj,
+        'title': title,
         'buttons': buttons,
         'labels': {
             'items_json': labels['names_json'] if labels else '[]',
@@ -696,7 +696,7 @@ def compose(env):
             'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
             'quote': {'html': ctx_quote(env, parent, forward)},
-            'forward': forward
+            'forward': forward,
         })
 
     if env.request.method == 'POST':
@@ -733,6 +733,8 @@ def compose(env):
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
         return env.redirect_for('emails', {'in': '\\Sent'})
+
+    ctx['header'] = ctx_header(env, ctx.get('subj') or 'New message')
     return ctx
 
 

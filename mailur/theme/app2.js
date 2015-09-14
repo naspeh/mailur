@@ -4,28 +4,15 @@ import createHistory from 'history/lib/createBrowserHistory';
 require('es6-promise').polyfill();
 require('whatwg-fetch');
 Vue.config.debug = conf.debug;
+Vue.config.proto = false;
 
 let ws, ws_try = 0, handlers = {};
 if (conf.ws_enabled) {
     connect();
 }
 
-let history = createHistory();
-history.listen((location) => {
-    let path = location.pathname + location.search;
-    send(path, null, function(data) {
-        if (!data._name) {
-            document.querySelector('.body').innerHTML = data;
-        } else {
-            views[data._name].$data = data;
-        }
-    });
-});
-
 let Component = Vue.extend({
     replace: false,
-    proto: false,
-    silent: true,
     mixins: [{
         methods: {
             fetch() {
@@ -42,21 +29,39 @@ let Component = Vue.extend({
         },
     }]
 });
-let emails = new Component({
-    el: '.emails.body',
-    template: require('./emails.html'),
+let sidebar = new Component({
+    replace: true,
+    el: '.sidebar',
+    template: require('./sidebar.html'),
     data: {},
+    created() {
+        this.url = '/sidebar/';
+        this.fetch();
+    },
+    methods: {
+        submit: function(e) {
+            e.preventDefault();
+            go('/search/?q=' + this.$data.search_query);
+        }
+    }
+});
+let emails = (data) => {return new Component({
+    el: '.body',
+    template: require('./emails.html'),
+    data: data,
     methods: {
         details: function(e) {
             if(e) e.preventDefault();
             let body = e.targetVM.$data.body;
             body.details = !body.details;
         },
-        getOrGo: function(url, ctx) {
+        getOrGo: function(url, ctx, e) {
+            e.preventDefault();
             if (this.$data.thread) {
                 if (ctx.body) {
                     ctx.body.show = !ctx.body.show;
                 } else {
+                    ctx.body = {show: true};
                     send(url, null, (data) => {
                         ctx.body = data.emails.items[0].body;
                     });
@@ -88,39 +93,39 @@ let emails = new Component({
             }
         }
     }
-});
-let sidebar = new Component({
-    replace: true,
-    el: '.sidebar',
-    template: require('./sidebar.html'),
-    data: {},
-    created() {
-        this.url = '/sidebar/';
-        this.fetch();
-    },
-    methods: {
-        submit: function(e) {
-            e.preventDefault();
-            go('/search/?q=' + this.$data.search_query);
-        }
-    }
-});
-let compose = new Component({
-    el: '.compose.body',
+});};
+let compose = (data) => {return new Component({
+    el: '.body',
     template: require('./compose.html'),
-    data: {},
-    created() {
-        this.url = '/compose/';
-        this.fetch();
-    }
-});
+    data: data,
+});};
+
 let views = {
     emails: emails,
-    sidebar: sidebar,
     compose: compose
 };
+let view;
+let base_title = document.title;
+let history = createHistory();
+history.listen((location) => {
+    let path = location.pathname + location.search;
+    send(path, null, function(data) {
+        let current = views[data._name];
+        if (!view || view._name != data._name) {
+            view = current(data);
+        }
+        view.$data = data;
+        document.title = `${data.header.title} - ${base_title}`;
+    });
+});
+
 
 /* Related functions */
+function goToLabel(label) {
+    return () => {
+        go('/emails/?in=' + label);
+    };
+}
 function go(url) {
     return history.pushState({}, url.replace(location.origin, ''));
 }
