@@ -36,10 +36,9 @@ let Component = Vue.extend({
                 if(e) e.preventDefault();
                 url = url ? url : e.target.href;
                 go(url);
-            }
-        }
-        }
-    ]
+            },
+        },
+    }]
 });
 
 let emails = new Component({
@@ -191,7 +190,7 @@ function connect() {
             }
         } else if (data.updated) {
             console.log(data);
-            sidebar.fetch();
+            //sidebar.fetch();
             if (emails.get('threads')) {
                 reload();
             }

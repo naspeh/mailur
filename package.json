@@ -33,18 +33,5 @@
         "partialify"
       ]
     ]
-  },
-  "eslintConfig": {
-    "rules": {
-      "strict": 1
-    },
-    "ecmaFeatures": {
-      "modules": true
-    },
-    "env": {
-      "browser": true,
-      "node": true,
-      "es6": true
-    }
   }
 }
