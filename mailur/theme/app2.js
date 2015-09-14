@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
+import Mousetrap from 'mousetrap';
 
 require('es6-promise').polyfill();
 require('whatwg-fetch');
@@ -11,6 +12,70 @@ if (conf.ws_enabled) {
     connect();
 }
 
+/* Keyboard shortcuts */
+class HotKeys {
+    constructor(map) {
+        this.map = map;
+        for (let item of map) {
+            Mousetrap.bind(item[0], item[2].bind(this), 'keyup');
+        }
+    }
+}
+let hotkeys = new HotKeys([
+    [['s a', '* a'], 'Select all conversations',
+        () => $('.email .email-pick input', (el) => el.checked = true)
+    ],
+    [['s n', '* n'], 'Deselect all conversations',
+        () => $('.email .email-pick input', (el) => el.checked = false)
+    ],
+    [['s r', '* r'], 'Select read conversations',
+        () => $('.email:not(.email-unread) .email-pick input', (el) =>
+            el.checked = true
+        )
+    ],
+    [['s u', '* u'], 'Select unread conversations',
+        () => $('.email.email-unread .email-pick input', (el) =>
+            el.checked = true
+        )
+    ],
+    [['s p', '* s'], 'Select pinned conversations',
+        () => $('.email.email-pinned .email-pick input', (el) =>
+            el.checked = true
+        )
+    ],
+    [['s shift+p', '* t'], 'Select unpinned conversations',
+        () => $('.email:not(.email-pinned) .email-pick input', (el) =>
+            el.checked = true
+        )
+    ],
+    [['m !', '!'], 'Report as spam', () => mark({action: '+', name: '\\Spam'})],
+    [['m #', '#'] , 'Delete', () => mark({action: '+', name: '\\Trash'})],
+    [['m u', 'm shift+r'], 'Mark as unread',
+        () => mark({action: '+', name: '\\Unread'}, () => {})
+    ],
+    [['m r', 'm shift+u'], 'Mark as read',
+        () => mark({action: '-', name: '\\Unread'}, () => {})
+    ],
+    [['m i', 'm shift+a'], 'Move to Inbox',
+        () => mark({action: '+', name: '\\Inbox'})
+    ],
+    [['m a', 'm shift+i'], 'Move to Archive',
+        () => mark({action: '-', name: '\\Inbox'})
+    ],
+    [['m l'], 'Edit labels', () => $('.email-labels-edit input')[0].focus()],
+    [['r r'], 'Reply', () => go(getLastEmail().links.reply)],
+    [['r a'], 'Reply all', () => go(getLastEmail().links.replyall)],
+    [['c'], 'Compose', () => go('/compose/')],
+    [['g i'], 'Go to Inbox', () => goToLabel('\\Inbox')],
+    [['g d'], 'Go to Drafts', () => goToLabel('\\Drafts')],
+    [['g s'], 'Go to Sent messages', () => goToLabel('\\Sent')],
+    [['g u'], 'Go to Unread conversations', () => goToLabel('\\Unread')],
+    [['g p'], 'Go to Pinned conversations', () => goToLabel('\\Pinned')],
+    [['g a'], 'Go to All mail', () => goToLabel('\\All')],
+    [['g !'], 'Go to Spam', () => goToLabel('\\Spam')],
+    [['g #'], 'Go to Trash', () => goToLabel('\\Trash')],
+    [['?'], 'Toggle keyboard shortcut help', () => $('.help-toggle')[0].click()]
+]);
 let Component = Vue.extend({
     replace: false,
     mixins: [{
@@ -121,11 +186,22 @@ history.listen((location) => {
 
 
 /* Related functions */
-function goToLabel(label) {
-    return () => {
-        go('/emails/?in=' + label);
-    };
+function $(selector, callback) {
+    let elements = Array.from(document.querySelectorAll(selector));
+    if (callback) {
+        for (let el of elements) {
+            callback(el);
+        }
+    }
+    return elements;
 }
+function getLastEmail() {
+    if (view._name == 'emails') return emails.$data.slice(-1)[0];
+}
+function goToLabel(label) {
+    go('/emails/?in=' + label);
+}
+
 function go(url) {
     return history.pushState({}, url.replace(location.origin, ''));
 }
