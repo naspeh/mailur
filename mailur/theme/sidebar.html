@@ -1,3 +1,10 @@
+<div v-if="show_help" class="help">
+    <h3>
+        Keyboard shortcuts
+        <a v-on="click: closeHelp" class="help-close" title="Close">X</a>
+    </h3>
+    {{{help}}}
+</div>
 <div class="sidebar">
 <b>
     {{username}}
@@ -5,7 +12,7 @@
 </b>
 <nav>
     <a href="/logout/" class="logout" title="Logout"></a>
-    <a href="#" class="help-toggle" title="Keyboard shortcut help"></a>
+    <a href="#" v-on="click: showHelp" class="help-toggle" title="Keyboard shortcut help"></a>
     <a v-if="email" href="/compose/" v-on="click: go" class="compose-new">Compose</a>
 </nav>
 <template v-if="labels">

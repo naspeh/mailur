@@ -13,15 +13,7 @@ if (conf.ws_enabled) {
 }
 
 /* Keyboard shortcuts */
-class HotKeys {
-    constructor(map) {
-        this.map = map;
-        for (let item of map) {
-            Mousetrap.bind(item[0], item[2].bind(this), 'keyup');
-        }
-    }
-}
-let hotkeys = new HotKeys([
+let hotkeys = [
     [['s a', '* a'], 'Select all conversations',
         () => $('.email .email-pick input', (el) => el.checked = true)
     ],
@@ -50,6 +42,9 @@ let hotkeys = new HotKeys([
     ],
     [['m !', '!'], 'Report as spam', () => mark({action: '+', name: '\\Spam'})],
     [['m #', '#'] , 'Delete', () => mark({action: '+', name: '\\Trash'})],
+    // [['m p'], 'Mark as pinned',
+    //     () => mark({action: '+', name: '\\Pinned'})
+    // ],
     [['m u', 'm shift+r'], 'Mark as unread',
         () => mark({action: '+', name: '\\Unread'}, () => {})
     ],
@@ -74,17 +69,23 @@ let hotkeys = new HotKeys([
     [['g a'], 'Go to All mail', () => goToLabel('\\All')],
     [['g !'], 'Go to Spam', () => goToLabel('\\Spam')],
     [['g #'], 'Go to Trash', () => goToLabel('\\Trash')],
-    [['?'], 'Toggle keyboard shortcut help', () => $('.help-toggle')[0].click()]
-]);
+    [['?'], 'Toggle keyboard shortcut help', () => sidebar.toggleHelp()]
+];
 let Component = Vue.extend({
     replace: false,
     mixins: [{
         methods: {
-            fetch() {
+            _fetch() {
                 let self = this;
                 send(this.url, null, (data) => {
                     self.$data = data;
                 });
+            },
+            fetch() {
+                this._fetch();
+            },
+            name() {
+                return this.$data._name;
             },
             go(e, url) {
                 if(e) e.preventDefault();
@@ -92,7 +93,7 @@ let Component = Vue.extend({
                 go(url);
             },
         },
-    }]
+    }],
 });
 let sidebar = new Component({
     replace: true,
@@ -102,18 +103,39 @@ let sidebar = new Component({
     created() {
         this.url = '/sidebar/';
         this.fetch();
+        this.help = '';
+        for (let item of hotkeys) {
+            Mousetrap.bind(item[0], item[2].bind(this), 'keyup');
+            this.help += `<div><b>${item[0][0]}</b>: ${item[1]}</div>`;
+        }
     },
     methods: {
         submit: function(e) {
             e.preventDefault();
             go('/search/?q=' + this.$data.search_query);
-        }
+        },
+        toggleHelp: function(e, value) {
+            if(e) e.preventDefault();
+            value = value !== undefined ? value : !this.$data.show_help;
+            this.$data.$set('show_help', value);
+        },
+        closeHelp: function(e) {
+            this.toggleHelp(e, false);
+        },
+        showHelp: function(e) {
+            this.toggleHelp(e, true);
+        },
     }
 });
 let emails = (data) => {return new Component({
     el: '.body',
     template: require('./emails.html'),
     data: data,
+    created() {
+        for (let i of this.$data.emails.items) {
+            i.checked = false;
+        }
+    },
     methods: {
         details: function(e) {
             if(e) e.preventDefault();
@@ -176,7 +198,7 @@ history.listen((location) => {
     let path = location.pathname + location.search;
     send(path, null, function(data) {
         let current = views[data._name];
-        if (!view || view._name != data._name) {
+        if (!view || view.name() != data._name) {
             view = current(data);
         }
         view.$data = data;
@@ -196,12 +218,12 @@ function $(selector, callback) {
     return elements;
 }
 function getLastEmail() {
-    if (view._name == 'emails') return emails.$data.slice(-1)[0];
+    if (view.name() != 'emails') return;
+    return view.$data.slice(-1)[0];
 }
 function goToLabel(label) {
     go('/emails/?in=' + label);
 }
-
 function go(url) {
     return history.pushState({}, url.replace(location.origin, ''));
 }
@@ -209,20 +231,24 @@ function reload() {
     return history.replaceState({}, location.pathname + location.search);
 }
 function mark(params, callback) {
-    if (params.thread) {
-        params.last = emails.$data.emails.last;
-    }
+    if (view.name() != 'emails') return;
 
-    // if (!params.ids) {
-    //     if ($('.emails').hasClass('thread')) {
-    //         params.ids = [$('.email').first().data('thrid')];
-    //         params.thread = true;
-    //     } else {
-    //         var field = is_thread ? 'thrid' : 'id';
-    //         params.thread = field == 'thrid';
-    //         params.ids = getSelected(field);
-    //     }
-    // }
+    if (!params.ids) {
+        if (view.$data.thread) {
+            params.ids = [view.$data.emails.items[0].thrid];
+            params.thread = true;
+        } else {
+            var field =  view.$data.threads ? 'thrid' : 'id';
+            params.thread = field == 'thrid';
+            params.ids = [];
+            for (let i of view.$data.emails.items) {
+                if (i.checked) params.ids.push(i[field]);
+            }
+        }
+    }
+    if (params.thread) {
+        params.last = view.$data.emails.last;
+    }
     callback = callback || ((data) => {});
     send('/mark/', params, callback);
 }
@@ -247,9 +273,9 @@ function connect() {
         } else if (data.updated) {
             console.log(data);
             sidebar.fetch();
-            if (emails.$data.threads) {
-                reload();
-            }
+            let checked = $('.email-pick input:checked').length;
+            let threads = view.name() == 'emails' && view.$data.threads;
+            if (threads && !checked) reload();
         }
     };
     ws.onclose = (event) => {
