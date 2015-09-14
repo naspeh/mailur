@@ -1,9 +1,9 @@
 <div v-if="header" class="header">
-    <h3>{{subj}}</h3>
+    <h3>{{header.subj}}</h3>
     <div class="email-labels-edit">
-        <button v-repeat="buttons" class="email-b-{{name}}" title="{{title}}"></button>
-        <div v-if="labels" class="email-labels-wrap">
-            <input v-repeat="labels"
+        <button v-repeat="header.buttons" class="email-b-{{name}}" title="{{title}}"></button>
+        <div v-if="header.labels" class="email-labels-wrap">
+            <input v-repeat="header.labels"
                 class="email-labels-input"
                 data-items="{{items_json}}"
                 data-all="{{all_json}}"

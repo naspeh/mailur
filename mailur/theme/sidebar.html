@@ -9,8 +9,8 @@
     <a v-if="email" href="/compose/" v-on="click: go" class="compose-new">Compose</a>
 </nav>
 <template v-if="labels">
-<form class="search-form" action="/search/">
-    <input name="q" type="text" value="{{search_query}}">
+<form class="search-form" action="/search/" v-on="submit: submit">
+    <input type="text" v-model="search_query" value="{{search_query}}">
     <button type="submit" class="search"></button>
 </form>
 <ul class="labels">

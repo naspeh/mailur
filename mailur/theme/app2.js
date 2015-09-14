@@ -66,8 +66,8 @@ let emails = new Component({
             }
             return false;
         },
-        pin: function(event) {
-            let email = event.targetVM.$data,
+        pin: function(e) {
+            let email = e.targetVM.$data,
                 data = {action: '+', name: '\\Pinned', ids: [email.id]};
 
             if (email.pinned) {
@@ -97,6 +97,12 @@ let sidebar = new Component({
     created() {
         this.url = '/sidebar/';
         this.fetch();
+    },
+    methods: {
+        submit: function(e) {
+            e.preventDefault();
+            go('/search/?q=' + this.$data.search_query);
+        }
     }
 });
 let compose = new Component({
