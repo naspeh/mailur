@@ -3,19 +3,20 @@
   "dependencies": {
     "autoprefixer": "6.0.2",
     "babelify": "6.3.0",
-    "browserify": "11.0.1",
+    "browserify": "11.1.0",
     "clean-css": "3.4.1",
     "es6-promise": "3.0.2",
-    "history": "1.8.5",
+    "eslint": "1.4.1",
+    "history": "1.9.0",
     "jshint": "2.8.0",
     "less": "2.5.1",
     "mousetrap": "1.5.3",
     "normalize.css": "3.0.3",
+    "partialify": "3.1.5",
     "postcss-cli": "2.1.0",
-    "ractivate": "0.2.0",
-    "ractive": "0.7.3",
     "taboverride": "git://github.com/wjbryant/taboverride.git#01b79331aa2a7fd401c14a533e516cd3526a4e99",
     "uglify-js": "2.4.24",
+    "vue": "0.12.14",
     "whatwg-fetch": "0.9.0"
   },
   "repository": {},
@@ -28,7 +29,22 @@
       [
         "babelify"
       ],
-      ["partialify"]
+      [
+        "partialify"
+      ]
     ]
+  },
+  "eslintConfig": {
+    "rules": {
+      "strict": 1
+    },
+    "ecmaFeatures": {
+      "modules": true
+    },
+    "env": {
+      "browser": true,
+      "node": true,
+      "es6": true
+    }
   }
 }

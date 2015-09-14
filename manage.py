@@ -382,9 +382,11 @@ def get_full(argv):
             '   clean-css'
             '   browserify'
             '   babelify'
-            '   ractivate'
+            '   partialify'
             '   uglify-js'
+            # js linting
             '   jshint'
+            '   eslint'
             # js libs
             '   normalize.css'
             '   history'
