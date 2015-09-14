@@ -15,7 +15,7 @@
     </div>
 </div>
 <ul v-if="emails" v-class="emails: 1, thread: thread" data-last="{{last}}">
-<li v-repeat="emails.items" v-class="
+<li v-repeat="emails.items" track-by="hash" v-class="
         email: 1,
         email-show: body.show,
         email-showed: body.show,
@@ -25,7 +25,7 @@
 >
     <ul class="email-line">
         <li v-if="draft" class="email-draft">Draft</li>
-        <li v-if="!draft" class="email-pin" on-click="pin" title="Toggle Pin"></li>
+        <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
         <li class="email-pick"><input type="checkbox" class="mousetrap"></li>
         <li class="email-pic" style="background-image:url({{fr.image}})"></li>
         <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>

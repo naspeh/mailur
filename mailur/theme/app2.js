@@ -29,7 +29,7 @@ let Component = Vue.extend({
             fetch() {
                 let self = this;
                 send(this.url, null, (data) => {
-                    self.set(data);
+                    self.$data = data;
                 });
             },
             go(e, url) {
@@ -54,7 +54,7 @@ let emails = new Component({
         getOrGo: function(url, ctx) {
             if (this.$data.thread) {
                 if (ctx.body) {
-                    ctx.body.show = ctx.body.show;
+                    ctx.body.show = !ctx.body.show;
                 } else {
                     send(url, null, (data) => {
                         ctx.body = data.emails.items[0].body;
@@ -65,6 +65,21 @@ let emails = new Component({
             }
             return false;
         },
+        pin: function(event) {
+            let email = event.targetVM.$data,
+                data = {action: '+', name: '\\Pinned', ids: [email.id]};
+
+            if (email.pinned) {
+                data.action = '-';
+                if (this.$data.threads) {
+                    data.ids = [email.thrid];
+                    data.thread = true;
+                }
+            }
+            email.pinned = !email.pinned;
+            mark(data);
+            return false;
+        }
     }
     /*
     decorators: {
@@ -81,44 +96,17 @@ let emails = new Component({
     }
     */
 });
-/*
-emails.on({
-    'get-or-go': function(event) {
-        let url = event.context.url;
-        if (this.get('thread')) {
-            if (event.context.body) {
-                this.toggle(event.keypath + '.body.show');
-            } else {
-                send(url, null, (data) => {
-                    this.set(event.keypath + '.body', data.emails.items[0].body);
-                });
-            }
-        } else {
-            go(url);
-        }
-        return false;
-    },
-    'details': function(event) {
-        this.toggle(event.keypath + '.details');
-        return false;
-    },
-    'pin': function(event) {
-        let email = event.context,
-            data = {action: '+', name: '\\Pinned', ids: [email.id]};
-
-        if (email.pinned) {
-            data.action = '-';
-            if (this.get('threads')) {
-                data.ids = [email.thrid];
-                data.thread = true;
-            }
-        }
-        this.toggle(event.keypath + '.pinned');
-        mark(data);
-        return false;
+let sidebar = new Component({
+    replace: true,
+    el: '.sidebar',
+    template: require('./sidebar.html'),
+    data: {},
+    created() {
+        this.url = '/sidebar/';
+        this.fetch();
     }
 });
-
+/*
 let sidebar = new Component({
     el: '.sidebar',
     template: require('./sidebar.mustache'),
@@ -154,7 +142,7 @@ function reload() {
 }
 function mark(params, callback) {
     if (params.thread) {
-        params.last = emails.get('emails.last');
+        params.last = emails.$data.emails.last;
     }
 
     // if (!params.ids) {
@@ -190,8 +178,8 @@ function connect() {
             }
         } else if (data.updated) {
             console.log(data);
-            //sidebar.fetch();
-            if (emails.get('threads')) {
+            sidebar.fetch();
+            if (emails.$data.threads) {
                 reload();
             }
         }
