@@ -1,7 +1,16 @@
 <div class="header">
     <h3>{{header.title}}</h3>
-    <div class="email-labels-edit">
-        <button v-repeat="header.buttons" class="email-b-{{name}}" title="{{title}}"></button>
+    <div v-show="labels_edit" class="labels-edit">
+        <template v-repeat="header.buttons">
+        <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
+        </template>
+        <div v-if="header.labels" class="labels">
+            <span class="labels-item" v-repeat="header.labels.items">
+                <a v-on="click: go" href="{{url}}">{{name}}</a>
+                <a  v-on="click: mark('-', name)" class="labels-del" href="#" title="Delete">X</a>
+            </span>
+        </div>
+        <!--
         <div v-if="header.labels" class="email-labels-wrap">
             <input
                 class="email-labels-input"
@@ -12,13 +21,13 @@
             <button class="email-labels-ok"></button>
             <button class="email-labels-cancel"></button>
         </div>
+        -->
     </div>
 </div>
 <ul v-if="emails" v-class="emails: 1, thread: thread" data-last="{{last}}">
 <li v-repeat="emails.items" track-by="hash" v-class="
         email: 1,
         email-show: body.show,
-        email-showed: body.show,
         email-unread: unread,
         email-pinned: pinned,
     "
@@ -26,7 +35,7 @@
     <ul class="email-line">
         <li v-if="draft" class="email-draft">Draft</li>
         <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
-        <li class="email-pick"><input v-model="checked" type="checkbox" class="mousetrap"></li>
+        <li class="email-pick"><input v-on="change: pick" checked="{{checked($data)}}" type="checkbox" class="mousetrap"></li>
         <li class="email-pic" style="background-image:url({{fr.image}})"></li>
         <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">

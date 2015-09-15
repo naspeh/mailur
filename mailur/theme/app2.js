@@ -73,19 +73,29 @@ let hotkeys = [
 ];
 let Component = Vue.extend({
     replace: false,
+    permanents: new Set(),
     mixins: [{
         methods: {
-            _fetch() {
-                let self = this;
-                send(this.url, null, (data) => {
-                    self.$data = data;
-                });
+            permanent(key, value) {
+                key = key;
+                this.$options.permanents.add(key);
+                if (this._data[key] === undefined) {
+                    this._data[key] = value;
+                }
+                return this._data[key];
             },
-            fetch() {
-                this._fetch();
+            setData(data) {
+                for (let key of this.$options.permanents) {
+                    data[key] = this.$data[key];
+                }
+                this.$data = data;
             },
             name() {
                 return this.$data._name;
+            },
+            fetch() {
+                let self = this;
+                send(this.url, null, (data) => self.setData(data));
             },
             go(e, url) {
                 if(e) e.preventDefault();
@@ -99,7 +109,6 @@ let sidebar = new Component({
     replace: true,
     el: '.sidebar',
     template: require('./sidebar.html'),
-    data: {},
     created() {
         this.url = '/sidebar/';
         this.fetch();
@@ -110,33 +119,50 @@ let sidebar = new Component({
         }
     },
     methods: {
-        submit: function(e) {
+        submit(e) {
             e.preventDefault();
             go('/search/?q=' + this.$data.search_query);
         },
-        toggleHelp: function(e, value) {
+        toggleHelp(e, value) {
             if(e) e.preventDefault();
             value = value !== undefined ? value : !this.$data.show_help;
             this.$data.$set('show_help', value);
         },
-        closeHelp: function(e) {
+        closeHelp(e) {
             this.toggleHelp(e, false);
         },
-        showHelp: function(e) {
+        showHelp(e) {
             this.toggleHelp(e, true);
         },
     }
 });
-let emails = (data) => {return new Component({
-    el: '.body',
+let Emails = Component.extend({
     template: require('./emails.html'),
-    data: data,
-    created() {
-        for (let i of this.$data.emails.items) {
-            i.checked = false;
+    computed: {
+        checked_list() {
+            return this.permanent('checked_list', new Set());
+        },
+        labels_edit() {
+            let checked = this.checked_list && this.checked_list.size;
+            return checked || this.thread ? true : false;
         }
     },
     methods: {
+        getId($data) {
+            return $data[this.$data.threads ? 'thrid' : 'id'];
+        },
+        checked($data) {
+            return this.checked_list.has(this.getId($data));
+        },
+        pick(e) {
+            var field =  this.$data.threads ? 'thrid' : 'id';
+            let id = this.getId(e.targetVM.$data);
+            if (e.target.checked){
+                this.checked_list.add(id);
+            } else {
+                this.checked_list.delete(id);
+            }
+        },
         details: function(e) {
             if(e) e.preventDefault();
             let body = e.targetVM.$data.body;
@@ -178,18 +204,19 @@ let emails = (data) => {return new Component({
                 let q = e.target.nextSibling;
                 q.style.display = q.style.display == 'block' ? 'none' : 'block';
             }
+        },
+        mark(action, label) {
+            mark({action: action, name: label});
         }
-    }
-});};
-let compose = (data) => {return new Component({
-    el: '.body',
+    },
+});
+let Compose = Component.extend({
     template: require('./compose.html'),
-    data: data,
-});};
+});
 
 let views = {
-    emails: emails,
-    compose: compose
+    emails: Emails,
+    compose: Compose
 };
 let view;
 let base_title = document.title;
@@ -199,9 +226,10 @@ history.listen((location) => {
     send(path, null, function(data) {
         let current = views[data._name];
         if (!view || view.name() != data._name) {
-            view = current(data);
+            view = new current({data: data, el: '.body'});
+        } else {
+            view.setData(data);
         }
-        view.$data = data;
         document.title = `${data.header.title} - ${base_title}`;
     });
 });
@@ -238,18 +266,14 @@ function mark(params, callback) {
             params.ids = [view.$data.emails.items[0].thrid];
             params.thread = true;
         } else {
-            var field =  view.$data.threads ? 'thrid' : 'id';
-            params.thread = field == 'thrid';
-            params.ids = [];
-            for (let i of view.$data.emails.items) {
-                if (i.checked) params.ids.push(i[field]);
-            }
+            params.thread = view.$data.threads;
+            params.ids = Array.from(view.checked_list);
         }
     }
     if (params.thread) {
         params.last = view.$data.emails.last;
     }
-    callback = callback || ((data) => {});
+    callback = callback || ((data) => reload());
     send('/mark/', params, callback);
 }
 function connect() {
@@ -273,9 +297,7 @@ function connect() {
         } else if (data.updated) {
             console.log(data);
             sidebar.fetch();
-            let checked = $('.email-pick input:checked').length;
-            let threads = view.name() == 'emails' && view.$data.threads;
-            if (threads && !checked) reload();
+            if (view.name() == 'emails' && view.$data.threads) reload();
         }
     };
     ws.onclose = (event) => {

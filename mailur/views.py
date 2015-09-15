@@ -330,6 +330,7 @@ def ctx_header(env, title, labels=None):
         'title': title,
         'buttons': buttons,
         'labels': {
+            'items': labels['items'] if labels else [],
             'items_json': labels['names_json'] if labels else '[]',
             'all_json': ctx_all_labels(env)['items_json'],
             'base_url': env.url_for('emails', {'in': ''})
