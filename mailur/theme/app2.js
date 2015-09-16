@@ -163,12 +163,12 @@ let Emails = Component.extend({
                 this.checked_list.delete(id);
             }
         },
-        details: function(e) {
+        details(e) {
             if(e) e.preventDefault();
             let body = e.targetVM.$data.body;
             body.details = !body.details;
         },
-        getOrGo: function(url, ctx, e) {
+        getOrGo(url, ctx, e) {
             e.preventDefault();
             if (this.$data.thread) {
                 if (ctx.body) {
@@ -184,7 +184,7 @@ let Emails = Component.extend({
             }
             return false;
         },
-        pin: function(e) {
+        pin(e) {
             let email = e.targetVM.$data,
                 data = {action: '+', name: '\\Pinned', ids: [email.id]};
 
@@ -199,7 +199,7 @@ let Emails = Component.extend({
             mark(data);
             return false;
         },
-        quotes: function(e) {
+        quotes(e) {
             if (e.target.className == 'email-quote-toggle') {
                 let q = e.target.nextSibling;
                 q.style.display = q.style.display == 'block' ? 'none' : 'block';
@@ -223,7 +223,7 @@ let base_title = document.title;
 let history = createHistory();
 history.listen((location) => {
     let path = location.pathname + location.search;
-    send(path, null, function(data) {
+    send(path, null, (data) => {
         let current = views[data._name];
         if (!view || view.name() != data._name) {
             view = new current({data: data, el: '.body'});
