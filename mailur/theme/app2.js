@@ -1,10 +1,8 @@
-import union from 'lodash/array/union';
+import * as utils from './app_utils';
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
 import Mousetrap from 'mousetrap';
 
-require('es6-promise').polyfill();
-require('whatwg-fetch');
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
 
@@ -190,7 +188,7 @@ let Emails = Component.extend({
         },
         getLabelsByPicked(data) {
             data = data || this;
-            let labels = union(
+            let labels = utils.array_union(
                 data.header.labels.items,
                 ...this.getPicked(data, (el) => el.labels)
             );
@@ -352,23 +350,11 @@ function connect() {
         ws_try++;
     };
 }
-// Ref: http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
-function guid() {
-    var d = new Date().getTime();
-    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-        /[xy]/g,
-        (c) => {
-            var r = (d + Math.random() * 16) % 16 | 0;
-            d = Math.floor(d / 16);
-            return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-        });
-    return uuid;
-}
 function send(url, data, callback) {
     console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web.replace(/\/$/, '') + url;
-        data = {url: url, payload: data, uid: guid()};
+        data = {url: url, payload: data, uid: utils.guid()};
         ws.send(JSON.stringify(data));
         if (callback) {
             handlers[data.uid] = callback;
