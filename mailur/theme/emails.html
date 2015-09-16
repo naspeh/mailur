@@ -4,8 +4,8 @@
         <template v-repeat="header.buttons">
         <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
         </template>
-        <div v-if="header.labels" class="labels">
-            <span class="labels-item" v-repeat="header.labels.items">
+        <div v-if="labels" class="labels">
+            <span class="labels-item" v-repeat="getLabels(labels)">
                 <a v-on="click: go" href="{{url}}">{{name}}</a>
                 <a  v-on="click: mark('-', name)" class="labels-del" href="#" title="Delete">X</a>
             </span>
@@ -39,7 +39,7 @@
         <li class="email-pic" style="background-image:url({{fr.image}})"></li>
         <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">
-            <a v-repeat="labels.items" href="{{url}}" v-on="click: go">{{name}}&nbsp;</a>
+            <a v-repeat="getLabels(labels)" href="{{url}}" v-on="click: go">{{name}}&nbsp;</a>
         </li>
         <li class="email-info" v-on="click: getOrGo(url, $data, $event)">
             <span v-if="count" class="email-count">{{count}}</span>

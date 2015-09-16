@@ -1,3 +1,4 @@
+import union from 'lodash/array/union';
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
 import Mousetrap from 'mousetrap';
@@ -158,8 +159,10 @@ let Emails = Component.extend({
                 this.permanent('checked_list');
             }
 
-            let checked = data.checked_list && data.checked_list.size;
-            data.$set('labels_edit', checked || data.thread ? true : false);
+            data.$set('labels_edit',
+                this.getPicked(data).length > 0 || data.thread ? true : false
+            );
+            data.$set('labels',  this.getLabelsByPicked(data));
             return data;
         },
         getId($data) {
@@ -168,15 +171,40 @@ let Emails = Component.extend({
         checked($data) {
             return this.checked_list.has(this.getId($data));
         },
+        getLabels(names) {
+            let result = [];
+            for (let i of names) {
+                result.push({name: i, url: this.header.labels.base_url + i});
+            }
+            return result;
+        },
+        getPicked(data, callback) {
+            data = data || this;
+            let result = [];
+            for(let el of data.emails.items) {
+                if (this.checked(el)) {
+                    result.push(callback ? callback(el) : el);
+                }
+            }
+            return result;
+        },
+        getLabelsByPicked(data) {
+            data = data || this;
+            let labels = union(
+                data.header.labels.items,
+                ...this.getPicked(data, (el) => el.labels)
+            );
+            return labels;
+        },
         pick(e) {
-            var field =  this.$data.threads ? 'thrid' : 'id';
             let id = this.getId(e.targetVM.$data);
             if (e.target.checked){
                 this.checked_list.add(id);
             } else {
                 this.checked_list.delete(id);
             }
-            this.labels_edit = this.checked_list.size > 0;
+            this.labels_edit = this.getPicked().length > 0;
+            this.labels = this.getLabelsByPicked();
         },
         details(e) {
             if(e) e.preventDefault();
@@ -284,10 +312,7 @@ function mark(params, callback) {
             params.thread = true;
         } else {
             params.thread = view.$data.threads;
-            params.ids = [];
-            for(let el of view.emails.items) {
-                if (view.checked(el)) params.ids.push(view.getId(el));
-            }
+            params.ids = view.getPicked(view, (el) => view.getId(el));
         }
     }
     if (params.thread) {

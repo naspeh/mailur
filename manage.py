@@ -387,9 +387,10 @@ def get_full(argv):
             # js linting
             '   jshint'
             '   eslint'
-            # js libs
+            # libs
             '   normalize.css'
             '   history'
+            '   lodash'
             '   mousetrap'
             '   vue'
             '   wjbryant/taboverride'

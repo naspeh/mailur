@@ -289,16 +289,7 @@ def ctx_labels(env, labels, ignore=None):
         l for l in sorted(set(labels))
         if not ignore.match(l) and pattern.match(l)
     ]
-    items = [
-        {'name': l, 'url': env.url_for('emails', {'in': l})}
-        for l in labels
-    ]
-    return {
-        'items': items,
-        'items_json': json.dumps(items),
-        'names': labels,
-        'names_json': json.dumps(labels)
-    }
+    return labels
 
 
 def ctx_all_labels(env):
@@ -325,16 +316,15 @@ def ctx_header(env, title, labels=None):
         ]) +
         [{'name': 'merge', 'title': 'Merge threads to one'}]
     )
-    labels = ctx_labels(env, labels)
+    labels = {
+        'items': ctx_labels(env, labels),
+        'all': ctx_all_labels(env),
+        'base_url': env.url_for('emails', {'in': ''}),
+    }
     return {
         'title': title,
         'buttons': buttons,
-        'labels': {
-            'items': labels['items'] if labels else [],
-            'items_json': labels['names_json'] if labels else '[]',
-            'all_json': ctx_all_labels(env)['items_json'],
-            'base_url': env.url_for('emails', {'in': ''})
-        },
+        'labels': labels
     }
 
 
