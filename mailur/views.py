@@ -470,8 +470,11 @@ def emails(env, page):
         for msg in i:
             base_subj = dict(msg["subj_list"])
             base_subj = base_subj[sorted(base_subj)[0]]
+            labels = sum(msg['labels'], [])
+            if label not in ('\\Pinned', '\\Unread'):
+                labels = list(set(labels) - {label})
             msg = dict(msg, **{
-                'labels': list(set(sum(msg['labels'], [])) - {label}),
+                'labels': labels,
                 '_extra': {
                     'count': msg['count'] > 1 and msg['count'],
                     'subj_human': f.humanize_subj(msg['subj'], base_subj)

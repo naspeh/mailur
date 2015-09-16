@@ -73,29 +73,23 @@ let hotkeys = [
 ];
 let Component = Vue.extend({
     replace: false,
-    permanents: new Set(),
     mixins: [{
         methods: {
-            permanent(key, value) {
-                key = key;
-                this.$options.permanents.add(key);
-                if (this._data[key] === undefined) {
-                    this._data[key] = value;
+            permanent(key) {
+                if (this.permanents === undefined) {
+                    this.$data.$set('permanents', new Set(['permanents']));
                 }
-                return this._data[key];
+                this.permanents.add(key);
             },
-            setData(data) {
-                for (let key of this.$options.permanents) {
-                    data[key] = this.$data[key];
-                }
-                this.$data = data;
+            initData(data) {
+                return data;
             },
             name() {
                 return this.$data._name;
             },
             fetch() {
                 let self = this;
-                send(this.url, null, (data) => self.setData(data));
+                send(this.url, null, (data) => self.$data = data);
             },
             go(e, url) {
                 if(e) e.preventDefault();
@@ -105,6 +99,25 @@ let Component = Vue.extend({
         },
     }],
 });
+let p = Component.prototype;
+p._initDataOrig = p._initData;
+p._initData = function() {
+    p._initDataOrig.bind(this)();
+    if (this._data && !this.$parent) {
+        this._data = this.initData(this._data);
+    }
+};
+p._setDataOrig = p._setData;
+p._setData = function(data) {
+    if (!this.$parent) {
+        for (let key of this.permanents || []) {
+            data.$set(key, this.$data[key]);
+        }
+        data = this.initData(data);
+    }
+    p._setDataOrig.bind(this)(data);
+};
+
 let sidebar = new Component({
     replace: true,
     el: '.sidebar',
@@ -138,16 +151,17 @@ let sidebar = new Component({
 });
 let Emails = Component.extend({
     template: require('./emails.html'),
-    computed: {
-        checked_list() {
-            return this.permanent('checked_list', new Set());
-        },
-        labels_edit() {
-            let checked = this.checked_list && this.checked_list.size;
-            return checked || this.thread ? true : false;
-        }
-    },
     methods: {
+        initData(data) {
+            if (data.checked_list === undefined) {
+                data.$set('checked_list', new Set());
+                this.permanent('checked_list');
+            }
+
+            let checked = data.checked_list && data.checked_list.size;
+            data.$set('labels_edit', checked || data.thread ? true : false);
+            return data;
+        },
         getId($data) {
             return $data[this.$data.threads ? 'thrid' : 'id'];
         },
@@ -162,6 +176,7 @@ let Emails = Component.extend({
             } else {
                 this.checked_list.delete(id);
             }
+            this.labels_edit = this.checked_list.size > 0;
         },
         details(e) {
             if(e) e.preventDefault();
@@ -228,7 +243,7 @@ history.listen((location) => {
         if (!view || view.name() != data._name) {
             view = new current({data: data, el: '.body'});
         } else {
-            view.setData(data);
+            view.$data = data;
         }
         document.title = `${data.header.title} - ${base_title}`;
     });
@@ -238,10 +253,12 @@ history.listen((location) => {
 /* Related functions */
 function $(selector, callback) {
     let elements = Array.from(document.querySelectorAll(selector));
+    let results = [];
     if (callback) {
         for (let el of elements) {
-            callback(el);
+            results.push(callback(el));
         }
+        elements = results;
     }
     return elements;
 }
@@ -267,7 +284,10 @@ function mark(params, callback) {
             params.thread = true;
         } else {
             params.thread = view.$data.threads;
-            params.ids = Array.from(view.checked_list);
+            params.ids = [];
+            for(let el of view.emails.items) {
+                if (view.checked(el)) params.ids.push(view.getId(el));
+            }
         }
     }
     if (params.thread) {
