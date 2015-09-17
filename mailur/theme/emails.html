@@ -4,12 +4,13 @@
         <template v-repeat="header.buttons">
         <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
         </template>
-        <div v-if="labels" class="labels">
-            <span class="labels-item" v-repeat="getLabels(labels)">
-                <a v-on="click: go" href="{{url}}">{{name}}</a>
-                <a  v-on="click: mark('-', name)" class="labels-del" href="#" title="Delete">X</a>
-            </span>
-        </div>
+
+        <template v-repeat="getLabels(labels)">
+        <a v-on="click: go" href="{{url}}" class="label">
+            {{name}}
+            <span  v-on="click: mark('-', name)" class="label-del" title="Delete">X</span>
+        </a>
+        </template>
         <!--
         <div v-if="header.labels" class="email-labels-wrap">
             <input
@@ -36,10 +37,10 @@
         <li v-if="draft" class="email-draft">Draft</li>
         <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
         <li class="email-pick"><input v-on="change: pick" checked="{{checked($data)}}" type="checkbox" class="mousetrap"></li>
-        <li class="email-pic" style="background-image:url({{fr.image}})"></li>
+        <li class="email-pic" v-style="'background-image:url(' + fr.image + ')'"></li>
         <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">
-            <a v-repeat="getLabels(labels)" href="{{url}}" v-on="click: go">{{name}}&nbsp;</a>
+            <a v-repeat="getLabels(labels)" href="{{url}}" v-on="click: go" class="label">{{name}}</a>
         </li>
         <li class="email-info" v-on="click: getOrGo(url, $data, $event)">
             <span v-if="count" class="email-count">{{count}}</span>

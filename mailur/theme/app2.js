@@ -360,16 +360,19 @@ function send(url, data, callback) {
             handlers[data.uid] = callback;
         }
     } else {
-        fetch(url, {
+        let params = {
             credentials: 'same-origin',
             method: data ? 'POST': 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
             },
-            body: data && JSON.stringify(data)
-        })
+        };
+        if (data) {
+            params.headers['Content-Type'] = 'application/json';
+            params.body = JSON.stringify(data);
+        }
+        fetch(url, params)
             .then(r => r.json())
             .then(callback)
             .catch(ex => console.log(url, ex));
