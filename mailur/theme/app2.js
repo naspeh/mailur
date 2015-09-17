@@ -253,6 +253,40 @@ let Emails = Component.extend({
 });
 let Compose = Component.extend({
     template: require('./compose.html'),
+    created() {
+        this.preview();
+        this.$watch('body', () => this.preview(null, 3000));
+        this.$watch('quoted', this.preview);
+    },
+    methods : {
+        getContext() {
+            let ctx = {};
+            for (let f of ['fr', 'to', 'subj', 'body', 'quoted']) {
+                ctx[f] = this[f] === undefined ? '' : this[f];
+            }
+            return ctx;
+        },
+        preview(e, timeout) {
+            if (timeout && this.last && new Date() - this.last < timeout) {
+                this.previewLater = this.preview;
+                setTimeout(() => this.previewLater(null, timeout), timeout / 2);
+                return;
+            }
+            this.previewLater = () => {};
+
+            let params = {
+                target: location.pathname + location.search,
+                context: this.getContext(),
+            };
+            if (this.quoted) params.quote = this.quote;
+
+            let self = this;
+            fetchRaw('/preview/', params, (data) => {
+                self.last = new Date();
+                self.$data.$set('html', data);
+            });
+        },
+    }
 });
 
 let views = {
@@ -290,7 +324,7 @@ function $(selector, callback) {
 }
 function getLastEmail() {
     if (view.name() != 'emails') return;
-    return view.$data.slice(-1)[0];
+    return view.emails.items.slice(-1)[0];
 }
 function goToLabel(label) {
     go('/emails/?in=' + label);
@@ -350,6 +384,24 @@ function connect() {
         ws_try++;
     };
 }
+function fetchRaw(url, data, callback) {
+    let params = {
+        credentials: 'same-origin',
+        method: data ? 'POST': 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+    };
+    if (data) {
+        params.headers['Content-Type'] = 'application/json';
+        params.body = JSON.stringify(data);
+    }
+    fetch(url, params)
+        .then(r => r.json())
+        .then(callback)
+        .catch(ex => console.log(url, ex));
+}
 function send(url, data, callback) {
     console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
@@ -360,21 +412,6 @@ function send(url, data, callback) {
             handlers[data.uid] = callback;
         }
     } else {
-        let params = {
-            credentials: 'same-origin',
-            method: data ? 'POST': 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-        };
-        if (data) {
-            params.headers['Content-Type'] = 'application/json';
-            params.body = JSON.stringify(data);
-        }
-        fetch(url, params)
-            .then(r => r.json())
-            .then(callback)
-            .catch(ex => console.log(url, ex));
+        fetchRaw(url, data, callback);
     }
 }

@@ -1,4 +1,3 @@
-import datetime as dt
 import functools as ft
 import json
 import re
@@ -52,7 +51,7 @@ def adapt_fmt(tpl=None):
     def inner(env, *a, **kw):
         default = 'json' if env.request.is_xhr else kw.pop('fmt', 'html')
         fmt = env.request.args.get('fmt', default)
-        if fmt == 'html' and tpl:
+        if fmt == 'html' and tpl and env.request.method == 'GET':
             return render_base(env)
 
         ctx = wrapper.func(env, *a, **kw)
@@ -664,7 +663,8 @@ def compose(env):
     })
     args = schema.validate(env.request.args)
     fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
-    ctx, parent = {'fr': fr}, {}
+    ctx = {'fr': fr, 'to': '', 'subj': '', 'body': '', 'quoted': False}
+    parent = {}
     if args.get('id'):
         parent = env.sql('''
         SELECT
@@ -689,9 +689,13 @@ def compose(env):
             'fr': fr,
             'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
-            'quote': {'html': ctx_quote(env, parent, forward)},
+            'quote': ctx_quote(env, parent, forward),
             'forward': forward,
         })
+
+    saved = env.session.get(env.request.full_path)
+    if saved:
+        ctx.update(saved)
 
     if env.request.method == 'POST':
         from email.utils import parseaddr
@@ -723,13 +727,34 @@ def compose(env):
         msg['in_reply_to'] = parent.get('msgid')
         msg['refs'] = parent.get('refs')[-10:]
         msg['files'] = env.request.files.getlist('files')
+
         sendmail(env, msg)
+        if saved:
+            del env.session[env.request.full_path]
+
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
         return env.redirect_for('emails', {'in': '\\Sent'})
 
     ctx['header'] = ctx_header(env, ctx.get('subj') or 'New message')
     return ctx
+
+
+@login_required
+@adapt_fmt()
+def preview(env):
+    schema = v.parse({
+        '+context': dict,
+        '+target': str,
+        'quote': v.Nullable(str)
+    })
+    data = schema.validate(env.request.json)
+    env.session[data['target']] = data['context']
+    return get_html(data['context']['body'], data.get('quote', ''))
+
+
+def get_html(text, quote=''):
+    return ('\n\n').join(i for i in (markdown(text), quote) if i)
 
 
 def markdown(html):
@@ -745,13 +770,13 @@ def sendmail(env, msg):
     from email.mime.text import MIMEText
     from email.utils import formatdate, formataddr, getaddresses
 
-    html = markdown(msg['body'])
     in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
     if msg.get('quoted'):
-        html = ('\n\n').join(i for i in (html, msg['quote']) if i)
+        html = get_html(msg['body'], msg['quote'])
         text = MIMEMultipart()
         text.attach(MIMEText(html, 'html'))
     else:
+        html = get_html(msg['body'])
         text = MIMEMultipart('alternative')
         text.attach(MIMEText(msg['body'], 'plain'))
         text.attach(MIMEText(html, 'html'))
@@ -777,22 +802,13 @@ def sendmail(env, msg):
         email['In-Reply-To'] = in_reply_to
         email['References'] = ' '.join([in_reply_to] + msg.get('refs'))
 
-    env.storage.set('send:%s' % dt.datetime.now(), email.as_string())
-    env.db.commit()
+    # env.storage.set('send:%s' % dt.datetime.now(), email.as_string())
+    # env.db.commit()
     if env('readonly'):
         return
 
     _, sendmail = gmail.smtp_connect(env, env.email)
     sendmail(msg['fr'], msg['to'], email.as_string())
-
-
-@login_required
-@adapt_fmt()
-def preview(env):
-    schema = v.parse({'+body': str, 'quote': v.Nullable(str)})
-    data = schema.validate(env.request.json)
-    body = '\n\n'.join([markdown(data['body']), data.get('quote', '')])
-    return body
 
 
 @login_required
