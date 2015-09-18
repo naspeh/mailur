@@ -380,7 +380,7 @@ def get_full(argv):
             '   postcss-cli'
             '   autoprefixer'
             '   clean-css'
-            '   babel'
+            '   core-js'
             '   browserify'
             '   babelify'
             '   partialify'

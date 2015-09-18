@@ -1,6 +1,7 @@
 // Setup polyfills
-require('babel/polyfill');
 require('whatwg-fetch');
+require('core-js/fn/set');
+require('core-js/fn/symbol');
 
 export let array_union = require('lodash/array/union');
 
