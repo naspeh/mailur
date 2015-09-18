@@ -153,13 +153,15 @@ let sidebar = new Component({
 let Emails = Component.extend({
     template: require('./emails.html'),
     ready() {
-        if (!this.thread) return;
+        this.$watch('thread', (newVal, oldVal) => {
+            if (!newVal) return;
 
-        let ids = [];
-        for (let el of this.emails.items) {
-            if (el.unread) ids.push(this.getId(el));
-        }
-        if (ids.length) this.mark('-', '\\Unread', ids);
+            let ids = [];
+            for (let el of this.emails.items) {
+                if (el.unread) ids.push(this.getId(el));
+            }
+            if (ids.length) this.mark('-', '\\Unread', ids);
+        });
     },
     methods: {
         initData(data) {
