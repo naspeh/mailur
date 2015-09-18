@@ -1,0 +1,70 @@
+Delivered-To: naspeh@gmail.com
+Received: by 10.202.65.196 with SMTP id o187csp189578oia;
+        Fri, 18 Sep 2015 03:54:18 -0700 (PDT)
+X-Received: by 10.194.116.9 with SMTP id js9mr7001592wjb.51.1442573658415;
+        Fri, 18 Sep 2015 03:54:18 -0700 (PDT)
+Return-Path: <negreh@gmail.com>
+Received: from mail-wi0-x236.google.com (mail-wi0-x236.google.com. [2a00:1450:400c:c05::236])
+        by mx.google.com with ESMTPS id t15si10063847wjw.59.2015.09.18.03.54.18
+        for <naspeh@gmail.com>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 18 Sep 2015 03:54:18 -0700 (PDT)
+Received-SPF: pass (google.com: domain of negreh@gmail.com designates 2a00:1450:400c:c05::236 as permitted sender) client-ip=2a00:1450:400c:c05::236;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of negreh@gmail.com designates 2a00:1450:400c:c05::236 as permitted sender) smtp.mailfrom=negreh@gmail.com;
+       dkim=pass header.i=@gmail.com;
+       dmarc=pass (p=NONE dis=NONE) header.from=gmail.com
+Received: by mail-wi0-x236.google.com with SMTP id ge5so25569960wic.0
+        for <naspeh@gmail.com>; Fri, 18 Sep 2015 03:54:18 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20120113;
+        h=message-id:content-type:mime-version:from:to:date:subject;
+        bh=erhKZ9TVWEllLDVgKx/UqLTGtZKqQ2QbnMVDcBjx/Bk=;
+        b=xpKdTtRGaQTVnAsGWNv86bwXSxtOkzCcGpTLwRZN//S3CCGuIbVM0jXtuxAAmsSwbz
+         yI+Sh9jg/yV6QyFlZ3OKjE76sJ+pObye/k9gn8SIypoeJIRAqj9SeapbKKcLJl2ryAXW
+         cLyP8odH+f6X1xgBO9D/ZIAu96IkGRzgB4egemdXtuxfYEoD5U4exH2fxXiy+HSgIbkd
+         SLMCdJ6Rp2Y8n55pMtzsIhfnZvVu09u19ftsi6ap+cLVyFPYVj992B1lzG5F6DZX/ftz
+         rc7z3JgbVHJr5FAMDik0RuQnOyO0Tqzdygr2v6a9Fdo1Q4TfLIEfpg3/RQGzHElAilB0
+         jB/g==
+X-Received: by 10.180.23.71 with SMTP id k7mr37229943wif.11.1442573658202;
+        Fri, 18 Sep 2015 03:54:18 -0700 (PDT)
+Return-Path: <negreh@gmail.com>
+Received: from [127.0.0.1] ([194.126.183.50])
+        by smtp.gmail.com with ESMTPSA id fx2sm14901465wib.24.2015.09.18.03.54.17
+        for <naspeh@gmail.com>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 18 Sep 2015 03:54:17 -0700 (PDT)
+Message-ID: <55fbed59.a267b40a.c2f19.ffffdeb5@mx.google.com>
+Content-Type: multipart/alternative; boundary="===============1075270196533962096=="
+MIME-Version: 1.0
+From: "Ne Greh" <negreh@gmail.com>
+To: naspeh@gmail.com
+Date: Fri, 18 Sep 2015 10:54:16 -0000
+Subject: test escaped unicode
+
+--===============1075270196533962096==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+Dear Grisha, <br>
+<br>
+&#x434;&#x43e;&#x431;&#x440;&#x44b;&#x439; &#x434;&#x435;&#x43d;&#x44c;!<br>
+<br>
+&#x420;&#x430;&#x441;&#x441;&#x43c;&#x430;&#x442;&#x440;&#x438;&#x432;&#x430;&#x435;&#x442;&#x435; &#x43b;&#x438; &#x412;&#x44b; &#x441;&#x435;&#x439;&#x447;&#x430;&#x441; &#x43f;&#x440;&#x435;&#x434;&#x43b;&#x43e;&#x436;&#x435;&#x43d;&#x438;&#x435; &#x43e; &#x440;&#x430;&#x431;&#x43e;&#x442;&#x435;?<br>
+<br>
+&#x425;&#x43e;&#x447;&#x443; &#x43f;&#x440;&#x435;&#x434;&#x43b;&#x43e;&#x436;&#x438;&#x442;&#x44c; &#x412;&#x430;&#x43c; &#x438;&#x43d;&#x442;&#x435;&#x440;&#x435;&#x441;&#x43d;&#x443;&#x44e; &#x432;&#x430;&#x43a;&#x430;&#x43d;&#x441;&#x438;&#x44e; Senior Python Developer.<br>
+--===============1075270196533962096==
+Content-Type: text/html; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+<p>Dear Grisha, <br><br>
+<br><br>
+&#x434;&#x43e;&#x431;&#x440;&#x44b;&#x439; &#x434;&#x435;&#x43d;&#x44c;!<br><br>
+<br><br>
+&#x420;&#x430;&#x441;&#x441;&#x43c;&#x430;&#x442;&#x440;&#x438;&#x432;&#x430;&#x435;&#x442;&#x435; &#x43b;&#x438; &#x412;&#x44b; &#x441;&#x435;&#x439;&#x447;&#x430;&#x441; &#x43f;&#x440;&#x435;&#x434;&#x43b;&#x43e;&#x436;&#x435;&#x43d;&#x438;&#x435; &#x43e; &#x440;&#x430;&#x431;&#x43e;&#x442;&#x435;?<br><br>
+<br><br>
+&#x425;&#x43e;&#x447;&#x443; &#x43f;&#x440;&#x435;&#x434;&#x43b;&#x43e;&#x436;&#x438;&#x442;&#x44c; &#x412;&#x430;&#x43c; &#x438;&#x43d;&#x442;&#x435;&#x440;&#x435;&#x441;&#x43d;&#x443;&#x44e; &#x432;&#x430;&#x43a;&#x430;&#x43d;&#x441;&#x438;&#x44e; Senior Python Developer.<br></p>
+
+--===============1075270196533962096==--

@@ -81,5 +81,10 @@
             "<mq2cvk$i1c$1@ger.gmane.org>",
             "<201508071417.t77EHxla005652@fido.openend.se>"
         ]
+    },
+    "bde9cc95-b2e8-52a8-a78f-0ee5ed601041--escaped-html-in-text-part.txt": {
+        "subject": "test escaped unicode",
+        "text": "добрый день!",
+        "html": "добрый день!"
     }
 }

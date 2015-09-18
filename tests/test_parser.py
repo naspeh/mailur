@@ -14,7 +14,7 @@ def test_emails(env, path, expected):
     result = dict(syncer.get_parsed(env, raw, 'test'))
     assert expected['subject'] == result['subj']
 
-    for type_ in ['html']:
+    for type_ in ['html', 'text']:
         if expected.get(type_):
             assert type_ in result
             assert expected[type_] in result[type_]
