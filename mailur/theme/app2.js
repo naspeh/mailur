@@ -86,9 +86,12 @@ let Component = Vue.extend({
             name() {
                 return this.$data._name;
             },
-            fetch() {
+            fetch(callback) {
                 let self = this;
-                send(this.url, null, (data) => self.$data = data);
+                send(this.url, null, (data) => {
+                    self.$data = data;
+                    if (callback) callback(data);
+                });
             },
             go(e, url) {
                 if(e) e.preventDefault();
@@ -119,11 +122,10 @@ p._setData = function(data) {
 
 let sidebar = new Component({
     replace: true,
-    el: '.sidebar',
     template: require('./sidebar.html'),
     created() {
         this.url = '/sidebar/';
-        this.fetch();
+        this.fetch((data) => this.$mount('.sidebar'));
         this.help = '';
         for (let item of hotkeys) {
             Mousetrap.bind(item[0], item[2].bind(this), 'keyup');
@@ -131,7 +133,7 @@ let sidebar = new Component({
         }
     },
     methods: {
-        submit(e) {
+        search(e) {
             e.preventDefault();
             go('/search/?q=' + this.$data.search_query);
         },
@@ -150,6 +152,15 @@ let sidebar = new Component({
 });
 let Emails = Component.extend({
     template: require('./emails.html'),
+    ready() {
+        if (!this.thread) return;
+
+        let ids = [];
+        for (let el of this.emails.items) {
+            if (el.unread) ids.push(this.getId(el));
+        }
+        if (ids.length) this.mark('-', '\\Unread', ids);
+    },
     methods: {
         initData(data) {
             if (data.checked_list === undefined) {
@@ -246,9 +257,9 @@ let Emails = Component.extend({
                 q.style.display = q.style.display == 'block' ? 'none' : 'block';
             }
         },
-        mark(action, label) {
-            mark({action: action, name: label});
-        }
+        mark(action, name, ids) {
+            mark({action: action || '+', name: name, ids: ids}, null, this);
+        },
     },
 });
 let Compose = Component.extend({
@@ -335,7 +346,8 @@ function go(url) {
 function reload() {
     return history.replaceState({}, location.pathname + location.search);
 }
-function mark(params, callback) {
+function mark(params, callback, emails) {
+    view = emails || view;
     if (view.name() != 'emails') return;
 
     if (!params.ids) {
