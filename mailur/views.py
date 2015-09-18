@@ -650,7 +650,7 @@ def new_thread(env):
         thrid = syncer.merge_threads(env, params['ids'])
         return env.to_json({'url': env.url_for('thread', id=thrid)})
 
-from . import log
+
 @login_required
 @adapt_fmt('compose')
 def compose(env):
@@ -725,9 +725,8 @@ def compose(env):
         })
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
-        msg['refs'] = parent.get('refs')[-10:]
+        msg['refs'] = parent.get('refs', [])[-10:]
         msg['files'] = env.request.files.getlist('files')
-        log.info('%s', msg)
 
         sendmail(env, msg)
         if saved:

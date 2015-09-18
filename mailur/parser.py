@@ -135,6 +135,8 @@ def parse_part(env, part, msg_id, inner=False):
         if ctype == 'text/html':
             content['html'] = text
         elif ctype == 'text/plain' and not content['html']:
+            text = html.unescape(text)
+            text = re.sub(r'<[^>]+>', '', text)
             content['text'] = text
             text = text2html(text)
             content['html'] = text

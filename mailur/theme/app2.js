@@ -268,11 +268,12 @@ let Compose = Component.extend({
         },
         preview(e, timeout) {
             if (timeout && this.last && new Date() - this.last < timeout) {
-                this.previewLater = this.preview;
-                setTimeout(() => this.previewLater(null, timeout), timeout / 2);
+                this.once = this.preview;
+                setTimeout(() => this.once && this.once(), timeout / 2);
                 return;
             }
-            this.previewLater = () => {};
+            this.once = null;
+            this.last = new Date();
 
             let params = {
                 target: location.pathname + location.search,
@@ -282,7 +283,6 @@ let Compose = Component.extend({
 
             let self = this;
             fetchRaw('/preview/', params, (data) => {
-                self.last = new Date();
                 self.$data.$set('html', data);
             });
         },
