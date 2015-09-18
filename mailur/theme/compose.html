@@ -13,10 +13,11 @@
 
     <template v-if="quote">
     <label v-show="!forward">
-    <input name="quoted" type="checkbox" v-model="quoted">
+    <input v-model="quoted" type="checkbox">
         Include quote
     </label>
     </template>
+    <input name="quote" type="hidden" value="{{quoted ? quote : ''}}">
     <input type="file" name="files" multiple>
     <div class="email-html" v-show="html">{{{html}}}</div>
 </form>

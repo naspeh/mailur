@@ -1,5 +1,5 @@
 // Setup polyfills
-require('es6-promise').polyfill();
+require('babel/polyfill');
 require('whatwg-fetch');
 
 export let array_union = require('lodash/array/union');

@@ -650,7 +650,7 @@ def new_thread(env):
         thrid = syncer.merge_threads(env, params['ids'])
         return env.to_json({'url': env.url_for('thread', id=thrid)})
 
-
+from . import log
 @login_required
 @adapt_fmt('compose')
 def compose(env):
@@ -690,6 +690,7 @@ def compose(env):
             'to': ', '.join(to),
             'subj': 'Re: %s' % f.humanize_subj(parent['subj'], empty=''),
             'quote': ctx_quote(env, parent, forward),
+            'quoted': forward,
             'forward': forward,
         })
 
@@ -721,12 +722,12 @@ def compose(env):
             '+subj': str,
             '+body': str,
             'quote': v.Nullable(str, ''),
-            'quoted': v.Nullable(str)
         })
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
         msg['refs'] = parent.get('refs')[-10:]
         msg['files'] = env.request.files.getlist('files')
+        log.info('%s', msg)
 
         sendmail(env, msg)
         if saved:
@@ -771,7 +772,7 @@ def sendmail(env, msg):
     from email.utils import formatdate, formataddr, getaddresses
 
     in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
-    if msg.get('quoted'):
+    if msg.get('quote'):
         html = get_html(msg['body'], msg['quote'])
         text = MIMEMultipart()
         text.attach(MIMEText(html, 'html'))

@@ -380,6 +380,7 @@ def get_full(argv):
             '   postcss-cli'
             '   autoprefixer'
             '   clean-css'
+            '   babel'
             '   browserify'
             '   babelify'
             '   partialify'
@@ -394,8 +395,6 @@ def get_full(argv):
             '   mousetrap'
             '   vue'
             '   wjbryant/taboverride'
-            # polyfills
-            '   es6-promise'
             '   whatwg-fetch'
         ))
 

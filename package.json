@@ -1,13 +1,13 @@
 {
   "author": "naspeh",
   "dependencies": {
-    "autoprefixer": "6.0.2",
+    "autoprefixer": "6.0.3",
+    "babel": "5.8.23",
     "babelify": "6.3.0",
     "browserify": "11.1.0",
-    "clean-css": "3.4.1",
-    "es6-promise": "3.0.2",
-    "eslint": "1.4.1",
-    "history": "1.9.0",
+    "clean-css": "3.4.3",
+    "eslint": "1.4.3",
+    "history": "1.9.1",
     "jshint": "2.8.0",
     "less": "2.5.1",
     "lodash": "3.10.1",

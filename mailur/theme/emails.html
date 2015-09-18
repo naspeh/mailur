@@ -79,9 +79,9 @@
         <div class="email-text" v-on="click: quotes">
             {{{body.text}}}
         </div>
-        <div v-if="attachments" class="email-attachments">
+        <div v-if="body.attachments" class="email-attachments">
             <ul>
-                <li v-repeat="attachments.items">
+                <li v-repeat="body.attachments.items">
                     <a class="email-f-{{maintype}}" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a>
                 </li>
             </ul>
