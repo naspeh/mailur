@@ -160,7 +160,9 @@ let Emails = Component.extend({
             for (let el of this.emails.items) {
                 if (el.unread) ids.push(this.getId(el));
             }
-            if (ids.length) this.mark('-', '\\Unread', ids);
+            if (ids.length) {
+                mark({action: '-', name: '\\Unread', ids: ids}, () => {}, this);
+            }
         });
     },
     methods: {
@@ -259,8 +261,8 @@ let Emails = Component.extend({
                 q.style.display = q.style.display == 'block' ? 'none' : 'block';
             }
         },
-        mark(action, name, ids) {
-            mark({action: action || '+', name: name, ids: ids}, null, this);
+        mark(action, name) {
+            mark({action: action || '+', name: name});
         },
     },
 });
