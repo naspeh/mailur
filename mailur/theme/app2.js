@@ -349,8 +349,18 @@ let Emails = Component.extend({
             return false;
         },
         mark(action, name) {
+            // FIXME
+            if (!name) return this.merge();
+
             mark({action: action || '+', name: name});
         },
+        merge(e) {
+            let params = {
+                action: 'merge',
+                ids: this.getPicked(this, (el) => el.thrid)
+            };
+            send('/new-thread/', params, (data) => go(data.url));
+        }
     },
 });
 let Compose = Component.extend({
