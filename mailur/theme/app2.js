@@ -227,7 +227,7 @@ let Emails = Component.extend({
                 mark({
                     action: '=',
                     name: vm.labels,
-                    old_name: vm.header.items
+                    old_name: this.getLabelsByPicked(this)
                 });
                 toggle(labels);
                 toggle(edit);
