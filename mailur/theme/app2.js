@@ -215,23 +215,29 @@ let Emails = Component.extend({
             let $$ = container.querySelector.bind(container);
             let labels = $$('.labels-edit');
 
-            let tags;
+            let tags, compl;
             let edit = $$('.labels-input');
             toggle(edit);
 
             let save = () => {
+                vm.labels = tags.value().split(',');
+                compl.destroy();
+                tags.destroy();
+
                 mark({
                     action: '=',
-                    name: tags.value().split(','),
-                    old_name: vm.labels
+                    name: vm.labels,
+                    old_name: vm.header.items
                 });
                 toggle(labels);
                 toggle(edit);
             };
             let clear = () => {
                 if (tags) tags.destroy();
+                if (compl) compl.destroy();
                 input.value = vm.labels.join(',');
-                return insignia(input, {
+                compl = horsey(input, {suggestions: vm.header.labels.all});
+                tags = insignia(input, {
                     deletion: true,
                     delimiter: ',',
                     parse(value) {
@@ -245,14 +251,12 @@ let Emails = Component.extend({
                 });
             };
             let reset = (callback) => {
-                tags = clear();
+                clear();
                 toggle(labels);
                 toggle(edit);
                 if (callback) callback();
-                return tags;
             };
             let input = edit.querySelector('input');
-            let sey = horsey(input, {suggestions: vm.header.labels.all});
 
             Mousetrap(input)
                 .bind(['esc'], (e) => {
@@ -261,7 +265,7 @@ let Emails = Component.extend({
                 })
                 .bind(['enter'], (e) => {
                     e.preventDefault();
-                    if (sey.list.classList.contains('sey-show')) return;
+                    if (compl.list.classList.contains('sey-show')) return;
                     tags.convert();
                 })
                 .bind('esc esc', (e) => reset())
