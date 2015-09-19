@@ -8,6 +8,8 @@
     "core-js": "1.1.4",
     "eslint": "1.4.3",
     "history": "1.9.1",
+    "horsey": "2.6.1",
+    "insignia": "4.4.0",
     "jshint": "2.8.0",
     "less": "2.5.1",
     "lodash": "3.10.1",

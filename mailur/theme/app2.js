@@ -2,6 +2,8 @@ import * as utils from './app_utils';
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
 import Mousetrap from 'mousetrap';
+import insignia from 'insignia';
+import horsey from 'horsey';
 
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
@@ -56,7 +58,7 @@ let hotkeys = [
     [['m a', 'm shift+i'], 'Move to Archive',
         () => mark({action: '-', name: '\\Inbox'})
     ],
-    [['m l'], 'Edit labels', () => $('.email-labels-edit input')[0].focus()],
+    [['m l'], 'Edit labels', () => $('.labels--edit')[0].click()],
     [['r r'], 'Reply', () => go(getLastEmail().links.reply)],
     [['r a'], 'Reply all', () => go(getLastEmail().links.replyall)],
     [['c'], 'Compose', () => go('/compose/')],
@@ -126,6 +128,7 @@ let sidebar = new Component({
     created() {
         this.url = '/sidebar/';
         this.fetch((data) => this.$mount('.sidebar'));
+
         this.help = '';
         for (let item of hotkeys) {
             Mousetrap.bind(item[0], item[2].bind(this), 'keyup');
@@ -164,6 +167,26 @@ let Emails = Component.extend({
                 mark({action: '-', name: '\\Unread', ids: ids}, () => {}, this);
             }
         });
+        this.$watch('checked_list', (newVal, oldVal) => {
+            this.refreshLabels();
+        });
+    },
+    directives: {
+        body(value) {
+            this.el.innerHTML = value;
+            for (let el of this.el.querySelectorAll('a')) {
+                el.target = '_blank';
+            }
+            for (let el of this.el.querySelectorAll('.email-quote-toggle')) {
+                el.addEventListener('click', (e) => toggle(el.nextSibling));
+            }
+        },
+    },
+    elementDirectives: {
+        // FIXME: should be a better way
+        labels: {bind() {
+            this.vm.refreshLabels();
+        }}
     },
     methods: {
         initData(data) {
@@ -183,6 +206,72 @@ let Emails = Component.extend({
         },
         checked($data) {
             return this.checked_list.has(this.getId($data));
+        },
+        refreshLabels() {
+            let container = $('.header .labels')[0];
+            if (!container) return;
+
+            let vm = this;
+            let $$ = container.querySelector.bind(container);
+            let labels = $$('.labels-edit');
+
+            let tags;
+            let edit = $$('.labels-input');
+            toggle(edit);
+
+            let save = () => {
+                mark({
+                    action: '=',
+                    name: tags.value().split(','),
+                    old_name: vm.labels
+                });
+                toggle(labels);
+                toggle(edit);
+            };
+            let clear = () => {
+                if (tags) tags.destroy();
+                input.value = vm.labels.join(',');
+                return insignia(input, {
+                    deletion: true,
+                    delimiter: ',',
+                    parse(value) {
+                        return value.trim();
+                    },
+                    validate(value, tags) {
+                        let valid = vm.header.labels.all.indexOf(value) !== -1;
+                        valid = valid || !value.startsWith('\\');
+                        return valid && tags.indexOf(value) === -1;
+                    }
+                });
+            };
+            let reset = (callback) => {
+                tags = clear();
+                toggle(labels);
+                toggle(edit);
+                if (callback) callback();
+                return tags;
+            };
+            let input = edit.querySelector('input');
+            let sey = horsey(input, {suggestions: vm.header.labels.all});
+
+            Mousetrap(input)
+                .bind(['esc'], (e) => {
+                    e.preventDefault();
+                    tags.convert();
+                })
+                .bind(['enter'], (e) => {
+                    e.preventDefault();
+                    if (sey.list.classList.contains('sey-show')) return;
+                    tags.convert();
+                })
+                .bind('esc esc', (e) => reset())
+                .bind('ctrl+enter', (e) => save());
+
+            $$('.labels--ok').addEventListener('click', (e) => save());
+            $$('.labels--cancel').addEventListener('click', (e) => reset());
+            $$('.labels--edit').addEventListener('click', (e) => {
+                reset(() => input.focus());
+            });
         },
         getLabels(names) {
             let result = [];
@@ -254,12 +343,6 @@ let Emails = Component.extend({
             email.pinned = !email.pinned;
             mark(data);
             return false;
-        },
-        quotes(e) {
-            if (e.target.className == 'email-quote-toggle') {
-                let q = e.target.nextSibling;
-                q.style.display = q.style.display == 'block' ? 'none' : 'block';
-            }
         },
         mark(action, name) {
             mark({action: action || '+', name: name});
@@ -336,6 +419,9 @@ function $(selector, callback) {
         elements = results;
     }
     return elements;
+}
+function toggle(el) {
+    el.style.display = el.style.display == 'none' ? '' : 'none';
 }
 function getLastEmail() {
     if (view.name() != 'emails') return;

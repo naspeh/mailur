@@ -396,6 +396,8 @@ def get_full(argv):
             '   vue'
             '   wjbryant/taboverride'
             '   whatwg-fetch'
+            '   insignia'
+            '   horsey'
         ))
 
     cmd('static').exe(lambda a: sh(

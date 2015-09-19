@@ -20,7 +20,6 @@
     background-color: @Color1bg;
     border-radius: 5px;
     padding: 2px 5px;
-    margin: 0.2em 0;
     font-weight: bold;
     &:hover {
         cursor: pointer;
@@ -107,14 +106,12 @@ body {
             font-weight: normal;
         }
         .email-subj {
+            color: #333;
+            text-decoration: none;
+            outline: none;
+
             &.email-subj-changed {
                 display: inline-block;
-            }
-            &> a {
-                display: block;
-                color: @ColorB;
-                text-decoration: none;
-                outline: none;
             }
         }
         .email-info {
@@ -249,7 +246,6 @@ body {
     }
     button {
         .mix_button();
-        margin-right: 5px;
     }
     .labels-b-spam {
         .icon-spam();
@@ -263,26 +259,46 @@ body {
     .labels-b-merge {
         .icon-details();
     }
-    .labels-edit {
-        display: inline;
+    .labels, .labels-edit {
+        display: inline-block;
     }
     .labels-input {
         display: inline-block;
-        min-width: 150px;
-        vertical-align: bottom;
-        min-height: 30px;
-        line-height: 30px;
-        margin-bottom: -7px;
         &:hover {
             cursor: pointer;
             background-color: @Color0bg;
         }
     }
-    .labels-ok {
+    .labels--ok {
         .icon-ok();
     }
-    .labels-cancel {
+    .labels--cancel {
         .icon-cancel();
+    }
+    .labels--edit {
+        .icon-tags();
+    }
+    .labels-input {
+        /* insignia */
+        .nsg-editor {
+            cursor: text;
+            display: inline-block;
+        }
+        .nsg-tags {
+            display: inline-block;
+        }
+        .nsg-tag {
+            display: inline-block;
+            .label();
+        }
+        .nsg-tag-remove {
+            .label.label-del();
+        }
+        .nsg-input {
+            &:focus {
+                background-color: #fff;
+            }
+        }
     }
 }
 .thread {
@@ -305,18 +321,22 @@ body {
     }
 }
 .label {
-    background: @Color1bg;
-    border: 1px solid @Color1b;
+    background: #eee;
+    border: 1px solid #eee;
     padding: 2px;
     margin: 2px;
     text-decoration: none;
+    color: @ColorB;
     &:hover {
-        color: @ColorB;
+        background: #fff;
     }
 
     .label-del {
-        text-decoration: none;
-        color: @ColorA;
+        display: inline-block;
+        &:after {
+            content: 'X';
+            padding: 0 4px;
+        }
         &:hover {
             color: @ColorC;
         }
@@ -371,18 +391,6 @@ body {
         cursor: pointer;
     }
 }
-.help-toggle {
-    .icon-keyboard();
-    &:before {
-        margin: 0;
-    }
-}
-.logout {
-    .icon-logout();
-    &:before {
-        margin: 0;
-    }
-}
 .sidebar {
     position: fixed;
     top: 0;
@@ -394,14 +402,24 @@ body {
     overflow-y: auto;
 
     a {
+        color: @ColorB;
         text-decoration: none;
     }
-    nav a {
-        display: inline-block;
-        .mix_button();
+    nav {
+        padding: .3em 0;
+        a {
+            display: inline-block;
+            .mix_button();
+        }
     }
     .compose-new {
         .icon-compose();
+    }
+    .help-toggle {
+        .icon-keyboard();
+    }
+    .logout {
+        .icon-logout();
     }
     .search {
         .icon-search();
@@ -425,4 +443,37 @@ body {
 .error {
     color: red;
     font-weight: bold;
+}
+
+/* horsey */
+.sey-list {
+    display: none;
+    position: absolute;
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+    box-shadow: 1px 2px 6px;
+    background-color: #fff;
+    color: #333;
+}
+.sey-show {
+    display: block;
+}
+.sey-hide {
+    display: none;
+}
+.sey-item {
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: 7px;
+}
+.sey-item:hover {
+    background-color: #444;
+    color: #fff;
+}
+.sey-selected {
+    background-color: #333;
+    color: #fff;
 }

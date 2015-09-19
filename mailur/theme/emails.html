@@ -1,28 +1,25 @@
 <div class="header">
     <h3>{{header.title}}</h3>
-    <div v-show="labels_edit" class="labels-edit">
+    <div v-show="labels_edit" class="labels">
         <template v-repeat="header.buttons">
         <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
         </template>
 
-        <template v-repeat="getLabels(labels)">
-        <a v-on="click: go" href="{{url}}" class="label">
+        <div class="labels-edit">
+        <a v-repeat="getLabels(labels)" v-on="click: go" href="{{url}}" class="label">
             {{name}}
-            <span  v-on="click: mark('-', name)" class="label-del" title="Delete">X</span>
+            <span  v-on="click: mark('-', name)" class="label-del" title="Delete"></span>
         </a>
-        </template>
-        <!--
-        <div v-if="header.labels" class="email-labels-wrap">
-            <input
-                class="email-labels-input"
-                data-items="{{items_json}}"
-                data-all="{{all_json}}"
-                data-base-url="{{base_url}}"
-            >
-            <button class="email-labels-ok"></button>
-            <button class="email-labels-cancel"></button>
+        <button class="labels--edit" title="Edit labels"></button>
         </div>
-        -->
+        <div v-if="labels" class="labels-input">
+            <span><input/></span>
+            <button class="labels--ok"></button>
+            <button class="labels--cancel"></button>
+        </div>
+
+        <!-- FIXME: should be a better way -->
+        <labels></labels>
     </div>
 </div>
 <ul v-if="emails" v-class="emails: 1, thread: thread" data-last="{{last}}">
@@ -76,9 +73,7 @@
                 </ul>
             </div>
         </div>
-        <div class="email-text" v-on="click: quotes">
-            {{{body.text}}}
-        </div>
+        <div class="email-text" v-body="body.text"></div>
         <div v-if="body.attachments" class="email-attachments">
             <ul>
                 <li v-repeat="body.attachments.items">
