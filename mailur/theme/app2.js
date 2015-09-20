@@ -51,10 +51,12 @@ let hotkeys = [
         () => mark({action: '-', name: '\\Inbox'})
     ],
     [['m l'], 'Edit labels', () => $('.labels--edit')[0].click()],
-    [['r r'], 'Reply', () => view.tread && go(view.last_email.links.reply)],
-    [['r r'], 'Reply all',
-        () => view.thread && go(view.last_email.links.replyall)
-    ],
+    [['r r'], 'Reply', () => {
+        if (view.tread) go(view.last_email.links.reply);
+    }],
+    [['r a'], 'Reply all', () => {
+        if (view.thread) go(view.last_email.links.replyall);
+    }],
     [['c'], 'Compose', () => go('/compose/')],
     [['g i'], 'Go to Inbox', () => goToLabel('\\Inbox')],
     [['g d'], 'Go to Drafts', () => goToLabel('\\Drafts')],
