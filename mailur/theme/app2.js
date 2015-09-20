@@ -232,10 +232,8 @@ let Emails = Component.extend({
                 toggle(labels);
                 toggle(edit);
             };
-            let clear = () => {
-                if (tags) tags.destroy();
-                if (compl) compl.destroy();
-                input.value = vm.labels.join(',');
+            let init = () => {
+                reset();
                 compl = horsey(input, {suggestions: vm.header.labels.all});
                 tags = insignia(input, {
                     deletion: true,
@@ -247,25 +245,32 @@ let Emails = Component.extend({
                         let valid = vm.header.labels.all.indexOf(value) !== -1;
                         valid = valid || !value.startsWith('\\');
                         return valid && tags.indexOf(value) === -1;
-                    }
+                    },
                 });
+                input.focus();
             };
-            let reset = (callback) => {
+            let clear = () => {
+                if (tags) tags.destroy();
+                if (compl) compl.destroy();
+                input.value = vm.labels.join(',');
+            };
+            let reset = () => {
                 clear();
                 toggle(labels);
                 toggle(edit);
-                if (callback) callback();
             };
             let input = edit.querySelector('input');
 
             Mousetrap(input)
                 .bind(['esc'], (e) => {
                     e.preventDefault();
+                    compl.hide();
                     tags.convert();
                 })
                 .bind(['enter'], (e) => {
                     e.preventDefault();
                     if (compl.list.classList.contains('sey-show')) return;
+                    compl.hide();
                     tags.convert();
                 })
                 .bind('esc esc', (e) => reset())
@@ -273,9 +278,7 @@ let Emails = Component.extend({
 
             $$('.labels--ok').addEventListener('click', (e) => save());
             $$('.labels--cancel').addEventListener('click', (e) => reset());
-            $$('.labels--edit').addEventListener('click', (e) => {
-                reset(() => input.focus());
-            });
+            $$('.labels--edit').addEventListener('click', (e) => init());
         },
         getLabels(names) {
             let result = [];
@@ -286,6 +289,8 @@ let Emails = Component.extend({
         },
         getPicked(data, callback) {
             data = data || this;
+            if (!data.emails) return [];
+
             let result = [];
             for(let el of data.emails.items) {
                 if (this.checked(el)) {
@@ -348,19 +353,32 @@ let Emails = Component.extend({
             mark(data);
             return false;
         },
-        mark(action, name) {
+        mark(action, name, e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
             // FIXME
             if (!name) return this.merge();
 
             mark({action: action || '+', name: name});
         },
+        newThread(params) {
+            send('/new-thread/', params, (data) => go(data.url));
+        },
         merge(e) {
-            let params = {
+            this.newThread({
                 action: 'merge',
                 ids: this.getPicked(this, (el) => el.thrid)
-            };
-            send('/new-thread/', params, (data) => go(data.url));
-        }
+            });
+        },
+        extract(e) {
+            this.newThread({action: 'new', ids: [e.targetVM.id]});
+        },
+        delete(e) {
+            mark({action: '+', name: '\\Trash', ids: [e.targetVM.id]});
+        },
     },
 });
 let Compose = Component.extend({

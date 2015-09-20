@@ -8,7 +8,7 @@
         <div class="labels-edit">
         <a v-repeat="getLabels(labels)" v-on="click: go" href="{{url}}" class="label">
             {{name}}
-            <span  v-on="click: mark('-', name)" class="label-del" title="Delete"></span>
+            <span  v-on="click: mark('-', name, $event)" class="label-del" title="Delete"></span>
         </a>
         <button class="labels--edit" title="Edit labels"></button>
         </div>
@@ -58,9 +58,9 @@
                 <a href="{{links.forward}}" v-on="click: go">Forward</a>
                 <template v-if="emails.length > 1"}}>
                 <a href="{{links.body}}" v-on="click: go">Show this message</a>
-                <a href="#" on-click="extract">Extract new thread</a>
+                <a href="#" v-on="click: extract">Extract new thread</a>
                 </template>
-                <a href="#" on-click="delete">Delete this message</a>
+                <a href="#" v-on="click: delete">Delete this message</a>
                 <a href="{{links.raw}}" target="_blank">Show original</a>
             </div>
             <div class="email-extra" v-show="body.details">

@@ -8,6 +8,7 @@
 @ColorA: #777;
 @ColorB: #008000;
 @ColorC: #f63;
+@ColorL: rgb(0,150,136);
 @Color0bg: #fff;
 @Color0b: #ccc;
 @Color1bg: #eee;
@@ -71,6 +72,9 @@ body {
         & li {
             display: inline-block;
             vertical-align: middle;
+        }
+        .label {
+            font-size: 90%;
         }
         .email-pin {
             .icon-pin;
@@ -295,6 +299,10 @@ body {
             .label.label-del();
         }
         .nsg-input {
+            outline: none;
+            border: 1px solid @ColorC;
+            padding: 0 2px;
+
             &:focus {
                 background-color: #fff;
             }
@@ -323,19 +331,18 @@ body {
 .label {
     background: #eee;
     border: 1px solid #eee;
-    padding: 2px;
-    margin: 2px;
+    padding: 1px;
+    margin: 1px;
     text-decoration: none;
-    color: @ColorB;
+    color: @ColorL;
+
     &:hover {
         background: #fff;
     }
 
     .label-del {
-        display: inline-block;
         &:after {
-            content: 'X';
-            padding: 0 4px;
+            content: ' X ';
         }
         &:hover {
             color: @ColorC;
@@ -402,7 +409,7 @@ body {
     overflow-y: auto;
 
     a {
-        color: @ColorB;
+        color: @ColorL;
         text-decoration: none;
     }
     nav {
