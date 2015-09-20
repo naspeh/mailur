@@ -52,7 +52,7 @@ let hotkeys = [
     ],
     [['m l'], 'Edit labels', () => $('.labels--edit')[0].click()],
     [['r r'], 'Reply', () => {
-        if (view.tread) go(view.last_email.links.reply);
+        if (view.thread) go(view.last_email.links.reply);
     }],
     [['r a'], 'Reply all', () => {
         if (view.thread) go(view.last_email.links.replyall);
@@ -386,10 +386,48 @@ let Emails = Component.extend({
 });
 let Compose = Component.extend({
     template: require('./compose.html'),
-    created() {
+    ready() {
         this.preview();
         this.$watch('body', () => this.preview(null, 3000));
         this.$watch('quoted', this.preview);
+
+        let vm = this;
+        let input = $('.compose-to input')[0];
+        input.value = vm.to;
+        let compl = horsey(input, {suggestions: (done) => {
+            send('/search-email/?q=', null, done);
+        }});
+        let tags = insignia(input, {
+            deletion: true,
+            delimiter: ',',
+            parse(value) {
+                return value.trim();
+            },
+        });
+        input.addEventListener('insignia-evaluated', (e) => {
+            vm.to = tags.value();
+        });
+        Mousetrap(input)
+            .bind(['esc'], (e) => {
+                e.preventDefault();
+                compl.hide();
+                tags.convert();
+            })
+            .bind(['enter'], (e) => {
+                e.preventDefault();
+                if (compl.list.classList.contains('sey-show')) return;
+                compl.hide();
+                tags.convert();
+            });
+
+        let submit = () => {
+            tags.destroy();
+            $('.compose')[0].submit();
+        };
+        $('.compose-send')[0].addEventListener('click', (e) => submit());
+
+        let text = $('.compose textarea')[0];
+        Mousetrap(text).bind('ctrl+enter', (e) => submit());
     },
     methods : {
         getContext() {
@@ -409,7 +447,7 @@ let Compose = Component.extend({
             this.last = new Date();
 
             let params = {
-                target: getPath(),
+                target: this.target,
                 context: this.getContext(),
             };
             if (this.quoted) params.quote = this.quote;

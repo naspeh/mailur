@@ -696,7 +696,9 @@ def compose(env):
             'forward': forward,
         })
 
-    saved = env.session.get(env.request.full_path)
+    autosave_key = ':'.join(('compose', parent.get('thrid') or 'new'))
+    ctx['target'] = autosave_key
+    saved = env.session.get(autosave_key)
     if saved:
         ctx.update(saved)
 
@@ -732,7 +734,7 @@ def compose(env):
 
         sendmail(env, msg)
         if saved:
-            del env.session[env.request.full_path]
+            del env.session[autosave_key]
 
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
@@ -831,8 +833,8 @@ def search_email(env):
 
     i = env.sql('''
     WITH addresses AS ({addresses})
-    SELECT addr, time FROM addresses
-    {where} ORDER BY time DESC LIMIT 100
+    SELECT addr, max(time) FROM addresses
+    {where} GROUP BY addr ORDER BY 2 DESC LIMIT 100
     '''.format(where=where, addresses=addresses))
     return env.to_json([
         {'text': v[0], 'value': v[0]} for v in i if len(v[0]) < 100

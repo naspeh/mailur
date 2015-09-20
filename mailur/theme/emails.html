@@ -82,7 +82,7 @@
                 </li>
             </ul>
         </div>
-        <div v-if="!body.text" class="email-text">
+        <div v-if="body.text === undefined" class="email-text">
             <b>Loading...</b>
         </div>
     </div>

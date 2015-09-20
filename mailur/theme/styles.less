@@ -281,30 +281,6 @@ body {
         .icon-tags();
     }
     .labels-input {
-        /* insignia */
-        .nsg-editor {
-            cursor: text;
-            display: inline-block;
-        }
-        .nsg-tags {
-            display: inline-block;
-        }
-        .nsg-tag {
-            display: inline-block;
-            .label();
-        }
-        .nsg-tag-remove {
-            .label.label-del();
-        }
-        .nsg-input {
-            outline: none;
-            border: 1px solid @ColorC;
-            padding: 0 2px;
-
-            &:focus {
-                background-color: #fff;
-            }
-        }
     }
 }
 .thread {
@@ -370,6 +346,13 @@ body {
     }
     .compose-preview {
         .mix_button();
+    }
+    .compose-to {
+        border-bottom: 1px solid #ccc;
+
+        input {
+            margin-bottom: -1px;
+        }
     }
 }
 .help {
@@ -448,6 +431,41 @@ body {
 .error {
     color: red;
     font-weight: bold;
+}
+
+/* insignia */
+.nsg-editor {
+    cursor: text;
+}
+.nsg-tag {
+    background: #eee;
+    border: 1px solid #eee;
+    padding: 1px;
+    margin: 1px;
+
+    &:hover {
+        background: #fff;
+    }
+}
+.nsg-tag-remove {
+    &:after {
+        content: ' X ';
+        cursor: pointer;
+    }
+    &:hover {
+        color: @ColorC;
+    }
+}
+.nsg-input {
+    display: inline!important;
+    outline: none;
+    border: none;
+    border-bottom: 1px solid @ColorC;
+    padding: 0 2px;
+
+    &:focus {
+        background-color: #fff;
+    }
 }
 
 /* horsey */
