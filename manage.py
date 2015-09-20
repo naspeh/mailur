@@ -405,7 +405,6 @@ def get_full(argv):
         'lessc {0}styles.less {0}build/styles.css &&'
         'cat'
         '   node_modules/normalize.css/normalize.css'
-        '   {0}lib/selectize.css'
         '   {0}build/styles.css'
         '   > {0}build/all.css &&'
         'postcss --use autoprefixer -o {0}build/all.css {0}build/all.css &&'
