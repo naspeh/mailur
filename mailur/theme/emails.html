@@ -33,7 +33,7 @@
     <ul class="email-line">
         <li v-if="draft" class="email-draft">Draft</li>
         <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
-        <li class="email-pick"><input v-on="change: pick" checked="{{checked($data)}}" type="checkbox" class="mousetrap"></li>
+        <li class="email-pick"><input v-on="change: pick($data)" v-model="checked" type="checkbox" class="mousetrap"></li>
         <li class="email-pic" v-style="'background-image:url(' + fr.image + ')'"></li>
         <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">

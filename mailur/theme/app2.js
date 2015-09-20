@@ -15,32 +15,24 @@ if (conf.ws_enabled) {
 
 /* Keyboard shortcuts */
 let hotkeys = [
-    [['s a', '* a'], 'Select all conversations',
-        () => $('.email .email-pick input', (el) => el.checked = true)
-    ],
-    [['s n', '* n'], 'Deselect all conversations',
-        () => $('.email .email-pick input', (el) => el.checked = false)
-    ],
-    [['s r', '* r'], 'Select read conversations',
-        () => $('.email:not(.email-unread) .email-pick input', (el) =>
-            el.checked = true
-        )
-    ],
-    [['s u', '* u'], 'Select unread conversations',
-        () => $('.email.email-unread .email-pick input', (el) =>
-            el.checked = true
-        )
-    ],
-    [['s p', '* s'], 'Select pinned conversations',
-        () => $('.email.email-pinned .email-pick input', (el) =>
-            el.checked = true
-        )
-    ],
-    [['s shift+p', '* t'], 'Select unpinned conversations',
-        () => $('.email:not(.email-pinned) .email-pick input', (el) =>
-            el.checked = true
-        )
-    ],
+    [['s a', '* a'], 'Select all conversations', () => {
+        filterEmails((i) => view.pick(i, true));
+    }],
+    [['s n', '* n'], 'Deselect all conversations', () => {
+        filterEmails((i) => view.pick(i, false));
+    }],
+    [['s r', '* r'], 'Select read conversations', () => {
+        filterEmails((i) => i.unread || view.pick(i, true));
+    }],
+    [['s u', '* u'], 'Select unread conversations', () => {
+        filterEmails((i) => i.unread && view.pick(i, true));
+    }],
+    [['s p', '* s'], 'Select pinned conversations', () => {
+        filterEmails((i) => i.pinned && view.pick(i, true));
+    }],
+    [['s shift+p', '* t'], 'Select unpinned conversations', () => {
+        filterEmails((i) => i.pinned || view.pick(i, true));
+    }],
     [['m !', '!'], 'Report as spam', () => mark({action: '+', name: '\\Spam'})],
     [['m #', '#'] , 'Delete', () => mark({action: '+', name: '\\Trash'})],
     // [['m p'], 'Mark as pinned',
@@ -59,8 +51,10 @@ let hotkeys = [
         () => mark({action: '-', name: '\\Inbox'})
     ],
     [['m l'], 'Edit labels', () => $('.labels--edit')[0].click()],
-    [['r r'], 'Reply', () => go(getLastEmail().links.reply)],
-    [['r a'], 'Reply all', () => go(getLastEmail().links.replyall)],
+    [['r r'], 'Reply', () => view.tread && go(view.last_email.links.reply)],
+    [['r r'], 'Reply all',
+        () => view.thread && go(view.last_email.links.replyall)
+    ],
     [['c'], 'Compose', () => go('/compose/')],
     [['g i'], 'Go to Inbox', () => goToLabel('\\Inbox')],
     [['g d'], 'Go to Drafts', () => goToLabel('\\Drafts')],
@@ -161,7 +155,7 @@ let Emails = Component.extend({
 
             let ids = [];
             for (let el of this.emails.items) {
-                if (el.unread) ids.push(this.getId(el));
+                if (el.unread) ids.push(el.vid);
             }
             if (ids.length) {
                 mark({action: '-', name: '\\Unread', ids: ids}, () => {}, this);
@@ -190,11 +184,20 @@ let Emails = Component.extend({
             this.vm.refreshLabels();
         }}
     },
+    computed: {
+        last_email() {
+            return this.emails.items.slice(-1)[0];
+        }
+    },
     methods: {
         initData(data) {
             if (data.checked_list === undefined) {
                 data.$set('checked_list', new Set());
                 this.permanent('checked_list');
+            }
+            for (let email of data.emails.items) {
+                email.vid = email[data.threads ? 'thrid' : 'id'];
+                email.$set('checked', this.checked_list.has(email.vid));
             }
 
             data.$set('labels_edit',
@@ -202,12 +205,6 @@ let Emails = Component.extend({
             );
             data.$set('labels',  this.getLabelsByPicked(data));
             return data;
-        },
-        getId($data) {
-            return $data[this.$data.threads ? 'thrid' : 'id'];
-        },
-        checked($data) {
-            return this.checked_list.has(this.getId($data));
         },
         refreshLabels() {
             let container = $('.header .labels')[0];
@@ -291,11 +288,11 @@ let Emails = Component.extend({
         },
         getPicked(data, callback) {
             data = data || this;
-            if (!data.emails) return [];
+            if (!data.emails || data.thread) return [];
 
             let result = [];
             for(let el of data.emails.items) {
-                if (this.checked(el)) {
+                if (el.checked) {
                     result.push(callback ? callback(el) : el);
                 }
             }
@@ -309,12 +306,13 @@ let Emails = Component.extend({
             );
             return labels;
         },
-        pick(e) {
-            let id = this.getId(e.targetVM.$data);
-            if (e.target.checked){
-                this.checked_list.add(id);
+        pick(data, checked) {
+            if (checked === undefined) checked = data.checked;
+            data.checked = checked;
+            if (checked){
+                this.checked_list.add(data.vid);
             } else {
-                this.checked_list.delete(id);
+                this.checked_list.delete(data.vid);
             }
             this.labels_edit = this.getPicked().length > 0;
             this.labels = this.getLabelsByPicked();
@@ -457,12 +455,19 @@ function $(selector, callback) {
 function toggle(el) {
     el.style.display = el.style.display == 'none' ? '' : 'none';
 }
-function getLastEmail() {
-    if (view.name() != 'emails') return;
-    return view.emails.items.slice(-1)[0];
-}
 function goToLabel(label) {
     go('/emails/?in=' + label);
+}
+function filterEmails(condition) {
+    if (view.name() != 'emails' || view.thread) return;
+
+    let items = [];
+    for (let item of view.emails.items) {
+        if (condition(item)) {
+            items.push(item);
+        }
+    }
+    return items;
 }
 function getPath() {
     return location.pathname + location.search;
@@ -483,7 +488,7 @@ function mark(params, callback, emails) {
             params.thread = true;
         } else {
             params.thread = view.$data.threads;
-            params.ids = view.getPicked(view, (el) => view.getId(el));
+            params.ids = view.getPicked(view, (el) => el.vid);
         }
     }
     if (params.thread) {
