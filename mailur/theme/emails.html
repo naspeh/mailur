@@ -56,10 +56,11 @@
                 <a v-if="to_all" href="{{links.replyall}}" v-on="click: go">Reply to all</a>
                 <a href="{{links.reply}}" v-on="click: go">Reply</a>
                 <a href="{{links.forward}}" v-on="click: go">Forward</a>
-                <template v-if="emails.length > 1"}}>
+                <template v-if="thread && emails.length > 1"}}>
                 <a href="{{links.body}}" v-on="click: go">Show this message</a>
                 <a href="#" v-on="click: extract">Extract new thread</a>
                 </template>
+                <a v-if="!thread" href="{{links.thread}}">Show full thread</a>
                 <a href="#" v-on="click: delete">Delete this message</a>
                 <a href="{{links.raw}}" target="_blank">Show original</a>
             </div>
