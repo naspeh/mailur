@@ -178,7 +178,9 @@ let Emails = Component.extend({
                 el.target = '_blank';
             }
             for (let el of this.el.querySelectorAll('.email-quote-toggle')) {
-                el.addEventListener('click', (e) => toggle(el.nextSibling));
+                let quote = el.nextElementSibling;
+                el.addEventListener('click', (e) => toggle(quote));
+                toggle(quote);
             }
         },
     },
