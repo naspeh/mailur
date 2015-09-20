@@ -324,19 +324,20 @@ let Emails = Component.extend({
             let body = e.targetVM.$data.body;
             body.details = !body.details;
         },
-        getOrGo(url, ctx, e) {
+        getOrGo(e) {
             e.preventDefault();
-            if (this.$data.thread) {
+            let ctx = e.targetVM;
+            if (ctx.body_url) {
                 if (ctx.body) {
                     ctx.body.show = !ctx.body.show;
                 } else {
                     ctx.body = {show: true};
-                    send(url, null, (data) => {
+                    send(ctx.body_url, null, (data) => {
                         ctx.body = data.emails.items[0].body;
                     });
                 }
             } else {
-                go(url);
+                go(ctx.thread_url);
             }
             return false;
         },

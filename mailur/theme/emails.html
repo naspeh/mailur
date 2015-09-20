@@ -39,7 +39,7 @@
         <li v-if="labels" class="email-labels">
             <a v-repeat="getLabels(labels)" href="{{url}}" v-on="click: go" class="label">{{name}}</a>
         </li>
-        <li class="email-info" v-on="click: getOrGo(url, $data, $event)">
+        <li class="email-info" v-on="click: getOrGo">
             <span v-if="count" class="email-count">{{count}}</span>
             <a href="{{url}}" v-class="email-subj: 1, email-subj-changed: subj_changed">
                 {{subj_human}}

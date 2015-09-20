@@ -210,17 +210,13 @@ def sidebar(env):
     return ctx
 
 
-def ctx_emails(env, items, thread=False):
+def ctx_emails(env, items, threads=False):
     emails, last = [], None
     for i in items:
         extra = i.get('_extra', {})
         email = dict({
             'id': i['id'],
             'thrid': i['thrid'],
-            'url': (
-                env.url_for('body', id=i['id']) if thread else
-                env.url_for('thread', id=i['thrid'])
-            ),
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
             'subj_url': env.url_for('emails', {'subj': i['subj']}),
@@ -239,6 +235,11 @@ def ctx_emails(env, items, thread=False):
             'to_all': len(i['to'] + i['cc']) > 1,
             'labels': ctx_labels(env, i['labels'])
         }, **extra)
+        if threads:
+            email['thread_url'] = env.url_for('thread', id=i['thrid'])
+        else:
+            email['body_url'] = env.url_for('body', id=i['id'])
+
         last = i['created'] if not last or i['created'] > last else last
         email['hash'] = f.get_hash(email)
         emails.append(email)
@@ -248,7 +249,7 @@ def ctx_emails(env, items, thread=False):
         'length': len(emails),
         'last': str(last)
     }
-    return {'emails': emails, 'thread': thread}
+    return {'emails': emails}
 
 
 def ctx_links(env, id, thrid=None, to=None):
@@ -378,7 +379,7 @@ def thread(env, id):
             yield msg
             msgs.append(msg)
 
-    ctx = ctx_emails(env, emails(), True)
+    ctx = ctx_emails(env, emails())
     if ctx['emails']:
         emails = ctx['emails']['items']
         subj = f.humanize_subj(emails[0]['subj'])
@@ -388,6 +389,7 @@ def thread(env, id):
         last['body'] = ctx_body(env, msgs[-1], parents, show=True)
 
         ctx['header'] = ctx_header(env, subj, labels)
+        ctx['thread'] = True
     return ctx
 
 
@@ -474,7 +476,7 @@ def emails(env, page):
     sql = 'SELECT count(distinct thrid) FROM emails WHERE %s' % where
     count = env.sql(sql).fetchone()[0]
 
-    ctx = ctx_emails(env, emails())
+    ctx = ctx_emails(env, emails(), threads=True)
     ctx['count'] = count
     ctx['next'] = page['count'] < count and {'url': env.url(
         env.request.path,
@@ -526,7 +528,7 @@ def search(env):
     ''', {'ids': ids})
 
     subj = 'Search by %r' % q
-    ctx = ctx_emails(env, i, True)
+    ctx = ctx_emails(env, i)
     ctx['header'] = ctx_header(env, subj)
     return ctx
 
