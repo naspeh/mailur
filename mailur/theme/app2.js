@@ -138,7 +138,7 @@ let sidebar = new Component({
     methods: {
         search(e) {
             e.preventDefault();
-            go('/search/?q=' + this.$data.search_query);
+            go(encodeURI('/search/?q=' + this.$data.search_query));
         },
         toggleHelp(e, value) {
             if(e) e.preventDefault();
@@ -409,7 +409,7 @@ let Compose = Component.extend({
             this.last = new Date();
 
             let params = {
-                target: location.pathname + location.search,
+                target: getPath(),
                 context: this.getContext(),
             };
             if (this.quoted) params.quote = this.quote;
@@ -430,8 +430,7 @@ let view;
 let base_title = document.title;
 let history = createHistory();
 history.listen((location) => {
-    let path = location.pathname + location.search;
-    send(path, null, (data) => {
+    send(getPath(), null, (data) => {
         let current = views[data._name];
         if (!view || view.name() != data._name) {
             view = new current({data: data, el: '.body'});
@@ -465,11 +464,14 @@ function getLastEmail() {
 function goToLabel(label) {
     go('/emails/?in=' + label);
 }
+function getPath() {
+    return location.pathname + location.search;
+}
 function go(url) {
     return history.pushState({}, url.replace(location.origin, ''));
 }
 function reload() {
-    return history.replaceState({}, location.pathname + location.search);
+    return history.replaceState({}, getPath());
 }
 function mark(params, callback, emails) {
     view = emails || view;
