@@ -562,6 +562,8 @@ function connect() {
                 handler(JSON.parse(data.payload));
                 delete handlers[data.uid];
             }
+        } else if (data.session) {
+            document.cookie = data.session;
         } else if (data.updated) {
             console.log(data);
             sidebar.fetch();
@@ -575,34 +577,36 @@ function connect() {
         ws_try++;
     };
 }
-function fetchRaw(url, data, callback) {
-    let params = {
-        credentials: 'same-origin',
-        method: data ? 'POST': 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-        },
-    };
-    if (data) {
-        params.headers['Content-Type'] = 'application/json';
-        params.body = JSON.stringify(data);
-    }
-    fetch(url, params)
-        .then(r => r.json())
-        .then(callback)
-        .catch(ex => console.log(url, ex));
-}
 function send(url, data, callback) {
     console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web.replace(/\/$/, '') + url;
-        data = {url: url, payload: data, uid: utils.guid()};
+        data = {
+            url: url,
+            payload: data,
+            uid: utils.guid(),
+            cookie: document.cookie
+        };
         ws.send(JSON.stringify(data));
         if (callback) {
             handlers[data.uid] = callback;
         }
     } else {
-        fetchRaw(url, data, callback);
+        let params = {
+            credentials: 'same-origin',
+            method: data ? 'POST': 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+        };
+        if (data) {
+            params.headers['Content-Type'] = 'application/json';
+            params.body = JSON.stringify(data);
+        }
+        fetch(url, params)
+            .then(r => r.json())
+            .then(callback)
+            .catch(ex => console.log(url, ex));
     }
 }

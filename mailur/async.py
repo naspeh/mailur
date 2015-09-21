@@ -34,7 +34,7 @@ def wshandler(request):
     ws.start(request)
 
     request.app['sockets'].append((env.username, ws))
-    cookies = request.cookies
+    session = request.cookies.get('session')
     while True:
         msg = yield from ws.receive()
         if msg.tp == web.MsgType.text:
@@ -46,15 +46,22 @@ def wshandler(request):
             resp = yield from aiohttp.request(
                 'POST' if payload else 'GET',
                 data['url'],
-                headers={'X-Requested-With': 'XMLHttpRequest'},
+                headers={
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Cookie': data['cookie']
+                },
                 data=payload,
-                cookies=cookies.items()
             )
             log.debug('%s %s', resp.status, msg.data)
             if resp.status == 200:
-                resp = (yield from resp.read()).decode()
-                cookies = resp.cookies
-                ws.send_str(json.dumps({'uid': data['uid'], 'payload': resp}))
+                p = (yield from resp.read()).decode()
+                ws.send_str(json.dumps({'uid': data['uid'], 'payload': p}))
+                new_session = resp.cookies.get('session')
+                if new_session and session != new_session:
+                    session = new_session.value
+                    msg = {'session': new_session.output(header='').strip()}
+                    ws.send_str(json.dumps(msg))
+                    log.debug('sent new session')
         elif msg.tp == web.MsgType.close:
             log.debug('ws closed')
             yield from ws.close()

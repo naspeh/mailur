@@ -6,5 +6,5 @@
     <input type="submit" value="Send">
 </form>
 <script>
-fetch('/init/?offset=' + new Date().getTimezoneOffset() / 60);
+fetch('/init/?offset=' + new Date().getTimezoneOffset() / 60, {credentials: 'same-origin'});
 </script>
