@@ -34,6 +34,7 @@ def wshandler(request):
     ws.start(request)
 
     request.app['sockets'].append((env.username, ws))
+    cookies = request.cookies
     while True:
         msg = yield from ws.receive()
         if msg.tp == web.MsgType.text:
@@ -47,11 +48,12 @@ def wshandler(request):
                 data['url'],
                 headers={'X-Requested-With': 'XMLHttpRequest'},
                 data=payload,
-                cookies=request.cookies.items()
+                cookies=cookies.items()
             )
             log.debug('%s %s', resp.status, msg.data)
             if resp.status == 200:
                 resp = (yield from resp.read()).decode()
+                cookies = resp.cookies
                 ws.send_str(json.dumps({'uid': data['uid'], 'payload': resp}))
         elif msg.tp == web.MsgType.close:
             log.debug('ws closed')

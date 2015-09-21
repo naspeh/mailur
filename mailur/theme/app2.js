@@ -460,7 +460,7 @@ let Compose = Component.extend({
             if (this.quoted) params.quote = this.quote;
 
             let self = this;
-            fetchRaw('/preview/', params, (data) => {
+            send('/preview/', params, (data) => {
                 self.$data.$set('html', data);
             });
         },
