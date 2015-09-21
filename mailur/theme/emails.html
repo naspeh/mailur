@@ -74,7 +74,7 @@
                 </ul>
             </div>
         </div>
-        <div class="email-text" v-body="body.text"></div>
+        <div class="email-text" v-body="body.text || ''"></div>
         <div v-if="body.attachments" class="email-attachments">
             <ul>
                 <li v-repeat="body.attachments.items">
