@@ -22,7 +22,7 @@
         <labels></labels>
     </div>
 </div>
-<ul v-if="emails" v-class="emails: 1, thread: thread" data-last="{{last}}">
+<ul v-if="emails" v-class="emails: 1, thread: thread">
 <li v-repeat="emails.items" track-by="hash" v-class="
         email: 1,
         email-show: body.show,

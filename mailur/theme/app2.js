@@ -189,10 +189,17 @@ let Emails = Component.extend({
     computed: {
         last_email() {
             return this.emails.items.slice(-1)[0];
-        }
+        },
     },
     methods: {
         initData(data) {
+            if(!data.emails) {
+                // TODO: maybe should update template instead of filling
+                data.$set('labels', []);
+                if(!data.header) data.$set('header', {title: '', buttons: []});
+                return data;
+            }
+
             if (data.checked_list === undefined) {
                 data.$set('checked_list', new Set());
                 this.permanent('checked_list');
@@ -465,7 +472,7 @@ let views = {
     compose: Compose
 };
 let view;
-let base_title = document.title;
+let title = document.title;
 let history = createHistory();
 history.listen((location) => {
     send(getPath(), null, (data) => {
@@ -475,7 +482,7 @@ history.listen((location) => {
         } else {
             view.$data = data;
         }
-        document.title = `${data.header.title} - ${base_title}`;
+        if (data.header) document.title = `${data.header.title} - ${title}`;
     });
 });
 
