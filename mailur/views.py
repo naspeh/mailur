@@ -410,12 +410,14 @@ def emails(env, page):
         where = env.mogrify('%s::varchar[] <@ labels', [l])
     elif args.get('subj'):
         subj = 'Filter by subj %r' % args['subj']
-        where = env.mogrify('%s = subj', [args['subj']])
+        where = env.mogrify('''
+        %s = subj AND '\\All' = ANY(labels)
+        ''', [args['subj']])
     elif args.get('person'):
         subj = 'Filter by person %r' % args['person']
-        where = env.mogrify(
-            '(fr[1] LIKE %(fr)s OR "to"[1] LIKE %(fr)s)',
-            {'fr': '%%<{}>'.format(args['person'])}
+        where = env.mogrify('''
+        (fr[1] LIKE %(fr)s OR "to"[1] LIKE %(fr)s) AND '\\All' = ANY(labels)
+        ''', {'fr': '%%<{}>'.format(args['person'])}
         )
     else:
         return env.abort(400)
