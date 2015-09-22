@@ -66,7 +66,11 @@ def search(env, email, query):
     imap = Client(env, email)
     folder = [n for a, d, n in imap.folders() if '\\All' in a][0]
     imap.select(folder, True)
-    _, data = imap.uid('SEARCH', None, 'X-GM-RAW %s' % json.dumps(query))
+
+    # http://stackoverflow.com/questions/9997928
+    query = '"%s"' % query.replace('"', '\\"')
+    imap.im.literal = query.encode()
+    _, data = imap.uid('SEARCH', 'CHARSET', 'UTF-8', 'X-GM-RAW')
     if not data[0]:
         return []
 

@@ -499,37 +499,42 @@ def search(env):
     env.session['search_query'] = q
 
     if q.startswith('g '):
+        # Gmail search
         q = q[2:]
         ids = syncer.search(env, env.email, q)[:env('ui_per_page')]
+        i = env.sql('''
+        SELECT
+            id, thrid, subj, labels, time, fr, "to", cc, text, created,
+            html, attachments
+        FROM emails
+        WHERE id = ANY(%(ids)s::uuid[])
+        ''', {'ids': ids})
     else:
         i = env.sql('''
-        SELECT id
-        FROM emails_search
-        WHERE document @@ (
-            plainto_tsquery('simple', %(query)s) ||
-            plainto_tsquery('english', %(query)s) ||
-            plainto_tsquery('russian', %(query)s)
+        WITH search(id) AS (
+            SELECT id
+            FROM emails_search
+            WHERE document @@ (
+                plainto_tsquery('simple', %(query)s) ||
+                plainto_tsquery('english', %(query)s) ||
+                plainto_tsquery('russian', %(query)s)
+            )
+            ORDER BY ts_rank(document, (
+                plainto_tsquery('simple', %(query)s) ||
+                plainto_tsquery('english', %(query)s) ||
+                plainto_tsquery('russian', %(query)s)
+            )) DESC
         )
-        ORDER BY ts_rank(document, (
-            plainto_tsquery('simple', %(query)s) ||
-            plainto_tsquery('english', %(query)s) ||
-            plainto_tsquery('russian', %(query)s)
-        )) DESC
-        LIMIT 100
+        SELECT
+            e.id, thrid, subj, labels, time, fr, "to", cc, text, created,
+            html, attachments
+        FROM search s
+        JOIN emails e ON e.id = s.id
+        WHERE '\\All' = ANY(labels)
         ''', {'query': q})
-        ids = [r[0] for r in i]
 
-    i = env.sql('''
-    SELECT
-        id, thrid, subj, labels, time, fr, "to", cc, text, created,
-        html, attachments
-    FROM emails
-    WHERE id = ANY(%(ids)s::uuid[])
-    ''', {'ids': ids})
-
-    subj = 'Search by %r' % q
     ctx = ctx_emails(env, i)
-    ctx['header'] = ctx_header(env, subj)
+    ctx['header'] = ctx_header(env, 'Search by %r' % q)
     return ctx
 
 
