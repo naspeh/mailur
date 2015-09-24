@@ -394,17 +394,22 @@ let Emails = Component.extend({
 let Compose = Component.extend({
     template: require('./compose.html'),
     ready() {
-        this.preview();
+        this.$watch('fr', this.preview);
+        this.$watch('to', this.preview);
+        this.$watch('subj', this.preview);
         this.$watch('body', () => this.preview(null, 3000));
         this.$watch('quoted', this.preview);
 
         let vm = this;
-        let input = $('.compose-to input')[0];
+        let input, compl, tags;
+
+        input = $('.compose-to input')[0];
         input.value = vm.to;
-        let compl = horsey(input, {suggestions: (done) => {
+
+        compl = horsey(input, {suggestions: (done) => {
             send('/search-email/?q=', null, done);
         }});
-        let tags = insignia(input, {
+        tags = insignia(input, {
             deletion: true,
             delimiter: ',',
             parse(value) {
@@ -414,6 +419,7 @@ let Compose = Component.extend({
         input.addEventListener('insignia-evaluated', (e) => {
             vm.to = tags.value();
         });
+
         Mousetrap(input)
             .bind(['esc'], (e) => {
                 e.preventDefault();
@@ -461,8 +467,15 @@ let Compose = Component.extend({
             let self = this;
             send('/preview/', this.getContext(), (data) => {
                 self.$data.$set('html', data);
+                self.$data.$set('draft', true);
             });
         },
+        clear(e) {
+            send('/rm-draft/', {'target': this.target}, (data) => {
+                view = null;
+                reload();
+            });
+        }
     }
 });
 

@@ -12,6 +12,7 @@
     <textarea name="body" v-model="body"></textarea>
     <button type="button" class="compose-send">Send</button>
     <button v-on="click: preview" type="button" class="compose-preview">Preview</button>
+    <button v-if="draft" v-on="click: clear" type="button" class="compose-clear">Discard draft</button>
 
     <template v-if="quote">
     <label v-show="!forward">

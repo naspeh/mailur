@@ -28,6 +28,7 @@ rules = [
     Rule('/new-thread/', endpoint='new_thread'),
     Rule('/compose/', endpoint='compose'),
     Rule('/preview/', endpoint='preview'),
+    Rule('/rm-draft/', endpoint='rm_draft'),
     Rule('/search-email/', endpoint='search_email')
 ]
 url_map = Map(rules)
@@ -710,6 +711,7 @@ def compose(env):
     if autosave.value:
         ctx.update(autosave.value)
     ctx['target'] = autosave.key
+    ctx['draft'] = autosave.value is not None
 
     if env.request.method == 'POST':
         from email.utils import parseaddr
@@ -769,6 +771,14 @@ def preview(env):
     data = schema.validate(env.request.json)
     env.storage.set(data['target'], data)
     return get_html(data['body'], data.get('quote', ''))
+
+
+@login_required
+@adapt_fmt()
+def rm_draft(env):
+    schema = v.parse({'+target': str})
+    data = schema.validate(env.request.json)
+    env.storage.rm(data['target'])
 
 
 def get_html(text, quote=''):
