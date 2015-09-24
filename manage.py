@@ -262,6 +262,7 @@ def deploy(opts):
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
     cat /etc/fcrontab/* | fcrontab - &&
+    PATH="./node_modules/.bin;$PATH" {manage} static &&
     ''')
 
     if opts['env']:

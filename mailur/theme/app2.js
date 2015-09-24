@@ -166,8 +166,6 @@ let Emails = Component.extend({
         this.$watch('checked_list', (newVal, oldVal) => {
             this.refreshLabels();
         });
-
-        this.initReply(this.reply_url);
     },
     directives: {
         body(value) {
@@ -219,6 +217,8 @@ let Emails = Component.extend({
         },
         initReply(url, focus) {
             if(!url) return;
+
+            this.$data.$set('reply_body', true);
             send(url, null, (data) => {
                 data.action = url;
 
