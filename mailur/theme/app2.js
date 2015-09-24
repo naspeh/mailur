@@ -439,9 +439,14 @@ let Compose = Component.extend({
     methods : {
         getContext() {
             let ctx = {};
-            for (let f of ['fr', 'to', 'subj', 'body', 'quoted']) {
+            let fields = [
+                'target', 'fr', 'to', 'subj', 'body',
+                'quoted', 'forward'
+            ];
+            for (let f of fields) {
                 ctx[f] = this[f] === undefined ? '' : this[f];
             }
+            if (this.quoted) ctx.quote = this.quote;
             return ctx;
         },
         preview(e, timeout) {
@@ -453,14 +458,8 @@ let Compose = Component.extend({
             this.once = null;
             this.last = new Date();
 
-            let params = {
-                target: this.target,
-                context: this.getContext(),
-            };
-            if (this.quoted) params.quote = this.quote;
-
             let self = this;
-            send('/preview/', params, (data) => {
+            send('/preview/', this.getContext(), (data) => {
                 self.$data.$set('html', data);
             });
         },

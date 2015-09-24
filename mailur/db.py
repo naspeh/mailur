@@ -3,6 +3,7 @@ import uuid
 
 import psycopg2
 import psycopg2.extras
+from werkzeug.utils import cached_property
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extensions.register_adapter(uuid.UUID, psycopg2.extras.UUID_adapter)
@@ -158,6 +159,24 @@ class Manager():
         ))
 
 
+class Key():
+    def __init__(self, storage, key):
+        self.storage = storage
+        self.key = key
+
+    @cached_property
+    def value(self):
+        return self.storage.get(self.key)
+
+    def set(self, value):
+        self.__dict__.pop('value', None)
+        return self.storage.set(self.key, value)
+
+    def rm(self):
+        self.__dict__.pop('value', None)
+        return self.storage.rm(self.key)
+
+
 class Storage(Manager):
     name = 'storage'
     pk = 'key'
@@ -182,9 +201,17 @@ class Storage(Manager):
     def set(self, key, value):
         value = json.dumps(value, ensure_ascii=False)
         self.upsert({'key': key, 'value': value}, 'key=%s', [key])
+        self.db.commit()
 
     def rm(self, key):
         self.sql('DELETE FROM storage WHERE key=%s', [key])
+        self.db.commit()
+
+    def format_key(self, name, **params):
+        targets = {
+            'compose': lambda thrid: 'compose:%s' % (thrid or 'new')
+        }
+        return Key(self, targets[name](**params))
 
 
 class Emails(Manager):

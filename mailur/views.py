@@ -672,7 +672,10 @@ def compose(env):
     })
     args = schema.validate(env.request.args)
     fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
-    ctx = {'fr': fr, 'to': '', 'subj': '', 'body': '', 'quoted': False}
+    ctx = {
+        'fr': fr, 'to': '', 'subj': '', 'body': '',
+        'quoted': False, 'forward': False
+    }
     parent = {}
     if args.get('id'):
         parent = env.sql('''
@@ -703,11 +706,10 @@ def compose(env):
             'forward': forward,
         })
 
-    autosave_key = ':'.join(('compose', parent.get('thrid') or 'new'))
-    ctx['target'] = autosave_key
-    saved = env.storage.get(autosave_key)
-    if saved:
-        ctx.update(saved)
+    autosave = env.storage.format_key('compose', thrid=parent.get('thrid'))
+    if autosave.value:
+        ctx.update(autosave.value)
+    ctx['target'] = autosave.key
 
     if env.request.method == 'POST':
         from email.utils import parseaddr
@@ -740,9 +742,8 @@ def compose(env):
         msg['files'] = env.request.files.getlist('files')
 
         sendmail(env, msg)
-        if saved:
-            env.storage.rm(autosave_key)
-            env.db.commit()
+        if autosave.value:
+            autosave.rm()
 
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
@@ -756,14 +757,18 @@ def compose(env):
 @adapt_fmt()
 def preview(env):
     schema = v.parse({
-        '+context': dict,
         '+target': str,
+        '+fr': str,
+        '+to': str,
+        '+subj': str,
+        '+body': str,
+        '+quoted': bool,
+        '+forward': bool,
         'quote': v.Nullable(str)
     })
     data = schema.validate(env.request.json)
-    env.storage.set(data['target'], data['context'])
-    env.db.commit()
-    return get_html(data['context']['body'], data.get('quote', ''))
+    env.storage.set(data['target'], data)
+    return get_html(data['body'], data.get('quote', ''))
 
 
 def get_html(text, quote=''):
