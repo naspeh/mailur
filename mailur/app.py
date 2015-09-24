@@ -29,7 +29,7 @@ def create_app(views):
         finally:
             if env.username:
                 env.db.rollback()
-        env.session.save_cookie(response, max_age=dt.timedelta(days=3))
+        env.session.save_cookie(response, max_age=dt.timedelta(days=7))
         return response
 
     if env('debug'):
