@@ -741,7 +741,8 @@ def compose(env):
 
         sendmail(env, msg)
         if saved:
-            del env.session[autosave_key]
+            env.storage.rm(autosave_key)
+            env.db.commit()
 
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
@@ -814,8 +815,6 @@ def sendmail(env, msg):
         email['In-Reply-To'] = in_reply_to
         email['References'] = ' '.join([in_reply_to] + msg.get('refs'))
 
-    # env.storage.set('send:%s' % dt.datetime.now(), email.as_string())
-    # env.db.commit()
     if env('readonly'):
         return
 
