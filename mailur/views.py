@@ -705,7 +705,7 @@ def compose(env):
 
     autosave_key = ':'.join(('compose', parent.get('thrid') or 'new'))
     ctx['target'] = autosave_key
-    saved = env.session.get(autosave_key)
+    saved = env.storage.get(autosave_key)
     if saved:
         ctx.update(saved)
 
@@ -760,7 +760,8 @@ def preview(env):
         'quote': v.Nullable(str)
     })
     data = schema.validate(env.request.json)
-    env.session[data['target']] = data['context']
+    env.storage.set(data['target'], data['context'])
+    env.db.commit()
     return get_html(data['context']['body'], data.get('quote', ''))
 
 
