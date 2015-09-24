@@ -391,6 +391,7 @@ def thread(env, id):
 
         ctx['header'] = ctx_header(env, subj, labels)
         ctx['thread'] = True
+        ctx['reply_url'] = env.url_for('compose', {'id': id, 'target': 'all'})
     return ctx
 
 
@@ -751,7 +752,7 @@ def compose(env):
             return env.redirect_for('thread', id=parent['thrid'])
         return env.redirect_for('emails', {'in': '\\Sent'})
 
-    ctx['header'] = ctx_header(env, ctx.get('subj') or 'New message')
+    ctx['header'] = {'title': ctx.get('subj') or 'New message'}
     return ctx
 
 
@@ -769,7 +770,8 @@ def preview(env):
         'quote': v.Nullable(str)
     })
     data = schema.validate(env.request.json)
-    env.storage.set(data['target'], data)
+    if env.request.args.get('save', True):
+        env.storage.set(data['target'], data)
     return get_html(data['body'], data.get('quote', ''))
 
 

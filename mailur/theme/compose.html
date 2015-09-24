@@ -1,7 +1,7 @@
 <div class="header">
     <h3>{{header.title}}</h3>
 </div>
-<form class="compose" method="post" enctype="multipart/form-data">
+<form class="compose" method="post" action="{{action}}" enctype="multipart/form-data">
     <input name="fr" v-model="fr" type="text" placeholder="From" required>
     <div class="compose-to">
         <input name="to" type="text" placeholder="To" required>

@@ -53,9 +53,9 @@
         <div v-if="body.show" class="email-details">
             <div class="email-actions">
                 <a href="#" v-on="click: details">Details</a>
-                <a v-if="to_all" href="{{links.replyall}}" v-on="click: go">Reply to all</a>
-                <a href="{{links.reply}}" v-on="click: go">Reply</a>
-                <a href="{{links.forward}}" v-on="click: go">Forward</a>
+                <a v-if="to_all" href="{{links.replyall}}" v-on="click: reply">Reply to all</a>
+                <a href="{{links.reply}}" v-on="click: reply">Reply</a>
+                <a href="{{links.forward}}" v-on="click: reply">Forward</a>
                 <template v-if="thread && emails.length > 1"}}>
                 <a href="{{links.body}}" v-on="click: go">Show this message</a>
                 <a href="#" v-on="click: extract">Extract new thread</a>
@@ -91,3 +91,4 @@
     <a v-on="click: go" href="{{next.url}}">Next page</a>
 </li>
 </ul>
+<div v-if="reply_url" class="compose-body"></div>

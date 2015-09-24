@@ -166,6 +166,8 @@ let Emails = Component.extend({
         this.$watch('checked_list', (newVal, oldVal) => {
             this.refreshLabels();
         });
+
+        this.initReply(this.reply_url);
     },
     directives: {
         body(value) {
@@ -214,6 +216,22 @@ let Emails = Component.extend({
             );
             data.$set('labels',  this.getLabelsByPicked(data));
             return data;
+        },
+        initReply(url, focus) {
+            if(!url) return;
+            send(url, null, (data) => {
+                data.action = url;
+
+                let reply = $('.compose-body')[0];
+                new Compose({data: data, el: reply});
+                if (focus) {
+                    setTimeout(() => reply.scrollIntoView(true), 500);
+                }
+            });
+        },
+        reply(e) {
+            e.preventDefault();
+            this.initReply(e.target.href, true);
         },
         refreshLabels() {
             let container = $('.header .labels')[0];
@@ -394,15 +412,18 @@ let Emails = Component.extend({
 let Compose = Component.extend({
     template: require('./compose.html'),
     ready() {
+        let vm = this;
+
+        send('/preview/?save=', this.getContext(), (data) => {
+            vm.$data.$set('html', data);
+        });
         this.$watch('fr', this.preview);
         this.$watch('to', this.preview);
         this.$watch('subj', this.preview);
         this.$watch('body', () => this.preview(null, 3000));
         this.$watch('quoted', this.preview);
 
-        let vm = this;
         let input, compl, tags;
-
         input = $('.compose-to input')[0];
         input.value = vm.to;
 
@@ -465,7 +486,7 @@ let Compose = Component.extend({
             this.last = new Date();
 
             let self = this;
-            send('/preview/', this.getContext(), (data) => {
+            send('/preview/?save=1', this.getContext(), (data) => {
                 self.$data.$set('html', data);
                 self.$data.$set('draft', true);
             });
@@ -590,6 +611,8 @@ function connect() {
     };
 }
 function send(url, data, callback) {
+    url = url.replace(location.origin, '');
+
     console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web.replace(/\/$/, '') + url;
