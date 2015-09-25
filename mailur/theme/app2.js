@@ -206,7 +206,7 @@ let Emails = Component.extend({
             }
             for (let email of data.emails.items) {
                 email.vid = email[data.threads ? 'thrid' : 'id'];
-                email.$set('checked', this.checked_list.has(email.vid));
+                email.$set('checked', data.checked_list.has(email.vid));
             }
 
             data.$set('labels_edit',
