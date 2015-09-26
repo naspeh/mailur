@@ -22,14 +22,14 @@ ALIASES = {
 THRID = 'mlr/thrid'
 
 
-def locked_sync_gmail(env, email, *a, **kw):
+def locked_sync_gmail(env, email, **kw):
     func = sync_gmail
-    target = ':'.join([func.__name__, email])
+    target = ':'.join([func.__name__, email, 'fast:%s' % bool(kw.get('fast'))])
     with with_lock(target, timeout=30):
-        return Timer(target)(func)(env, email, *a, **kw)
+        return Timer(target)(func)(env, email, **kw)
 
 
-def sync_gmail(env, email, bodies=False, only=None, labels=None, fast=False):
+def sync_gmail(env, email, fast=True, only=None, labels=None):
     imap = Client(env, email)
     folders = imap.folders()
     if not only:
@@ -53,7 +53,11 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None, fast=False):
             imap.status(name)
 
         uids = labels_[name] or {}
-        log.info('"%s" has %i messages', imap_utf7.decode(name), len(uids))
+        log.info('"{name}" has {count} {new}messages'.format(
+            name=imap_utf7.decode(name),
+            count=len(uids),
+            new='new ' if fast else ''
+        ))
 
         fetch_headers(env, imap, uids)
         with_clean = label in FOLDERS and not fast
@@ -61,8 +65,7 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None, fast=False):
         if label in FOLDERS:
             sync_marks(env, imap, uids)
             update_thrids(env, label)
-        if bodies:
-            fetch_bodies(env, imap, uids)
+        fetch_bodies(env, imap, uids)
     return labels_
 
 

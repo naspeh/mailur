@@ -84,18 +84,13 @@ def sync(env, target, disabled=False, **kw):
     if skip:
         return
 
-    func = ft.partial(syncer.locked_sync_gmail, env, env.email, **kw)
+    sync = ft.partial(syncer.locked_sync_gmail, env, env.email)
     if target == 'fast':
-        return func()
-    elif target == 'bodies':
-        return func(bodies=True)
+        return sync(fast=True)
     elif target == 'full':
-        s = ft.partial(sync, env, disabled=disabled, **kw)
+        return sync(fast=False)
 
-        labels = s(target='fast')
-        s(target='bodies', labels=labels)
-
-sync.choices = ['fast', 'bodies', 'full']
+sync.choices = ['fast', 'full']
 
 
 @for_all
