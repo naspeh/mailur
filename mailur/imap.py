@@ -59,19 +59,19 @@ def select(im, name, readonly=True):
     return im.select('"%s"' % name, readonly=readonly)
 
 
-def status(im, name):
-    uid_next = 'UIDNEXT'
-    _, data = im.status('"%s"' % name, '(%s)' % uid_next)
-    lexer_uid = re.compile(r'[(]%s (\d+)[)]' % uid_next)
+def status(im, name, item='UIDNEXT'):
+    _, data = im.status('"%s"' % name, '(%s)' % item)
+    lexer_uid = re.compile(r'[(]%s (\d+)[)]' % item)
     matches = lexer_uid.search(data[0].decode())
     uid = int(matches.groups()[0])
     return uid
 
 
-def search(im, name):
+def search(im, name, uid_start=None):
+    uid_start = 1 if uid_start is None else uid_start
     uid_next = status(im, name)
     uids, step = [], im.conf_batch_size
-    for i in range(1, uid_next, step):
+    for i in range(uid_start, uid_next, step):
         _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
         if data[0]:
             uids += data[0].decode().split(' ')

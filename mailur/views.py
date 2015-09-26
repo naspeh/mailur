@@ -746,6 +746,7 @@ def compose(env):
         msg['files'] = env.request.files.getlist('files')
 
         sendmail(env, msg)
+        syncer.sync_gmail(env, env.email, bodies=1, only=['\\All'], fast=1)
         if autosave.value:
             autosave.rm()
 
@@ -834,7 +835,9 @@ def sendmail(env, msg):
         email['References'] = ' '.join([in_reply_to] + msg.get('refs'))
 
     if env('readonly'):
-        return
+        return env.abort(400, description=(
+            'Readonly mode. You can\'t send a message'
+        ))
 
     _, sendmail = gmail.smtp_connect(env, env.email)
     sendmail(msg['fr'], msg['to'], email.as_string())

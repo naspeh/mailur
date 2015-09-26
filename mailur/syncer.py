@@ -29,7 +29,7 @@ def locked_sync_gmail(env, email, *a, **kw):
         return Timer(target)(func)(env, email, *a, **kw)
 
 
-def sync_gmail(env, email, bodies=False, only=None, labels=None):
+def sync_gmail(env, email, bodies=False, only=None, labels=None, fast=False):
     imap = Client(env, email)
     folders = imap.folders()
     if not only:
@@ -43,22 +43,26 @@ def sync_gmail(env, email, bodies=False, only=None, labels=None):
             continue
 
         imap.select(name, env('readonly'))
+        fid = imap.status(name, 'UIDVALIDITY')
+        fid = env.storage.format_key('folder', uid=fid)
         if not labels:
-            uids = imap.search(name)
+            uids = imap.search(name, fid.value if fast else None)
             labels_[name] = get_msgids(env, imap, uids)
+            fid.set(imap.status(name, 'UIDNEXT'))
         else:
             imap.status(name)
 
         uids = labels_[name] or {}
         log.info('"%s" has %i messages', imap_utf7.decode(name), len(uids))
+
+        fetch_headers(env, imap, uids)
+        with_clean = label in FOLDERS and not fast
+        fetch_labels(env, imap, uids, label, with_clean)
+        if label in FOLDERS:
+            sync_marks(env, imap, uids)
+            update_thrids(env, label)
         if bodies:
             fetch_bodies(env, imap, uids)
-        else:
-            fetch_headers(env, imap, uids)
-            fetch_labels(env, imap, uids, label, label in FOLDERS)
-            if label in FOLDERS:
-                sync_marks(env, imap, uids)
-                update_thrids(env, label)
     return labels_
 
 
@@ -241,9 +245,9 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
     updated, glabels = [], set()
 
     gids = get_gids(env, map_uids.values())
-    updated += update_label(env, gids, folder)
+    updated += update_label(env, gids, folder, None, clean)
     if folder not in FOLDERS:
-        updated += update_label(env, gids, '\\All', folder)
+        updated += update_label(env, gids, '\\All', folder, clean)
 
     uids = [uid for uid, gid in map_uids.items() if gid in gids]
     if uids:
@@ -265,7 +269,7 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
         for label, args, func in labels:
             gids = [map_uids[uid] for uid, row in data if func(row, *args)]
             label = ALIASES.get(label, label)
-            updated += update_label(env, gids, label, folder)
+            updated += update_label(env, gids, label, folder, clean)
 
     if clean:
         glabels_ = {ALIASES.get(l, l) for l in glabels}
@@ -436,7 +440,7 @@ def notify(env, ids, skip=False):
         log.error(e)
 
 
-def update_label(env, gids, label, folder=None):
+def update_label(env, gids, label, folder=None, clean=True):
     def step(action, sql):
         t = Timer()
         sql += (
@@ -449,10 +453,11 @@ def update_label(env, gids, label, folder=None):
     step.ids = ()
 
     log.info('  * Process %r...', label)
-    step('remove from', '''
-    UPDATE emails SET thrid=NULL, labels=array_remove(labels, %(label)s)
-    WHERE NOT (msgid = ANY(%(gids)s)) AND %(label)s = ANY(labels)
-    ''')
+    if clean:
+        step('remove from', '''
+        UPDATE emails SET thrid=NULL, labels=array_remove(labels, %(label)s)
+        WHERE NOT (msgid = ANY(%(gids)s)) AND %(label)s = ANY(labels)
+        ''')
 
     step('add to', '''
     UPDATE emails SET thrid=NULL, labels=(labels || %(label)s::varchar)
