@@ -690,6 +690,7 @@ def compose(env):
             fr = parent['fr'][0]
         else:
             to = parent['reply_to'] or parent['fr']
+            to += [a for a in parent['to'] if f.get_addr(a) != env.email]
             fr = [a for a in parent['to'] if f.get_addr(a) == env.email]
             fr = fr[0] if fr else env.email
 
