@@ -17,7 +17,7 @@
 </nav>
 <template v-if="labels">
 <form class="search-form" action="/search/" v-on="submit: search">
-    <input type="text" v-model="search_query" value="{{search_query}}">
+    <input type="text" v-model="search_query">
     <button type="submit" class="search"></button>
 </form>
 <ul class="labels">

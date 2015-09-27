@@ -132,13 +132,17 @@ let sidebar = new Component({
         }
     },
     methods: {
+        initData(data) {
+            data.$set('search_query', '');
+            return data;
+        },
         search(e) {
             e.preventDefault();
-            go(encodeURI('/search/?q=' + this.$data.search_query));
+            go(encodeURI('/search/?q=' + this.search_query));
         },
         toggleHelp(e, value) {
             if(e) e.preventDefault();
-            value = value !== undefined ? value : !this.$data.show_help;
+            value = value !== undefined ? value : !this.show_help;
             this.$data.$set('show_help', value);
         },
         closeHelp(e) {
@@ -193,6 +197,8 @@ let Emails = Component.extend({
     },
     methods: {
         initData(data) {
+            sidebar.search_query = data.search_query || '';
+
             if(!data.emails) {
                 // TODO: maybe should update template instead of filling
                 data.$set('labels', []);
