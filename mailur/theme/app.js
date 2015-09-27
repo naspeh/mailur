@@ -226,8 +226,6 @@ let Emails = Component.extend({
 
             this.$data.$set('reply_body', true);
             send(url, null, (data) => {
-                data.action = url;
-
                 let reply = $('.compose-body')[0];
                 new Compose({data: data, el: reply});
                 if (focus) {
@@ -418,10 +416,10 @@ let Emails = Component.extend({
 let Compose = Component.extend({
     template: require('./compose.html'),
     ready() {
-        let vm = this;
+        let self = this;
 
         send(this.previewUrl(), this.getContext(), (data) =>
-            vm.$data.$set('html', data)
+            self.$data.$set('html', data)
         );
         this.$watch('fr', this.preview);
         this.$watch('to', this.preview);
@@ -432,7 +430,7 @@ let Compose = Component.extend({
 
         let input, compl, tags;
         input = $('.compose-to input')[0];
-        input.value = vm.to;
+        input.value = this.to;
 
         compl = horsey(input, {suggestions: (done) => {
             send('/search-email/?q=', null, done);
@@ -445,7 +443,7 @@ let Compose = Component.extend({
             },
         });
         input.addEventListener('insignia-evaluated', (e) => {
-            vm.to = tags.value();
+            self.to = tags.value();
         });
 
         Mousetrap(input)
@@ -461,20 +459,14 @@ let Compose = Component.extend({
                 tags.convert();
             });
 
-        let submit = () => {
-            tags.destroy();
-            $('.compose')[0].submit();
-        };
-        $('.compose-send')[0].addEventListener('click', (e) => submit());
-
         let text = $('.compose textarea')[0];
-        Mousetrap(text).bind('ctrl+enter', (e) => submit());
+        Mousetrap(text).bind('ctrl+enter', (e) => self.send());
     },
     methods : {
         getContext() {
             let ctx = {};
             let fields = [
-                'target', 'fr', 'to', 'subj', 'body',
+                'id', 'target', 'fr', 'to', 'subj', 'body',
                 'quoted', 'forward', 'files'
             ];
             for (let f of fields) {
@@ -520,6 +512,13 @@ let Compose = Component.extend({
                     self.files = data;
                     input.value = null;
                 });
+        },
+        send(e) {
+            if (e) e.preventDefault();
+            this.$data.$set('hide', true);
+            send(`/draft/send/${this.target}/`, this.getContext(), (data) => {
+                go(data.url);
+            });
         }
     }
 });

@@ -28,7 +28,8 @@ rules = [
     Rule('/search/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
     Rule('/new-thread/', endpoint='new_thread'),
-    Rule('/compose/', endpoint='compose'),
+    Rule('/compose/new/', endpoint='compose'),
+    Rule('/compose/<id>', endpoint='compose'),
     Rule('/draft/<action>/<target>/', endpoint='draft'),
     Rule('/search-email/', endpoint='search_email')
 ]
@@ -254,11 +255,11 @@ def ctx_emails(env, items, threads=False):
 
 
 def ctx_links(env, id, thrid=None, to=None):
-    reply_url = env.url_for('compose', {'id': id})
+    reply_url = env.url_for('compose', id=id)
     return {
-        'replyall': reply_url + '&target=all',
+        'replyall': reply_url + '?target=all',
         'reply': reply_url,
-        'forward': reply_url + '&target=forward',
+        'forward': reply_url + '?target=forward',
         'thread': env.url_for('thread', id=thrid),
         'body': env.url_for('body', id=id),
         'raw': env.url_for('raw', id=id)
@@ -391,7 +392,7 @@ def thread(env, id):
 
         ctx['header'] = ctx_header(env, subj, labels)
         ctx['thread'] = True
-        ctx['reply_url'] = env.url_for('compose', {'id': id, 'target': 'all'})
+        ctx['reply_url'] = env.url_for('compose', {'target': 'all'}, id=id)
     return ctx
 
 
@@ -664,27 +665,25 @@ def new_thread(env):
 
 @login_required
 @adapt_fmt('compose')
-def compose(env):
+def compose(env, id=None):
     if not env.storage.get('gmail_info'):
         return env.abort(400)
 
     schema = v.parse({
-        'id': str,
         'target': v.Nullable(v.Enum(('all', 'forward')))
     })
     args = schema.validate(env.request.args)
     fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
     ctx = {
         'fr': fr, 'to': '', 'subj': '', 'body': '', 'files': [],
-        'quoted': False, 'forward': False
+        'quoted': False, 'forward': False, 'id': id
     }
     parent = {}
-    if args.get('id'):
+    if id:
         parent = env.sql('''
-        SELECT
-            thrid, msgid, "to", fr, cc, bcc, subj, reply_to, refs, html, time
+        SELECT thrid, "to", fr, cc, bcc, subj, reply_to, html, time
         FROM emails WHERE id=%s LIMIT 1
-        ''', [args['id']]).fetchone()
+        ''', [id]).fetchone()
         if f.get_addr(parent['fr'][0]) == env.email:
             to = parent['to']
             fr = parent['fr'][0]
@@ -714,8 +713,48 @@ def compose(env):
         ctx.update(autosave.value)
     ctx['target'] = autosave.key
     ctx['draft'] = autosave.value is not None
+    ctx['header'] = {'title': ctx.get('subj') or 'New message'}
+    return ctx
 
-    if env.request.method == 'POST':
+
+@login_required
+@adapt_fmt()
+def draft(env, action, target):
+    saved = env.storage.get(target) or {}
+    if action == 'preview':
+        schema = v.parse({
+            '+fr': str,
+            '+to': str,
+            '+subj': str,
+            '+body': str,
+            '+quoted': bool,
+            '+forward': bool,
+            '+id': v.Nullable(str),
+            'quote': v.Nullable(str)
+        })
+        data = schema.validate(env.request.json)
+        if env.request.args.get('save', True):
+            env.storage.set(target, data)
+        return get_html(data['body'], data.get('quote', ''))
+    elif action == 'upload':
+        files = saved.get('files', [])
+        for n, i in enumerate(env.request.files.getlist('files'), len(files)):
+            url = '/'.join(['uploads', target, str(n), f.slugify(i.filename)])
+            path = os.path.join(env.attachments_dir, url)
+            if not os.path.exists(path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'bw') as fd:
+                fd.write(i.stream.read())
+
+            files.append({
+                'name': i.filename,
+                'mimetype': i.mimetype,
+                'url': '/'.join(['/attachments', env.username, url]),
+                'path': path
+            })
+        return files
+
+    elif action == 'send':
         from email.utils import parseaddr
         import dns.resolver
         import dns.exception
@@ -740,59 +779,27 @@ def compose(env):
             '+body': str,
             'quote': v.Nullable(str, ''),
         })
-        msg = schema.validate(env.request.form)
-        msg['in_reply_to'] = parent.get('msgid')
-        msg['refs'] = parent.get('refs', [])[-10:]
-        msg['files'] = autosave.value.get('files') or []
+        msg = schema.validate(env.request.json)
+        if msg.get('id'):
+            parent = env.sql('''
+            SELECT thrid, msgid, refs
+            FROM emails WHERE id=%s LIMIT 1
+            ''', [msg['id']]).fetchone()
+            msg['in_reply_to'] = parent.get('msgid')
+            msg['refs'] = parent.get('refs', [])[-10:]
+        else:
+            parent = {}
 
         sendmail(env, msg)
         syncer.sync_gmail(env, env.email, only=['\\All'], fast=True)
-        if autosave.value:
-            draft(env, 'rm', autosave.key)
+        if saved:
+            draft(env, 'rm', target)
 
+        url = env.url_for('emails', {'in': '\\Sent'})
         if parent.get('thrid'):
-            return env.redirect_for('thread', id=parent['thrid'])
-        return env.redirect_for('emails', {'in': '\\Sent'})
+            url = env.url_for('thread', id=parent['thrid'])
+        return {'url': url}
 
-    ctx['header'] = {'title': ctx.get('subj') or 'New message'}
-    return ctx
-
-
-@login_required
-@adapt_fmt()
-def draft(env, action, target):
-    saved = env.storage.get(target) or {}
-    if action == 'preview':
-        schema = v.parse({
-            '+fr': str,
-            '+to': str,
-            '+subj': str,
-            '+body': str,
-            '+quoted': bool,
-            '+forward': bool,
-            'quote': v.Nullable(str)
-        })
-        data = schema.validate(env.request.json)
-        if env.request.args.get('save', True):
-            env.storage.set(target, data)
-        return get_html(data['body'], data.get('quote', ''))
-    elif action == 'upload':
-        files = saved.get('files', [])
-        for n, i in enumerate(env.request.files.getlist('files'), len(files)):
-            url = '/'.join(['uploads', target, str(n), f.slugify(i.filename)])
-            path = os.path.join(env.attachments_dir, url)
-            if not os.path.exists(path):
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, 'bw') as fd:
-                fd.write(i.stream.read())
-
-            files.append({
-                'name': i.filename,
-                'mimetype': i.mimetype,
-                'url': '/'.join(['/attachments', env.username, url]),
-                'path': path
-            })
-        return files
     elif action == 'rm':
         if saved.get('files'):
             path = os.path.join(env.attachments_dir, 'uploads', target)

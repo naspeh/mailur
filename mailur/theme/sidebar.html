@@ -13,7 +13,7 @@
 <nav>
     <a href="/logout/" class="logout" title="Logout"></a>
     <a href="#" v-on="click: showHelp" class="help-toggle" title="Keyboard shortcut help"></a>
-    <a v-if="email" href="/compose/" v-on="click: go" class="compose-new">Compose</a>
+    <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
 </nav>
 <template v-if="labels">
 <form class="search-form" action="/search/" v-on="submit: search">

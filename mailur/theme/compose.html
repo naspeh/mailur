@@ -1,7 +1,8 @@
 <div class="header">
     <h3>{{header.title}}</h3>
 </div>
-<form class="compose" method="post" action="{{action}}" enctype="multipart/form-data">
+<div v-if="hide">Sending...</div>
+<form class="compose" v-if="!hide">
     <input name="fr" v-model="fr" type="text" placeholder="From" required>
     <div class="compose-to">
         <input name="to" type="text" placeholder="To" required>
@@ -14,7 +15,7 @@
         <li v-repeat="files"><a href="{{url}}">{{name}}</a></li>
     </ul>
     <div class="email-html" v-show="html">{{{html}}}</div>
-    <button type="button" class="compose-send">Send</button>
+    <button v-on="click: send" type="button" class="compose-send">Send</button>
     <button v-on="click: preview" type="button" class="compose-preview">Preview</button>
     <button v-if="draft" v-on="click: clear" type="button" class="compose-clear">Discard draft</button>
 
