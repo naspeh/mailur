@@ -1,9 +1,9 @@
-import * as utils from './app_utils';
+import * as utils from './utils';
+import Mousetrap from 'mousetrap';
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
-import Mousetrap from 'mousetrap';
-import insignia from 'insignia';
 import horsey from 'horsey';
+import insignia from 'insignia';
 
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
