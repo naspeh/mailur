@@ -29,13 +29,12 @@ def locked_sync_gmail(env, email, **kw):
         return Timer(target)(func)(env, email, **kw)
 
 
-def sync_gmail(env, email, fast=True, only=None, labels=None):
+def sync_gmail(env, email, fast=True, only=None):
     imap = Client(env, email)
     folders = imap.folders()
     if not only:
         only = FOLDERS
 
-    labels_ = labels or {}
     for attrs, delim, name in folders:
         label = set(only) & set(ALIASES.get(l, l) for l in (attrs + (name,)))
         label = label and label.pop()
@@ -43,16 +42,13 @@ def sync_gmail(env, email, fast=True, only=None, labels=None):
             continue
 
         imap.select(name, env('readonly'))
-        fid = imap.status(name, 'UIDVALIDITY')
-        fid = env.storage.format_key('folder', uid=fid)
-        if not labels:
-            uids = imap.search(name, fid.value if fast else None)
-            labels_[name] = get_msgids(env, imap, uids)
-            fid.set(imap.status(name, 'UIDNEXT'))
-        else:
-            imap.status(name)
+        folder_id = imap.status(name, 'UIDVALIDITY')
+        uid_start = env.storage.format_key('folder', uid=folder_id)
+        uid_end = imap.status(name, 'UIDNEXT')
+        uids = imap.search(name, uid_start.value if fast else None)
+        uid_start.set(uid_end)
 
-        uids = labels_[name] or {}
+        uids = get_msgids(env, imap, uids)
         log.info('"{name}" has {count} {new}messages'.format(
             name=imap_utf7.decode(name),
             count=len(uids),
@@ -66,7 +62,7 @@ def sync_gmail(env, email, fast=True, only=None, labels=None):
             sync_marks(env, imap, uids)
             update_thrids(env, label)
         fetch_bodies(env, imap, uids)
-    return labels_
+    return uids
 
 
 def search(env, email, query):
@@ -89,7 +85,7 @@ def search(env, email, query):
 
 def get_msgids(env, imap, uids):
     if not uids:
-        return None
+        return {}
 
     q = 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]'
     data = imap.fetch(uids, [q])

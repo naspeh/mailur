@@ -746,7 +746,7 @@ def compose(env):
         msg['files'] = env.request.files.getlist('files')
 
         sendmail(env, msg)
-        syncer.sync_gmail(env, env.email, bodies=1, only=['\\All'], fast=1)
+        syncer.sync_gmail(env, env.email, only=['\\All'], fast=True)
         if autosave.value:
             autosave.rm()
 

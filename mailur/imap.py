@@ -67,11 +67,11 @@ def status(im, name, item='UIDNEXT'):
     return uid
 
 
-def search(im, name, uid_start=None):
+def search(im, name, uid_start=None, uid_end=None):
     uid_start = 1 if uid_start is None else uid_start
-    uid_next = status(im, name)
+    uid_end = status(im, name) if uid_end is None else uid_end
     uids, step = [], im.conf_batch_size
-    for i in range(uid_start, uid_next, step):
+    for i in range(uid_start, uid_end, step):
         _, data = im.uid('SEARCH', None, '(UID %d:%d)' % (i, i + step - 1))
         if data[0]:
             uids += data[0].decode().split(' ')
