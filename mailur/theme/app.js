@@ -174,10 +174,10 @@ let Emails = Component.extend({
     directives: {
         body(value) {
             this.el.innerHTML = value;
-            for (let el of this.el.querySelectorAll('a')) {
+            for (let el of $('a', this.el)) {
                 el.target = '_blank';
             }
-            for (let el of this.el.querySelectorAll('.email-quote-toggle')) {
+            for (let el of $('.email-quote-toggle', this.el)) {
                 let quote = el.nextElementSibling;
                 el.addEventListener('click', (e) => toggle(quote));
                 toggle(quote);
@@ -527,15 +527,9 @@ history.listen((location) => {
 
 
 /* Related functions */
-function $(selector, callback) {
-    let elements = Array.from(document.querySelectorAll(selector));
-    let results = [];
-    if (callback) {
-        for (let el of elements) {
-            results.push(callback(el));
-        }
-        elements = results;
-    }
+function $(selector, root) {
+    root = root || document;
+    let elements = Array.from(root.querySelectorAll(selector));
     return elements;
 }
 function toggle(el) {
