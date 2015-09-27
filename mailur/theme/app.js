@@ -420,14 +420,15 @@ let Compose = Component.extend({
     ready() {
         let vm = this;
 
-        send('/preview/?save=', this.getContext(), (data) => {
-            vm.$data.$set('html', data);
-        });
+        send(this.previewUrl(), this.getContext(), (data) =>
+            vm.$data.$set('html', data)
+        );
         this.$watch('fr', this.preview);
         this.$watch('to', this.preview);
         this.$watch('subj', this.preview);
         this.$watch('body', () => this.preview(null, 3000));
         this.$watch('quoted', this.preview);
+        this.$watch('files', this.preview);
 
         let input, compl, tags;
         input = $('.compose-to input')[0];
@@ -474,13 +475,17 @@ let Compose = Component.extend({
             let ctx = {};
             let fields = [
                 'target', 'fr', 'to', 'subj', 'body',
-                'quoted', 'forward'
+                'quoted', 'forward', 'files'
             ];
             for (let f of fields) {
                 ctx[f] = this[f] === undefined ? '' : this[f];
             }
             if (this.quoted) ctx.quote = this.quote;
             return ctx;
+        },
+        previewUrl(save) {
+            save = save || '';
+            return `/draft/preview/${this.target}/?save=${save}`;
         },
         preview(e, timeout) {
             if (timeout && this.last && new Date() - this.last < timeout) {
@@ -492,16 +497,29 @@ let Compose = Component.extend({
             this.last = new Date();
 
             let self = this;
-            send('/preview/?save=1', this.getContext(), (data) => {
+            send(this.previewUrl(true), this.getContext(), (data) => {
                 self.$data.$set('html', data);
                 self.$data.$set('draft', true);
             });
         },
         clear(e) {
-            send('/rm-draft/', {'target': this.target}, (data) => {
+            send(`/draft/rm/${this.target}/`, null, (data) => {
                 view = null;
                 reload();
             });
+        },
+        upload(e) {
+            let self = this;
+            let input = e.target;
+            let data = new FormData();
+            for (let file of Array.from(input.files)) {
+                data.append('files', file, file.name);
+            }
+            ajax(`/draft/upload/${this.target}/`, {method: 'post', body: data})
+                .then(function(data) {
+                    self.files = data;
+                    input.value = null;
+                });
         }
     }
 });
@@ -610,6 +628,16 @@ function connect() {
         ws_try++;
     };
 }
+function ajax(url, params) {
+    params.credentials = 'same-origin';
+    params.headers = Object.assign(params.headers || {}, {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+    });
+    return fetch(url, params)
+        .then(r => r.json())
+        .catch(ex => console.log(url, ex));
+}
 function send(url, data, callback) {
     url = url.replace(location.origin, '');
 
@@ -628,20 +656,13 @@ function send(url, data, callback) {
         }
     } else {
         let params = {
-            credentials: 'same-origin',
             method: data ? 'POST': 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
+            headers: {}
         };
         if (data) {
             params.headers['Content-Type'] = 'application/json';
             params.body = JSON.stringify(data);
         }
-        fetch(url, params)
-            .then(r => r.json())
-            .then(callback)
-            .catch(ex => console.log(url, ex));
+        ajax(url, params).then(callback);
     }
 }

@@ -6,6 +6,8 @@ from hashlib import md5
 from urllib.parse import urlencode
 
 import lxml.html as lh
+from werkzeug.utils import secure_filename
+from unidecode import unidecode
 
 
 def format_addr(env, v):
@@ -125,3 +127,7 @@ def hide_quote(msg, msgs, class_):
 
 def get_hash(value):
     return md5(json.dumps(value).encode()).hexdigest()
+
+
+def slugify(value):
+    return secure_filename(unidecode(value).lower())

@@ -1,6 +1,8 @@
 import functools as ft
 import json
+import os
 import re
+import shutil
 
 import valideer as v
 from werkzeug.routing import Map, Rule
@@ -27,8 +29,7 @@ rules = [
     Rule('/mark/', endpoint='mark'),
     Rule('/new-thread/', endpoint='new_thread'),
     Rule('/compose/', endpoint='compose'),
-    Rule('/preview/', endpoint='preview'),
-    Rule('/rm-draft/', endpoint='rm_draft'),
+    Rule('/draft/<action>/<target>/', endpoint='draft'),
     Rule('/search-email/', endpoint='search_email')
 ]
 url_map = Map(rules)
@@ -674,7 +675,7 @@ def compose(env):
     args = schema.validate(env.request.args)
     fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
     ctx = {
-        'fr': fr, 'to': '', 'subj': '', 'body': '',
+        'fr': fr, 'to': '', 'subj': '', 'body': '', 'files': [],
         'quoted': False, 'forward': False
     }
     parent = {}
@@ -742,12 +743,12 @@ def compose(env):
         msg = schema.validate(env.request.form)
         msg['in_reply_to'] = parent.get('msgid')
         msg['refs'] = parent.get('refs', [])[-10:]
-        msg['files'] = env.request.files.getlist('files')
+        msg['files'] = autosave.value.get('files') or []
 
         sendmail(env, msg)
         syncer.sync_gmail(env, env.email, only=['\\All'], fast=True)
         if autosave.value:
-            autosave.rm()
+            draft(env, 'rm', autosave.key)
 
         if parent.get('thrid'):
             return env.redirect_for('thread', id=parent['thrid'])
@@ -759,39 +760,54 @@ def compose(env):
 
 @login_required
 @adapt_fmt()
-def preview(env):
-    schema = v.parse({
-        '+target': str,
-        '+fr': str,
-        '+to': str,
-        '+subj': str,
-        '+body': str,
-        '+quoted': bool,
-        '+forward': bool,
-        'quote': v.Nullable(str)
-    })
-    data = schema.validate(env.request.json)
-    if env.request.args.get('save', True):
-        env.storage.set(data['target'], data)
-    return get_html(data['body'], data.get('quote', ''))
+def draft(env, action, target):
+    saved = env.storage.get(target) or {}
+    if action == 'preview':
+        schema = v.parse({
+            '+fr': str,
+            '+to': str,
+            '+subj': str,
+            '+body': str,
+            '+quoted': bool,
+            '+forward': bool,
+            'quote': v.Nullable(str)
+        })
+        data = schema.validate(env.request.json)
+        if env.request.args.get('save', True):
+            env.storage.set(target, data)
+        return get_html(data['body'], data.get('quote', ''))
+    elif action == 'upload':
+        files = saved.get('files', [])
+        for n, i in enumerate(env.request.files.getlist('files'), len(files)):
+            url = '/'.join(['uploads', target, str(n), f.slugify(i.filename)])
+            path = os.path.join(env.attachments_dir, url)
+            if not os.path.exists(path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'bw') as fd:
+                fd.write(i.stream.read())
 
+            files.append({
+                'name': i.filename,
+                'mimetype': i.mimetype,
+                'url': '/'.join(['/attachments', env.username, url]),
+                'path': path
+            })
+        return files
+    elif action == 'rm':
+        if saved.get('files'):
+            path = os.path.join(env.attachments_dir, 'uploads', target)
+            shutil.rmtree(path)
+        env.storage.rm(target)
+        return 'OK'
 
-@login_required
-@adapt_fmt()
-def rm_draft(env):
-    schema = v.parse({'+target': str})
-    data = schema.validate(env.request.json)
-    env.storage.rm(data['target'])
+    env.abort(400)
 
 
 def get_html(text, quote=''):
-    return ('\n\n').join(i for i in (markdown(text), quote) if i)
-
-
-def markdown(html):
     from mistune import markdown
 
-    return markdown(html, escape=False, hard_wrap=True)
+    html = markdown(text, escape=False, hard_wrap=True)
+    return ('\n\n').join(i for i in (html, quote) if i)
 
 
 def sendmail(env, msg):
@@ -813,14 +829,14 @@ def sendmail(env, msg):
         text.attach(MIMEText(html, 'html'))
     email = text
 
-    files = [i for i in files if i.filename]
     if files:
         email = MIMEMultipart()
         email.attach(text)
     for i in files:
-        a = MIMEBase(*i.mimetype.split('/'))
-        a.set_payload(i.stream.read())
-        a.add_header('Content-Disposition', 'attachment', filename=i.filename)
+        a = MIMEBase(*i['mimetype'].split('/'))
+        with open(i['path'], 'rb') as fd:
+            a.set_payload(fd.read())
+        a.add_header('Content-Disposition', 'attachment', filename=i['name'])
         encode_base64(a)
         email.attach(a)
 

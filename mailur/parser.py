@@ -10,14 +10,7 @@ import chardet
 from lxml import html as lh
 from lxml.html.clean import Cleaner
 
-from . import log
-
-
-def slugify(value):
-    from werkzeug.utils import secure_filename
-    from unidecode import unidecode
-
-    return secure_filename(unidecode(value).lower())
+from . import log, filters as f
 
 
 def get_charset(name):
@@ -160,8 +153,8 @@ def parse_part(env, part, msg_id, inner=False):
     content.update(attachments=[], embedded={})
     for index, item in enumerate(content['files']):
         if item['payload']:
-            name = slugify(item['filename'] or item['id'])
-            url = '/'.join([slugify(msg_id), str(index), name])
+            name = f.slugify(item['filename'] or item['id'])
+            url = '/'.join([f.slugify(msg_id), str(index), name])
             obj = {
                 'url': '/attachments/%s/%s' % (env.username, url),
                 'name': item['filename'],
@@ -178,8 +171,8 @@ def parse_part(env, part, msg_id, inner=False):
             path = os.path.join(env.attachments_dir, url)
             if not os.path.exists(path):
                 os.makedirs(os.path.dirname(path), exist_ok=True)
-                with open(path, 'bw') as f:
-                    f.write(item['payload'])
+                with open(path, 'bw') as fd:
+                    fd.write(item['payload'])
 
     if content['html']:
         htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()
