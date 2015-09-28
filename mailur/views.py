@@ -724,15 +724,21 @@ def compose(env, id=None):
             if os.path.exists(dest):
                 shutil.rmtree(dest)
             shutil.copytree(path, dest)
-        for i in parent['attachments']:
+
+        files = parent['attachments'] or [] + list(parent['embedded'].values())
+        for i in files:
             path = i['url'][len('/attachments/%s/%s/' % (env.username, id)):]
             path = 'uploads/%s/%s' % (saved.key, path)
+            url = '/attachments/%s/%s' % (env.username, path)
             ctx['files'].append({
                 'name': i['name'],
                 'mimetype': i['type'],
-                'url': '/attachments/%s/%s' % (env.username, path),
+                'url': url,
                 'path': os.path.join(env.attachments_dir, path),
             })
+            quote = ctx.get('quote')
+            if quote:
+                ctx['quote'] = re.sub(re.escape(i['url']), url, quote)
     return ctx
 
 
@@ -837,19 +843,36 @@ def get_html(text, quote=''):
 
 
 def sendmail(env, msg):
+    import uuid
     from email.encoders import encode_base64
     from email.mime.base import MIMEBase
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.utils import formatdate, formataddr, getaddresses
+    from lxml import html as lh
 
-    in_reply_to, files = msg.get('in_reply_to'), msg.get('files', [])
+    def embed_html(htm, files):
+        htm = lh.fromstring(htm)
+        for img in htm.xpath('//img[@src]'):
+            url = img.attrib.get('src')
+
+            src = [i for i in files if i['url'] == url]
+            if src:
+                src = src[0]
+                src['cid'] = uuid.uuid4().hex
+                img.attrib['src'] = 'cid:%s' % src['cid']
+
+        htm = lh.tostring(htm, encoding='utf-8').decode()
+        return htm, files
+
+    files = msg.get('files', [])
+    html = get_html(msg['body'], msg.get('quote'))
+    html, files = embed_html(html, files)
+
     if msg.get('quote'):
-        html = get_html(msg['body'], msg['quote'])
         text = MIMEMultipart()
         text.attach(MIMEText(html, 'html'))
     else:
-        html = get_html(msg['body'])
         text = MIMEMultipart('alternative')
         text.attach(MIMEText(msg['body'], 'plain'))
         text.attach(MIMEText(html, 'html'))
@@ -858,11 +881,14 @@ def sendmail(env, msg):
     if files:
         email = MIMEMultipart()
         email.attach(text)
+
     for i in files:
         a = MIMEBase(*i['mimetype'].split('/'))
         with open(i['path'], 'rb') as fd:
             a.set_payload(fd.read())
         a.add_header('Content-Disposition', 'attachment', filename=i['name'])
+        if 'cid' in i:
+            a.add_header('Content-ID', '<%s>' % i['cid'])
         encode_base64(a)
         email.attach(a)
 
@@ -871,6 +897,7 @@ def sendmail(env, msg):
     email['Date'] = formatdate()
     email['Subject'] = msg['subj']
 
+    in_reply_to = msg.get('in_reply_to')
     if in_reply_to:
         email['In-Reply-To'] = in_reply_to
         email['References'] = ' '.join([in_reply_to] + msg.get('refs'))
