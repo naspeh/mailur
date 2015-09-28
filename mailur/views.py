@@ -681,7 +681,9 @@ def compose(env, id=None):
     parent = {}
     if id:
         parent = env.sql('''
-        SELECT thrid, "to", fr, cc, bcc, subj, reply_to, html, time
+        SELECT
+            thrid, "to", fr, cc, bcc, subj, reply_to, html, time,
+            attachments, embedded
         FROM emails WHERE id=%s LIMIT 1
         ''', [id]).fetchone()
         if f.get_addr(parent['fr'][0]) == env.email:
@@ -708,12 +710,31 @@ def compose(env, id=None):
             'forward': forward,
         })
 
-    autosave = env.storage.format_key('compose', thrid=parent.get('thrid'))
-    if autosave.value:
-        ctx.update(autosave.value)
-    ctx['target'] = autosave.key
-    ctx['draft'] = autosave.value is not None
+    saved = env.storage.format_key('compose', thrid=parent.get('thrid'))
+    if saved.value:
+        ctx.update(saved.value)
+    ctx['target'] = saved.key
+    ctx['draft'] = saved.value is not None
     ctx['header'] = {'title': ctx.get('subj') or 'New message'}
+
+    if ctx['forward'] and not saved.value:
+        path = os.path.join(env.attachments_dir, f.slugify(id))
+        if os.path.exists(path):
+            dest = os.path.join(env.attachments_dir, 'uploads', saved.key)
+            if os.path.exists(dest):
+                shutil.rmtree(dest)
+            shutil.copytree(path, dest)
+        for i in parent['attachments']:
+            path = i['url'][len('/attachments/%s/%s/' % (env.username, id)):]
+            path = 'uploads/%s/%s' % (saved.key, path)
+            ctx['files'].append({
+                'name': i['name'],
+                'mimetype': i['type'],
+                'url': '/attachments/%s/%s' % (env.username, path),
+                'path': os.path.join(env.attachments_dir, path),
+            })
+            from . import log
+            log.info(ctx['files'])
     return ctx
 
 
