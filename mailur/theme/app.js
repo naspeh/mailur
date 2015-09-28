@@ -397,7 +397,7 @@ let Emails = Component.extend({
             mark({action: action || '+', name: name});
         },
         newThread(params) {
-            send('/new-thread/', params, (data) => go(data.url));
+            send('/thread/new/', params, (data) => go(data.url));
         },
         merge(e) {
             this.newThread({
