@@ -733,8 +733,6 @@ def compose(env, id=None):
                 'url': '/attachments/%s/%s' % (env.username, path),
                 'path': os.path.join(env.attachments_dir, path),
             })
-            from . import log
-            log.info(ctx['files'])
     return ctx
 
 
