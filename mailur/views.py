@@ -816,9 +816,9 @@ def draft(env, action, target):
             parent = {}
 
         sendmail(env, msg)
-        syncer.sync_gmail(env, env.email, only=['\\All'], fast=True)
         if saved:
             draft(env, 'rm', target)
+        syncer.sync_gmail(env, env.email, only=['\\All'], fast=1, force=1)
 
         url = env.url_for('emails', {'in': '\\Sent'})
         if parent.get('thrid'):

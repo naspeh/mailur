@@ -8,7 +8,7 @@ from . import log
 
 
 @contextmanager
-def with_lock(target, timeout=10):
+def with_lock(target, timeout=10, force=False):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
 
     def is_locked():
@@ -26,7 +26,7 @@ def with_lock(target, timeout=10):
             return
 
         minutes_out = (time.time() - os.path.getctime(path)) / 60
-        if minutes_out > timeout:
+        if minutes_out > timeout or force:
             try:
                 os.kill(int(pid), signal.SIGQUIT)
                 os.remove(path)

@@ -84,7 +84,7 @@ def sync(env, target, disabled=False, **kw):
     if skip:
         return
 
-    sync = ft.partial(syncer.locked_sync_gmail, env, env.email)
+    sync = ft.partial(syncer.sync_gmail, env, env.email)
     if target == 'fast':
         return sync(fast=True)
     elif target == 'full':

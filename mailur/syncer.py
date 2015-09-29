@@ -22,14 +22,15 @@ ALIASES = {
 THRID = 'mlr/thrid'
 
 
-def locked_sync_gmail(env, email, **kw):
-    func = sync_gmail
+def sync_gmail(env, email, force=False, **kw):
+    func = _sync_gmail
     target = ':'.join([func.__name__, email, 'fast:%s' % bool(kw.get('fast'))])
-    with with_lock(target, timeout=30):
+
+    with with_lock(target, timeout=30, force=force):
         return Timer(target)(func)(env, email, **kw)
 
 
-def sync_gmail(env, email, fast=True, only=None):
+def _sync_gmail(env, email, fast=True, only=None):
     imap = Client(env, email)
     folders = imap.folders()
     if not only:
@@ -60,7 +61,7 @@ def sync_gmail(env, email, fast=True, only=None):
         fetch_labels(env, imap, uids, label, with_clean)
         if label in FOLDERS:
             sync_marks(env, imap, uids)
-            update_thrids(env, label)
+        update_thrids(env, label)
         fetch_bodies(env, imap, uids)
     return uids
 

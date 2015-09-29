@@ -156,8 +156,8 @@ let sidebar = new Component({
 let Emails = Component.extend({
     template: require('./emails.html'),
     ready() {
-        this.$watch('thread', (newVal, oldVal) => {
-            if (!newVal) return;
+        this.$watch('emails.items', (newVal, oldVal) => {
+            if (!this.thread) return;
 
             let ids = [];
             for (let el of this.emails.items) {
@@ -623,7 +623,7 @@ function connect() {
     ws.onclose = (event) => {
         ws = null;
         console.log('ws closed', event);
-        setTimeout(connect, conf.ws_timeout * Math.pow(2, ws_try));
+        setTimeout(connect, conf.ws_timeout * (Math.pow(2, ws_try) - 1));
         ws_try++;
     };
 }
