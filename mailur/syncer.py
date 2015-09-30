@@ -63,6 +63,8 @@ def _sync_gmail(env, email, fast=True, only=None):
             sync_marks(env, imap, uids)
         update_thrids(env, label)
         fetch_bodies(env, imap, uids)
+        if not fast:
+            refresh_search(env)
     return uids
 
 
@@ -231,8 +233,6 @@ def fetch_bodies(env, imap, map_uids):
             run(update, env, items)
 
     log.info('  * Done %s bodies', sum(results))
-    if results:
-        refresh_search(env)
 
 
 def refresh_search(env):
