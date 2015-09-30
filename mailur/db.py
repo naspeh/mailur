@@ -210,7 +210,8 @@ class Storage(Manager):
     def format_key(self, name, **params):
         targets = {
             'compose': lambda thrid: 'compose:%s' % (thrid or 'new'),
-            'folder': lambda uid: 'folder:%s' % uid
+            'folder': lambda uid: 'folder:%s' % uid,
+            'refresh_search': lambda: 'sync:refresh_search'
         }
         return Key(self, targets[name](**params))
 

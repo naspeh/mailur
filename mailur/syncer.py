@@ -232,10 +232,17 @@ def fetch_bodies(env, imap, map_uids):
             items = [(row[q], map_uids[uid]) for uid, row in data]
             run(update, env, items)
 
+    if results:
+        env.storage.format_key('refresh_search').set(True)
     log.info('  * Done %s bodies', sum(results))
 
 
 def refresh_search(env):
+    key = env.storage.format_key('refresh_search')
+    if not key.value:
+        return
+
+    key.rm()
     log.info('Refresh search index')
     env.sql('REFRESH MATERIALIZED VIEW emails_search')
     env.db.commit()
