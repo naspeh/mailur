@@ -640,7 +640,6 @@ function ajax(url, params) {
 function send(url, data, callback) {
     url = url.replace(location.origin, '');
 
-    console.log(url);
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web.replace(/\/$/, '') + url;
         data = {
@@ -649,6 +648,7 @@ function send(url, data, callback) {
             uid: utils.guid(),
             cookie: document.cookie
         };
+        console.log(url, data.uid);
         ws.send(JSON.stringify(data));
         if (callback) {
             handlers[data.uid] = callback;
