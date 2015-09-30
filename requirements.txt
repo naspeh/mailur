@@ -1,10 +1,10 @@
 Unidecode==0.4.18
 Werkzeug==0.10.4
-aiohttp==0.17.3
+aiohttp==0.17.4
 bcrypt==2.0.0
 cffi==1.2.1
 chardet==2.3.0
-decorator==4.0.2
+decorator==4.0.4
 dnspython3==1.12.0
 gunicorn==19.3.0
 lxml==3.4.4
