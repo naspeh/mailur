@@ -2,7 +2,6 @@ import datetime as dt
 import email
 import email.header
 import html
-import os
 import re
 from collections import OrderedDict
 
@@ -10,7 +9,8 @@ import chardet
 from lxml import html as lh
 from lxml.html.clean import Cleaner
 
-from . import log, filters as f
+from . import log
+from .filters import slugify
 
 
 def get_charset(name):
@@ -138,8 +138,7 @@ def parse_part(env, part, msg_id, inner=False):
         filename = part.get_filename()
         filename = decode_header(filename, msg_id) if filename else ctype
         attachment = {
-            'maintype': mtype,
-            'type': ctype,
+            'mimetype': ctype,
             'id': part.get('Content-ID'),
             'filename': filename,
             'payload': payload,
@@ -153,14 +152,10 @@ def parse_part(env, part, msg_id, inner=False):
     content.update(attachments=[], embedded={})
     for index, item in enumerate(content['files']):
         if item['payload']:
-            name = f.slugify(item['filename'] or item['id'])
-            url = '/'.join([f.slugify(msg_id), str(index), name])
-            obj = {
-                'url': '/attachments/%s/%s' % (env.username, url),
-                'name': item['filename'],
-                'maintype': item['maintype'],
-                'type': item['type']
-            }
+            name = slugify(item['filename'] or item['id'])
+            path = '/'.join([slugify(msg_id), str(index), name])
+            path = env.asset_path(path, item['mimetype'], item['filename'])
+            obj = path.to_db()
             if item['id']:
                 content['embedded'][item['id']] = obj
             elif item['filename']:
@@ -168,11 +163,8 @@ def parse_part(env, part, msg_id, inner=False):
             else:
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue
-            path = env.files / url
-            if not path.exists():
-                os.makedirs(str(path.parent), exist_ok=True)
-                with path.open('bw') as fd:
-                    fd.write(item['payload'])
+
+            path.write(item['payload'])
 
     if content['html']:
         htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()
@@ -198,8 +190,9 @@ def parse_part(env, part, msg_id, inner=False):
             cid = re.match('^cid:(.*)', src)
             obj = cid and embedded.pop('<%s>' % cid.group(1), None)
             if obj:
+                obj = env.asset_path(**obj)
                 cid = cid.group(1)
-                img.attrib['src'] = obj['url']
+                img.attrib['src'] = obj.url
             elif not re.match('^(https?://|/|data:image/).*', src):
                 del img.attrib['src']
         content['attachments'] += embedded.values()

@@ -1,6 +1,7 @@
 import json
 import logging
 import logging.config
+import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
@@ -66,6 +67,86 @@ def get_conf(conf=None):
     if not path.exists():
         path.mkdir()
     return conf
+
+
+class ThemePath():
+    def __init__(self, env, path=None):
+        self.base_url = '/theme/'
+        self.base_path = env('path_theme')
+        self.path = path
+
+    @property
+    def path(self):
+        return self.__dict__['path']
+
+    @path.setter
+    def path(self, value):
+        self.__dict__['path'] = value.lstrip('/')
+
+    @property
+    def url(self):
+        return '/'.join([self.base_url, self.path])
+
+    @property
+    def fullpath(self):
+        return self.base_path / self.path
+
+    def from_fullpath(self, env, path):
+        if not path.startswith(self.base_path):
+            raise ValueError(
+                'Path %r should start with %r' % (path, self.base_path)
+            )
+        self.path = path[len(self.base_path):]
+        return self
+
+    def from_url(self, url):
+        if not url.startswith(self.base_url):
+            raise ValueError(
+                'Url %r should start with %r' % (url, self.base_url)
+            )
+        self.path = url[len(self.base_url):]
+        return self
+
+    def read(self):
+        with self.fullpath.open('br') as f:
+            return f.read()
+
+    def write(self, data, rewrite=False):
+        if not rewrite and self.fullpath.exists():
+            return
+
+        os.makedirs(str(self.fullpath.parent), exist_ok=True)
+        with self.fullpath.open('bw') as f:
+            return f.write(data)
+
+
+class AssetPath(ThemePath):
+    def __init__(self, env, path=None, type=None, name=None):
+        self.base_url = '/attachments/%s' % env.username
+        self.base_path = Path(env('path_attachments')) / env.username
+        self.path = path
+        self.name = name
+        self.type = type
+
+    @property
+    def maintype(self):
+        return self.type.split('/')[0]
+
+    def to_dict(self):
+        return {
+            'path': str(self.fullpath),
+            'url': self.url,
+            'maintype': self.maintype,
+            'type': self.type,
+            'name': self.name
+        }
+
+    def to_db(self):
+        return {
+            'path': self.path,
+            'type': self.type,
+            'name': self.name
+        }
 
 
 class Env:
@@ -137,10 +218,6 @@ class Env:
     @cached_property
     def token(self):
         return self.storage.get('token')
-
-    @property
-    def files(self):
-        return Path(self('path_attachments')) / self.username
 
     @property
     def db_name(self):
@@ -262,6 +339,12 @@ class Env:
         if password_token and password_token == token:
             return True
         return False
+
+    def theme_path(self, *a, **kw):
+        return ThemePath(self, *a, **kw)
+
+    def asset_path(self, *a, **kw):
+        return AssetPath(self, *a, **kw)
 
     def add_tasks(self, tasks, name='mark'):
         items = [
