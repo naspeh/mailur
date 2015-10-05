@@ -1,7 +1,7 @@
 import datetime as dt
 import json
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlsplit, parse_qs, urlencode
 
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
@@ -73,8 +73,15 @@ class WebEnv(Env):
     def url_for(self, endpoint, values=None, **kw):
         return self.adapter.build(endpoint, values, **kw)
 
-    def url(self, url, args):
-        return '%s?%s' % (url, urlencode(args)) if args else url
+    def url(self, url, params=None):
+        if not params:
+            return url
+
+        url = urlsplit(url)
+        query = parse_qs(url.query)
+        query.update((k, str(v)) for k, v in params.items())
+        url = url._replace(query=urlencode(query))
+        return url.geturl()
 
     def redirect(self, location, code=302):
         return redirect(location, code)
