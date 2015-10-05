@@ -168,10 +168,10 @@ def parse_part(env, part, msg_id, inner=False):
             else:
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue
-            path = os.path.join(env.attachments_dir, url)
-            if not os.path.exists(path):
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                with open(path, 'bw') as fd:
+            path = env.files / url
+            if not path.exists():
+                os.makedirs(str(path.parent), exist_ok=True)
+                with path.open('bw') as fd:
                     fd.write(item['payload'])
 
     if content['html']:

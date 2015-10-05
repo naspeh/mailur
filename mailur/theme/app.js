@@ -504,12 +504,13 @@ let Compose = Component.extend({
             let self = this;
             let input = e.target;
             let data = new FormData();
+            data.append('count', this.files.length);
             for (let file of Array.from(input.files)) {
                 data.append('files', file, file.name);
             }
             ajax(`/draft/upload/${this.target}/`, {method: 'post', body: data})
                 .then(function(data) {
-                    self.files = data;
+                    self.files = self.files.concat(data);
                     input.value = null;
                 });
         },

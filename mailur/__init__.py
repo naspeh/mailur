@@ -139,8 +139,8 @@ class Env:
         return self.storage.get('token')
 
     @property
-    def attachments_dir(self):
-        return str(Path(self('path_attachments')) / self.username)
+    def files(self):
+        return Path(self('path_attachments')) / self.username
 
     @property
     def db_name(self):

@@ -718,23 +718,23 @@ def compose(env, id=None):
     ctx['header'] = {'title': ctx.get('subj') or 'New message'}
 
     if ctx['forward'] and not saved.value:
-        path = os.path.join(env.attachments_dir, f.slugify(id))
-        if os.path.exists(path):
-            dest = os.path.join(env.attachments_dir, 'uploads', saved.key)
-            if os.path.exists(dest):
-                shutil.rmtree(dest)
-            shutil.copytree(path, dest)
+        path = env.files / f.slugify(id)
+        if path.exists():
+            dest = env.files.joinpath(*saved.key.split(':'))
+            if dest.exists():
+                shutil.rmtree(str(dest))
+            shutil.copytree(str(path), str(dest))
 
         files = parent['attachments'] or [] + list(parent['embedded'].values())
         for i in files:
             path = i['url'][len('/attachments/%s/%s/' % (env.username, id)):]
-            path = 'uploads/%s/%s' % (saved.key, path)
+            path = '/'.join(saved.key.split(':') + [path])
             url = '/attachments/%s/%s' % (env.username, path)
             ctx['files'].append({
                 'name': i['name'],
                 'mimetype': i['type'],
                 'url': url,
-                'path': os.path.join(env.attachments_dir, path),
+                'path': env.files / path,
             })
             quote = ctx.get('quote')
             if quote:
@@ -762,20 +762,21 @@ def draft(env, action, target):
             env.storage.set(target, data)
         return get_html(data['body'], data.get('quote', ''))
     elif action == 'upload':
-        files = saved.get('files', [])
-        for n, i in enumerate(env.request.files.getlist('files'), len(files)):
-            url = '/'.join(['uploads', target, str(n), f.slugify(i.filename)])
-            path = os.path.join(env.attachments_dir, url)
-            if not os.path.exists(path):
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, 'bw') as fd:
+        count = env.request.form.get('count', type=int)
+        files = []
+        for n, i in enumerate(env.request.files.getlist('files'), count):
+            url = '/'.join(target.split(':') + [str(n), f.slugify(i.filename)])
+            path = env.files / url
+            if not path.exists():
+                os.makedirs(str(path.parent), exist_ok=True)
+            with path.open('bw') as fd:
                 fd.write(i.stream.read())
 
             files.append({
                 'name': i.filename,
                 'mimetype': i.mimetype,
                 'url': '/'.join(['/attachments', env.username, url]),
-                'path': path
+                'path': str(path)
             })
         return files
 
@@ -827,8 +828,8 @@ def draft(env, action, target):
 
     elif action == 'rm':
         if saved.get('files'):
-            path = os.path.join(env.attachments_dir, 'uploads', target)
-            shutil.rmtree(path)
+            path = env.files.joinpath(*target.split(':'))
+            shutil.rmtree(str(path))
         env.storage.rm(target)
         return 'OK'
 
