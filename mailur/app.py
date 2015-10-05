@@ -72,6 +72,9 @@ class WebEnv(Env):
     def url_for(self, endpoint, values=None, **kw):
         return self.adapter.build(endpoint, values, **kw)
 
+    def url(self, url, args):
+        return '%s?%s' % (url, urlencode(args)) if args else url
+
     def redirect(self, location, code=302):
         return redirect(location, code)
 
