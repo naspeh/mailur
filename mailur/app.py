@@ -1,7 +1,6 @@
 import datetime as dt
 import json
 from pathlib import Path
-from urllib.parse import urlencode
 
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
@@ -70,18 +69,14 @@ class WebEnv(Env):
             return self.make_response(response)
         return response
 
-    def url_for(self, endpoint, _args=None, _external=False, **values):
-        url = self.adapter.build(endpoint, values, force_external=_external)
-        return self.url(url, _args)
-
-    def url(self, url, args):
-        return '%s?%s' % (url, urlencode(args)) if args else url
+    def url_for(self, endpoint, values=None, **kw):
+        return self.adapter.build(endpoint, values, **kw)
 
     def redirect(self, location, code=302):
         return redirect(location, code)
 
-    def redirect_for(self, endpoint, _args=None, _code=302, **values):
-        return redirect(self.url_for(endpoint, _args, **values), code=_code)
+    def redirect_for(self, endpoint, values=None, code=302):
+        return redirect(self.url_for(endpoint, values), code=code)
 
     def abort(self, code, *a, **kw):
         abort(code, *a, **kw)

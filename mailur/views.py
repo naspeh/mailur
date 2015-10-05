@@ -37,12 +37,12 @@ url_map = Map(rules)
 
 
 def gmail_connect(env):
-    redirect_uri = env.url_for('gmail_callback', _external=True)
+    redirect_uri = env.url_for('gmail_callback', force_external=True)
     return env.redirect(gmail.auth_url(env, redirect_uri, env.email))
 
 
 def gmail_callback(env):
-    redirect_uri = env.url_for('gmail_callback', _external=True)
+    redirect_uri = env.url_for('gmail_callback', force_external=True)
     try:
         gmail.auth_callback(env, redirect_uri, env.request.args['code'])
         return env.redirect_for('index')
@@ -238,9 +238,9 @@ def ctx_emails(env, items, threads=False):
             'labels': ctx_labels(env, i['labels'])
         }, **extra)
         if threads:
-            email['thread_url'] = env.url_for('thread', id=i['thrid'])
+            email['thread_url'] = env.url_for('thread', {'id': i['thrid']})
         else:
-            email['body_url'] = env.url_for('body', id=i['id'])
+            email['body_url'] = env.url_for('body', {'id': i['id']})
 
         last = i['created'] if not last or i['created'] > last else last
         email['hash'] = f.get_hash(email)
@@ -255,14 +255,14 @@ def ctx_emails(env, items, threads=False):
 
 
 def ctx_links(env, id, thrid=None, to=None):
-    reply_url = env.url_for('compose', id=id)
+    reply_url = env.url_for('compose', {'id': id})
     return {
         'replyall': reply_url + '?target=all',
         'reply': reply_url,
         'forward': reply_url + '?target=forward',
-        'thread': env.url_for('thread', id=thrid),
-        'body': env.url_for('body', id=id),
-        'raw': env.url_for('raw', id=id)
+        'thread': env.url_for('thread', {'id': thrid}),
+        'body': env.url_for('body', {'id': id}),
+        'raw': env.url_for('raw', {'id': id})
     }
 
 
@@ -392,7 +392,7 @@ def thread(env, id):
 
         ctx['header'] = ctx_header(env, subj, labels)
         ctx['thread'] = True
-        ctx['reply_url'] = env.url_for('compose', {'target': 'all'}, id=id)
+        ctx['reply_url'] = env.url_for('compose', {'target': 'all', 'id': id})
     return ctx
 
 
@@ -657,10 +657,10 @@ def new_thread(env):
     if action == 'new':
         id = params['ids'][0]
         syncer.new_thread(env, id)
-        return env.to_json({'url': env.url_for('thread', id=id)})
+        return env.to_json({'url': env.url_for('thread', {'id': id})})
     elif action == 'merge':
         thrid = syncer.merge_threads(env, params['ids'])
-        return env.to_json({'url': env.url_for('thread', id=thrid)})
+        return env.to_json({'url': env.url_for('thread', {'id': thrid})})
 
 
 @login_required
@@ -823,7 +823,7 @@ def draft(env, action, target):
 
         url = env.url_for('emails', {'in': '\\Sent'})
         if parent.get('thrid'):
-            url = env.url_for('thread', id=parent['thrid'])
+            url = env.url_for('thread', {'id': parent['thrid']})
         return {'url': url}
 
     elif action == 'rm':
