@@ -723,8 +723,8 @@ def compose(env, id=None):
 
         files = list(parent['attachments']) + list(parent['embedded'].values())
         for i in files:
-            subpath = i['path'].replace(id, saved_path)
-            asset = env.files.to_dict(dict(i, subpath=subpath))
+            path = i['path'].replace(id, saved_path)
+            asset = env.files.to_dict(**dict(i, path=path))
             ctx['files'].append(asset)
             quote = ctx.get('quote')
             if quote:

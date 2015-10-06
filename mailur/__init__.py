@@ -85,12 +85,9 @@ class Theme():
 
 
 class Files():
-    def __init__(self, env, path=None, type=None, name=None):
+    def __init__(self, env):
         self.base_url = '/attachments/%s' % env.username
         self.base_path = Path(env('path_attachments')) / env.username
-        self._path = path
-        self.name = name
-        self.type = type
 
     def path(self, subpath=None):
         if subpath is None:
@@ -100,7 +97,7 @@ class Files():
     def url(self, subpath=None):
         if subpath is None:
             return self.base_url
-        return self.base_url / subpath
+        return '/'.join((self.base_url, subpath))
 
     def to_dict(self, path, type=None, name=None):
         return {
