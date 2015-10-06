@@ -1,6 +1,5 @@
 import datetime as dt
 import json
-from pathlib import Path
 from urllib.parse import urlsplit, parse_qs, urlencode
 
 from werkzeug.exceptions import HTTPException, abort
@@ -50,12 +49,11 @@ class WebEnv(Env):
         super().__init__()
         self.views = views
         self.url_map = views.url_map
-        self.theme_dir = Path(self('path_theme'))
 
-        self.theme_version = self.load_asset('build/version').strip()
+        self.theme_version = self.theme.read('build/version').strip()
         self.templates = {
-            n.stem: self.load_asset(n)
-            for n in self.theme_dir.glob('*.mustache')
+            n.stem: self.theme.read(n)
+            for n in self.theme.path().glob('*.mustache')
         }
 
     def set_request(self, request):
@@ -100,11 +98,6 @@ class WebEnv(Env):
         kw.setdefault('content_type', 'application/json')
         r = json.dumps(response, ensure_ascii=False, default=str)
         return self.Response(r, **kw)
-
-    def load_asset(self, name):
-        path = (self.theme_dir / name) if isinstance(name, str) else name
-        with path.open('br') as f:
-            return f.read().decode()
 
     def render(self, name, ctx=None):
         from pystache import Renderer

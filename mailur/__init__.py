@@ -71,59 +71,25 @@ def get_conf(conf=None):
     return conf
 
 
-class ThemePath():
-    def __init__(self, env, path=None):
-        self.base_url = '/theme/'
-        self.base_path = env('path_theme')
-        self.path = path
+class Theme():
+    def __init__(self, env):
+        self.base_path = Path(env('path_theme'))
 
-    @property
-    def path(self):
-        return self.__dict__['path']
+    def path(self, subpath=None):
+        if subpath is None:
+            return self.base_path
+        return self.base_path / subpath
 
-    @path.setter
-    def path(self, value):
-        self.__dict__['path'] = value.lstrip('/')
-
-    @property
-    def url(self):
-        return '/'.join([self.base_url, self.path])
-
-    @property
-    def fullpath(self):
-        return self.base_path / self.path
-
-    def read(self):
-        with self.fullpath.open('br') as f:
+    def read(self, subpath):
+        with self.path(subpath).open('br') as f:
             return f.read()
 
-    def write(self, data, rewrite=False):
-        if not rewrite and self.fullpath.exists():
-            return
 
-        os.makedirs(str(self.fullpath.parent), exist_ok=True)
-        with self.fullpath.open('bw') as f:
-            return f.write(data)
-
-    def copy_to(self, path):
-        dest = copy.copy(self)
-        dest.path = path
-        if self.fullpath.exists():
-            if dest.fullpath.exists():
-                shutil.rmtree(str(dest.fullpath))
-            shutil.copytree(str(self.fullpath), str(dest.fullpath))
-        return dest
-
-    def rm(self):
-        if self.fullpath.exists():
-            shutil.rmtree(str(self.fullpath))
-
-
-class AssetPath(ThemePath):
+class AssetPath():
     def __init__(self, env, path=None, type=None, name=None):
         self.base_url = '/attachments/%s' % env.username
         self.base_path = Path(env('path_attachments')) / env.username
-        self.path = path
+        self._path = path
         self.name = name
         self.type = type
 
@@ -146,6 +112,48 @@ class AssetPath(ThemePath):
             'type': self.type,
             'name': self.name
         }
+
+    @property
+    def path(self):
+        return self._path
+
+    @path.setter
+    def path(self, value):
+        self._path = value and value.lstrip('/')
+
+    @property
+    def url(self):
+        return '/'.join([self.base_url, self.path])
+
+    @property
+    def fullpath(self):
+        return self.base_path / self.path
+
+    def read(self, path=None):
+        path = self.base_path / path if path else self.fullpath
+        with path.open('br') as f:
+            return f.read()
+
+    def write(self, data, rewrite=False):
+        if not rewrite and self.fullpath.exists():
+            return
+
+        os.makedirs(str(self.fullpath.parent), exist_ok=True)
+        with self.fullpath.open('bw') as f:
+            return f.write(data)
+
+    def copy_to(self, path):
+        dest = copy.copy(self)
+        dest.path = path
+        if self.fullpath.exists():
+            if dest.fullpath.exists():
+                shutil.rmtree(str(dest.fullpath))
+            shutil.copytree(str(self.fullpath), str(dest.fullpath))
+        return dest
+
+    def rm(self):
+        if self.fullpath.exists():
+            shutil.rmtree(str(self.fullpath))
 
 
 class Env:
@@ -339,8 +347,9 @@ class Env:
             return True
         return False
 
-    def theme_path(self, *a, **kw):
-        return ThemePath(self, *a, **kw)
+    @cached_property
+    def theme(self):
+        return Theme(self)
 
     def asset_path(self, *a, **kw):
         return AssetPath(self, *a, **kw)
