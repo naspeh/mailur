@@ -333,7 +333,7 @@ def ctx_body(env, msg, msgs, show=False):
         return False
     attachments = msg.get('attachments')
     attachments = bool(attachments) and {'items': [
-        env.asset_path(**v).to_dict() for v in attachments
+        env.files.to_dict(**v) for v in attachments
     ]}
     return {
         'text': f.humanize_html(msg['html'], msgs),
@@ -719,18 +719,17 @@ def compose(env, id=None):
     ctx['header'] = {'title': ctx.get('subj') or 'New message'}
 
     if ctx['forward'] and not saved.value:
-        src = env.asset_path(f.slugify(id))
-        src.copy_to(saved_path)
+        env.files.copy(f.slugify(id), saved_path)
 
         files = list(parent['attachments']) + list(parent['embedded'].values())
         for i in files:
-            asset = env.asset_path(**i)
-            parent_url = asset.url
-            asset.path = asset.path.replace(id, saved_path)
-            ctx['files'].append(asset.to_dict())
+            subpath = i['path'].replace(id, saved_path)
+            asset = env.files.to_dict(dict(i, subpath=subpath))
+            ctx['files'].append(asset)
             quote = ctx.get('quote')
             if quote:
-                ctx['quote'] = re.sub(re.escape(parent_url), asset.url, quote)
+                parent_url = re.escape(env.files.url(i['path']))
+                ctx['quote'] = re.sub(parent_url, asset['url'], quote)
     return ctx
 
 
@@ -759,10 +758,9 @@ def draft(env, action, target):
         files = []
         for n, i in enumerate(env.request.files.getlist('files'), count):
             path = '/'.join([saved_path, str(n), f.slugify(i.filename)])
-            asset = env.asset_path(path, i.mimetype, i.filename)
-            asset.write(i.stream.read())
+            env.files.write(path, i.stream.read())
 
-            files.append(asset.to_dict())
+            files.append(env.files.to_dict(path, i.mimetype, i.filename))
         return files
 
     elif action == 'send':
@@ -813,7 +811,7 @@ def draft(env, action, target):
 
     elif action == 'rm':
         if saved.get('files'):
-            env.asset_path(saved_path).rm()
+            env.files.rm(saved_path)
         env.storage.rm(target)
         return 'OK'
 

@@ -154,17 +154,16 @@ def parse_part(env, part, msg_id, inner=False):
         if item['payload']:
             name = slugify(item['filename'] or item['id'])
             path = '/'.join([slugify(msg_id), str(index), name])
-            asset = env.asset_path(path, item['mimetype'], item['filename'])
-            obj = asset.to_db()
+            asset = env.files.to_db(path, item['mimetype'], item['filename'])
             if item['id']:
-                content['embedded'][item['id']] = obj
+                content['embedded'][item['id']] = asset
             elif item['filename']:
-                content['attachments'].append(obj)
+                content['attachments'].append(asset)
             else:
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue
 
-            asset.write(item['payload'])
+            env.files.write(path, item['payload'])
 
     if content['html']:
         htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()
@@ -190,9 +189,8 @@ def parse_part(env, part, msg_id, inner=False):
             cid = re.match('^cid:(.*)', src)
             obj = cid and embedded.pop('<%s>' % cid.group(1), None)
             if obj:
-                obj = env.asset_path(**obj)
                 cid = cid.group(1)
-                img.attrib['src'] = obj.url
+                img.attrib['src'] = env.files.url(obj['path'])
             elif not re.match('^(https?://|/|data:image/).*', src):
                 del img.attrib['src']
         content['attachments'] += embedded.values()

@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 import logging.config
@@ -85,7 +84,7 @@ class Theme():
             return f.read()
 
 
-class AssetPath():
+class Files():
     def __init__(self, env, path=None, type=None, name=None):
         self.base_url = '/attachments/%s' % env.username
         self.base_path = Path(env('path_attachments')) / env.username
@@ -93,67 +92,53 @@ class AssetPath():
         self.name = name
         self.type = type
 
-    @property
-    def maintype(self):
-        return self.type and self.type.split('/')[0]
+    def path(self, subpath=None):
+        if subpath is None:
+            return self.base_path
+        return self.base_path / subpath
 
-    def to_dict(self):
+    def url(self, subpath=None):
+        if subpath is None:
+            return self.base_url
+        return self.base_url / subpath
+
+    def to_dict(self, path, type=None, name=None):
         return {
-            'path': str(self.fullpath),
-            'url': self.url,
-            'maintype': self.maintype,
-            'type': self.type,
-            'name': self.name
+            'path': str(self.path(path)),
+            'url': self.url(path),
+            'maintype': type and type.split('/')[0],
+            'type': type,
+            'name': name
         }
 
-    def to_db(self):
+    def to_db(self, path, type=None, name=None):
         return {
-            'path': self.path,
-            'type': self.type,
-            'name': self.name
+            'path': path,
+            'type': type,
+            'name': name
         }
 
-    @property
-    def path(self):
-        return self._path
-
-    @path.setter
-    def path(self, value):
-        self._path = value and value.lstrip('/')
-
-    @property
-    def url(self):
-        return '/'.join([self.base_url, self.path])
-
-    @property
-    def fullpath(self):
-        return self.base_path / self.path
-
-    def read(self, path=None):
-        path = self.base_path / path if path else self.fullpath
-        with path.open('br') as f:
-            return f.read()
-
-    def write(self, data, rewrite=False):
-        if not rewrite and self.fullpath.exists():
+    def write(self, subpath, data, rewrite=False):
+        path = self.path(subpath)
+        if not rewrite and path.exists():
             return
 
-        os.makedirs(str(self.fullpath.parent), exist_ok=True)
-        with self.fullpath.open('bw') as f:
+        os.makedirs(str(path.parent), exist_ok=True)
+        with path.open('bw') as f:
             return f.write(data)
 
-    def copy_to(self, path):
-        dest = copy.copy(self)
-        dest.path = path
-        if self.fullpath.exists():
-            if dest.fullpath.exists():
-                shutil.rmtree(str(dest.fullpath))
-            shutil.copytree(str(self.fullpath), str(dest.fullpath))
+    def copy(self, src, dest):
+        src, dest = self.path(src), self.path(dest)
+        if src.exists():
+            if dest.exists():
+                shutil.rmtree(str(dest))
+            shutil.copytree(str(src), str(dest))
         return dest
 
-    def rm(self):
-        if self.fullpath.exists():
-            shutil.rmtree(str(self.fullpath))
+    def rm(self, subpath):
+        path = self.path(subpath)
+        if path.exists():
+            shutil.rmtree(str(path))
 
 
 class Env:
@@ -172,6 +157,8 @@ class Env:
         # User specific setup
         if username is not None:
             self.username = username
+
+        self.theme = Theme(self)
 
     def __call__(self, key, default=None):
         value = self.conf[key]
@@ -204,6 +191,7 @@ class Env:
         self.__dict__.pop('conf', None)
         self.__dict__.pop('email', None)
         self.__dict__.pop('token', None)
+        self.__dict__.pop('files', None)
 
     @cached_property
     def db(self):
@@ -225,6 +213,10 @@ class Env:
     @cached_property
     def token(self):
         return self.storage.get('token')
+
+    @cached_property
+    def files(self):
+        return Files(self)
 
     @property
     def db_name(self):
@@ -346,13 +338,6 @@ class Env:
         if password_token and password_token == token:
             return True
         return False
-
-    @cached_property
-    def theme(self):
-        return Theme(self)
-
-    def asset_path(self, *a, **kw):
-        return AssetPath(self, *a, **kw)
 
     def add_tasks(self, tasks, name='mark'):
         items = [
