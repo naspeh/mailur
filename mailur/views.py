@@ -1,8 +1,6 @@
 import functools as ft
 import json
-import os
 import re
-import shutil
 
 import valideer as v
 from werkzeug.routing import Map, Rule
@@ -713,6 +711,7 @@ def compose(env, id=None):
         })
 
     saved = env.storage.format_key('compose', thrid=parent.get('thrid'))
+    saved_path = saved.key.replace(':', '/')
     if saved.value:
         ctx.update(saved.value)
     ctx['target'] = saved.key
@@ -720,27 +719,18 @@ def compose(env, id=None):
     ctx['header'] = {'title': ctx.get('subj') or 'New message'}
 
     if ctx['forward'] and not saved.value:
-        path = env.files / f.slugify(id)
-        if path.exists():
-            dest = env.files.joinpath(*saved.key.split(':'))
-            if dest.exists():
-                shutil.rmtree(str(dest))
-            shutil.copytree(str(path), str(dest))
+        src = env.asset_path(f.slugify(id))
+        src.copy_to(saved_path)
 
-        files = parent['attachments'] or [] + list(parent['embedded'].values())
+        files = list(parent['attachments']) + list(parent['embedded'].values())
         for i in files:
-            path = i['url'][len('/attachments/%s/%s/' % (env.username, id)):]
-            path = '/'.join(saved.key.split(':') + [path])
-            url = '/attachments/%s/%s' % (env.username, path)
-            ctx['files'].append({
-                'name': i['name'],
-                'mimetype': i['type'],
-                'url': url,
-                'path': env.files / path,
-            })
+            asset = env.asset_path(**i)
+            parent_url = asset.url
+            asset.path = asset.path.replace(id, saved_path)
+            ctx['files'].append(asset.to_dict())
             quote = ctx.get('quote')
             if quote:
-                ctx['quote'] = re.sub(re.escape(i['url']), url, quote)
+                ctx['quote'] = re.sub(re.escape(parent_url), asset.url, quote)
     return ctx
 
 
@@ -748,6 +738,7 @@ def compose(env, id=None):
 @adapt_fmt()
 def draft(env, action, target):
     saved = env.storage.get(target) or {}
+    saved_path = target.replace(':', '/')
     if action == 'preview':
         schema = v.parse({
             '+fr': str,
@@ -767,19 +758,11 @@ def draft(env, action, target):
         count = env.request.form.get('count', type=int)
         files = []
         for n, i in enumerate(env.request.files.getlist('files'), count):
-            url = '/'.join(target.split(':') + [str(n), f.slugify(i.filename)])
-            path = env.files / url
-            if not path.exists():
-                os.makedirs(str(path.parent), exist_ok=True)
-            with path.open('bw') as fd:
-                fd.write(i.stream.read())
+            path = '/'.join([saved_path, str(n), f.slugify(i.filename)])
+            asset = env.asset_path(path, i.mimetype, i.filename)
+            asset.write(i.stream.read())
 
-            files.append({
-                'name': i.filename,
-                'mimetype': i.mimetype,
-                'url': '/'.join(['/attachments', env.username, url]),
-                'path': str(path)
-            })
+            files.append(asset.to_dict())
         return files
 
     elif action == 'send':
@@ -830,8 +813,7 @@ def draft(env, action, target):
 
     elif action == 'rm':
         if saved.get('files'):
-            path = env.files.joinpath(*target.split(':'))
-            shutil.rmtree(str(path))
+            env.asset_path(saved_path).rm()
         env.storage.rm(target)
         return 'OK'
 
@@ -886,7 +868,7 @@ def sendmail(env, msg):
         email.attach(text)
 
     for i in files:
-        a = MIMEBase(*i['mimetype'].split('/'))
+        a = MIMEBase(*i['type'].split('/'))
         with open(i['path'], 'rb') as fd:
             a.set_payload(fd.read())
         a.add_header('Content-Disposition', 'attachment', filename=i['name'])

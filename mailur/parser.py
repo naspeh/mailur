@@ -154,8 +154,8 @@ def parse_part(env, part, msg_id, inner=False):
         if item['payload']:
             name = slugify(item['filename'] or item['id'])
             path = '/'.join([slugify(msg_id), str(index), name])
-            path = env.asset_path(path, item['mimetype'], item['filename'])
-            obj = path.to_db()
+            asset = env.asset_path(path, item['mimetype'], item['filename'])
+            obj = asset.to_db()
             if item['id']:
                 content['embedded'][item['id']] = obj
             elif item['filename']:
@@ -164,7 +164,7 @@ def parse_part(env, part, msg_id, inner=False):
                 log.warn('UnknownAttachment(%s)', msg_id)
                 continue
 
-            path.write(item['payload'])
+            asset.write(item['payload'])
 
     if content['html']:
         htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()

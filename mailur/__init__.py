@@ -1,7 +1,9 @@
+import copy
 import json
 import logging
 import logging.config
 import os
+import shutil
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
@@ -91,22 +93,6 @@ class ThemePath():
     def fullpath(self):
         return self.base_path / self.path
 
-    def from_fullpath(self, env, path):
-        if not path.startswith(self.base_path):
-            raise ValueError(
-                'Path %r should start with %r' % (path, self.base_path)
-            )
-        self.path = path[len(self.base_path):]
-        return self
-
-    def from_url(self, url):
-        if not url.startswith(self.base_url):
-            raise ValueError(
-                'Url %r should start with %r' % (url, self.base_url)
-            )
-        self.path = url[len(self.base_url):]
-        return self
-
     def read(self):
         with self.fullpath.open('br') as f:
             return f.read()
@@ -119,6 +105,19 @@ class ThemePath():
         with self.fullpath.open('bw') as f:
             return f.write(data)
 
+    def copy_to(self, path):
+        dest = copy.copy(self)
+        dest.path = path
+        if self.fullpath.exists():
+            if dest.fullpath.exists():
+                shutil.rmtree(str(dest.fullpath))
+            shutil.copytree(str(self.fullpath), str(dest.fullpath))
+        return dest
+
+    def rm(self):
+        if self.fullpath.exists():
+            shutil.rmtree(str(self.fullpath))
+
 
 class AssetPath(ThemePath):
     def __init__(self, env, path=None, type=None, name=None):
@@ -130,7 +129,7 @@ class AssetPath(ThemePath):
 
     @property
     def maintype(self):
-        return self.type.split('/')[0]
+        return self.type and self.type.split('/')[0]
 
     def to_dict(self):
         return {
