@@ -167,9 +167,7 @@ let Emails = Component.extend({
                 mark({action: '-', name: '\\Unread', ids: ids}, () => {}, this);
             }
         });
-        this.$watch('checked_list', (newVal, oldVal) => {
-            this.refreshLabels();
-        });
+        this.$watch('labels', () => this.$nextTick(this.resetLabels));
     },
     directives: {
         body(value) {
@@ -183,12 +181,6 @@ let Emails = Component.extend({
                 toggle(quote);
             }
         },
-    },
-    elementDirectives: {
-        // FIXME: should be a better way
-        labels: {bind() {
-            this.vm.refreshLabels();
-        }}
     },
     computed: {
         last_email() {
@@ -219,6 +211,13 @@ let Emails = Component.extend({
                 this.getPicked(data).length > 0 || data.thread ? true : false
             );
             data.$set('labels',  this.getLabelsByPicked(data));
+
+            this.$nextTick(() => {
+                if (this.resetLabels === undefined) {
+                    this.resetLabels = this.initLabels();
+                }
+                this.resetLabels();
+            });
             return data;
         },
         initReply(url, focus) {
@@ -237,7 +236,7 @@ let Emails = Component.extend({
             e.preventDefault();
             this.initReply(e.target.href, true);
         },
-        refreshLabels() {
+        initLabels() {
             let container = $('.header .labels')[0];
             if (!container) return;
 
@@ -247,23 +246,21 @@ let Emails = Component.extend({
 
             let tags, compl;
             let edit = $$('.labels-input');
-            toggle(edit);
 
             let save = () => {
                 vm.labels = tags.value().split(',');
-                compl.destroy();
-                tags.destroy();
-
                 mark({
                     action: '=',
                     name: vm.labels,
                     old_name: this.getLabelsByPicked(this)
                 });
-                toggle(labels);
-                toggle(edit);
+                reset();
             };
             let init = () => {
-                reset();
+                clear();
+                toggle(edit, true);
+                toggle(labels, false);
+
                 compl = horsey(input, {suggestions: vm.header.labels.all});
                 tags = insignia(input, {
                     deletion: true,
@@ -286,8 +283,8 @@ let Emails = Component.extend({
             };
             let reset = () => {
                 clear();
-                toggle(labels);
-                toggle(edit);
+                toggle(labels, true);
+                toggle(edit, false);
             };
             let input = edit.querySelector('input');
 
@@ -309,6 +306,7 @@ let Emails = Component.extend({
             $$('.labels--ok').addEventListener('click', (e) => save());
             $$('.labels--cancel').addEventListener('click', (e) => reset());
             $$('.labels--edit').addEventListener('click', (e) => init());
+            return reset;
         },
         getLabels(names) {
             let result = [];
@@ -509,7 +507,7 @@ let Compose = Component.extend({
                 data.append('files', file, file.name);
             }
             ajax(`/draft/upload/${this.target}/`, {method: 'post', body: data})
-                .then(function(data) {
+                .then((data) => {
                     self.files = self.files.concat(data);
                     input.value = null;
                 });
@@ -550,8 +548,12 @@ function $(selector, root) {
     let elements = Array.from(root.querySelectorAll(selector));
     return elements;
 }
-function toggle(el) {
-    el.style.display = el.style.display == 'none' ? '' : 'none';
+function toggle(el, state) {
+    if (state !== undefined) {
+        el.style.display = state ? '' : 'none';
+    } else {
+        el.style.display = el.style.display == 'none' ? '' : 'none';
+    }
 }
 function goToLabel(label) {
     go('/emails/?in=' + label);
