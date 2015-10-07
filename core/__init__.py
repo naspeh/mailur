@@ -80,19 +80,28 @@ class Theme():
         return self.base_path / subpath
 
     def read(self, subpath):
-        with self.path(subpath).open('br') as f:
-            return f.read()
+        path = self.path(subpath)
+        if path.exists():
+            with path.open('br') as f:
+                return f.read()
+
+    def write(self, subpath, data, rewrite=False):
+        path = self.path(subpath)
+        if not rewrite and path.exists():
+            return
+
+        if isinstance(data, str):
+            data = data.encode()
+
+        os.makedirs(str(path.parent), exist_ok=True)
+        with path.open('bw') as f:
+            return f.write(data)
 
 
-class Files():
+class Files(Theme):
     def __init__(self, env):
         self.base_url = '/attachments/%s' % env.username
         self.base_path = Path(env('path_attachments')) / env.username
-
-    def path(self, subpath=None):
-        if subpath is None:
-            return self.base_path
-        return self.base_path / subpath
 
     def url(self, subpath=None):
         if subpath is None:
@@ -114,15 +123,6 @@ class Files():
             'type': type,
             'name': name
         }
-
-    def write(self, subpath, data, rewrite=False):
-        path = self.path(subpath)
-        if not rewrite and path.exists():
-            return
-
-        os.makedirs(str(path.parent), exist_ok=True)
-        with path.open('bw') as f:
-            return f.write(data)
 
     def copy(self, src, dest):
         src, dest = self.path(src), self.path(dest)
@@ -344,6 +344,20 @@ class Env:
         if not items:
             return []
         return self.storage.insert(items)
+
+    @cached_property
+    def templates(self):
+        return {
+            n.stem: self.theme.read(n)
+            for n in self.theme.path().glob('*.mustache')
+        }
+
+    def render(self, name, ctx=None):
+        from pystache import Renderer
+
+        render = Renderer(partials=self.templates).render
+        tpl = self.templates[name]
+        return render(tpl, ctx)
 
 
 def setup_logging(conf):

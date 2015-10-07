@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import argparse
 import functools as ft
+import json
 import logging
-import os
 import subprocess as sp
 from pathlib import Path
 
@@ -52,6 +52,64 @@ def reqs(dev=False, clear=False):
         .format(requirements=requirements)
     )
     not dev and sh('pip freeze | sort > requirements.txt')
+
+
+def front(env, force=False):
+    def get_version():
+        return sp.check_output((
+            'find manage.py conf.json {0}'
+            '   -type f'
+            '   ! -name version'
+            '   ! -name index.html'
+            '   -printf "%C@\n"'
+            '   | sort -rn | head -n 1'
+            .format(env.theme.path())
+        ), shell=True)
+
+    if not force and get_version() == env.theme.read('build/version'):
+        log.info('Front directory is up-to-date')
+        return
+
+    sh(
+        'rsync -arv --delete --exclude=build {0} {0}/build &&'
+        # all.css
+        'lessc {0}styles.less {0}build/styles.css &&'
+        'cat'
+        '   node_modules/normalize.css/normalize.css'
+        '   {0}build/styles.css'
+        '   > {0}build/all.css &&'
+        'postcss --use autoprefixer -o {0}build/all.css {0}build/all.css &&'
+        'cleancss {0}build/all.css -o {0}build/all.min.css &&'
+        # all.js
+        'browserify -d -o {0}build/all.js {0}app.js &&'
+        'uglifyjs -vcm -o {0}build/all.min.js {0}build/all.js'
+        .format('%s/' % env.theme.path())
+    )
+    version = get_version().decode()
+
+    # index.html
+    name = 'all' if env('debug') else 'all.min'
+    conf = {
+        'debug': env('debug'),
+        'host_ws': env('host_ws'),
+        'host_web': env('host_web'),
+        'ga_id': env('ui_ga_id'),
+        'ws_enabled': env('ui_ws_enabled'),
+        'ws_timeout': env('ui_ws_timeout'),
+        'firebug': env('ui_firebug'),
+    }
+    ctx = {
+        'conf': conf,
+        'conf_json': json.dumps(conf),
+        'version': version,
+        'min': '' if env('debug') else '.min'
+    }
+    index = env.render('base', ctx)
+    env.theme.write('build/index.html', index, rewrite=True)
+
+    # save new version
+    env.theme.write('build/version', version, rewrite=True)
+    log.info('Done with new version: %s', version)
 
 
 def for_all(func):
@@ -165,8 +223,8 @@ def shell(env):
     namespace = {'env': env}
     try:
         from ptpython.repl import embed
-        opts = {'history_filename': os.path.expanduser('~/.ptpython_history')}
-        embed(namespace, **opts)
+        hf = str(Path('~/.ptpython_history').expanduser())
+        embed(namespace, history_filename=hf)
     except ImportError:
         from code import interact
         interact('', local=namespace)
@@ -200,7 +258,7 @@ def deploy(opts):
         dotfiles='/home/dotfiles',
     )
     ctx = {
-        'cwd': os.getcwd(),
+        'cwd': Path.cwd(),
         'path': path,
         'manage': '{[src]}/m'.format(path),
     }
@@ -253,7 +311,7 @@ def deploy(opts):
     cd {path[src]} && git pull;
     ([ -d {path[attachments]} ] || mkdir {path[attachments]}) &&
     chown http:http {path[attachments]}
-    rsync -v {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
+    rsync -vL {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
     cat /etc/fcrontab/* | fcrontab - &&
@@ -396,23 +454,9 @@ def get_full(argv):
             '   horsey'
         ))
 
-    cmd('static').exe(lambda a: sh(
-        # all.css
-        'lessc {0}styles.less {0}build/styles.css &&'
-        'cat'
-        '   node_modules/normalize.css/normalize.css'
-        '   {0}build/styles.css'
-        '   > {0}build/all.css &&'
-        'postcss --use autoprefixer -o {0}build/all.css {0}build/all.css &&'
-        'cleancss {0}build/all.css -o {0}build/all.min.css &&'
-        # all.js
-        'browserify -d -o {0}build/all.js {0}app.js &&'
-        'uglifyjs -vcm -o {0}build/all.min.js {0}build/all.js &&'
-        # theme version
-        'cat {0}/build/all.min.* | md5sum - | cut -c-32'
-        '   > {0}build/version'
-        .format(env('path_theme') + os.path.sep)
-    ))
+    cmd('static', help='generate front')\
+        .arg('-f', '--force', action='store_true')\
+        .exe(lambda a: front(env, a.force))
 
     cmd('touch').exe(lambda a: sh(
         './manage.py static &&'

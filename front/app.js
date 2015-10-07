@@ -109,7 +109,7 @@ p._initData = function() {
 };
 p._setDataOrig = p._setData;
 p._setData = function(data) {
-    if (!this.$parent) {
+    if (!this.$parent && data !== undefined) {
         for (let key of this.permanents || []) {
             data.$set(key, this.$data[key]);
         }
@@ -530,6 +530,9 @@ let view;
 let title = document.title;
 let history = createHistory();
 history.listen((location) => {
+    if (location.pathname == '/') {
+        return go('/emails/?in=\\Inbox');
+    }
     send(getPath(), null, (data) => {
         let current = views[data._name];
         if (!view || view.name() != data._name) {
@@ -641,7 +644,7 @@ function ajax(url, params) {
         .catch(ex => console.log(url, ex));
 }
 function send(url, data, callback) {
-    url = url.replace(location.origin, '');
+    url = '/api' + url.replace(location.origin, '');
 
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web.replace(/\/$/, '') + url;

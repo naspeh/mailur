@@ -1,5 +1,4 @@
 import functools as ft
-import json
 import re
 
 import valideer as v
@@ -50,20 +49,13 @@ def gmail_callback(env):
 
 def adapt_fmt(tpl=None):
     def inner(env, *a, **kw):
-        default = 'json' if env.request.is_xhr else kw.pop('fmt', 'html')
-        fmt = env.request.args.get('fmt', default)
-        if fmt == 'html' and tpl and env.request.method == 'GET':
-            return render_base(env)
-
         ctx = wrapper.func(env, *a, **kw)
         if isinstance(ctx, env.Response):
             return ctx
 
-        if fmt == 'json':
-            if tpl:
-                ctx['_name'] = tpl
-            return env.to_json(ctx)
-        return render_base(env, ctx)
+        if tpl:
+            ctx['_name'] = tpl
+        return env.to_json(ctx)
 
     def wrapper(func):
         wrapper.func = func
@@ -125,27 +117,6 @@ def adapt_page():
         wrapper.func = func
         return ft.wraps(func)(inner)
     return wrapper
-
-
-def render_base(env, body=None):
-    name = 'all' if env('debug') else 'all.min'
-    conf = {
-        'debug': env('debug'),
-        'host_ws': env('host_ws'),
-        'host_web': env('host_web'),
-        'ga_id': env('ui_ga_id'),
-        'ws_enabled': env('ui_ws_enabled'),
-        'ws_timeout': env('ui_ws_timeout'),
-        'firebug': env('ui_firebug'),
-    }
-    ctx = {
-        'body': body,
-        'cssfile': '/theme/build/%s.css?%s' % (name, env.theme_version),
-        'jsfile': '/theme/build/%s.js?%s' % (name, env.theme_version),
-        'conf_json': json.dumps(conf),
-        'conf': conf
-    }
-    return env.render('base', ctx)
 
 
 def reset_password(env, username=None, token=None):

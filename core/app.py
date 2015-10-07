@@ -50,12 +50,6 @@ class WebEnv(Env):
         self.views = views
         self.url_map = views.url_map
 
-        self.theme_version = self.theme.read('build/version').strip()
-        self.templates = {
-            n.stem: self.theme.read(n)
-            for n in self.theme.path().glob('*.mustache')
-        }
-
     def set_request(self, request):
         self.request = request
         self.adapter = self.url_map.bind_to_environ(request.environ)
@@ -98,10 +92,3 @@ class WebEnv(Env):
         kw.setdefault('content_type', 'application/json')
         r = json.dumps(response, ensure_ascii=False, default=str)
         return self.Response(r, **kw)
-
-    def render(self, name, ctx=None):
-        from pystache import Renderer
-
-        render = Renderer(partials=self.templates).render
-        tpl = self.templates[name]
-        return render(tpl, ctx)
