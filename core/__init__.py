@@ -45,7 +45,7 @@ def get_conf(conf=None):
             'log_level': v.Nullable(str, 'DEBUG'),
             'log_file': v.Nullable(str, ''),
             'path_attachments': v.Nullable(str, str(base_dir / 'attachments')),
-            'path_theme': v.Nullable(exists, str(app_dir / 'theme')),
+            'path_theme': v.Nullable(exists, str(base_dir / 'front')),
             'imap_body_maxsize': v.Nullable(int, 50 * 1024 * 1024),
             'imap_batch_size': v.Nullable(int, 2000),
             'imap_debug': v.Nullable(int, 0),

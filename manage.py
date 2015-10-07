@@ -72,7 +72,7 @@ def for_all(func):
 
 @for_all
 def sync(env, target, disabled=False, **kw):
-    from mailur import syncer
+    from core import syncer
 
     skip = (
         'no email' if not env.email else
@@ -95,8 +95,8 @@ sync.choices = ['fast', 'full']
 
 @for_all
 def parse(env, limit=1000, offset=0):
-    from mailur import syncer
-    from mailur.helpers import Timer
+    from core import syncer
+    from core.helpers import Timer
 
     sql = 'SELECT count(id) FROM emails WHERE raw IS NOT NULL'
     count = env.sql(sql).fetchone()[0] - offset
@@ -125,7 +125,7 @@ def parse(env, limit=1000, offset=0):
 
 @for_all
 def thrids(env, clear=False):
-    from mailur import syncer
+    from core import syncer
 
     log.info('Update thread ids for %r', env.username)
     if clear:
@@ -174,7 +174,7 @@ def shell(env):
 
 @for_all
 def migrate(env, init=False):
-    from mailur import db
+    from core import db
 
     if init:
         db.init(env)
@@ -325,7 +325,7 @@ def get_base(argv):
 
 
 def get_full(argv):
-    from mailur import Env, db
+    from core import Env, db
 
     env = Env()
 
@@ -409,7 +409,7 @@ def get_full(argv):
         'browserify -d -o {0}build/all.js {0}app.js &&'
         'uglifyjs -vcm -o {0}build/all.min.js {0}build/all.js &&'
         # theme version
-        'cat mailur/theme/build/all.min.* | md5sum - | cut -c-32'
+        'cat {0}/build/all.min.* | md5sum - | cut -c-32'
         '   > {0}build/version'
         .format(env('path_theme') + os.path.sep)
     ))

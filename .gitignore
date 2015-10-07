@@ -3,4 +3,4 @@ conf.json
 /deploy/nginx-site.conf
 /attachments
 /node_modules
-/mailur/theme/build
+/front/build

@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from pytest import fixture
 
-from mailur import Env
+from core import Env
 
 
 @fixture

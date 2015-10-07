@@ -3,7 +3,7 @@ import json
 from pytest import mark
 
 from . import read_file
-from mailur import syncer
+from core import syncer
 
 emails = read_file('files_parser', 'expected.json').items()
 
