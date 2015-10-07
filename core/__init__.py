@@ -150,12 +150,11 @@ class Env:
         # General setup
         self.username = None
         self.request = None
+        self.theme = Theme(self)
 
         # User specific setup
         if username is not None:
             self.username = username
-
-        self.theme = Theme(self)
 
     def __call__(self, key, default=None):
         value = self.conf[key]

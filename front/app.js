@@ -9,9 +9,33 @@ Vue.config.debug = conf.debug;
 Vue.config.proto = false;
 
 let ws, ws_try = 0, handlers = {};
-if (conf.ws_enabled) {
-    connect();
-}
+let view, history, title = document.title;
+send('/check-auth/', null, (data) => {
+    if (!data.username) {
+        location.pathname = '/api/login/';
+        return;
+    }
+    if (conf.ws_enabled) {
+        connect();
+    }
+    history = createHistory();
+    history.listen((location) => {
+        if (location.pathname == '/') {
+            return go('/emails/?in=\\Inbox');
+        }
+        send(getPath(), null, (data) => {
+            let current = views[data._name];
+            if (!view || view.name() != data._name) {
+                view = new current({data: data, el: '.body'});
+            } else {
+                view.$data = data;
+            }
+            if (data.header) {
+                document.title = `${data.header.title} - ${title}`;
+            }
+        });
+    });
+});
 
 /* Keyboard shortcuts */
 let hotkeys = [
@@ -526,24 +550,6 @@ let views = {
     emails: Emails,
     compose: Compose
 };
-let view;
-let title = document.title;
-let history = createHistory();
-history.listen((location) => {
-    if (location.pathname == '/') {
-        return go('/emails/?in=\\Inbox');
-    }
-    send(getPath(), null, (data) => {
-        let current = views[data._name];
-        if (!view || view.name() != data._name) {
-            view = new current({data: data, el: '.body'});
-        } else {
-            view.$data = data;
-        }
-        if (data.header) document.title = `${data.header.title} - ${title}`;
-    });
-});
-
 
 /* Related functions */
 function $(selector, root) {
@@ -615,7 +621,9 @@ function connect() {
             console.log('response for ' + data.uid);
             let handler = handlers[data.uid];
             if (handler) {
-                handler(JSON.parse(data.payload));
+                parseJson(data.payload)
+                    .then(handler.success)
+                    .catch(handler.error || (ex => console.log(data.uid, ex)));
                 delete handlers[data.uid];
             }
         } else if (data.session) {
@@ -640,11 +648,24 @@ function ajax(url, params) {
         'Accept': 'application/json'
     });
     return fetch(url, params)
-        .then(r => r.json())
-        .catch(ex => console.log(url, ex));
+        .then(r => r.text())
+        .then(parseJson);
+}
+function parseJson(data) {
+    return new Promise((resolve, reject) => {
+        try {
+            return resolve(JSON.parse(data));
+        } catch(error) {
+            reject(error);
+        }
+    });
 }
 function send(url, data, callback) {
     url = '/api' + url.replace(location.origin, '');
+    callback = {
+        success: callback && callback.success || callback,
+        error: callback && callback.error || (ex => console.log(url, ex))
+    };
 
     if (ws && ws.readyState === ws.OPEN) {
         url = conf.host_web.replace(/\/$/, '') + url;
@@ -668,6 +689,6 @@ function send(url, data, callback) {
             params.headers['Content-Type'] = 'application/json';
             params.body = JSON.stringify(data);
         }
-        ajax(url, params).then(callback);
+        ajax(url, params).then(callback.success).catch(callback.error);
     }
 }

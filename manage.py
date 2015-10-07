@@ -54,7 +54,7 @@ def reqs(dev=False, clear=False):
     not dev and sh('pip freeze | sort > requirements.txt')
 
 
-def front(env, force=False):
+def front(env, force=False, clean=False):
     def get_version():
         return sp.check_output((
             'find manage.py conf.json {0}'
@@ -70,8 +70,9 @@ def front(env, force=False):
         log.info('Front directory is up-to-date')
         return
 
+    clean = ' --delete' if clean else ''
     sh(
-        'rsync -arv --delete --exclude=build {0} {0}/build &&'
+        'rsync -arv {clean} --exclude=build {0} {0}/build &&'
         # all.css
         'lessc {0}styles.less {0}build/styles.css &&'
         'cat'
@@ -83,12 +84,11 @@ def front(env, force=False):
         # all.js
         'browserify -d -o {0}build/all.js {0}app.js &&'
         'uglifyjs -vcm -o {0}build/all.min.js {0}build/all.js'
-        .format('%s/' % env.theme.path())
+        .format('%s/' % env.theme.path(), clean=clean)
     )
     version = get_version().decode()
 
     # index.html
-    name = 'all' if env('debug') else 'all.min'
     conf = {
         'debug': env('debug'),
         'host_ws': env('host_ws'),

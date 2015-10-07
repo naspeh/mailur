@@ -16,9 +16,11 @@ def get_env(request):
     )
     if resp.status == 200:
         data = yield from resp.json()
-        return Env(data['username']), None
-    elif resp.status in (301, 302, 403):
-        return None, web.Response(body=b'403 Forbidden', status=403)
+        username = data.get('username')
+        if username:
+            return Env(username), None
+        else:
+            return None, web.Response(body=b'403 Forbidden', status=403)
 
     body = yield from resp.read()
     return None, web.Response(body=body, status=resp.status)

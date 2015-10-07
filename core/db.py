@@ -39,7 +39,7 @@ def init(env, password=None, reset=False):
         env.set_password(password)
     elif reset:
         token = env.set_password(reset=True)
-        print('Reset password: /pwd/%s/%s/' % (env.username, token))
+        print('Reset password: /api/pwd/%s/%s/' % (env.username, token))
 
 
 def fill_updated(table, field='updated'):

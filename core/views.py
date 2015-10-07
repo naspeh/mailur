@@ -12,7 +12,7 @@ rules = [
     Rule('/gmail/', endpoint='gmail_connect'),
     Rule('/gmail-callback/', endpoint='gmail_callback'),
 
-    Rule('/', endpoint='index'),
+    Rule('/', endpoint='index', build_only=True),
     Rule('/check-auth/', endpoint='check_auth'),
     Rule('/init/', endpoint='init'),
     Rule('/pwd/', endpoint='reset_password'),
@@ -63,7 +63,6 @@ def adapt_fmt(tpl=None):
     return wrapper
 
 
-@adapt_fmt()
 def login(env):
     ctx = {'greeting': env('ui_greeting')}
     if env.request.method == 'POST':
@@ -91,7 +90,7 @@ def login_required(func):
     def inner(env, *a, **kw):
         if env.valid_username or env.valid_token:
             return func(env, *a, **kw)
-        return env.redirect_for('login')
+        return env.abort(403)
     return ft.wraps(func)(inner)
 
 
@@ -141,14 +140,12 @@ def reset_password(env, username=None, token=None):
     return env.abort(400)
 
 
-@login_required
-def index(env):
-    return env.redirect_for('emails', {'in': '\Inbox'})
-
-
-@login_required
 def check_auth(env):
-    return env.to_json({'username': env.username})
+    if env.valid_username or env.valid_token:
+        res = {'username': env.username}
+    else:
+        res = {}
+    return env.to_json(res)
 
 
 @login_required
