@@ -72,7 +72,7 @@ def front(env, force=False, clean=False):
 
     clean = ' --delete' if clean else ''
     sh(
-        'rsync -arv {clean} --exclude=build {0} {0}/build &&'
+        'rsync -arv {clean} --exclude=build {0} {0}build/ &&'
         # all.css
         'lessc {0}styles.less {0}build/styles.css &&'
         'cat'
