@@ -8,8 +8,10 @@ from . import Env, log
 
 @asyncio.coroutine
 def get_env(request):
+    env = Env()
+
     resp = yield from aiohttp.request(
-        'GET', 'http://localhost:8000/check-auth/',
+        'GET', '%s/check-auth/' % env('host_web'),
         headers=request.headers,
         cookies=request.cookies.items(),
         allow_redirects=False
@@ -18,7 +20,8 @@ def get_env(request):
         data = yield from resp.json()
         username = data.get('username')
         if username:
-            return Env(username), None
+            env.username = username
+            return env, None
         else:
             return None, web.Response(body=b'403 Forbidden', status=403)
 
@@ -47,7 +50,7 @@ def wshandler(request):
                 payload = json.dumps(payload)
             resp = yield from aiohttp.request(
                 'POST' if payload else 'GET',
-                data['url'],
+                env('host_web') + data['url'],
                 headers={
                     'X-Requested-With': 'XMLHttpRequest',
                     'Cookie': data['cookie']

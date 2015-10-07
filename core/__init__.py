@@ -60,7 +60,7 @@ def get_conf(conf=None):
             'ui_ws_timeout': v.Nullable(int, 1000),
             'ui_firebug': v.Nullable(bool, False),
             'host_ws': v.Nullable(str, 'ws://localhost/async/'),
-            'host_web': v.Nullable(str, 'http://localhost/'),
+            'host_web': v.Nullable(str, 'http://localhost:8000/'),
         })
     conf = schema.validate(conf)
 

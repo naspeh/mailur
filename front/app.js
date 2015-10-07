@@ -661,14 +661,13 @@ function parseJson(data) {
     });
 }
 function send(url, data, callback) {
-    url = '/api' + url.replace(location.origin, '');
+    url = url.replace(location.origin, '');
     callback = {
         success: callback && callback.success || callback,
         error: callback && callback.error || (ex => console.log(url, ex))
     };
 
     if (ws && ws.readyState === ws.OPEN) {
-        url = conf.host_web.replace(/\/$/, '') + url;
         data = {
             url: url,
             payload: data,
@@ -689,6 +688,6 @@ function send(url, data, callback) {
             params.headers['Content-Type'] = 'application/json';
             params.body = JSON.stringify(data);
         }
-        ajax(url, params).then(callback.success).catch(callback.error);
+        ajax('/api' + url, params).then(callback.success).catch(callback.error);
     }
 }
