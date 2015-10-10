@@ -1,14 +1,23 @@
-import * as utils from './utils';
 import Mousetrap from 'mousetrap';
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
 import horsey from 'horsey';
 import insignia from 'insignia';
 
+// Setup polyfills
+require('whatwg-fetch');
+require('core-js/fn/set');
+require('core-js/fn/symbol');
+require('core-js/fn/array/of');
+require('core-js/fn/array/from');
+require('core-js/fn/object/assign');
+
+let array_union = require('lodash/array/union');
+
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
 
-let ws, ws_try = 0, handlers = {};
+let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
 let view, history, title = document.title;
 send('/check-auth/', null, (data) => {
     if (!data.username) {
@@ -363,7 +372,7 @@ let Emails = Component.extend({
         },
         getLabelsByPicked(data) {
             data = data || this;
-            let labels = utils.array_union(
+            let labels = array_union(
                 data.header.labels.items,
                 ...this.getPicked(data, (el) => el.labels)
             );
@@ -619,14 +628,14 @@ function connect() {
     ws = new WebSocket(conf.host_ws);
     ws.onopen = () => {
         console.log('ws opened');
-        ws_try = 0;
+        wsTry = 0;
     };
     ws.onerror = (error) => {
         console.log('ws error', error);
     };
     ws.onmessage = (e) => {
         let data = JSON.parse(e.data);
-        if (data.uid) {
+        if (data.uid !== undefined) {
             console.log('response for ' + data.uid);
             let handler = handlers[data.uid];
             if (handler) {
@@ -646,8 +655,8 @@ function connect() {
     ws.onclose = (event) => {
         ws = null;
         console.log('ws closed', event);
-        setTimeout(connect, conf.ws_timeout * (Math.pow(2, ws_try) - 1));
-        ws_try++;
+        setTimeout(connect, conf.ws_timeout * (Math.pow(2, wsTry) - 1));
+        wsTry++;
     };
 }
 function ajax(url, params) {
@@ -680,7 +689,7 @@ function send(url, data, callback) {
         data = {
             url: url,
             payload: data,
-            uid: utils.guid(),
+            uid: handlerSeq++,
             cookie: document.cookie
         };
         console.log(url, data.uid);
