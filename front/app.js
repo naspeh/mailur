@@ -1,22 +1,14 @@
+import * as polyfills from './polyfills';
 import Mousetrap from 'mousetrap';
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
 import horsey from 'horsey';
 import insignia from 'insignia';
 
-// Setup polyfills
-require('whatwg-fetch');
-require('core-js/fn/set');
-require('core-js/fn/symbol');
-require('core-js/fn/array/of');
-require('core-js/fn/array/from');
-require('core-js/fn/object/assign');
-
-let array_union = require('lodash/array/union');
-
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
 
+let array_union = require('lodash/array/union');
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
 let view, history, title = document.title;
 send('/check-auth/', null, (data) => {
