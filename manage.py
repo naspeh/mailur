@@ -108,7 +108,7 @@ def front(env, force=False, clean=False):
 
     # save new version
     env.theme.write('build/version', version, rewrite=True)
-    log.info('Done with new version: %s', version)
+    log.info('Done new version: %s', version)
 
 
 def for_all(func):

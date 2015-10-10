@@ -639,7 +639,7 @@ function connect() {
             let handler = handlers[data.uid];
             if (handler) {
                 let elapsed = (Date.now() - handler.time) / 1000;
-                console.log(`response for ${data.uid} in ${elapsed}`);
+                console.log(`response for ${data.uid} (${elapsed}s)`);
 
                 parseJson(data.payload)
                     .then(handler.callback.success)
