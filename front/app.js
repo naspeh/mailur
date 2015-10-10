@@ -324,6 +324,16 @@ let Emails = Component.extend({
                     compl.hide();
                     tags.convert();
                 })
+                .bind(['backspace'], (e) => {
+                    if (e.target.value !== '') return;
+
+                    // Clean previous tag
+                    let prev = e.target.previousElementSibling.children;
+                    if (prev.length > 0) {
+                        prev[prev.length - 1].innerHTML = '';
+                    }
+                    tags.convert();
+                })
                 .bind('esc esc', (e) => reset())
                 .bind('ctrl+enter', (e) => save());
 
@@ -558,11 +568,10 @@ function $(selector, root) {
     return elements;
 }
 function toggle(el, state) {
-    if (state !== undefined) {
-        el.style.display = state ? '' : 'none';
-    } else {
-        el.style.display = el.style.display == 'none' ? '' : 'none';
+    if (state === undefined) {
+        state = el.style.display == 'none';
     }
+    el.style.display = state ? '' : 'none';
 }
 function goToLabel(label) {
     go('/emails/?in=' + label);
