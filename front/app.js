@@ -636,13 +636,19 @@ function connect() {
     ws.onmessage = (e) => {
         let data = JSON.parse(e.data);
         if (data.uid !== undefined) {
-            console.log('response for ' + data.uid);
             let handler = handlers[data.uid];
             if (handler) {
+                let elapsed = (Date.now() - handler.time) / 1000;
+                console.log(`response for ${data.uid} in ${elapsed}`);
+
                 parseJson(data.payload)
-                    .then(handler.success)
-                    .catch(handler.error || (ex => console.log(data.uid, ex)));
+                    .then(handler.callback.success)
+                    .catch(handler.callback.error || (ex => {
+                        console.log(data.uid, ex);
+                    }));
                 delete handlers[data.uid];
+            } else {
+                console.warn(`No handler for ${data.uid}`);
             }
         } else if (data.session) {
             document.cookie = data.session;
@@ -695,7 +701,11 @@ function send(url, data, callback) {
         console.log(url, data.uid);
         ws.send(JSON.stringify(data));
         if (callback) {
-            handlers[data.uid] = callback;
+            handlers[data.uid] = {
+                callback: callback,
+                time: Date.now(),
+                url: url
+            };
         }
     } else {
         let params = {
