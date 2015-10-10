@@ -82,7 +82,7 @@ def front(env, force=False, clean=False):
         'postcss --use autoprefixer -o {0}build/all.css {0}build/all.css &&'
         'cleancss {0}build/all.css -o {0}build/all.min.css &&'
         # all.js
-        'browserify -d -o {0}build/all.js {0}app.js &&'
+        'browserify -d -o {0}build/all.js {0}polyfills.js {0}app.js &&'
         'uglifyjs -vcm -o {0}build/all.min.js {0}build/all.js'
         .format('%s/' % env.theme.path(), clean=clean)
     )

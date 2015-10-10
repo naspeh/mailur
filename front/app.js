@@ -1,4 +1,3 @@
-import * as polyfills from './polyfills';
 import Mousetrap from 'mousetrap';
 import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
