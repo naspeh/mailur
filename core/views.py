@@ -63,22 +63,29 @@ def adapt_fmt(tpl=None):
     return wrapper
 
 
+@adapt_fmt('login')
 def login(env):
-    ctx = {'greeting': env('ui_greeting')}
+    ctx = {}
     if env.request.method == 'POST':
+        args = env.request.json
         schema = v.parse({'+username': str, '+password': str})
-        args = schema.validate(env.request.form)
-        if env.check_auth(args['username'], args['password']):
-            return env.redirect_for('index')
-        ctx = {'username': args['username'], 'error': True}
-    return env.render('login', ctx)
+        try:
+            args = schema.validate(args)
+        except v.ValidationError:
+            pass
+        else:
+            if env.check_auth(args['username'], args['password']):
+                return {'OK': True}
+        ctx.update({'username': args['username'], 'error': True})
+    return ctx
 
 
 def logout(env):
     del env.session['username']
-    return env.redirect_for('index')
+    return env.to_json('OK')
 
 
+@adapt_fmt()
 def init(env):
     schema = v.parse({'+offset': v.AdaptTo(int)})
     args = schema.validate(env.request.args)

@@ -1,0 +1,7 @@
+<div v-html="greeting"></div>
+<div v-if="error" class="error">Wrong username or password</div>
+<form method="POST" v-on="submit: login">
+    <input type="text" v-model="username" name="username" placeholder="username">
+    <input type="password" v-model="password" name="password" placeholder="Password">
+    <input type="submit" value="Send">
+</form>

@@ -11,7 +11,7 @@
     (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
 </b>
 <nav>
-    <a href="/api/logout/" class="logout" title="Logout"></a>
+    <a href="#" v-on="click: logout" class="logout" title="Logout"></a>
     <a href="#" v-on="click: showHelp" class="help-toggle" title="Keyboard shortcut help"></a>
     <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
 </nav>

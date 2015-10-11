@@ -9,19 +9,23 @@ Vue.config.proto = false;
 
 let array_union = require('lodash/array/union');
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
-let view, history, title = document.title;
+let username, view, sidebar, history, title = document.title;
 send('/check-auth/', null, (data) => {
-    if (!data.username) {
-        location.pathname = '/api/login/';
+    username = data.username;
+    if (!username && location.pathname != '/login/') {
+        location.href = '/login/';
         return;
-    }
-    if (conf.ws_enabled) {
-        connect();
     }
     history = createHistory();
     history.listen((location) => {
         if (location.pathname == '/') {
             return go('/emails/?in=\\Inbox');
+        }
+        if (username && !sidebar) {
+            sidebar = new Sidebar();
+        }
+        if (username && conf.ws_enabled && !ws) {
+            connect();
         }
         send(getPath(), null, (data) => {
             let current = views[data._name];
@@ -142,7 +146,48 @@ p._setData = function(data) {
     p._setDataOrig.bind(this)(data);
 };
 
-let sidebar = new Component({
+let Login = Component.extend({
+    template: require('./login.html'),
+    methods: {
+        initData(data) {
+            let defaults = {
+                username: '',
+                password: '',
+                greeting: conf.greeting,
+                error: null
+            };
+            for (let key in defaults) {
+                if(data[key] === undefined) {
+                    data.$set(key, defaults[key]);
+                }
+            }
+            return data;
+        },
+        login(e) {
+            e.preventDefault();
+            api('/login/', {method: 'post'}, {
+                username: this.username,
+                password: this.password
+            })
+                .then((data) => {
+                    if (data.error) {
+                        this.$data = data;
+                        return;
+                    }
+                    username = this.username;
+
+                    let offset = new Date().getTimezoneOffset() / 60;
+                    api(`/init/?offset=${offset}`).then((data) => go('/'));
+                })
+                .catch((data) => {
+                    this.error = true;
+                    this.password = '';
+                });
+        }
+    }
+});
+
+let Sidebar = Component.extend({
     replace: true,
     template: require('./sidebar.html'),
     created() {
@@ -175,6 +220,9 @@ let sidebar = new Component({
         showHelp(e) {
             this.toggleHelp(e, true);
         },
+        logout(e) {
+            send('/logout/', null, (data) => location.href = '/login/');
+        }
     }
 });
 let Emails = Component.extend({
@@ -540,7 +588,7 @@ let Compose = Component.extend({
             for (let file of Array.from(input.files)) {
                 data.append('files', file, file.name);
             }
-            ajax(`/draft/upload/${this.target}/`, {method: 'post', body: data})
+            api(`/draft/upload/${this.target}/`, {method: 'post', body: data})
                 .then((data) => {
                     self.files = self.files.concat(data);
                     input.value = null;
@@ -558,7 +606,8 @@ let Compose = Component.extend({
 
 let views = {
     emails: Emails,
-    compose: Compose
+    compose: Compose,
+    login: Login
 };
 
 /* Related functions */
@@ -656,12 +705,20 @@ function connect() {
         wsTry++;
     };
 }
-function ajax(url, params) {
+function api(url, params, data) {
+    url = '/api' + url;
+
+    params = params || {};
     params.credentials = 'same-origin';
+    params.method = params.method || 'get';
     params.headers = Object.assign(params.headers || {}, {
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json'
     });
+    if (data) {
+        params.headers['Content-Type'] = 'application/json';
+        params.body = JSON.stringify(data);
+    }
     return fetch(url, params)
         .then(r => r.text())
         .then(parseJson);
@@ -703,10 +760,6 @@ function send(url, data, callback) {
             method: data ? 'POST': 'GET',
             headers: {}
         };
-        if (data) {
-            params.headers['Content-Type'] = 'application/json';
-            params.body = JSON.stringify(data);
-        }
-        ajax('/api' + url, params).then(callback.success).catch(callback.error);
+        api(url, params, data).then(callback.success).catch(callback.error);
     }
 }

@@ -96,6 +96,7 @@ def front(env, force=False, clean=False):
         'ws_enabled': env('ui_ws_enabled'),
         'ws_timeout': env('ui_ws_timeout'),
         'firebug': env('ui_firebug'),
+        'greeting': env('ui_greeting')
     }
     ctx = {
         'conf': conf,
