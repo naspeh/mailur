@@ -10,7 +10,7 @@ Vue.config.proto = false;
 let array_union = require('lodash/array/union');
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
 let user, view, sidebar, history, title = document.title;
-send('/check-auth/', null, (data) => {
+send('/info/', null, (data) => {
     Login.options.init(data);
 
     let views = {
@@ -756,9 +756,17 @@ function connect() {
             }
         } else if (data.session) {
             document.cookie = data.session;
-        } else if (data.updated) {
-            console.log(data);
-            sidebar.fetch();
+        } else if (data.notify) {
+            if (data.ids.length) {
+                console.log(`Notify: updated - ${data.ids}`);
+                sidebar.fetch();
+            }
+            if (data.last_sync) {
+                send('/info/', null, (data) => {
+                    console.log(`Notify: last sync at ${data.last_sync}`);
+                    sidebar.last_sync = data.last_sync;
+                });
+            }
             if (view && view.name() == 'emails' && view.$data.threads) reload();
         }
     };

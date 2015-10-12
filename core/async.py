@@ -11,7 +11,7 @@ def get_env(request):
     env = Env()
 
     resp = yield from aiohttp.request(
-        'GET', '%s/check-auth/' % env('host_web'),
+        'GET', '%s/info/' % env('host_web'),
         headers=request.headers,
         cookies=request.cookies.items(),
         allow_redirects=False
@@ -85,7 +85,7 @@ def notify(request):
         return error
 
     yield from request.post()
-    msg = json.dumps({'updated': request.POST.getall('ids')})
+    msg = yield from request.text()
     for username, ws in request.app['sockets']:
         if username == env.username:
             ws.send_str(msg)

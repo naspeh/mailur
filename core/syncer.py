@@ -56,19 +56,19 @@ def _sync_gmail(env, email, fast=True, only=None):
             count=len(uids),
             new='new ' if fast else ''
         ))
-        if not uids:
-            return []
+        if uids:
+            fetch_headers(env, imap, uids)
+            with_clean = label in FOLDERS and not fast
+            fetch_labels(env, imap, uids, label, with_clean)
+            if label in FOLDERS:
+                sync_marks(env, imap, uids)
+            update_thrids(env, label)
+            fetch_bodies(env, imap, uids)
+            if not fast:
+                refresh_search(env)
 
-        fetch_headers(env, imap, uids)
-        with_clean = label in FOLDERS and not fast
-        fetch_labels(env, imap, uids, label, with_clean)
-        if label in FOLDERS:
-            sync_marks(env, imap, uids)
-        update_thrids(env, label)
-        fetch_bodies(env, imap, uids)
-        if not fast:
-            refresh_search(env)
-        env.storage.set('last_sync', time.time())
+    env.storage.set('last_sync', time.time())
+    notify(env, [], True)
     return uids
 
 
@@ -290,7 +290,7 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
     process_tasks(env)
 
     env.db.commit()
-    notify(env, updated, True)
+    notify(env, updated)
 
 
 def clean_labels(env, labels, folder):
@@ -439,12 +439,16 @@ def sync_marks(env, imap, map_uids):
         env.sql('DELETE FROM storage WHERE key = %s', [task_id])
 
 
-def notify(env, ids, skip=False):
-    if not ids or skip:
+def notify(env, ids, last_sync=False):
+    if (not ids and not last_sync):
         return
 
     url = 'http://localhost:9000/notify/'
-    d = {'ids': set(ids)}
+    d = json.dumps({
+        'notify': True,
+        'ids': list(set(ids)),
+        'last_sync': last_sync
+    })
     try:
         requests.post(url, data=d, timeout=5, auth=(env.username, env.token))
     except IOError as e:
@@ -582,7 +586,6 @@ def update_thrids(env, folder=None, manual=True, commit=True):
 
     if commit:
         env.db.commit()
-        notify(env, updated, True)
     return updated
 
 

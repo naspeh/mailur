@@ -30,11 +30,13 @@ def localize_dt(env, value):
     return value + dt.timedelta(hours=-(tz_offset or 0))
 
 
-def humanize_dt(env, val):
+def humanize_dt(env, val, secs=False, ts=False):
+    if ts:
+        val = dt.datetime.fromtimestamp(val)
     val = localize_dt(env, val)
     now = localize_dt(env, dt.datetime.utcnow())
     if (now - val).total_seconds() < 12 * 60 * 60:
-        fmt = '%H:%M'
+        fmt = '%H:%M' + (':%S' if secs else '')
     elif now.year == val.year:
         fmt = '%b %d'
     else:

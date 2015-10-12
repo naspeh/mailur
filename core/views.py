@@ -1,4 +1,3 @@
-import datetime as dt
 import functools as ft
 import re
 
@@ -14,7 +13,7 @@ rules = [
     Rule('/gmail/callback/', endpoint='gmail_callback'),
     Rule('/', endpoint='index', build_only=True),
 
-    Rule('/check-auth/', endpoint='check_auth'),
+    Rule('/info/', endpoint='info'),
     Rule('/init/', endpoint='init'),
     Rule('/pwd/', endpoint='reset_password'),
     Rule('/pwd/<username>/<token>/', endpoint='reset_password'),
@@ -157,7 +156,7 @@ def reset_password(env, username=None, token=None):
     return env.abort(400)
 
 
-def check_auth(env):
+def info(env):
     if env.valid_username or env.valid_token:
         res = ctx_init(env)
     else:
@@ -192,11 +191,11 @@ def sidebar(env):
 
 def ctx_init(env):
     last_sync = env.storage.get('last_sync')
-    last_sync = last_sync and dt.datetime.fromtimestamp(last_sync)
+    last_sync = last_sync and f.humanize_dt(env, last_sync, secs=True, ts=True)
     return {
         'username': env.username,
         'email': env.email,
-        'last_sync': last_sync and f.humanize_dt(env, last_sync)
+        'last_sync': last_sync
     }
 
 
