@@ -262,11 +262,7 @@ class Emails(Manager):
         CREATE MATERIALIZED VIEW emails_search AS
         SELECT id, thrid,
             setweight(to_tsvector('simple', subj), 'A') ||
-            setweight(to_tsvector('english', subj), 'A') ||
-            setweight(to_tsvector('russian', subj), 'A') ||
             setweight(to_tsvector('simple', text), 'C') ||
-            setweight(to_tsvector('english', text), 'C') ||
-            setweight(to_tsvector('russian', text), 'C') ||
             setweight(to_tsvector('simple', encode(header, 'escape')), 'D')
             AS document
         FROM emails;

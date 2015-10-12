@@ -121,6 +121,7 @@ def for_all(func):
         for username in env.users:
             env.username = username
             try:
+                log.info('Run %r for %r', func.__name__, username)
                 func(env, *a, **kw)
             except Exception as e:
                 log.exception(e)
@@ -238,13 +239,6 @@ def migrate(env, init=False):
     if init:
         db.init(env)
     env.username = env.username  # reset db connection
-
-    for col in ('to', 'fr', 'cc', 'bcc', 'reply_to', 'sender', 'refs'):
-        env.sql('''
-        UPDATE emails SET "{col}" = '{{}}' WHERE "{col}" IS NULL;
-        ALTER TABLE emails ALTER COLUMN "{col}" SET NOT NULL;
-        '''.format(col=col))
-    env.db.commit()
 
 
 def deploy(opts):
