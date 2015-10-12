@@ -520,7 +520,8 @@ def search(env):
         FROM search s
         JOIN emails e ON e.id = s.id
         WHERE '\\All' = ANY(labels)
-        ''', {'query': q})
+        LIMIT {limit}
+        '''.format(limit=env('ui_per_page')), {'query': q})
 
     ctx = ctx_emails(env, i)
     ctx['header'] = ctx_header(env, 'Search by %r' % q)
