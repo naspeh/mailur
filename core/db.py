@@ -207,7 +207,7 @@ class Storage(Manager):
         self.sql('DELETE FROM storage WHERE key=%s', [key])
         self.db.commit()
 
-    def format_key(self, name, **params):
+    def __call__(self, name, **params):
         targets = {
             'compose': lambda thrid: 'compose:%s' % (thrid or 'new'),
             'folder': lambda uid: 'folder:%s' % uid,

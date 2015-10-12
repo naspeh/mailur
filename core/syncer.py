@@ -45,7 +45,7 @@ def _sync_gmail(env, email, fast=True, only=None):
 
         imap.select(name, env('readonly'))
         folder_id = imap.status(name, 'UIDVALIDITY')
-        uid_start = env.storage.format_key('folder', uid=folder_id)
+        uid_start = env.storage('folder', uid=folder_id)
         uid_end = imap.status(name, 'UIDNEXT')
         uids = imap.search(name, uid_start.value if fast else None)
         uid_start.set(uid_end)
@@ -237,12 +237,12 @@ def fetch_bodies(env, imap, map_uids):
             run(update, env, items)
 
     if results:
-        env.storage.format_key('refresh_search').set(True)
+        env.storage('refresh_search').set(True)
     log.info('  * Done %s bodies', sum(results))
 
 
 def refresh_search(env):
-    key = env.storage.format_key('refresh_search')
+    key = env.storage('refresh_search')
     if not key.value:
         return
 
