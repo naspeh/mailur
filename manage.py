@@ -451,7 +451,8 @@ def get_full(argv):
 
     cmd('static', help='generate front')\
         .arg('-f', '--force', action='store_true')\
-        .exe(lambda a: front(env, a.force))
+        .arg('-c', '--clean', action='store_true')\
+        .exe(lambda a: front(env, a.force, a.clean))
 
     cmd('touch').exe(lambda a: sh(
         './manage.py static &&'
