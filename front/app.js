@@ -803,7 +803,7 @@ function send(url, data, callback) {
         error: callback && callback.error || (ex => console.log(url, ex))
     };
 
-    if (ws && ws.readyState === ws.OPEN) {
+    if (ws && conf.ws_proxy && ws.readyState === ws.OPEN) {
         data = {
             url: url,
             payload: data,

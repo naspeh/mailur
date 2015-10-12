@@ -93,6 +93,7 @@ def front(env, force=False, clean=False):
         'debug': env('debug'),
         'host_ws': env('host_ws'),
         'ga_id': env('ui_ga_id'),
+        'ws_proxy': env('ui_ws_proxy'),
         'ws_enabled': env('ui_ws_enabled'),
         'ws_timeout': env('ui_ws_timeout'),
         'firebug': env('ui_firebug'),

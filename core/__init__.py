@@ -56,6 +56,7 @@ def get_conf(conf=None):
             'ui_use_names': v.Nullable(bool, True),
             'ui_per_page': v.Nullable(int, 100),
             'ui_greeting': v.Nullable(str, ''),
+            'ui_ws_proxy': v.Nullable(bool, False),
             'ui_ws_enabled': v.Nullable(bool, True),
             'ui_ws_timeout': v.Nullable(int, 1000),
             'ui_firebug': v.Nullable(bool, False),

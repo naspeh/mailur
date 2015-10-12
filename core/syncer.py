@@ -56,6 +56,8 @@ def _sync_gmail(env, email, fast=True, only=None):
             count=len(uids),
             new='new ' if fast else ''
         ))
+        if not uids:
+            return []
 
         fetch_headers(env, imap, uids)
         with_clean = label in FOLDERS and not fast
