@@ -758,7 +758,7 @@ function connect() {
             document.cookie = data.session;
         } else if (data.notify) {
             if (data.ids.length) {
-                console.log(`Notify: updated - ${data.ids}`);
+                console.log(`Notify: ${data.ids.length} updated`);
                 sidebar.fetch();
             }
             if (data.last_sync) {
