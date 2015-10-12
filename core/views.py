@@ -1,3 +1,4 @@
+import datetime as dt
 import functools as ft
 import re
 
@@ -10,9 +11,9 @@ rules = [
     Rule('/login/', endpoint='login'),
     Rule('/logout/', endpoint='logout'),
     Rule('/gmail/', endpoint='gmail_connect'),
-    Rule('/gmail-callback/', endpoint='gmail_callback'),
-
+    Rule('/gmail/callback/', endpoint='gmail_callback'),
     Rule('/', endpoint='index', build_only=True),
+
     Rule('/check-auth/', endpoint='check_auth'),
     Rule('/init/', endpoint='init'),
     Rule('/pwd/', endpoint='reset_password'),
@@ -33,15 +34,17 @@ rules = [
 url_map = Map(rules)
 
 
+def redirect_url(env):
+    return '%sapi%s' % (env.request.host_url, env.url_for('gmail_callback'))
+
+
 def gmail_connect(env):
-    redirect_uri = env.url_for('gmail_callback', force_external=True)
-    return env.redirect(gmail.auth_url(env, redirect_uri, env.email))
+    return env.redirect(gmail.auth_url(env, redirect_url(env), env.email))
 
 
 def gmail_callback(env):
-    redirect_uri = env.url_for('gmail_callback', force_external=True)
     try:
-        gmail.auth_callback(env, redirect_uri, env.request.args['code'])
+        gmail.auth_callback(env, redirect_url(env), env.request.args['code'])
         return env.redirect_for('index')
     except gmail.AuthError as e:
         return str(e)
@@ -75,14 +78,18 @@ def login(env):
             pass
         else:
             if env.check_auth(args['username'], args['password']):
-                return {'OK': True}
-        ctx.update({'username': args['username'], 'error': True})
+                return ctx_init(env)
+        ctx.update({
+            'username': args['username'],
+            'error': 'Wrong username or password'
+        })
     return ctx
 
 
+@adapt_fmt()
 def logout(env):
-    del env.session['username']
-    return env.to_json('OK')
+    env.session.pop('username', None)
+    return 'OK'
 
 
 @adapt_fmt()
@@ -125,16 +132,19 @@ def adapt_page():
     return wrapper
 
 
+@adapt_fmt('pwd')
 def reset_password(env, username=None, token=None):
     def inner(env):
+        ctx = {}
         if env.request.method == 'POST':
             schema = v.parse({'+password': str, '+password_confirm': str})
-            args = schema.validate(env.request.form)
-            if args['password'] != args['password_confirm']:
-                raise v.SchemaError('Passwords aren\'t the same')
-            env.set_password(args['password'])
-            return env.redirect_for('index')
-        return env.render('reset_password')
+            args = schema.validate(env.request.json)
+            if args['password'] == args['password_confirm']:
+                env.set_password(args['password'])
+                return {'username': env.username}
+            ctx['error'] = 'Passwords aren\'t the same'
+            return ctx
+        return ctx
 
     if not username and not token:
         if env('readonly'):
@@ -149,7 +159,7 @@ def reset_password(env, username=None, token=None):
 
 def check_auth(env):
     if env.valid_username or env.valid_token:
-        res = {'username': env.username}
+        res = ctx_init(env)
     else:
         res = {}
     return env.to_json(res)
@@ -174,15 +184,20 @@ def sidebar(env):
         for l in labels
     )
     labels = sorted(labels, key=lambda v: v['name'].lower())
-    ctx = {
+
+    ctx = ctx_init(env)
+    ctx['labels'] = bool(labels) and {'items': labels}
+    return ctx
+
+
+def ctx_init(env):
+    last_sync = env.storage.get('last_sync')
+    last_sync = last_sync and dt.datetime.fromtimestamp(last_sync)
+    return {
         'username': env.username,
         'email': env.email,
-        'labels': bool(labels) and {'items': labels}
+        'last_sync': last_sync and f.humanize_dt(env, last_sync)
     }
-
-    if not labels:
-        ctx['gmail'] = bool(env.email)
-    return ctx
 
 
 def ctx_emails(env, items, threads=False):

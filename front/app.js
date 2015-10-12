@@ -9,33 +9,52 @@ Vue.config.proto = false;
 
 let array_union = require('lodash/array/union');
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
-let username, view, sidebar, history, title = document.title;
+let user, view, sidebar, history, title = document.title;
 send('/check-auth/', null, (data) => {
-    username = data.username;
-    if (!username && location.pathname != '/login/') {
-        location.href = '/login/';
-        return;
-    }
+    Login.options.init(data);
+
+    let views = {
+        emails: Emails,
+        compose: Compose,
+        login: Login,
+        pwd: Pwd,
+    };
     history = createHistory();
     history.listen((location) => {
         if (location.pathname == '/') {
             return go('/emails/?in=\\Inbox');
         }
-        if (username && !sidebar) {
+        if (user && !sidebar) {
             sidebar = new Sidebar();
         }
-        if (username && conf.ws_enabled && !ws) {
+        if (user && conf.ws_enabled && !ws) {
             connect();
         }
-        send(getPath(), null, (data) => {
-            let current = views[data._name];
-            if (!view || view.name() != data._name) {
-                view = new current({data: data, el: '.body'});
-            } else {
-                view.$data = data;
-            }
-            if (data.header) {
-                document.title = `${data.header.title} - ${title}`;
+        if (user && !user.last_sync) {
+            new Component({
+                template: require('./empty.html'),
+                el: '.body',
+                data: data
+            });
+            return;
+        }
+        send(getPath(), null, {
+            success(data) {
+                let current = views[data._name];
+                if (!view || view.name() != data._name) {
+                    view = new current({data: data, el: '.body'});
+                } else {
+                    view.$data = data;
+                }
+                if (data.header) {
+                    document.title = `${data.header.title} - ${title}`;
+                }
+            },
+            error(data) {
+                if (!user && location.pathname != '/login/') {
+                    window.location.href = '/login/';
+                    return;
+                }
             }
         });
     });
@@ -163,9 +182,9 @@ let Login = Component.extend({
             }
             return data;
         },
-        login(e) {
+        submit(e) {
             e.preventDefault();
-            api('/login/', {method: 'post'}, {
+            api(location.href, {method: 'post'}, {
                 username: this.username,
                 password: this.password
             })
@@ -174,21 +193,67 @@ let Login = Component.extend({
                         this.$data = data;
                         return;
                     }
-                    username = this.username;
-
-                    let offset = new Date().getTimezoneOffset() / 60;
-                    api(`/init/?offset=${offset}`).then((data) => go('/'));
+                    Login.options.init(data, '/');
                 })
                 .catch((data) => {
-                    this.error = true;
+                    this.error = 'Something went wrong, please try again';
                     this.password = '';
+                });
+        },
+    },
+    init(data, url) {
+        if (!data.username) {
+            user = null;
+            return;
+        }
+        user = data;
+        let offset = new Date().getTimezoneOffset() / 60;
+        api(`/init/?offset=${offset}`).then((data) => go(url || location.href));
+    }
+});
+
+let Pwd = Component.extend({
+    template: require('./pwd.html'),
+    methods: {
+        initData(data) {
+            let defaults = {
+                password: '',
+                password_confirm: '',
+                error: null
+            };
+            for (let key in defaults) {
+                if(data[key] === undefined) {
+                    data.$set(key, defaults[key]);
+                }
+            }
+            return data;
+        },
+        submit(e) {
+            e.preventDefault();
+            let password = this.password;
+            api(location.href, {method: 'post'}, {
+                password: password,
+                password_confirm: this.password_confirm
+            })
+                .then((data) => {
+                    if (data.error) {
+                        this.$data = data;
+                        return;
+                    }
+                    api('/login/', {method: 'post'}, {
+                        username: data.username,
+                        password: password}
+                    ).then((data) => {
+                        Login.options.init(data, '/');
+                    });
+                })
+                .catch((data) => {
+                    this.error = 'Something went wrong, please try again';
                 });
         }
     }
 });
-
 let Sidebar = Component.extend({
-    replace: true,
     template: require('./sidebar.html'),
     created() {
         this.url = '/sidebar/';
@@ -221,7 +286,10 @@ let Sidebar = Component.extend({
             this.toggleHelp(e, true);
         },
         logout(e) {
-            send('/logout/', null, (data) => location.href = '/login/');
+            send('/logout/', null, (data) => {
+                user = null;
+                location.href = '/login/';
+            });
         }
     }
 });
@@ -604,12 +672,6 @@ let Compose = Component.extend({
     }
 });
 
-let views = {
-    emails: Emails,
-    compose: Compose,
-    login: Login
-};
-
 /* Related functions */
 function $(selector, root) {
     root = root || document;
@@ -695,7 +757,7 @@ function connect() {
         } else if (data.updated) {
             console.log(data);
             sidebar.fetch();
-            if (view.name() == 'emails' && view.$data.threads) reload();
+            if (view && view.name() == 'emails' && view.$data.threads) reload();
         }
     };
     ws.onclose = (event) => {
@@ -706,7 +768,7 @@ function connect() {
     };
 }
 function api(url, params, data) {
-    url = '/api' + url;
+    url = '/api' + url.replace(location.origin, '');
 
     params = params || {};
     params.credentials = 'same-origin';

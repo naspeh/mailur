@@ -23,8 +23,8 @@ def get_conf(conf=None):
         with open('conf.json', 'br') as f:
             conf = json.loads(f.read().decode())
 
-    def exists(v):
-        return Path(v).exists()
+    exists = v.Condition(lambda v: Path(v).exists())
+    strip_slash = v.AdaptBy(lambda v: str(v).rstrip('/'))
 
     app_dir = Path(__file__).parent.resolve()
     base_dir = app_dir.parent
@@ -60,7 +60,7 @@ def get_conf(conf=None):
             'ui_ws_timeout': v.Nullable(int, 1000),
             'ui_firebug': v.Nullable(bool, False),
             'host_ws': v.Nullable(str, 'ws://localhost/async/'),
-            'host_web': v.Nullable(str, 'http://localhost:8000/'),
+            'host_web': v.Nullable(strip_slash, 'http://localhost:8000'),
         })
     conf = schema.validate(conf)
 

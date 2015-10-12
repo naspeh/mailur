@@ -1,5 +1,6 @@
 import json
 import re
+import time
 import uuid
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -65,6 +66,7 @@ def _sync_gmail(env, email, fast=True, only=None):
         fetch_bodies(env, imap, uids)
         if not fast:
             refresh_search(env)
+        env.storage.set('last_sync', time.time())
     return uids
 
 

@@ -1,7 +1,6 @@
-<div v-html="greeting"></div>
 <div v-if="error" class="error">{{error}}</div>
 <form method="POST" v-on="submit: submit">
-    <input type="text" v-model="username" name="username" placeholder="username">
     <input type="password" v-model="password" name="password" placeholder="Password">
+    <input type="password" v-model="password_confirm" name="password_confirm" placeholder="Confirm password">
     <input type="submit" value="Send">
 </form>
