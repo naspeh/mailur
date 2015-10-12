@@ -281,9 +281,11 @@ let Sidebar = Component.extend({
         },
         closeHelp(e) {
             this.toggleHelp(e, false);
+            Mousetrap.unbind('esc');
         },
         showHelp(e) {
             this.toggleHelp(e, true);
+            Mousetrap.bind('esc', (e) => this.closeHelp());
         },
         logout(e) {
             send('/logout/', null, (data) => {

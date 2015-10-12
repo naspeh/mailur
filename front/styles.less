@@ -235,16 +235,24 @@ body {
     }
 }
 .header {
-    margin: 5px;
+    line-height: 35px;
 
+    &.labels-show {
+        h3 {
+            display: none;
+        }
+        .labels {
+            display: block;
+        }
+    }
     h3 {
-        display: inline-block;
         font-size: 1.1em;
         font-weight: bold;
         margin: 0 10px 0 0;
         padding: 0;
-        line-height: 35px;
-        height: 35px;
+    }
+    .labels {
+        display: none;
     }
     button {
         .mix_button();
@@ -264,7 +272,7 @@ body {
     .labels-b-merge {
         .icon-details();
     }
-    .labels, .labels-edit {
+    .labels-edit {
         display: inline-block;
     }
     .labels-input {
@@ -283,10 +291,13 @@ body {
     .labels--edit {
         .icon-tags();
     }
-    .labels-input {
-    }
 }
 .thread {
+    .header {
+        h3 {
+            display: block;
+        }
+    }
     .email-line {
         .email-pick {
             display: none;
@@ -370,16 +381,15 @@ body {
     }
 }
 .help {
-    position: absolute;
+    position: fixed;
     top: 0;
-    left: 0;
     right: 0;
+    bottom: 0;
+    overflow-y: auto;
     padding: 20px;
     color: #fff;
-    font-size: 1.2em;
     background-color:rgba(0, 0, 0, 0.85);
-    opacity: 90%;
-    z-index: 100;
+    z-index: 10;
 
     b {
         color: @ColorC;
@@ -394,8 +404,8 @@ body {
     }
 }
 .sidebar {
-    position: fixed;
-    top: 0;
+    float: left;
+    position: relative;
     padding: 0 10px;
     white-space: nowrap;
     width: 200px;
@@ -403,6 +413,10 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
 
+    .sidebar-inner {
+        position: fixed;
+        top: 0;
+    }
     a {
         color: @ColorL;
         text-decoration: none;
@@ -410,7 +424,6 @@ body {
     nav {
         padding: .3em 0;
         a {
-            display: inline-block;
             .mix_button();
         }
     }

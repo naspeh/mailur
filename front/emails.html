@@ -1,6 +1,8 @@
-<div class="header">
+<div v-class="thread: thread">
+
+<div v-class="header: 1, labels-show: labels_edit">
     <h3>{{header.title}}</h3>
-    <div v-show="labels_edit" class="labels">
+    <div class="labels">
         <template v-repeat="header.buttons">
         <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
         </template>
@@ -19,7 +21,7 @@
         </div>
     </div>
 </div>
-<ul v-if="emails" v-class="emails: 1, thread: thread">
+<ul v-if="emails" class="emails">
 <li v-repeat="emails.items" track-by="hash" v-class="
         email: 1,
         email-show: body.show,
@@ -89,3 +91,4 @@
 </li>
 </ul>
 <div v-show="reply_body" class="compose-body"></div>
+</div>
