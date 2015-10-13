@@ -537,7 +537,7 @@ def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
                 WHERE
                     msgid = ANY(%(refs)s::varchar[])
                     AND %(folder)s = ANY(labels)
-                ORDER BY time
+                ORDER BY time DESC
                 LIMIT 1
                 ''', {'refs': refs, 'folder': folder}).fetchall()
             thrid = parent[0][0] if parent else None
