@@ -24,6 +24,10 @@ send('/info/', null, (data) => {
         if (location.pathname == '/') {
             return go('/emails/?in=\\Inbox');
         }
+        if (location.pathname.startsWith('/raw')) {
+            window.location.href = '/api' + location.pathname;
+            return;
+        }
         if (user && !sidebar) {
             sidebar = new Sidebar();
         }
