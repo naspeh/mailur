@@ -506,10 +506,10 @@ def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
         if not folder:
             folder = (set(FOLDERS) & set(row['labels'])).pop()
 
-        manual = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
-        if manual:
+        m_label = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
+        if manual and m_label:
             # Manual thread
-            thrid = manual.pop().replace('%s/' % THRID, '')
+            thrid = m_label.pop().replace('%s/' % THRID, '')
         elif row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
             # Failed delivery
             text = env.sql('SELECT text FROM emails WHERE id=%s', [row['id']])
