@@ -496,9 +496,10 @@ def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
     emails = env.sql('''
     SELECT id, fr, labels, array_prepend(in_reply_to, refs) AS refs
     FROM emails WHERE {where} ORDER BY time
-    '''.format(where=where))
+    '''.format(where=where)).fetchall()
+    log.info('  * Update thread ids for %s emails', len(emails))
 
-    updated = []
+    t, updated = Timer(), []
     for row in emails:
         refs = [r for r in row['refs'] if r]
         thrid = None
@@ -547,6 +548,7 @@ def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
         updated.append(row['id'])
 
     env.db.commit()
+    log.info('  - for %.2fs', t.time())
     return updated
 
 
