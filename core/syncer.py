@@ -547,8 +547,9 @@ def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
         env.emails.update({'thrid': thrid}, 'id=%s', [row['id']])
         updated.append(row['id'])
 
-    env.db.commit()
-    log.info('  - for %.2fs', t.time())
+    if updated:
+        env.db.commit()
+        log.info('  - for %.2fs', t.time())
     return updated
 
 
