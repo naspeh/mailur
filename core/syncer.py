@@ -64,8 +64,9 @@ def _sync_gmail(env, email, fast=True, only=None):
                 sync_marks(env, imap, uids)
             update_thrids(env, label)
             fetch_bodies(env, imap, uids)
-            if not fast:
-                refresh_search(env)
+
+    if not fast:
+        refresh_search(env)
 
     env.storage.set('last_sync', time.time())
     notify(env, [], True)
@@ -481,7 +482,75 @@ def update_label(env, gids, label, folder=None, clean=True):
     return step.ids
 
 
-def update_thrids(env, folder=None, manual=True, commit=True):
+def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
+    where = (
+        env.mogrify('%s = ANY(labels)', [folder])
+        if folder else
+        env.mogrify('labels && %s::varchar[]', [list(FOLDERS)])
+    ) + (
+        ' AND thrid IS NULL'
+        if uids is None else
+        env.mogrify(' AND msgid = ANY(%s)', [list(uids.values())])
+    )
+
+    emails = env.sql('''
+    SELECT id, fr, labels, array_prepend(in_reply_to, refs) AS refs
+    FROM emails WHERE {where} ORDER BY time
+    '''.format(where=where))
+
+    updated = []
+    for row in emails:
+        refs = [r for r in row['refs'] if r]
+        thrid = None
+        if not folder:
+            folder = (set(FOLDERS) & set(row['labels'])).pop()
+
+        manual = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
+        if manual:
+            # Manual thread
+            thrid = manual.pop().replace('%s/' % THRID, '')
+        elif row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
+            # Failed delivery
+            text = env.sql('SELECT text FROM emails WHERE id=%s', [row['id']])
+            text = text.fetchone()[0]
+            msgid = re.search('(?m)^Message-ID:(.*)$', text)
+            if msgid:
+                msgid = msgid.group(1).strip()
+                parent = env.sql('''
+                SELECT thrid FROM emails
+                WHERE msgid=%(msgid)s AND %(folder)s = ANY(labels)
+                LIMIT 1
+                ''', {'msgid': msgid, 'folder': folder}).fetchall()
+                thrid = parent[0][0] if parent else None
+        elif not refs:
+            pass
+        else:
+            parent = env.sql('''
+            SELECT thrid FROM emails
+            WHERE msgid = %(ref)s AND %(folder)s = ANY(labels)
+            LIMIT 1
+            ''', {'ref': refs[0], 'folder': folder}).fetchall()
+            if not parent:
+                parent = env.sql('''
+                SELECT thrid FROM emails
+                WHERE
+                    msgid = ANY(%(refs)s::varchar[])
+                    AND %(folder)s = ANY(labels)
+                ORDER BY time
+                LIMIT 1
+                ''', {'refs': refs, 'folder': folder}).fetchall()
+            thrid = parent[0][0] if parent else None
+
+        if thrid is None:
+            thrid = row['id']
+        env.emails.update({'thrid': thrid}, 'id=%s', [row['id']])
+        updated.append(row['id'])
+
+    env.db.commit()
+    return updated
+
+
+def update_thrids_(env, folder=None, manual=True, commit=True):
     updated = []
 
     def step(label, sql, args=None, log_ids=False):
