@@ -760,6 +760,9 @@ function connect() {
             if (data.ids.length) {
                 console.log(`Notify: ${data.ids.length} updated`);
                 sidebar.fetch();
+                if (view && view.name() == 'emails' && view.$data.threads) {
+                    reload();
+                }
             }
             if (data.last_sync) {
                 send('/info/', null, (data) => {
@@ -767,7 +770,6 @@ function connect() {
                     sidebar.last_sync = data.last_sync;
                 });
             }
-            if (view && view.name() == 'emails' && view.$data.threads) reload();
         }
     };
     ws.onclose = (event) => {
