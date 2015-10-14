@@ -8,26 +8,40 @@ Vue.config.debug = conf.debug;
 Vue.config.proto = false;
 
 let array_union = require('lodash/array/union');
+
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
-let user, view, sidebar, history, title = document.title;
-send('/info/', null, (data) => {
+let user, view, sidebar, history, offset = new Date().getTimezoneOffset() / 60;
+send(`/info/?offset=${offset}`, null, (data) => {
     Login.options.init(data);
 
-    let views = {
-        emails: Emails,
-        compose: Compose,
-        login: Login,
-        pwd: Pwd,
+    let title = document.title;
+    let patterns = [
+        [/^\/$/, () => go('/emails/?in=\\Inbox')],
+        [/^\/(emails|thread|search)\//, Emails],
+        [/^\/compose\//, Compose],
+        [/^\/login\//, Login],
+        [/^\/pwd\//, Pwd],
+        [/^\/raw\//, () => {
+            location.href = '/api' + location.pathname;
+        }]
+    ];
+    let initComponent = (current) => {
+        send(getPath(), null, {
+            success(data) {
+                if (!view || view.constructor != current) {
+                    view = new current({data: data, el: '.body'});
+                } else {
+                    view.$data = data;
+                }
+                if (data.header) {
+                    document.title = `${data.header.title} - ${title}`;
+                }
+            },
+            error: (data) => error(data)
+        });
     };
     history = createHistory();
     history.listen((location) => {
-        if (location.pathname == '/') {
-            return go('/emails/?in=\\Inbox');
-        }
-        if (location.pathname.startsWith('/raw')) {
-            window.location.href = '/api' + location.pathname;
-            return;
-        }
         if (user && !sidebar) {
             sidebar = new Sidebar();
         }
@@ -42,25 +56,17 @@ send('/info/', null, (data) => {
             });
             return;
         }
-        send(getPath(), null, {
-            success(data) {
-                let current = views[data._name];
-                if (!view || view.name() != data._name) {
-                    view = new current({data: data, el: '.body'});
+        for (let [pattern, current] of patterns) {
+            if (pattern.test(location.pathname)) {
+                if (current.component) {
+                    initComponent(current);
                 } else {
-                    view.$data = data;
+                    current();
                 }
-                if (data.header) {
-                    document.title = `${data.header.title} - ${title}`;
-                }
-            },
-            error(data) {
-                if (!user && location.pathname != '/login/') {
-                    window.location.href = '/login/';
-                    return;
-                }
+                return;
             }
-        });
+        }
+        error('404 Not Found');
     });
 });
 
@@ -132,16 +138,6 @@ let Component = Vue.extend({
             initData(data) {
                 return data;
             },
-            name() {
-                return this.$data._name;
-            },
-            fetch(callback) {
-                let self = this;
-                send(this.url, null, (data) => {
-                    self.$data = data;
-                    if (callback) callback(data);
-                });
-            },
             go(e, url) {
                 if(e) e.preventDefault();
                 url = url ? url : e.target.href;
@@ -208,11 +204,14 @@ let Login = Component.extend({
     init(data, url) {
         if (!data.username) {
             user = null;
+            if (location.pathname != '/login/') {
+                location.href = '/login/';
+                throw 'Redirect to login';
+            }
             return;
         }
         user = data;
-        let offset = new Date().getTimezoneOffset() / 60;
-        api(`/init/?offset=${offset}`).then((data) => go(url || location.href));
+        if (url) go(url);
     }
 });
 
@@ -250,9 +249,6 @@ let Pwd = Component.extend({
                     ).then((data) => {
                         Login.options.init(data, '/');
                     });
-                })
-                .catch((data) => {
-                    this.error = 'Something went wrong, please try again';
                 });
         }
     }
@@ -260,7 +256,7 @@ let Pwd = Component.extend({
 let Sidebar = Component.extend({
     template: require('./sidebar.html'),
     created() {
-        this.url = '/sidebar/';
+        this.url = '/labels/';
         this.fetch((data) => this.$mount('.sidebar'));
 
         this.help = '';
@@ -270,6 +266,13 @@ let Sidebar = Component.extend({
         }
     },
     methods: {
+        fetch(callback) {
+            let self = this;
+            send(this.url, null, (data) => {
+                self.$data = Object.assign(user, data);
+                if (callback) callback(data);
+            });
+        },
         initData(data) {
             data.$set('search_query', '');
             return data;
@@ -694,7 +697,7 @@ function goToLabel(label) {
     go('/emails/?in=' + label);
 }
 function filterEmails(condition) {
-    if (view.name() != 'emails' || view.thread) return;
+    if (view.constructor != Emails || view.thread) return;
 
     let items = [];
     for (let item of view.emails.items) {
@@ -713,9 +716,17 @@ function go(url) {
 function reload() {
     return history.replaceState({}, getPath());
 }
+function error(err) {
+    console.log(err);
+    new Component({
+        template: '<div class="error">Error: {{error}}</div>',
+        el: '.body',
+        data: {error: err}
+    });
+}
 function mark(params, callback, emails) {
     view = emails || view;
-    if (view.name() != 'emails') return;
+    if (view.constructor != Emails) return;
 
     if (!params.ids) {
         if (view.$data.thread) {
@@ -752,7 +763,7 @@ function connect() {
                 parseJson(data.payload)
                     .then(handler.callback.success)
                     .catch(handler.callback.error || (ex => {
-                        console.log(data.uid, ex);
+                        error([data.uid, ex]);
                     }));
                 delete handlers[data.uid];
             } else {
@@ -764,7 +775,7 @@ function connect() {
             if (data.ids.length) {
                 console.log(`Notify: ${data.ids.length} updated`);
                 sidebar.fetch();
-                if (view && view.name() == 'emails' && view.$data.threads) {
+                if (view && view.constructor == Emails && view.$data.threads) {
                     reload();
                 }
             }
@@ -814,7 +825,7 @@ function send(url, data, callback) {
     url = url.replace(location.origin, '');
     callback = {
         success: callback && callback.success || callback,
-        error: callback && callback.error || (ex => console.log(url, ex))
+        error: callback && callback.error || (ex => error([url, ex]))
     };
 
     if (ws && conf.ws_proxy && ws.readyState === ws.OPEN) {

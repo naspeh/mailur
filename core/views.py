@@ -7,17 +7,17 @@ from werkzeug.routing import Map, Rule
 from . import parser, syncer, gmail, filters as f
 
 rules = [
+    Rule('/', endpoint='index', build_only=True),
+
     Rule('/login/', endpoint='login'),
     Rule('/logout/', endpoint='logout'),
     Rule('/gmail/', endpoint='gmail_connect'),
     Rule('/gmail/callback/', endpoint='gmail_callback'),
-    Rule('/', endpoint='index', build_only=True),
-
     Rule('/info/', endpoint='info'),
     Rule('/init/', endpoint='init'),
     Rule('/pwd/', endpoint='reset_password'),
     Rule('/pwd/<username>/<token>/', endpoint='reset_password'),
-    Rule('/sidebar/', endpoint='sidebar'),
+    Rule('/labels/', endpoint='labels'),
     Rule('/raw/<id>/', endpoint='raw'),
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
@@ -26,7 +26,7 @@ rules = [
     Rule('/mark/', endpoint='mark'),
     Rule('/thread/new/', endpoint='new_thread'),
     Rule('/compose/new/', endpoint='compose'),
-    Rule('/compose/<id>', endpoint='compose'),
+    Rule('/compose/<id>/', endpoint='compose'),
     Rule('/draft/<action>/<target>/', endpoint='draft'),
     Rule('/search-email/', endpoint='search_email')
 ]
@@ -49,23 +49,17 @@ def gmail_callback(env):
         return str(e)
 
 
-def adapt_fmt(tpl=None):
+def adapt_fmt(func):
     def inner(env, *a, **kw):
-        ctx = wrapper.func(env, *a, **kw)
+        ctx = func(env, *a, **kw)
         if isinstance(ctx, env.Response):
             return ctx
-
-        if tpl:
-            ctx['_name'] = tpl
         return env.to_json(ctx)
 
-    def wrapper(func):
-        wrapper.func = func
-        return ft.wraps(func)(inner)
-    return wrapper
+    return ft.wraps(func)(inner)
 
 
-@adapt_fmt('login')
+@adapt_fmt
 def login(env):
     ctx = {}
     if env.request.method == 'POST':
@@ -85,17 +79,9 @@ def login(env):
     return ctx
 
 
-@adapt_fmt()
+@adapt_fmt
 def logout(env):
     env.session.pop('username', None)
-    return 'OK'
-
-
-@adapt_fmt()
-def init(env):
-    schema = v.parse({'+offset': v.AdaptTo(int)})
-    args = schema.validate(env.request.args)
-    env.session['tz_offset'] = args['offset']
     return 'OK'
 
 
@@ -131,7 +117,7 @@ def adapt_page():
     return wrapper
 
 
-@adapt_fmt('pwd')
+@adapt_fmt
 def reset_password(env, username=None, token=None):
     def inner(env):
         ctx = {}
@@ -156,17 +142,23 @@ def reset_password(env, username=None, token=None):
     return env.abort(400)
 
 
+@adapt_fmt
 def info(env):
+    schema = v.parse({'offset': v.AdaptTo(int)})
+    args = schema.validate(env.request.args)
+    if args.get('offset'):
+        env.session['tz_offset'] = args['offset']
+
     if env.valid_username or env.valid_token:
         res = ctx_init(env)
     else:
         res = {}
-    return env.to_json(res)
+    return res
 
 
 @login_required
-@adapt_fmt('sidebar')
-def sidebar(env):
+@adapt_fmt
+def labels(env):
     i = env.sql('''
     WITH labels(name) AS (SELECT DISTINCT unnest(labels) FROM emails)
     SELECT l.name, count(e.id) AS unread FROM labels l
@@ -183,10 +175,7 @@ def sidebar(env):
         for l in labels
     )
     labels = sorted(labels, key=lambda v: v['name'].lower())
-
-    ctx = ctx_init(env)
-    ctx['labels'] = bool(labels) and {'items': labels}
-    return ctx
+    return {'labels': bool(labels) and {'items': labels}}
 
 
 def ctx_init(env):
@@ -344,7 +333,7 @@ def ctx_quote(env, msg, forward=False):
 
 
 @login_required
-@adapt_fmt('emails')
+@adapt_fmt
 def thread(env, id):
     i = env.sql('''
     SELECT
@@ -386,7 +375,7 @@ def thread(env, id):
 
 
 @login_required
-@adapt_fmt('emails')
+@adapt_fmt
 @adapt_page()
 def emails(env, page):
     schema = v.parse({
@@ -486,7 +475,7 @@ def emails(env, page):
 
 
 @login_required
-@adapt_fmt('emails')
+@adapt_fmt
 def search(env):
     schema = v.parse({'+q': str})
     q = schema.validate(env.request.args)['q']
@@ -530,7 +519,7 @@ def search(env):
 
 
 @login_required
-@adapt_fmt('emails')
+@adapt_fmt
 def body(env, id):
     def parse(raw, id):
         return parser.parse(env, raw.tobytes(), id)
@@ -593,7 +582,7 @@ def raw(env, id):
 
 
 @login_required
-@adapt_fmt()
+@adapt_fmt
 def mark(env):
     def name(value):
         if isinstance(value, str):
@@ -650,7 +639,7 @@ def new_thread(env):
 
 
 @login_required
-@adapt_fmt('compose')
+@adapt_fmt
 def compose(env, id=None):
     if not env.storage.get('gmail_info'):
         return env.abort(400)
@@ -720,7 +709,7 @@ def compose(env, id=None):
 
 
 @login_required
-@adapt_fmt()
+@adapt_fmt
 def draft(env, action, target):
     saved = env.storage.get(target) or {}
     saved_path = target.replace(':', '/')
@@ -772,6 +761,7 @@ def draft(env, action, target):
             '+fr': Email,
             '+subj': str,
             '+body': str,
+            'id': str,
             'quote': v.Nullable(str, ''),
         })
         msg = schema.validate(env.request.json)
