@@ -256,6 +256,7 @@ def deploy(opts):
         'cwd': Path.cwd(),
         'path': path,
         'manage': '{[src]}/m'.format(path),
+        'bin': '{[env]}/bin/'.format(path)
     }
 
     if opts['docker']:
@@ -319,7 +320,7 @@ def deploy(opts):
             mkdir -p {path[env]} && virtualenv {path[env]}
         )) &&
         ([ -d {path[wheels]} ] || mkdir -p {path[wheels]}) &&
-        {manage} reqs -c &&
+        {bin}pip install -r {path[src]}/requirements.txt &&
         echo '../env' > .venv
         ''')
 
