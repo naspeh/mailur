@@ -1,11 +1,11 @@
 import datetime as dt
-import json
 import re
 from email.utils import parseaddr
 from hashlib import md5
 from urllib.parse import urlencode
 
 import lxml.html as lh
+import rapidjson as json
 from werkzeug.utils import secure_filename
 from unidecode import unidecode
 

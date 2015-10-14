@@ -1,8 +1,8 @@
-import json
 import uuid
 
 import psycopg2
 import psycopg2.extras
+import rapidjson as json
 from werkzeug.utils import cached_property
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)

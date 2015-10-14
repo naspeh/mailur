@@ -1,4 +1,3 @@
-import json
 import re
 import time
 import uuid
@@ -7,6 +6,7 @@ from contextlib import contextmanager
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 
+import rapidjson as json
 import requests
 
 from . import imap_utf7, parser, log

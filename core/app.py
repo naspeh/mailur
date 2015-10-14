@@ -1,7 +1,7 @@
 import datetime as dt
-import json
 from urllib.parse import urlsplit, parse_qs, urlencode
 
+import rapidjson as json
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response

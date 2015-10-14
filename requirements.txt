@@ -12,6 +12,7 @@ mistune==0.7.1
 psycopg2==2.6.1
 pycparser==2.14
 pystache==0.5.4
+python-rapidjson==0.0.6
 requests==2.8.1
 six==1.10.0
 valideer==0.4.1

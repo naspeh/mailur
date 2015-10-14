@@ -30,6 +30,7 @@ def reqs(dev=False, clear=False):
         'mistune '
         'psycopg2 '
         'pystache '
+        'python-rapidjson '
         'requests '
         'unidecode '
         'valideer '
