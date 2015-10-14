@@ -219,7 +219,6 @@ def ctx_emails(env, items, threads=False):
             email['body_url'] = env.url_for('body', {'id': i['id']})
 
         last = i['created'] if not last or i['created'] > last else last
-        email['hash'] = f.get_hash(email)
         emails.append(email)
 
     emails = bool(emails) and {

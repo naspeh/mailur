@@ -22,7 +22,7 @@
     </div>
 </div>
 <ul v-if="emails" class="emails">
-<li v-repeat="emails.items" track-by="hash" v-class="
+<li v-repeat="emails.items" track-by="id" v-class="
         email: 1,
         email-show: body.show,
         email-unread: unread,
