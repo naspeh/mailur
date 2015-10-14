@@ -175,7 +175,7 @@ def labels(env):
         for l in labels
     )
     labels = sorted(labels, key=lambda v: v['name'].lower())
-    return {'labels': bool(labels) and {'items': labels}}
+    return bool(labels) and {'items': labels}
 
 
 def ctx_init(env):

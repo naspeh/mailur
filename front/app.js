@@ -269,7 +269,7 @@ let Sidebar = Component.extend({
         fetch(callback) {
             let self = this;
             send(this.url, null, (data) => {
-                self.$data = Object.assign(user, data);
+                self.$data = Object.assign({labels: data}, user);
                 if (callback) callback(data);
             });
         },
