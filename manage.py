@@ -309,15 +309,6 @@ def deploy(opts):
         '''.format(docker_image=opts['docker_image'], **ctx))
 
     cmd = []
-    if opts['dot']:
-        cmd.append('''
-        pacman --noconfirm -Sy python-requests &&
-        ([ -d {path[dotfiles]} ] || mkdir {path[dotfiles]}) &&
-        cd {path[dotfiles]} &&
-        ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
-        git pull && ./manage.py init --boot vim zsh bin
-        ''')
-
     if opts['pkgs']:
         cmd.append(
             'pacman --noconfirm -Sy'
@@ -331,6 +322,15 @@ def deploy(opts):
             '   npm'
         )
 
+    if opts['dot']:
+        cmd.append('''
+        pacman --noconfirm -Sy python-requests &&
+        ([ -d {path[dotfiles]} ] || mkdir {path[dotfiles]}) &&
+        cd {path[dotfiles]} &&
+        ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
+        git pull && ./manage.py init --boot vim zsh bin
+        ''')
+
     cmd.append('''
     ([ -d {path[src]} ] || (
        git clone https://github.com/naspeh/mailur.git {path[src]}
@@ -342,7 +342,6 @@ def deploy(opts):
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
     cat /etc/fcrontab/* | fcrontab - &&
-    PATH="./node_modules/.bin;$PATH" {manage} static &&
     ''')
 
     if opts['env']:
@@ -351,7 +350,7 @@ def deploy(opts):
             mkdir -p {path[env]} && virtualenv {path[env]}
         )) &&
         ([ -d {path[wheels]} ] || mkdir -p {path[wheels]}) &&
-        {bin}pip install -r {path[src]}/requirements.txt &&
+        {bin}pip install -f {path[wheels]} -r {path[src]}/requirements.txt &&
         echo '../env' > .venv
         ''')
 
@@ -370,6 +369,7 @@ def deploy(opts):
         ''')
 
     cmd.append(
+        'PATH="./node_modules/.bin;$PATH" {manage} static &&'
         'supervisorctl update &&'
         'supervisorctl pid async web nginx | xargs kill -s HUP'
     )
