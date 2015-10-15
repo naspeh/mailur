@@ -122,7 +122,6 @@ def for_all(func):
         for username in env.users:
             env.username = username
             try:
-                log.info('Run %r for %r', func.__name__, username)
                 func(env, *a, **kw)
             except Exception as e:
                 log.exception(e)
@@ -237,6 +236,7 @@ def shell(env):
 def migrate(env, init=False):
     from core import db
 
+    log.info('Migrate for %s', env.db_name)
     if init:
         db.init(env)
     env.username = env.username  # reset db connection
