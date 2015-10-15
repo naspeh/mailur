@@ -628,7 +628,7 @@ def mark(env):
 
 @login_required
 def new_thread(env):
-    schema = v.parse({'+ids': [str], '+action': v.Enum(('new', 'merge'))})
+    schema = v.parse({'+ids': [int], '+action': v.Enum(('new', 'merge'))})
     params = schema.validate(env.request.json)
 
     action = params['action']

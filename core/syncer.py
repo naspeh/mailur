@@ -502,7 +502,7 @@ def update_label(env, gids, label, folder=None, clean=True):
     return step.ids
 
 
-def update_thrids(env, folder=None, manual=False, commit=True, uids=None):
+def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
     where = (
         env.mogrify('%s = ANY(labels)', [folder])
         if folder else
@@ -529,7 +529,9 @@ def update_thrids(env, folder=None, manual=False, commit=True, uids=None):
         m_label = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
         if manual and m_label:
             # Manual thread
-            thrid = m_label.pop().replace('%s/' % THRID, '')
+            extid = m_label.pop().replace('%s/' % THRID, '')
+            i = env.sql('SELECT id FROM emails WHERE extid=%s', [extid])
+            thrid = i.fetchone()[0]
         elif row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
             # Failed delivery
             text = env.sql('SELECT text FROM emails WHERE id=%s', [row['id']])
@@ -606,7 +608,7 @@ def failed_delivery(env, folder):
 def clean_thrid(env, ids):
     i = env.sql('''
     SELECT unnest(labels), array_agg(id)::text[] FROM emails
-    WHERE id = ANY(%s::uuid[])
+    WHERE id = ANY(%s)
     GROUP BY 1
     ''', [list(ids)])
 
@@ -623,9 +625,9 @@ def mark_thread(env, thrid, ids):
 
 
 def new_thread(env, id):
-    thrid = env.sql('''
+    thrid, extid = env.sql('''
     SELECT thrid FROM emails WHERE id=%s LIMIT 1
-    ''', [id]).fetchone()[0]
+    ''', [id]).fetchone()
 
     env.sql('''
     UPDATE emails SET thrid = NULL WHERE thrid = %(thrid)s;
@@ -635,17 +637,17 @@ def new_thread(env, id):
 
     i = env.sql('SELECT id FROM emails WHERE thrid=%s', [id])
     ids = [r[0] for r in i]
-    mark_thread(env, id, ids)
+    mark_thread(env, extid, ids)
 
 
 def merge_threads(env, ids):
-    thrid = env.sql('''
-    SELECT thrid FROM emails WHERE thrid = ANY(%s::uuid[])
+    thrid, extid = env.sql('''
+    SELECT thrid, extid FROM emails WHERE thrid = ANY(%s)
     ORDER BY time LIMIT 1
-    ''', [ids]).fetchone()[0]
+    ''', [ids]).fetchone()
 
-    i = env.sql('SELECT id FROM emails WHERE thrid = ANY(%s::uuid[])', [ids])
+    i = env.sql('SELECT id FROM emails WHERE thrid = ANY(%s)', [ids])
     ids = [r[0] for r in i]
 
-    mark_thread(env, thrid, ids)
+    mark_thread(env, extid, ids)
     return thrid

@@ -718,11 +718,8 @@ function reload() {
 }
 function error(err) {
     console.log(err);
-    new Component({
-        template: '<div class="error">Error: {{error}}</div>',
-        el: '.body',
-        data: {error: err}
-    });
+    let html = `<div class="error">Error: ${err}</div>`;
+    $('.body')[0].insertAdjacentHTML('afterbegin', html);
 }
 function mark(params, callback, emails) {
     view = emails || view;
