@@ -237,17 +237,12 @@ def migrate(env, init=False):
     from core import db
 
     log.info('Migrate for %s', env.db_name)
+
+    env.sql('DROP TABLE emails')
+    env.sql("DELETE FROM storage WHERE key LIKE 'folder:%'")
     if init:
         db.init(env)
     env.username = env.username  # reset db connection
-
-    env.sql('DROP MATERIALIZED VIEW IF EXISTS emails_search')
-    env.sql(
-        'ALTER TABLE emails ADD COLUMN {}'
-        .format(env.emails.get_field('search'))
-    )
-    env.storage.rm('refresh_search')
-    env.db.commit()
 
 
 def deploy(opts):

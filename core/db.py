@@ -220,7 +220,6 @@ class Storage(Manager):
         targets = {
             'compose': lambda thrid: 'compose:%s' % (thrid or 'new'),
             'folder': lambda uid: 'folder:%s' % uid,
-            'refresh_search': lambda: 'sync:refresh_search'
         }
         return Key(self, targets[name](**params))
 
@@ -228,10 +227,15 @@ class Storage(Manager):
 class Emails(Manager):
     name = 'emails'
     fields = (
-        'id uuid PRIMARY KEY DEFAULT gen_random_uuid()',
+        'id bigint PRIMARY KEY',
         'created timestamp NOT NULL DEFAULT current_timestamp',
         'updated timestamp NOT NULL DEFAULT current_timestamp',
-        'thrid uuid REFERENCES emails(id)',
+        'msgid varchar UNIQUE',
+        'extid varchar UNIQUE',
+        'delid uuid NOT NULL',  # remove after migrating
+
+        'thrid bigint REFERENCES emails(id)',
+        'duplicate bigint REFERENCES emails(id)',
 
         'header bytea',
         'raw bytea',
@@ -247,7 +251,6 @@ class Emails(Manager):
         "reply_to varchar[] NOT NULL DEFAULT '{}'",
         "sender varchar[] NOT NULL DEFAULT '{}'",
         'sender_time timestamp',
-        'msgid varchar',
         'in_reply_to varchar',
         "refs varchar[] NOT NULL DEFAULT '{}'",
 
@@ -255,15 +258,16 @@ class Emails(Manager):
         'html text',
         "attachments jsonb",
         "embedded jsonb",
-        'extra jsonb',
 
         'search tsvector',
     )
     table = create_table(name, fields, after=(
         fill_updated(name),
+        create_seq(name, 'id'),
         create_index(name, 'size'),
         create_index(name, 'msgid'),
         create_index(name, 'thrid'),
+        create_index(name, 'extid'),
         create_index(name, 'in_reply_to'),
         create_index(name, 'refs', 'GIN'),
         create_index(name, 'labels', 'GIN'),

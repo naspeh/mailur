@@ -1,11 +1,11 @@
 import re
 import time
 import uuid
-from collections import OrderedDict
 from contextlib import contextmanager
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 
+import psycopg2
 import rapidjson as json
 import requests
 
@@ -50,20 +50,20 @@ def _sync_gmail(env, email, fast=True, only=None):
         uids = imap.search(name, uid_start.value if fast else None)
         uid_start.set(uid_end)
 
-        uids = get_msgids(env, imap, uids)
+        id2uid, new = map_ids(env, imap, uids)
         log.info('"{name}" has {count} {new}messages'.format(
             name=imap_utf7.decode(name),
-            count=len(uids),
+            count=len(new),
             new='new ' if fast else ''
         ))
-        if uids:
-            fetch_headers(env, imap, uids)
+        if new or id2uid:
+            id2uid.update(fetch_headers(env, imap, new))
             with_clean = label in FOLDERS and not fast
-            fetch_labels(env, imap, uids, label, with_clean)
+            fetch_labels(env, imap, id2uid, label, with_clean)
             if label in FOLDERS:
-                sync_marks(env, imap, uids)
+                sync_marks(env, imap, id2uid)
             update_thrids(env, label)
-            fetch_bodies(env, imap, uids)
+            fetch_bodies(env, imap, id2uid)
 
     env.storage.set('last_sync', time.time())
     notify(env, [], True)
@@ -83,34 +83,28 @@ def search(env, email, query):
         return []
 
     uids = data[0].decode().split(' ')
-    mids = get_msgids(env, imap, uids)
-    ids = get_ids(env, list(mids.values()))
+    ids, _ = map_ids(env, imap, uids)
     return list(ids.values())
 
 
-def get_msgids(env, imap, uids):
+def map_ids(env, imap, uids):
     if not uids:
-        return {}
+        return {}, []
 
-    q = 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]'
+    q = 'X-GM-MSGID'
     data = imap.fetch(uids, [q])
-    uids = OrderedDict(
-        (k, parser.parse(env, v[q])['message-id']) for k, v in data
-    )
-    return uids
+    gid2uid = dict((str(v[q]), k) for k, v in data)
 
+    i = env.sql('''
+    SELECT extid, id, duplicate FROM emails WHERE extid = ANY(%s::varchar[])
+    ''', [list(gid2uid.keys())])
+    exists, new = {}, list(uids)
+    for row in i:
+        new.remove(gid2uid[row['extid']])
+        if not row['duplicate']:
+            exists[gid2uid[row['extid']]] = row['id']
 
-def get_gids(env, gids, where=None):
-    sql = 'SELECT msgid FROM emails WHERE msgid = ANY(%(gids)s)'
-    if where:
-        sql += ' AND %s' % where
-
-    return [r[0] for r in env.sql(sql, {'gids': list(gids)})]
-
-
-def get_ids(env, msgids):
-    sql = 'SELECT msgid, id FROM emails WHERE msgid = ANY(%(msgids)s)'
-    return dict(r for r in env.sql(sql, {'msgids': list(msgids)}))
+    return exists, new
 
 
 def get_parsed(env, data, msgid=None):
@@ -156,29 +150,43 @@ def get_parsed(env, data, msgid=None):
     return ((field, clean(field, msg[key])) for key, field in pairs)
 
 
-def fetch_headers(env, imap, map_uids):
-    gids = get_gids(env, map_uids.values())
-    uids = [uid for uid, gid in map_uids.items() if gid not in gids]
+def fetch_headers(env, imap, uids):
     if not uids:
         log.info('  * No headers to fetch')
-        return
+        return {}
 
     q = ['INTERNALDATE', 'RFC822.SIZE', 'RFC822.HEADER', 'X-GM-MSGID']
     for data in imap.fetch_batch(uids, q, 'add emails with headers'):
-        emails = []
+        ids = []
         for uid, row in data:
-            gm_uid = '%s\r%s' % (imap.email, row['X-GM-MSGID'])
+            extid = row['X-GM-MSGID']
+            id = env.sql("SELECT nextval('seq_emails_id')").fetchone()[0]
             fields = {
-                'id': uuid.uuid5(uuid.NAMESPACE_URL, gm_uid),
+                'id': id,
                 'header': row['RFC822.HEADER'],
                 'size': row['RFC822.SIZE'],
                 'time': row['INTERNALDATE'],
-                'extra': {'X-GM-MSGID': row['X-GM-MSGID']},
+                'extid': extid,
+                'delid': uuid.uuid5(
+                    uuid.NAMESPACE_URL, '%s\r%s' % (imap.email, extid)
+                ),
             }
-            fields.update(get_parsed(env, fields['header'], str(fields['id'])))
-            emails.append(fields)
-        env.emails.insert(emails)
-        env.db.commit()
+            fields.update(get_parsed(env, fields['header'], id))
+            try:
+                id = env.emails.insert(fields)
+            except psycopg2.IntegrityError:
+                env.db.rollback()
+                ref = env.sql('''
+                SELECT id FROM emails WHERE msgid=%s
+                ''', [fields['msgid']]).fetchone()[0]
+                del fields['msgid']
+                fields['duplicate'] = ref
+                id = env.emails.insert(fields)
+                env.db.commit()
+            else:
+                env.db.commit()
+                ids.append((uid, id[0]))
+    return ids
 
 
 @contextmanager
@@ -203,14 +211,14 @@ def async_runner(count=0, threads=True):
         yield run
 
 
-def fetch_bodies(env, imap, map_uids):
+def fetch_bodies(env, imap, uid2id):
     i = env.sql('''
-    SELECT msgid, size FROM emails
-    WHERE msgid = ANY(%(ids)s) AND raw IS NULL
-    ''', {'ids': list(map_uids.values())})
+    SELECT id, size FROM emails
+    WHERE id = ANY(%(ids)s) AND raw IS NULL
+    ''', {'ids': list(uid2id.values())})
     pairs = dict(i)
 
-    uids = [(uid, pairs[mid]) for uid, mid in map_uids.items() if mid in pairs]
+    uids = [(uid, pairs[id]) for uid, id in uid2id.items() if id in pairs]
     if not uids:
         log.info('  * No bodies to fetch')
         return
@@ -218,12 +226,10 @@ def fetch_bodies(env, imap, map_uids):
     results = []
 
     def update(env, items):
-        map_ids = get_ids(env, [v[1] for v in items])
-
         ids = []
-        for data, msgid in items:
-            data_ = dict(get_parsed(env, data, map_ids[msgid]), raw=data)
-            ids += update_email(env, data_, 'msgid=%s', [msgid])
+        for data, id in items:
+            data_ = dict(get_parsed(env, data, id), raw=data)
+            ids += update_email(env, data_, 'id=%s', [id])
 
         env.db.commit()
         notify(env, ids)
@@ -232,7 +238,7 @@ def fetch_bodies(env, imap, map_uids):
     q = 'BODY.PEEK[]'
     with async_runner(env('async_pool')) as run:
         for data in imap.fetch_batch(uids, q, 'add bodies'):
-            items = [(row[q], map_uids[uid]) for uid, row in data]
+            items = [(row[q], uid2id[uid]) for uid, row in data]
             run(update, env, items)
 
     log.info('  * Done %s bodies', sum(results))
@@ -267,15 +273,15 @@ def update_email(env, row, where, params):
     return env.emails.update(row, where)
 
 
-def fetch_labels(env, imap, map_uids, folder, clean=True):
+def fetch_labels(env, imap, uid2id, folder, clean=True):
     updated, glabels = [], set()
 
-    gids = get_gids(env, map_uids.values())
-    updated += update_label(env, gids, folder, None, clean)
+    ids = list(uid2id.values())
+    updated += update_label(env, ids, folder, None, clean)
     if folder not in FOLDERS:
-        updated += update_label(env, gids, '\\All', folder, clean)
+        updated += update_label(env, ids, '\\All', folder, clean)
 
-    uids = [uid for uid, gid in map_uids.items() if gid in gids]
+    uids = list(uid2id.keys())
     if uids:
         data = tuple(imap.fetch(uids, 'X-GM-LABELS FLAGS'))
         glabels, gflags = set(), set()
@@ -293,9 +299,9 @@ def fetch_labels(env, imap, map_uids, folder, clean=True):
             ('\\Unread', [], (lambda row: '\\Seen' not in row['FLAGS'])),
         ]
         for label, args, func in labels:
-            gids = [map_uids[uid] for uid, row in data if func(row, *args)]
+            ids = [uid2id[uid] for uid, row in data if func(row, *args)]
             label = ALIASES.get(label, label)
-            updated += update_label(env, gids, label, folder, clean)
+            updated += update_label(env, ids, label, folder, clean)
 
     if clean:
         glabels_ = {ALIASES.get(l, l) for l in glabels}
@@ -407,8 +413,8 @@ def mark(env, action, name, ids, new=False, inner=False):
     return updated
 
 
-def sync_marks(env, imap, map_uids):
-    if not map_uids:
+def sync_marks(env, imap, uid2id):
+    if not uid2id:
         return
 
     log.info('  * Sync marks')
@@ -423,13 +429,13 @@ def sync_marks(env, imap, map_uids):
     WHERE key LIKE 'task:mark:%'
     ORDER BY created
     ''').fetchall()
-    msgids = tuple(map_uids.values())
+    ids = tuple(uid2id.values())
     for task_id, t in tasks:
         emails = env.sql('''
-        SELECT id, msgid FROM emails WHERE msgid IN %s AND id IN %s
-        ''', [msgids, tuple(t['ids'])]).fetchall()
-        msgids_ = [r['msgid'] for r in emails]
-        uids = [uid for uid, gid in map_uids.items() if gid in msgids_]
+        SELECT id FROM emails WHERE id IN %s AND id IN %s
+        ''', [ids, tuple(t['ids'])]).fetchall()
+        ids_ = [r['id'] for r in emails]
+        uids = [uid for uid, id in uid2id.items() if id in ids_]
         if not uids:
             return
 
@@ -486,17 +492,17 @@ def update_label(env, gids, label, folder=None, clean=True):
     if clean:
         step('remove from', '''
         UPDATE emails SET thrid=NULL, labels=array_remove(labels, %(label)s)
-        WHERE NOT (msgid = ANY(%(gids)s)) AND %(label)s = ANY(labels)
+        WHERE NOT (id = ANY(%(gids)s)) AND %(label)s = ANY(labels)
         ''')
 
     step('add to', '''
     UPDATE emails SET thrid=NULL, labels=(labels || %(label)s::varchar)
-    WHERE msgid = ANY(%(gids)s) AND NOT (%(label)s = ANY(labels))
+    WHERE id = ANY(%(gids)s) AND NOT (%(label)s = ANY(labels))
     ''')
     return step.ids
 
 
-def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
+def update_thrids(env, folder=None, manual=False, commit=True, uids=None):
     where = (
         env.mogrify('%s = ANY(labels)', [folder])
         if folder else
