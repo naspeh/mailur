@@ -146,6 +146,8 @@ def sync(env, target, disabled=False, **kw):
 
     sync = ft.partial(syncer.sync_gmail, env, env.email)
     if target == 'fast':
+        if not env.storage.get('last_sync'):
+            exit('Should complete full sync first')
         return sync(fast=True)
     elif target == 'full':
         return sync(fast=False)
@@ -240,6 +242,7 @@ def migrate(env, init=False):
 
     env.sql('DROP TABLE emails')
     env.sql("DELETE FROM storage WHERE key LIKE 'folder:%'")
+    env.sql("DELETE FROM storage WHERE key = 'last_sync'")
     if init:
         db.init(env)
     env.username = env.username  # reset db connection
