@@ -46,7 +46,7 @@ def reqs(dev=False, clear=False):
             'rm -rf $VIRTUAL_ENV && virtualenv $VIRTUAL_ENV && '
             if clear else ''
         ) +
-        'pip install wheel && '
+        'pip install -U wheel && '
         'pip wheel -w ../wheels/ -f ../wheels/ {requirements} &&'
         'pip uninstall -y wheel &&'
         'pip install --no-index -f ../wheels {requirements}'
@@ -178,7 +178,7 @@ def parse(env, limit=1000, offset=0):
             raw = env.sql('SELECT raw FROM emails WHERE id=%s', [row['id']])
             raw = raw.fetchone()[0].tobytes()
             data = syncer.get_parsed(env, raw, row['id'])
-            env.emails.update(dict(data), 'id=%s', [row['id']])
+            syncer.update_email(env, dict(data), 'id=%s', [row['id']])
             env.db.commit()
             done += 1
         log.info('  - done %s for %.2f', done, timer.duration)
@@ -240,6 +240,14 @@ def migrate(env, init=False):
     if init:
         db.init(env)
     env.username = env.username  # reset db connection
+
+    env.sql('DROP MATERIALIZED VIEW IF EXISTS emails_search')
+    env.sql(
+        'ALTER TABLE emails ADD COLUMN {}'
+        .format(env.emails.get_field('search'))
+    )
+    env.storage.rm('refresh_search')
+    env.db.commit()
 
 
 def deploy(opts):

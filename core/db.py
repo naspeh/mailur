@@ -96,6 +96,15 @@ class Manager():
     def db(self):
         return self.env.db
 
+    def get_field(self, name):
+        if name not in self.field_names:
+            raise ValueError('Wrong field: %s', name)
+        field = [
+            i for i in self.fields
+            if i.startswith(name) or i.startswith('"' + name)
+        ][0]
+        return field
+
     def get_fields(self, fields):
         fields = sorted(f for f in fields)
         error = set(fields) - set(self.field_names)
@@ -247,6 +256,8 @@ class Emails(Manager):
         "attachments jsonb",
         "embedded jsonb",
         'extra jsonb',
+
+        'search tsvector',
     )
     table = create_table(name, fields, after=(
         fill_updated(name),
@@ -256,18 +267,5 @@ class Emails(Manager):
         create_index(name, 'in_reply_to'),
         create_index(name, 'refs', 'GIN'),
         create_index(name, 'labels', 'GIN'),
-        '''
-        DROP MATERIALIZED VIEW IF EXISTS emails_search;
-
-        CREATE MATERIALIZED VIEW emails_search AS
-        SELECT id, thrid,
-            setweight(to_tsvector('simple', subj), 'A') ||
-            setweight(to_tsvector('simple', text), 'C') ||
-            setweight(to_tsvector('simple', encode(header, 'escape')), 'D')
-            AS document
-        FROM emails;
-
-        DROP INDEX IF EXISTS ix_emails_search;
-        CREATE INDEX ix_emails_search ON emails_search USING gin(document);
-        '''
+        create_index(name, 'search', 'GIN')
     ))

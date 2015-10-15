@@ -65,9 +65,6 @@ def _sync_gmail(env, email, fast=True, only=None):
             update_thrids(env, label)
             fetch_bodies(env, imap, uids)
 
-    if not fast:
-        refresh_search(env)
-
     env.storage.set('last_sync', time.time())
     notify(env, [], True)
     return uids
@@ -226,7 +223,8 @@ def fetch_bodies(env, imap, map_uids):
         ids = []
         for data, msgid in items:
             data_ = dict(get_parsed(env, data, map_ids[msgid]), raw=data)
-            ids += env.emails.update(data_, 'msgid=%s', [msgid])
+            ids += update_email(env, data_, 'msgid=%s', [msgid])
+
         env.db.commit()
         notify(env, ids)
         results.append(len(ids))
@@ -237,20 +235,36 @@ def fetch_bodies(env, imap, map_uids):
             items = [(row[q], map_uids[uid]) for uid, row in data]
             run(update, env, items)
 
-    if results:
-        env.storage('refresh_search').set(True)
     log.info('  * Done %s bodies', sum(results))
 
 
-def refresh_search(env):
-    key = env.storage('refresh_search')
-    if not key.value:
-        return
+def update_email(env, row, where, params):
+    doc = []
+    for lang in env('search_lang'):
+        people = sum((row[key] for key in ['fr', 'to', 'cc', 'bcc']), [])
+        msgids = [row['msgid'], row['in_reply_to']] + row['refs']
+        msgids = [i for i in msgids if i]
+        doc.append(
+            env.mogrify('''
+            setweight(to_tsvector(%(lang)s, %(subj)s), 'A') ||
+            setweight(to_tsvector(%(lang)s, %(text)s), 'C') ||
+            setweight(to_tsvector(%(lang)s, %(people)s), 'D') ||
+            setweight(to_tsvector(%(lang)s, %(msgids)s), 'D') ||
+            setweight(to_tsvector(%(lang)s, %(files)s), 'D')
+            ''', {
+                'lang': lang,
+                'subj': row['subj'],
+                'text': row['text'],
+                'people': '\\n'.join(people),
+                'msgids': '\\n'.join(msgids),
+                'files': json.dumps(row['attachments'])
+            })
+        )
 
-    key.rm()
-    log.info('Refresh search index')
-    env.sql('REFRESH MATERIALIZED VIEW emails_search')
-    env.db.commit()
+    doc = ' || '.join(doc)
+    where = env.mogrify(where, params)
+    env.sql('UPDATE emails SET search=({}) WHERE {}'.format(doc, where))
+    return env.emails.update(row, where)
 
 
 def fetch_labels(env, imap, map_uids, folder, clean=True):

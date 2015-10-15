@@ -272,7 +272,7 @@ def ctx_labels(env, labels, ignore=None):
 def ctx_all_labels(env):
     i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
     items = (r[0] for r in i.fetchall())
-    items = set(items) | {'\\Spam', '\\Trash'}
+    items = set(items) | set(syncer.FOLDERS)
     return ctx_labels(env, sorted(items))
 
 
@@ -491,16 +491,20 @@ def search(env):
         WHERE id = ANY(%(ids)s::uuid[])
         ''', {'ids': ids})
     else:
+        tsq = []
+        for lang in env('search_lang'):
+            tsq.append(env.mogrify(
+                'plainto_tsquery(%(lang)s, %(query)s)',
+                {'lang': lang, 'query': q}
+            ))
+        tsq = ' || '.join(tsq)
+
         i = env.sql('''
         WITH search(id) AS (
             SELECT id
-            FROM emails_search
-            WHERE document @@ (
-                plainto_tsquery('simple', %(query)s)
-            )
-            ORDER BY ts_rank(document, (
-                plainto_tsquery('simple', %(query)s)
-            )) DESC
+            FROM emails
+            WHERE search @@ ({tsq})
+            ORDER BY ts_rank(search, {tsq}) DESC
         )
         SELECT
             e.id, thrid, subj, labels, time, fr, "to", cc, text, created,
@@ -508,8 +512,8 @@ def search(env):
         FROM search s
         JOIN emails e ON e.id = s.id
         WHERE '\\All' = ANY(labels)
-        LIMIT %(limit)s
-        ''', {'query': q, 'limit': env('ui_per_page')})
+        LIMIT {limit}
+        '''.format(tsq=tsq, limit=env('ui_per_page')))
 
     ctx = ctx_emails(env, i)
     ctx['header'] = ctx_header(env, 'Search by %r' % q)

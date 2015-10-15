@@ -17,7 +17,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
     let title = document.title;
     let patterns = [
         [/^\/$/, () => go('/emails/?in=\\Inbox')],
-        [/^\/(emails|thread|search)\//, Emails],
+        [/^\/(emails|thread|search|body)\//, Emails],
         [/^\/compose\//, Compose],
         [/^\/login\//, Login],
         [/^\/pwd\//, Pwd],

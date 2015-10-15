@@ -62,6 +62,7 @@ def get_conf(conf=None):
             'ui_firebug': v.Nullable(bool, False),
             'host_ws': v.Nullable(str, 'ws://localhost/async/'),
             'host_web': v.Nullable(strip_slash, 'http://localhost:8000'),
+            'search_lang': v.Nullable([str], ['simple', 'english']),
         })
     conf = schema.validate(conf)
 
