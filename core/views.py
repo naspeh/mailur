@@ -595,7 +595,7 @@ def mark(env):
     schema = v.parse({
         '+action': v.Enum(('+', '-', '=')),
         '+name': v.AdaptBy(name),
-        '+ids': [str],
+        '+ids': [int],
         'old_name': v.AdaptBy(name),
         'thread': v.Nullable(bool, False),
         'last': v.Nullable(str)

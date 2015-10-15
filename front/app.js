@@ -772,9 +772,6 @@ function connect() {
             if (data.ids.length) {
                 console.log(`Notify: ${data.ids.length} updated`);
                 sidebar.fetch();
-                if (view && view.constructor == Emails && view.$data.threads) {
-                    reload();
-                }
             }
             if (data.last_sync) {
                 send('/info/', null, (data) => {
