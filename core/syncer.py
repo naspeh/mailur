@@ -626,18 +626,20 @@ def mark_thread(env, thrid, ids):
 
 def new_thread(env, id):
     thrid, extid = env.sql('''
-    SELECT thrid FROM emails WHERE id=%s LIMIT 1
+    SELECT thrid, extid FROM emails WHERE id=%s LIMIT 1
     ''', [id]).fetchone()
 
-    env.sql('''
-    UPDATE emails SET thrid = NULL WHERE thrid = %(thrid)s;
-    UPDATE emails SET thrid = id WHERE id = %(id)s;
-    ''', {'thrid': thrid, 'id': id})
+    parent_ids = env.emails.update({'thrid': None}, 'thrid = %s', [thrid])
+    env.emails.update({'thrid': id}, 'id = %s', [id])
     update_thrids(env, manual=False, commit=False)
 
     i = env.sql('SELECT id FROM emails WHERE thrid=%s', [id])
     ids = [r[0] for r in i]
     mark_thread(env, extid, ids)
+
+    parent_ids = tuple(set(parent_ids) - set(ids))
+    env.emails.update({'thrid': None}, 'thrid IN %s', [parent_ids])
+    update_thrids(env, manual=True, commit=True)
 
 
 def merge_threads(env, ids):
