@@ -270,7 +270,7 @@ def ctx_labels(env, labels, ignore=None):
 
 
 def ctx_all_labels(env):
-    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails;')
+    i = env.sql('SELECT DISTINCT unnest(labels) FROM emails')
     items = (r[0] for r in i.fetchall())
     items = set(items) | set(syncer.FOLDERS)
     return ctx_labels(env, sorted(items))

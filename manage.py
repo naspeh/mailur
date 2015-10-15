@@ -147,7 +147,8 @@ def sync(env, target, disabled=False, **kw):
     sync = ft.partial(syncer.sync_gmail, env, env.email)
     if target == 'fast':
         if not env.storage.get('last_sync'):
-            exit('Should complete full sync first')
+            log.error('Should complete full sync first')
+            return
         return sync(fast=True)
     elif target == 'full':
         return sync(fast=False)
@@ -240,12 +241,35 @@ def migrate(env, init=False):
 
     log.info('Migrate for %s', env.db_name)
 
-    env.sql('DROP TABLE emails')
-    env.sql("DELETE FROM storage WHERE key LIKE 'folder:%'")
-    env.sql("DELETE FROM storage WHERE key = 'last_sync'")
     if init:
         db.init(env)
     env.username = env.username  # reset db connection
+
+    if not env.storage.get('last_sync'):
+        log.error('It is not synced yet')
+        return
+
+    from core.imap import Client
+    from core.syncer import THRID
+
+    imap = Client(env, env.email)
+    folders = imap.folders()
+    for attrs, delim, name in folders:
+        if name.startswith('%s/' % THRID):
+            thrid = name.replace('%s/' % THRID, '')
+            if '-' not in thrid:
+                continue
+
+            exists = env.sql('''
+            SELECT extid FROM emails WHERE delid=%s
+            ''', [thrid]).fetchall()
+            if exists:
+                newname = '%s/%s' % (THRID, exists[0][0])
+                log.info('Rename %r to %r', name, newname)
+                log.info(imap.im.rename(name, newname))
+            else:
+                log.info('Remove %r (no emails under it)', name)
+                log.info(imap.im.delete(name))
 
 
 def deploy(opts):
