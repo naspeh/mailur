@@ -803,6 +803,13 @@ function api(url, params, data) {
         params.body = JSON.stringify(data);
     }
     return fetch(url, params)
+        .then(r => {
+            if (r.status == 200) {
+                return r;
+            } else {
+                throw `${r.status} ${r.statusText}`;
+            }
+        })
         .then(r => r.text())
         .then(parseJson);
 }

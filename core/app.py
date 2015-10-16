@@ -6,7 +6,7 @@ from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
 
-from . import Env
+from . import Env, log
 
 
 class Request(_Request):
@@ -18,24 +18,12 @@ class Request(_Request):
 def create_app(views):
     env = WebEnv(views)
 
-    @Request.application
-    def app(request):
-        env.set_request(request)
-        try:
-            response = env.wsgi()
-        except HTTPException as e:
-            response = e
-        finally:
-            if env.username:
-                env.db.rollback()
-        env.session.save_cookie(response, max_age=dt.timedelta(days=7))
-        return response
+    app = env.wsgi
 
     if env('debug'):
-        from werkzeug.debug import DebuggedApplication
         from werkzeug.wsgi import SharedDataMiddleware
 
-        app = SharedDataMiddleware(DebuggedApplication(app), {
+        app = SharedDataMiddleware(app, {
             '/attachments': env('path_attachments'),
             '/theme': env('path_theme'),
         })
@@ -55,11 +43,29 @@ class WebEnv(Env):
         self.adapter = self.url_map.bind_to_environ(request.environ)
         self.username = self.session.get('username')
 
-    def wsgi(self):
+    def process_response(self):
         endpoint, values = self.adapter.match()
         response = getattr(self.views, endpoint)(self, **values)
-        if isinstance(response, str):
-            return self.make_response(response)
+        if isinstance(response, Response):
+            return response
+        return self.to_json(response)
+
+    @Request.application
+    def wsgi(self, request):
+        try:
+            self.set_request(request)
+            response = self.process_response()
+        except Exception as e:
+            if isinstance(e, HTTPException):
+                code, desc = e.code, e.description
+            else:
+                log.exception(e)
+                code, desc = '500 %s' % e, str(e)
+            response = self.make_response(desc, status=code)
+        finally:
+            if self.username:
+                self.db.rollback()
+        self.session.save_cookie(response, max_age=dt.timedelta(days=7))
         return response
 
     def url_for(self, endpoint, values=None, **kw):

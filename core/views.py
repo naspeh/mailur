@@ -49,17 +49,6 @@ def gmail_callback(env):
         return str(e)
 
 
-def adapt_fmt(func):
-    def inner(env, *a, **kw):
-        ctx = func(env, *a, **kw)
-        if isinstance(ctx, env.Response):
-            return ctx
-        return env.to_json(ctx)
-
-    return ft.wraps(func)(inner)
-
-
-@adapt_fmt
 def login(env):
     ctx = {}
     if env.request.method == 'POST':
@@ -79,7 +68,6 @@ def login(env):
     return ctx
 
 
-@adapt_fmt
 def logout(env):
     env.session.pop('username', None)
     return 'OK'
@@ -117,7 +105,6 @@ def adapt_page():
     return wrapper
 
 
-@adapt_fmt
 def reset_password(env, username=None, token=None):
     def inner(env):
         ctx = {}
@@ -142,7 +129,6 @@ def reset_password(env, username=None, token=None):
     return env.abort(400)
 
 
-@adapt_fmt
 def info(env):
     schema = v.parse({'offset': v.AdaptTo(int)})
     args = schema.validate(env.request.args)
@@ -157,7 +143,6 @@ def info(env):
 
 
 @login_required
-@adapt_fmt
 def labels(env):
     i = env.sql('''
     WITH labels(name) AS (SELECT DISTINCT unnest(labels) FROM emails)
@@ -332,7 +317,6 @@ def ctx_quote(env, msg, forward=False):
 
 
 @login_required
-@adapt_fmt
 def thread(env, id):
     i = env.sql('''
     SELECT
@@ -374,7 +358,6 @@ def thread(env, id):
 
 
 @login_required
-@adapt_fmt
 @adapt_page()
 def emails(env, page):
     schema = v.parse({
@@ -474,7 +457,6 @@ def emails(env, page):
 
 
 @login_required
-@adapt_fmt
 def search(env):
     schema = v.parse({'+q': str})
     q = schema.validate(env.request.args)['q']
@@ -522,7 +504,6 @@ def search(env):
 
 
 @login_required
-@adapt_fmt
 def body(env, id):
     def parse(raw, id):
         return parser.parse(env, raw.tobytes(), id)
@@ -585,7 +566,6 @@ def raw(env, id):
 
 
 @login_required
-@adapt_fmt
 def mark(env):
     def name(value):
         if isinstance(value, str):
@@ -635,14 +615,13 @@ def new_thread(env):
     if action == 'new':
         id = params['ids'][0]
         syncer.new_thread(env, id)
-        return env.to_json({'url': env.url_for('thread', {'id': id})})
+        return {'url': env.url_for('thread', {'id': id})}
     elif action == 'merge':
         thrid = syncer.merge_threads(env, params['ids'])
-        return env.to_json({'url': env.url_for('thread', {'id': thrid})})
+        return {'url': env.url_for('thread', {'id': thrid})}
 
 
 @login_required
-@adapt_fmt
 def compose(env, id=None):
     if not env.storage.get('gmail_info'):
         return env.abort(400)
@@ -712,7 +691,6 @@ def compose(env, id=None):
 
 
 @login_required
-@adapt_fmt
 def draft(env, action, target):
     saved = env.storage.get(target) or {}
     saved_path = target.replace(':', '/')
@@ -894,6 +872,4 @@ def search_email(env):
     SELECT addr, max(time) FROM addresses
     {where} GROUP BY addr ORDER BY 2 DESC LIMIT 100
     '''.format(where=where, addresses=addresses))
-    return env.to_json([
-        {'text': v[0], 'value': v[0]} for v in i if len(v[0]) < 100
-    ])
+    return [{'text': v[0], 'value': v[0]} for v in i if len(v[0]) < 100]
