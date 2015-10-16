@@ -676,8 +676,15 @@ let Compose = Component.extend({
         send(e) {
             if (e) e.preventDefault();
             this.$data.$set('hide', true);
-            send(this.links.send, this.getContext(), (data) => {
-                go(data.url);
+            send(this.links.send, this.getContext(), {
+                success: (data => go(data.url)),
+                error: (err => {
+                    error(err);
+                    this.$data.hide = false;
+                    setTimeout(() => {
+                        $('.compose-body')[0].scrollIntoView(true);
+                    }, 500);
+                })
             });
         }
     }

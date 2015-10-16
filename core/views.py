@@ -731,6 +731,8 @@ def draft(env, thrid, action):
 
         class Email(v.Validator):
             def validate(self, value, adapt=True):
+                if not value:
+                    raise v.ValidationError('No email')
                 addr = parseaddr(value)[1]
                 hostname = addr[addr.find('@') + 1:]
                 try:

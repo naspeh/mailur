@@ -2,6 +2,7 @@ import datetime as dt
 from urllib.parse import urlsplit, parse_qs, urlencode
 
 import rapidjson as json
+from valideer import ValidationError
 from werkzeug.exceptions import HTTPException, abort
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as _Request, Response
@@ -58,6 +59,8 @@ class WebEnv(Env):
         except Exception as e:
             if isinstance(e, HTTPException):
                 status = '%s %s' % (e.code, e.description)
+            elif isinstance(e, ValidationError):
+                status = '400 %s' % e.msg
             else:
                 log.exception(e)
                 status = '500 %s' % e
