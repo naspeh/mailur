@@ -5,26 +5,32 @@
     </h3>
     {{{help}}}
 </div>
-<b>
-    {{username}}
-    (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
-</b>
-<nav>
-    <a href="#" v-on="click: logout" class="logout" title="Logout"></a>
-    <a href="#" v-on="click: showHelp" class="help-toggle" title="Keyboard shortcut help"></a>
-    <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
-</nav>
-<template v-if="labels">
-<form class="search-form" action="/search/" v-on="submit: search">
-    <input type="text" v-model="search_query">
-    <button type="submit" class="search"></button>
-</form>
-<ul class="labels">
-<li v-repeat="labels.items">
-    <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
-        {{name}}<template v-if="unread"> ({{unread}})</template>
-    </a>
-</li>
-</ul>
-</template>
-<div v-if="last_sync" class="last-sync">Last sync at {{last_sync}}</div>
+<div v-if="errors.length" class="errors">
+    <a v-on="click: closeErrors" class="errors-close" title="Close">X</a>
+    <div v-repeat="errors" class="error">{{$value}}</div>
+</div>
+<div class="sidebar">
+    <b>
+        {{username}}
+        (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
+    </b>
+    <nav>
+        <a href="#" v-on="click: logout" class="logout" title="Logout"></a>
+        <a href="#" v-on="click: showHelp" class="help-toggle" title="Keyboard shortcut help"></a>
+        <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
+    </nav>
+    <template v-if="labels">
+    <form class="search-form" action="/search/" v-on="submit: search">
+        <input type="text" v-model="search_query">
+        <button type="submit" class="search"></button>
+    </form>
+    <ul class="labels">
+    <li v-repeat="labels.items">
+        <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
+            {{name}}<template v-if="unread"> ({{unread}})</template>
+        </a>
+    </li>
+    </ul>
+    </template>
+    <div v-if="last_sync" class="last-sync">Last sync at {{last_sync}}</div>
+</div>

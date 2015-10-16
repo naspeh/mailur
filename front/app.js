@@ -254,6 +254,7 @@ let Pwd = Component.extend({
     }
 });
 let Sidebar = Component.extend({
+    replace: true,
     template: require('./sidebar.html'),
     created() {
         this.url = '/labels/';
@@ -275,6 +276,7 @@ let Sidebar = Component.extend({
         },
         initData(data) {
             data.$set('search_query', '');
+            data.$set('errors', []);
             return data;
         },
         search(e) {
@@ -293,6 +295,9 @@ let Sidebar = Component.extend({
         showHelp(e) {
             this.toggleHelp(e, true);
             Mousetrap.bind('esc', (e) => this.closeHelp());
+        },
+        closeErrors(e) {
+            this.errors = [];
         },
         logout(e) {
             send('/logout/', null, (data) => {
@@ -575,7 +580,7 @@ let Compose = Component.extend({
     ready() {
         let self = this;
 
-        send(this.previewUrl(), this.getContext(), (data) =>
+        send(this.links.preview, this.getContext(), (data) =>
             self.$data.$set('html', data)
         );
         this.$watch('fr', this.preview);
@@ -623,7 +628,7 @@ let Compose = Component.extend({
         getContext() {
             let ctx = {};
             let fields = [
-                'id', 'target', 'fr', 'to', 'subj', 'body',
+                'id', 'fr', 'to', 'subj', 'body',
                 'quoted', 'forward', 'files'
             ];
             for (let f of fields) {
@@ -631,10 +636,6 @@ let Compose = Component.extend({
             }
             if (this.quoted) ctx.quote = this.quote;
             return ctx;
-        },
-        previewUrl(save) {
-            save = save || '';
-            return `/draft/preview/${this.target}/?save=${save}`;
         },
         preview(e, timeout) {
             if (timeout && this.last && new Date() - this.last < timeout) {
@@ -646,13 +647,13 @@ let Compose = Component.extend({
             this.last = new Date();
 
             let self = this;
-            send(this.previewUrl(true), this.getContext(), (data) => {
+            send(this.links.preview + '?save=1', this.getContext(), (data) => {
                 self.$data.$set('html', data);
                 self.$data.$set('draft', true);
             });
         },
         clear(e) {
-            send(`/draft/rm/${this.target}/`, null, (data) => {
+            send(this.links.rm, null, (data) => {
                 view = null;
                 reload();
             });
@@ -665,7 +666,7 @@ let Compose = Component.extend({
             for (let file of Array.from(input.files)) {
                 data.append('files', file, file.name);
             }
-            api(`/draft/upload/${this.target}/`, {method: 'post', body: data})
+            api(this.links.upload, {method: 'post', body: data})
                 .then((data) => {
                     self.files = self.files.concat(data);
                     input.value = null;
@@ -674,7 +675,7 @@ let Compose = Component.extend({
         send(e) {
             if (e) e.preventDefault();
             this.$data.$set('hide', true);
-            send(`/draft/send/${this.target}/`, this.getContext(), (data) => {
+            send(this.links.send, this.getContext(), (data) => {
                 go(data.url);
             });
         }
@@ -718,8 +719,7 @@ function reload() {
 }
 function error(err) {
     console.log(err);
-    let html = `<div class="error">Error: ${err}</div>`;
-    $('.body')[0].insertAdjacentHTML('afterbegin', html);
+    sidebar.errors.push(err);
 }
 function mark(params, callback, emails) {
     view = emails || view;

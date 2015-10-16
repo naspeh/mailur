@@ -57,11 +57,11 @@ class WebEnv(Env):
             response = self.process_response()
         except Exception as e:
             if isinstance(e, HTTPException):
-                code, desc = e.code, e.description
+                status = '%s %s' % (e.code, e.description)
             else:
                 log.exception(e)
-                code, desc = '500 %s' % e, str(e)
-            response = self.make_response(desc, status=code)
+                status = '500 %s' % e
+            response = self.make_response(status=status)
         finally:
             if self.username:
                 self.db.rollback()

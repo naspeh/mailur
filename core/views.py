@@ -27,7 +27,7 @@ rules = [
     Rule('/thread/new/', endpoint='new_thread'),
     Rule('/compose/new/', endpoint='compose'),
     Rule('/compose/<id>/', endpoint='compose'),
-    Rule('/draft/<action>/<target>/', endpoint='draft'),
+    Rule('/draft/<thrid>/<action>/', endpoint='draft'),
     Rule('/search-email/', endpoint='search_email')
 ]
 url_map = Map(rules)
@@ -667,15 +667,15 @@ def compose(env, id=None):
             'forward': forward,
         })
 
-    saved = env.storage('compose', thrid=parent.get('thrid'))
-    saved_path = saved.key.replace(':', '/')
-    if saved.value:
-        ctx.update(saved.value)
-    ctx['target'] = saved.key
-    ctx['draft'] = saved.value is not None
+    thrid = parent.get('thrid')
+    saved = env.storage('compose', thrid=thrid)
+    saved_path = env.files.subpath('compose', thrid=thrid)
+    if saved.get():
+        ctx.update(saved.get())
+    ctx['draft'] = saved.get() is not None
     ctx['header'] = {'title': ctx.get('subj') or 'New message'}
 
-    if ctx['forward'] and not saved.value:
+    if ctx['forward'] and not ctx['draft']:
         env.files.copy(f.slugify(id), saved_path)
 
         files = list(parent['attachments']) + list(parent['embedded'].values())
@@ -687,13 +687,18 @@ def compose(env, id=None):
             if quote:
                 parent_url = re.escape(env.files.url(i['path']))
                 ctx['quote'] = re.sub(parent_url, asset['url'], quote)
+
+    ctx['links'] = {
+        a: env.url_for('draft', {'thrid': str(thrid) or 'new', 'action': a})
+        for a in ('preview', 'rm', 'send', 'upload')
+    }
     return ctx
 
 
 @login_required
-def draft(env, action, target):
-    saved = env.storage.get(target) or {}
-    saved_path = target.replace(':', '/')
+def draft(env, thrid, action):
+    saved = env.storage('compose', thrid=thrid)
+    saved_path = env.files.subpath('compose', thrid=thrid)
     if action == 'preview':
         schema = v.parse({
             '+fr': str,
@@ -707,7 +712,7 @@ def draft(env, action, target):
         })
         data = schema.validate(env.request.json)
         if env.request.args.get('save', True):
-            env.storage.set(target, data)
+            saved.set(data)
         return get_html(data['body'], data.get('quote', ''))
     elif action == 'upload':
         count = env.request.form.get('count', type=int)
@@ -757,8 +762,8 @@ def draft(env, action, target):
             parent = {}
 
         sendmail(env, msg)
-        if saved:
-            draft(env, 'rm', target)
+        if saved.get():
+            draft(env, thrid, 'rm')
         syncer.sync_gmail(env, env.email, only=['\\All'], fast=1, force=1)
 
         url = env.url_for('emails', {'in': '\\Sent'})
@@ -767,9 +772,9 @@ def draft(env, action, target):
         return {'url': url}
 
     elif action == 'rm':
-        if saved.get('files'):
+        if saved.get({}).get('files'):
             env.files.rm(saved_path)
-        env.storage.rm(target)
+        saved.rm()
         return 'OK'
 
     env.abort(400)

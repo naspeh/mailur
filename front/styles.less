@@ -50,8 +50,8 @@
 /* General */
 body {
     font-size: @Size;
-    min-width: 600px;
     font-family: 'PT Sans', sans-serif;
+    min-width: 600px;
 }
 .emails {
     .mix_reset_list();
@@ -387,11 +387,11 @@ body {
     top: 0;
     right: 0;
     bottom: 0;
+    z-index: 10;
     overflow-y: auto;
     padding: 20px;
     color: #fff;
     background-color:rgba(0, 0, 0, 0.85);
-    z-index: 10;
 
     b {
         color: @ColorC;
@@ -405,8 +405,24 @@ body {
         cursor: pointer;
     }
 }
+.errors {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: #fff;
+    padding: 10px;
+    border-bottom: 1px solid red;
+
+    .errors-close {
+        float: right;
+        cursor: pointer;
+        color: red;
+    }
+}
 .sidebar {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 10px;
     white-space: nowrap;
@@ -455,14 +471,10 @@ body {
     }
 }
 .body {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 220px;
+    margin-left: 220px;
 }
 .error {
     color: red;
-    font-weight: bold;
 }
 
 /* insignia */

@@ -105,6 +105,12 @@ class Files(Theme):
         self.base_url = '/attachments/%s' % env.username
         self.base_path = Path(env('path_attachments')) / env.username
 
+    def subpath(self, name, **params):
+        targets = {
+            'compose': lambda thrid: 'compose/%s' % (thrid or 'new'),
+        }
+        return targets[name](**params)
+
     def url(self, subpath=None):
         if subpath is None:
             return self.base_url

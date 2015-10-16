@@ -47,7 +47,7 @@ def _sync_gmail(env, email, fast=True, only=None):
         folder_id = imap.status(name, 'UIDVALIDITY')
         uid_start = env.storage('folder', uid=folder_id)
         uid_end = imap.status(name, 'UIDNEXT')
-        uids = imap.search(name, uid_start.value if fast else None)
+        uids = imap.search(name, uid_start.get() if fast else None)
         uid_start.set(uid_end)
 
         id2uid, new = map_ids(env, imap, uids)

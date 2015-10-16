@@ -3,7 +3,6 @@ import uuid
 import psycopg2
 import psycopg2.extras
 import rapidjson as json
-from werkzeug.utils import cached_property
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extensions.register_adapter(uuid.UUID, psycopg2.extras.UUID_adapter)
@@ -173,16 +172,17 @@ class Key():
         self.storage = storage
         self.key = key
 
-    @cached_property
-    def value(self):
-        return self.storage.get(self.key)
+    def get(self, default=None):
+        if '_val' not in self.__dict__:
+            self.__dict__['_val'] = self.storage.get(self.key, default)
+        return self.__dict__['_val']
 
     def set(self, value):
-        self.__dict__.pop('value', None)
+        self.__dict__.pop('_val', None)
         return self.storage.set(self.key, value)
 
     def rm(self):
-        self.__dict__.pop('value', None)
+        self.__dict__.pop('_val', None)
         return self.storage.rm(self.key)
 
 
