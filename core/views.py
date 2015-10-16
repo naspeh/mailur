@@ -711,7 +711,7 @@ def draft(env, thrid, action):
             'quote': v.Nullable(str)
         })
         data = schema.validate(env.request.json)
-        if env.request.args.get('save', True):
+        if env.request.args.get('save', False):
             saved.set(data)
         return get_html(data['body'], data.get('quote', ''))
     elif action == 'upload':

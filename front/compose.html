@@ -14,7 +14,6 @@
     <ul>
         <li v-repeat="files"><a href="{{url}}">{{name}}</a></li>
     </ul>
-    <div class="email-html" v-show="html">{{{html}}}</div>
     <button v-on="click: send" type="button" class="compose-send">Send</button>
     <button v-on="click: preview" type="button" class="compose-preview">Preview</button>
     <button v-if="draft" v-on="click: clear" type="button" class="compose-clear">Discard draft</button>
@@ -27,4 +26,5 @@
     </template>
     <input name="quote" type="hidden" value="{{quoted ? quote : ''}}">
     <input v-on="change: upload" type="file" name="files" multiple>
+    <div class="email-html" v-show="html">{{{html}}}</div>
 </form>

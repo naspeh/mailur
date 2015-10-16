@@ -558,14 +558,15 @@ let Emails = Component.extend({
 
             mark({action: action || '+', name: name});
         },
-        newThread(params) {
-            send('/thread/new/', params, (data) => go(data.url));
+        newThread(params, callback) {
+            callback = callback || (data => go(data.url));
+            send('/thread/new/', params, callback);
         },
         merge(e) {
             this.newThread({
                 action: 'merge',
                 ids: this.getPicked(this, (el) => el.thrid)
-            });
+            }, (data) => reload());
         },
         extract(e) {
             this.newThread({action: 'new', ids: [e.targetVM.id]});
