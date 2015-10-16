@@ -5,7 +5,6 @@
     </h3>
     {{{help}}}
 </div>
-<div class="sidebar-inner">
 <b>
     {{username}}
     (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
@@ -29,4 +28,3 @@
 </ul>
 </template>
 <div v-if="last_sync" class="last-sync">Last sync at {{last_sync}}</div>
-</div>

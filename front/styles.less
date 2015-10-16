@@ -1,3 +1,4 @@
+@import url(https://fonts.googleapis.com/css?family=PT+Sans:400,700&subset=latin,cyrillic);
 @import url(./font/fontello.less);
 
 @Space: 1.25em;
@@ -49,7 +50,8 @@
 /* General */
 body {
     font-size: @Size;
-    min-width: 600px
+    min-width: 600px;
+    font-family: 'PT Sans', sans-serif;
 }
 .emails {
     .mix_reset_list();
@@ -404,18 +406,15 @@ body {
     }
 }
 .sidebar {
-    position: relative;
-    padding: 0 10px;
+    position: absolute;
+    top: 0;
+    left: 10px;
     white-space: nowrap;
     width: 200px;
     height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
 
-    .sidebar-inner {
-        position: fixed;
-        top: 0;
-    }
     a {
         color: @ColorL;
         text-decoration: none;
