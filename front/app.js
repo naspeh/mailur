@@ -624,6 +624,7 @@ let Emails = Component.extend({
                 img.style.maxHeight = box.clientHeight;
                 img.style.marginTop = - Math.round(img.clientHeight / 2) + 'px';
                 img.style.marginLeft = - Math.round(img.clientWidth / 2) + 'px';
+                img.style.visibility = 'visible';
             });
         }
     },

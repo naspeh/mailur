@@ -383,7 +383,7 @@ body {
     left: 0;
     z-index: 10;
     background-color:rgba(0, 0, 0, 0.85);
-    padding: 30px;
+    padding: 30px 20px;
     color: #fff;
     text-align: center;
 
@@ -391,23 +391,21 @@ body {
         position: relative;
         height: 100%;
         width: 100%;
-        background-repeat: no-repeat;
-        background-position: 50% 50%;
 
         img {
+            visibility: hidden;
             position: absolute;
             top: 50%;
             left: 50%;
         }
     }
-    .slides-close, .slides-prev, .slides-next {
-        cursor: pointer;
-    }
     .slides-close {
         position: absolute;
         top: 0;
         right: 0;
+        z-index: 20;
         padding: 10px;
+        cursor: pointer;
         &:after {
             content: 'X';
         }
@@ -415,16 +413,24 @@ body {
     .slides-prev {
         position: absolute;
         top: 30px;
+        bottom: 30px;
         left: 0;
-        height: 100%;
         width: 30%;
+        cursor: pointer;
     }
     .slides-next {
         position: absolute;
         top: 30px;
+        bottom: 30px;
         right: 0;
-        height: 100%;
         width: 70%;
+        cursor: pointer;
+    }
+    .slides-title {
+        a {
+            text-decoration: none;
+            color: #fff;
+        }
     }
 }
 .compose-body {
