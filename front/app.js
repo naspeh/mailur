@@ -597,7 +597,6 @@ let Emails = Component.extend({
         },
         prevSlides(e, callback) {
             callback = callback || (i => i - 1);
-            let current = this.slide;
             for (let v of this.slides) {
                 if (v.url == this.slide.url) {
                     this.slide = v;
