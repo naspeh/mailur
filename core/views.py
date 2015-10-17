@@ -814,7 +814,8 @@ def sendmail(env, msg):
 
     files = msg.get('files', [])
     html = get_html(msg['body'], msg.get('quote'))
-    html, files = embed_html(html, files)
+    if html:
+        html, files = embed_html(html, files)
 
     if msg.get('quote'):
         text = MIMEMultipart()

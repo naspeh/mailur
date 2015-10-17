@@ -375,6 +375,58 @@ body {
         }
     }
 }
+.slides {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    background-color:rgba(0, 0, 0, 0.85);
+    padding: 30px;
+    color: #fff;
+    text-align: center;
+
+    .slides-img {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        background-repeat: no-repeat;
+        background-position: 50% 50%;
+
+        img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+        }
+    }
+    .slides-close, .slides-prev, .slides-next {
+        cursor: pointer;
+    }
+    .slides-close {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 10px;
+        &:after {
+            content: 'X';
+        }
+    }
+    .slides-prev {
+        position: absolute;
+        top: 30px;
+        left: 0;
+        height: 100%;
+        width: 30%;
+    }
+    .slides-next {
+        position: absolute;
+        top: 30px;
+        right: 0;
+        height: 100%;
+        width: 70%;
+    }
+}
 .compose-body {
     border-top: 1px solid #ccc;
     padding-top: 10px;

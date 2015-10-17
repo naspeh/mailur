@@ -361,6 +361,7 @@ let Emails = Component.extend({
                 email.$set('checked', data.checked_list.has(email.vid));
             }
 
+            data.$set('slide', null);
             data.$set('labels_edit',
                 this.getPicked(data).length > 0 || data.thread ? true : false
             );
@@ -574,6 +575,57 @@ let Emails = Component.extend({
         delete(e) {
             mark({action: '+', name: '\\Trash', ids: [e.targetVM.id]});
         },
+        showSlides(e) {
+            e.preventDefault();
+            this.slides = [];
+            for (let i of e.targetVM.$parent.body.attachments.items) {
+                if(i.maintype == 'image') {
+                    this.slides.push(i);
+                }
+            }
+
+            this.slide = e.targetVM;
+            Mousetrap
+                .bind('esc', (e => this.closeSlides()))
+                .bind('left', (e => this.prevSlides()))
+                .bind('right', (e => this.nextSlides()));
+        },
+        closeSlides(e) {
+            if (e) e.preventDefault();
+            this.slide = null;
+            Mousetrap.unbind(['esc', 'left', 'right']);
+        },
+        prevSlides(e, callback) {
+            callback = callback || (i => i - 1);
+            let current = this.slide;
+            for (let v of this.slides) {
+                if (v.url == this.slide.url) {
+                    this.slide = v;
+                    break;
+                }
+            }
+            let i = this.slides.indexOf(this.slide);
+            i = callback(i);
+            if (i < 0) {
+                this.slide = this.slides.splice(-1)[0];
+            } else if (i > this.slides.length - 1) {
+                this.slide = this.slides[0];
+            } else {
+                this.slide = this.slides[i];
+            }
+        },
+        nextSlides(e) {
+            this.prevSlides(e, (i => i + 1));
+        },
+        fixSlide() {
+            this.$nextTick(() => {
+                let box = $('.slides-img')[0], img = box.firstChild;
+                img.style.maxWidth = box.clientWidth;
+                img.style.maxHeight = box.clientHeight;
+                img.style.marginTop = - Math.round(img.clientHeight / 2) + 'px';
+                img.style.marginLeft = - Math.round(img.clientWidth / 2) + 'px';
+            });
+        }
     },
 });
 let Compose = Component.extend({
