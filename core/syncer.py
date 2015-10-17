@@ -502,20 +502,15 @@ def update_label(env, gids, label, folder=None, clean=True):
     return step.ids
 
 
-def update_thrids(env, folder=None, manual=True, commit=True, uids=None):
+def update_thrids(env, folder=None, manual=True, commit=True):
     where = (
         env.mogrify('%s = ANY(labels)', [folder])
         if folder else
         env.mogrify('labels && %s::varchar[]', [list(FOLDERS)])
-    ) + (
-        ' AND thrid IS NULL'
-        if uids is None else
-        env.mogrify(' AND msgid = ANY(%s)', [list(uids.values())])
     )
-
     emails = env.sql('''
     SELECT id, fr, labels, array_prepend(in_reply_to, refs) AS refs
-    FROM emails WHERE {where} ORDER BY time
+    FROM emails WHERE thrid IS NULL AND {where} ORDER BY time
     '''.format(where=where)).fetchall()
     log.info('  * Update thread ids for %s emails', len(emails))
 

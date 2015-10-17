@@ -21,7 +21,7 @@ def with_lock(target, timeout=10, force=False):
         # Check if process exists
         try:
             os.kill(int(pid), 0)
-        except OSError:
+        except (OSError, ValueError):
             os.remove(path)
             return
 
