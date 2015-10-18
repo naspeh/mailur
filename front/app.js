@@ -618,7 +618,7 @@ let Emails = Component.extend({
         },
         fixSlide() {
             this.$nextTick(() => {
-                let box = $('.slides-img')[0], img = box.firstChild;
+                let box = $('.slides-img')[0], img = box.firstElementChild;
                 img.style.maxWidth = box.clientWidth;
                 img.style.maxHeight = box.clientHeight;
                 img.style.marginTop = - Math.round(img.clientHeight / 2) + 'px';
