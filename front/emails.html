@@ -93,6 +93,7 @@
 <div v-if="reply_body" class="compose-body"></div>
 <div v-if="slide" class="slides">
     <div class="slides-close" v-on="click: closeSlides" title="Close"></div>
+    <div class="slides-loading"></div>
     <div class="slides-img">
         <img v-on="load: fixSlide, complete: fixSlide" v-attr="src: slide.url" />
     </div>

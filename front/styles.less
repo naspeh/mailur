@@ -387,16 +387,21 @@ body {
     color: #fff;
     text-align: center;
 
+    .slides-loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        .icon-loading();
+    }
     .slides-img {
         position: relative;
         height: 100%;
         width: 100%;
 
         img {
-            visibility: hidden;
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 0;
+            left: 0;
         }
     }
     .slides-close {

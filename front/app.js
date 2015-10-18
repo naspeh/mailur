@@ -617,14 +617,12 @@ let Emails = Component.extend({
             this.prevSlides(e, (i => i + 1));
         },
         fixSlide() {
-            this.$nextTick(() => {
-                let box = $('.slides-img')[0], img = box.firstElementChild;
-                img.style.maxWidth = box.clientWidth;
-                img.style.maxHeight = box.clientHeight;
-                img.style.marginTop = - Math.round(img.clientHeight / 2) + 'px';
-                img.style.marginLeft = - Math.round(img.clientWidth / 2) + 'px';
-                img.style.visibility = 'visible';
-            });
+            let fix = (x, y) => !y ? 0 : Math.round((x - y) / 2) + 'px';
+            let box = $('.slides-img')[0], img = box.firstElementChild;
+            img.style.maxWidth = box.clientWidth;
+            img.style.maxHeight = box.clientHeight;
+            img.style.top = fix(box.clientHeight, img.clientHeight);
+            img.style.left = fix(box.clientWidth, img.clientWidth);
         }
     },
 });
