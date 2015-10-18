@@ -94,7 +94,7 @@
 <div v-if="slide" class="slides">
     <div class="slides-close" v-on="click: closeSlides" title="Close"></div>
     <div class="slides-img">
-        <img v-on="load: fixSlide" v-attr="src: slide.url" />
+        <img v-on="load: fixSlide, complete: fixSlide" v-attr="src: slide.url" />
     </div>
     <div class="slides-prev" v-on="click: prevSlides"></div>
     <div class="slides-next" v-on="click: nextSlides"></div>
