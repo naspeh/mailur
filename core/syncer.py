@@ -525,8 +525,11 @@ def update_thrids(env, folder=None, manual=True, commit=True):
         if manual and m_label:
             # Manual thread
             extid = m_label.pop().replace('%s/' % THRID, '')
-            i = env.sql('SELECT id FROM emails WHERE extid=%s', [extid])
-            thrid = i.fetchone()[0]
+            parent = env.sql('''
+            SELECT id FROM emails
+            WHERE extid=%(extid)s AND %(folder)s = ANY(labels)
+            ''', {'extid': extid, 'folder': folder}).fetchall()
+            thrid = parent[0][0] if parent else None
         elif row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
             # Failed delivery
             text = env.sql('SELECT text FROM emails WHERE id=%s', [row['id']])
@@ -540,7 +543,8 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 LIMIT 1
                 ''', {'msgid': msgid, 'folder': folder}).fetchall()
                 thrid = parent[0][0] if parent else None
-        elif not refs:
+
+        if not refs:
             pass
         else:
             parent = env.sql('''
