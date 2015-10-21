@@ -576,6 +576,10 @@ let Emails = Component.extend({
             mark({action: '+', name: '\\Trash', ids: [e.targetVM.id]});
         },
         showSlides(e) {
+            if (e.targetVM.maintype != 'image') {
+                return;
+            }
+
             e.preventDefault();
             this.slides = [];
             for (let i of e.targetVM.$parent.body.attachments.items) {
