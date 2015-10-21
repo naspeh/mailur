@@ -518,8 +518,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
     for row in emails:
         refs = [r for r in row['refs'] if r]
         thrid = None
-        if not folder:
-            folder = (set(FOLDERS) & set(row['labels'])).pop()
+        folder = (set(FOLDERS) & set(row['labels'])).pop()
 
         m_label = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
         if manual and m_label:
