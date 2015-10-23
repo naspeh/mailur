@@ -245,9 +245,9 @@ def migrate(env, init=False):
         env.sql('DROP TABLE IF EXISTS emails')
         env.sql('DROP SEQUENCE IF EXISTS seq_emails_id')
         env.storage.rm('last_sync')
+        env.db.commit()
 
     clean_emails()
-    env.db.commit()
 
     if init:
         db.init(env)

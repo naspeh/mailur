@@ -66,8 +66,9 @@ def _sync_gmail(env, email, fast=True, only=None):
             update_thrids(env, label)
             fetch_bodies(env, imap, id2uid)
 
-    env.storage.set('last_sync', time.time())
-    notify(env, [], True)
+    if not fast or env.storage.get('last_sync'):
+        env.storage.set('last_sync', time.time())
+        notify(env, [], True)
     return uids
 
 
@@ -567,7 +568,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 AND msgid = %(ref)s
             ORDER BY id DESC
             LIMIT 1
-            ''', dict(ctx, ref=refs.pop())).fetchall()
+            ''', dict(ctx, ref=refs[0])).fetchall()
             if not parent and refs:
                 parent = env.sql('''
                 SELECT id, thrid FROM emails
@@ -576,7 +577,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                     AND msgid = ANY(%(refs)s::varchar[])
                 ORDER BY id DESC
                 LIMIT 1
-                ''', dict(ctx, refs=refs)).fetchall()
+                ''', dict(ctx, refs=refs[1:])).fetchall()
             if parent:
                 thrid = parent[0]['thrid']
                 parent = parent[0]['id']

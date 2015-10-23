@@ -291,6 +291,8 @@ def ctx_header(env, title, labels=None):
 
 
 def ctx_body(env, msg, msgs, show=False):
+    if msgs and isinstance(msgs[0], dict):
+        msgs = (m['html'] for m in msgs if m['id'] <= msg['parent'])
     if not show and '\\Unread' not in msg['labels']:
         return False
     attachments = msg.get('attachments')
@@ -320,8 +322,8 @@ def ctx_quote(env, msg, forward=False):
 def thread(env, id):
     i = env.sql('''
     SELECT
-        id, thrid, parent, subj, labels, time, fr, "to", text, cc, created,
-        html, attachments
+        id, thrid, subj, labels, time, fr, "to", text, cc, created,
+        html, attachments, parent
     FROM emails
     WHERE thrid = %s
     ORDER BY time
@@ -334,14 +336,13 @@ def thread(env, id):
             labels.update(msg['labels'])
             if n == 0:
                 subj = msg['subj']
-            htmls = (m['html'] for m in msgs[::-1] if m['id'] <= msg['parent'])
             msg['_extra'] = {
                 'subj_changed': f.is_subj_changed(msg['subj'], subj),
                 'subj_human': f.humanize_subj(msg['subj'], subj),
-                'body': ctx_body(env, msg, htmls)
+                'body': ctx_body(env, msg, msgs)
             }
             yield msg
-            msgs.append(msg)
+            msgs.insert(0, msg)
 
     ctx = ctx_emails(env, emails())
     if ctx['emails']:
@@ -349,8 +350,7 @@ def thread(env, id):
         subj = f.humanize_subj(emails[0]['subj'])
 
         last = emails[-1]
-        parents = reversed([p['html'] for p in msgs[:-1]])
-        last['body'] = ctx_body(env, msgs[-1], parents, show=True)
+        last['body'] = ctx_body(env, msgs[0], msgs[1:], show=True)
 
         ctx['header'] = ctx_header(env, subj, labels)
         ctx['thread'] = True
@@ -512,7 +512,7 @@ def body(env, id):
     row = env.sql('''
     SELECT
         id, thrid, subj, labels, time, fr, "to", cc, text, created,
-        raw, attachments
+        raw, attachments, parent
     FROM emails WHERE id=%s LIMIT 1
     ''', [id]).fetchone()
     if not row:
@@ -539,7 +539,10 @@ def body(env, id):
             msg['text'] = parsed['text']
             msg['attachments'] = parsed['attachments']
             msg['embedded'] = parsed['embedded']
-            msgs = [parse(p['raw'], p['id'])['html'] for p in i]
+            msgs = [
+                parse(p['raw'], p['id'])['html']
+                for p in i if p['id'] <= msg['parent']
+            ]
             msg['_extra'] = {
                 'body': ctx_body(env, msg, msgs, show=True),
                 'labels': ctx_labels(env, msg['labels'])
