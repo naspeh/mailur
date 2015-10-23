@@ -320,7 +320,7 @@ def ctx_quote(env, msg, forward=False):
 def thread(env, id):
     i = env.sql('''
     SELECT
-        id, thrid, subj, labels, time, fr, "to", text, cc, created,
+        id, thrid, parent, subj, labels, time, fr, "to", text, cc, created,
         html, attachments
     FROM emails
     WHERE thrid = %s
@@ -334,10 +334,11 @@ def thread(env, id):
             labels.update(msg['labels'])
             if n == 0:
                 subj = msg['subj']
+            htmls = (m['html'] for m in msgs[::-1] if m['id'] <= msg['parent'])
             msg['_extra'] = {
                 'subj_changed': f.is_subj_changed(msg['subj'], subj),
                 'subj_human': f.humanize_subj(msg['subj'], subj),
-                'body': ctx_body(env, msg, (m['html'] for m in msgs[::-1]))
+                'body': ctx_body(env, msg, htmls)
             }
             yield msg
             msgs.append(msg)
