@@ -577,7 +577,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 thrid = parent[0]['thrid']
                 parent = parent[0]['id']
 
-        if thrid is None:
+        if thrid is None and row['to'] and row['fr']:
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
