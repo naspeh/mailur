@@ -586,8 +586,8 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 %(folder)s = ANY(labels)
                 AND id < %(id)s
                 AND subj LIKE %(subj)s
-                AND array_to_string("to", ',') LIKE %(fr)s
-                AND array_to_string(fr, ',') LIKE %(to)s
+                AND array_to_string(fr || "to", ',') LIKE %(fr)s
+                AND array_to_string(fr || "to", ',') LIKE %(to)s
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{
