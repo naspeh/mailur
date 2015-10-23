@@ -17,13 +17,13 @@ send(`/info/?offset=${offset}`, null, (data) => {
     let title = document.title;
     let patterns = [
         [/^\/$/, () => go('/emails/?in=\\Inbox')],
+        [/^\/(raw)\//, () => {
+            location.href = '/api' + location.pathname;
+        }],
         [/^\/(emails|thread|search|body)\//, Emails],
         [/^\/compose\//, Compose],
         [/^\/login\//, Login],
         [/^\/pwd\//, Pwd],
-        [/^\/raw\//, () => {
-            location.href = '/api' + location.pathname;
-        }]
     ];
     let initComponent = (current) => {
         send(getPath(), null, {

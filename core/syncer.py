@@ -356,13 +356,17 @@ def process_tasks(env):
     return updated
 
 
-def mark(env, action, name, ids, new=False, inner=False):
+def mark(env, action, name, ids, **opts):
     if not name or not ids:
         return []
     if not isinstance(name, str):
-        return sum((mark(env, action, n, ids, new, inner) for n in name), [])
+        return sum((mark(env, action, n, ids, **opts) for n in name), [])
 
     ids = tuple(ids)
+    new = opts.get('new', False)
+    inner = opts.get('inner', False)
+    commit = opts.get('commit', True)
+
     actions = {
         '-': (
             '''
@@ -400,7 +404,7 @@ def mark(env, action, name, ids, new=False, inner=False):
             if callable(row):
                 row(env, ids)
                 continue
-            mark(env, *row, ids=ids, inner=True)
+            mark(env, *row, ids=ids, inner=True, commit=commit)
 
     i = env.sql(actions[action], {'name': name, 'ids': ids})
     updated = [r[0] for r in i]
@@ -409,8 +413,9 @@ def mark(env, action, name, ids, new=False, inner=False):
         updated += update_thrids(env, commit=False)
 
         env.add_tasks([{'action': action, 'name': name, 'ids': ids}])
-        env.db.commit()
-        notify(env, updated)
+        if commit:
+            env.db.commit()
+            notify(env, updated)
     return updated
 
 
@@ -511,7 +516,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
     )
     emails = env.sql('''
     SELECT id, fr, "to", subj, labels, array_prepend(in_reply_to, refs) AS refs
-    FROM emails WHERE thrid IS NULL AND {where} ORDER BY time
+    FROM emails WHERE thrid IS NULL AND {where} ORDER BY id
     '''.format(where=where)).fetchall()
     log.info('  * Update thread ids for %s emails', len(emails))
 
@@ -519,7 +524,10 @@ def update_thrids(env, folder=None, manual=True, commit=True):
     for row in emails:
         thrid = parent = None
         refs = [r for r in row['refs'] if r]
-        folder = (set(FOLDERS) & set(row['labels'])).pop()
+        ctx = {
+            'id': row['id'],
+            'folder': folder or (set(FOLDERS) & set(row['labels'])).pop(),
+        }
 
         m_label = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
         if manual and m_label:
@@ -528,7 +536,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             parent = env.sql('''
             SELECT id FROM emails
             WHERE extid=%(extid)s AND %(folder)s = ANY(labels)
-            ''', {'extid': extid, 'folder': folder}).fetchall()
+            ''', dict(ctx, extid=extid)).fetchall()
             if parent:
                 thrid = parent[0][0]
                 parent = thrid
@@ -544,35 +552,35 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 SELECT id, thrid FROM emails
                 WHERE
                     %(folder)s = ANY(labels)
-                    AND thrid IS NOT NULL
+                    AND id < %(id)s
                     AND msgid=%(msgid)s
-                ORDER BY time DESC
+                ORDER BY id DESC
                 LIMIT 1
-                ''', {'msgid': msgid, 'folder': folder}).fetchall()
+                ''', dict(ctx, msgid=msgid)).fetchall()
                 if parent:
                     thrid = parent[0]['thrid']
                     parent = parent[0]['id']
 
-        if refs:
+        if not thrid and refs:
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
                 %(folder)s = ANY(labels)
-                AND thrid IS NOT NULL
+                AND id < %(id)s
                 AND msgid = %(ref)s
-            ORDER BY time DESC
+            ORDER BY id DESC
             LIMIT 1
-            ''', {'ref': refs.pop(), 'folder': folder}).fetchall()
+            ''', dict(ctx, ref=refs.pop())).fetchall()
             if not parent and refs:
                 parent = env.sql('''
                 SELECT id, thrid FROM emails
                 WHERE
                     %(folder)s = ANY(labels)
-                    AND thrid IS NOT NULL
+                    AND id < %(id)s
                     AND msgid = ANY(%(refs)s::varchar[])
-                ORDER BY time DESC
+                ORDER BY id DESC
                 LIMIT 1
-                ''', {'refs': refs, 'folder': folder}).fetchall()
+                ''', dict(ctx, refs=refs)).fetchall()
             if parent:
                 thrid = parent[0]['thrid']
                 parent = parent[0]['id']
@@ -582,24 +590,23 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             SELECT id, thrid FROM emails
             WHERE
                 %(folder)s = ANY(labels)
-                AND thrid IS NOT NULL
+                AND id < %(id)s
                 AND subj LIKE %(subj)s
                 AND array_to_string(fr || "to", ',') LIKE %(fr)s
                 AND array_to_string(fr || "to", ',') LIKE %(to)s
-            ORDER BY time DESC
+            ORDER BY id DESC
             LIMIT 1
-            ''', {
+            ''', dict(ctx, **{
                 'subj': '%{}'.format(humanize_subj(row['subj'])),
-                'folder': folder,
                 'fr': '%<{}>%'.format(get_addr(row['fr'][0])),
                 'to': '%<{}>%'.format(get_addr(row['to'][0]))
-            }).fetchall()
+            })).fetchall()
             if parent:
                 thrid = parent[0]['thrid']
                 parent = parent[0]['id']
 
         updates = {
-            'thrid': row['id'] if thrid is None else thrid,
+            'thrid': thrid if thrid else row['id'],
             'parent': parent if parent else None
         }
         env.emails.update(updates, 'id=%s', [row['id']])
@@ -652,12 +659,12 @@ def clean_thrid(env, ids):
         label = row[0]
         if not label.startswith('%s/' % THRID):
             continue
-        mark(env, '-', label, row[1], new=True)
+        mark(env, '-', label, row[1], new=1, commit=0)
 
 
 def mark_thread(env, thrid, ids):
     clean_thrid(env, ids)
-    mark(env, '+', [THRID, '%s/%s' % (THRID, thrid)], ids, new=True)
+    mark(env, '+', [THRID, '%s/%s' % (THRID, thrid)], ids, new=1, commit=0)
 
 
 def new_thread(env, id):
