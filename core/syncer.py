@@ -652,12 +652,12 @@ def clean_thrid(env, ids):
         label = row[0]
         if not label.startswith('%s/' % THRID):
             continue
-        mark(env, '-', label, row[1], new=1, commit=0)
+        mark(env, '-', label, row[1], new=True, commit=False)
 
 
 def mark_thread(env, thrid, ids):
     clean_thrid(env, ids)
-    mark(env, '+', [THRID, '%s/%s' % (THRID, thrid)], ids, new=1, commit=0)
+    ids = mark(env, '+', [THRID, '%s/%s' % (THRID, thrid)], ids, new=True)
 
 
 def new_thread(env, id):

@@ -241,13 +241,17 @@ def migrate(env, init=False):
 
     log.info('Migrate for %s', env.db_name)
 
+    def clean_emails():
+        env.sql('DROP TABLE IF EXISTS emails')
+        env.sql('DROP SEQUENCE IF EXISTS seq_emails_id')
+        env.storage.rm('last_sync')
+
+    clean_emails()
+    env.db.commit()
+
     if init:
         db.init(env)
     env.username = env.username  # reset db connection
-
-    parent = env.emails.get_field('parent')
-    env.sql('ALTER TABLE emails ADD COLUMN %s' % parent)
-    env.db.commit()
 
 
 def deploy(opts):
