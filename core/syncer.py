@@ -515,7 +515,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
         env.mogrify('labels && %s::varchar[]', [list(FOLDERS)])
     )
     emails = env.sql('''
-    SELECT id, fr, "to", subj, labels, array_prepend(in_reply_to, refs) AS refs
+    SELECT id, fr, subj, labels, array_prepend(in_reply_to, refs) AS refs
     FROM emails WHERE thrid IS NULL AND {where} ORDER BY id
     '''.format(where=where)).fetchall()
     log.info('  * Update thread ids for %s emails', len(emails))
@@ -552,7 +552,6 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 SELECT id, thrid FROM emails
                 WHERE
                     %(folder)s = ANY(labels)
-                    AND id < %(id)s
                     AND msgid=%(msgid)s
                 ORDER BY id DESC
                 LIMIT 1
@@ -566,7 +565,6 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             SELECT id, thrid FROM emails
             WHERE
                 %(folder)s = ANY(labels)
-                AND id < %(id)s
                 AND msgid = %(ref)s
             ORDER BY id DESC
             LIMIT 1
@@ -576,7 +574,6 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 SELECT id, thrid FROM emails
                 WHERE
                     %(folder)s = ANY(labels)
-                    AND id < %(id)s
                     AND msgid = ANY(%(refs)s::varchar[])
                 ORDER BY id DESC
                 LIMIT 1
@@ -585,21 +582,19 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 thrid = parent[0]['thrid']
                 parent = parent[0]['id']
 
-        if thrid is None and row['to'] and row['fr']:
+        if thrid is None and row['fr']:
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
                 %(folder)s = ANY(labels)
                 AND id < %(id)s
                 AND subj LIKE %(subj)s
-                AND array_to_string(fr || "to", ',') LIKE %(fr)s
-                AND array_to_string(fr || "to", ',') LIKE %(to)s
+                AND array_to_string("to", ',') LIKE %(fr)s
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{
                 'subj': '%{}'.format(humanize_subj(row['subj'])),
                 'fr': '%<{}>%'.format(get_addr(row['fr'][0])),
-                'to': '%<{}>%'.format(get_addr(row['to'][0]))
             })).fetchall()
             if parent:
                 thrid = parent[0]['thrid']
@@ -622,7 +617,7 @@ def failed_delivery(env, folder):
     emails = env.sql('''
     SELECT id, text FROM emails
     WHERE fr[1] LIKE '%%<mailer-daemon@googlemail.com>' AND %s = ANY(labels)
-    ORDER BY time
+    ORDER BY id
     ''', [folder])
     ids = []
     for msg in emails:
@@ -688,7 +683,7 @@ def new_thread(env, id):
 def merge_threads(env, ids):
     thrid, extid = env.sql('''
     SELECT thrid, extid FROM emails WHERE thrid = ANY(%s)
-    ORDER BY time LIMIT 1
+    ORDER BY id LIMIT 1
     ''', [ids]).fetchone()
 
     i = env.sql('SELECT id FROM emails WHERE thrid = ANY(%s)', [ids])
