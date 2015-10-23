@@ -202,15 +202,7 @@ let Login = Component.extend({
         },
     },
     init(data, url) {
-        if (!data.username) {
-            user = null;
-            if (location.pathname != '/login/') {
-                location.href = '/login/';
-                throw 'Redirect to login';
-            }
-            return;
-        }
-        user = data;
+        user = data.username ? data : null;
         if (url) go(url);
     }
 });
@@ -868,6 +860,9 @@ function api(url, params, data) {
         .then(r => {
             if (r.status == 200) {
                 return r;
+            } else if (r.status == 403) {
+                location.href = '/login/';
+                throw 'Redirect to login';
             } else {
                 throw `${r.status} ${r.statusText}`;
             }
