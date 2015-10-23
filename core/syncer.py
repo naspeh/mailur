@@ -524,10 +524,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
     for row in emails:
         thrid = parent = None
         refs = [r for r in row['refs'] if r]
-        ctx = {
-            'id': row['id'],
-            'folder': folder or (set(FOLDERS) & set(row['labels'])).pop(),
-        }
+        ctx = {'folder': folder or (set(FOLDERS) & set(row['labels'])).pop()}
 
         m_label = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
         if manual and m_label:
@@ -595,6 +592,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             ''', dict(ctx, **{
                 'subj': '%{}'.format(humanize_subj(row['subj'])),
                 'fr': '%<{}>%'.format(get_addr(row['fr'][0])),
+                'id': row['id']
             })).fetchall()
             if parent:
                 thrid = parent[0]['thrid']
