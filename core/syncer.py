@@ -515,7 +515,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
         env.mogrify('labels && %s::varchar[]', [list(FOLDERS)])
     )
     emails = env.sql('''
-    SELECT id, fr, subj, labels, array_prepend(in_reply_to, refs) AS refs
+    SELECT id, fr, "to", subj, labels, array_prepend(in_reply_to, refs) AS refs
     FROM emails WHERE thrid IS NULL AND {where} ORDER BY id
     '''.format(where=where)).fetchall()
     log.info('  * Update thread ids for %s emails', len(emails))
@@ -587,11 +587,13 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 AND id < %(id)s
                 AND subj LIKE %(subj)s
                 AND array_to_string("to", ',') LIKE %(fr)s
+                AND array_to_string(fr, ',') LIKE %(to)s
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{
                 'subj': '%{}'.format(humanize_subj(row['subj'])),
                 'fr': '%<{}>%'.format(get_addr(row['fr'][0])),
+                'to': '%<{}>%'.format(get_addr(row['to'][0])),
                 'id': row['id']
             })).fetchall()
             if parent:
