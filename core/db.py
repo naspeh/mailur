@@ -235,6 +235,7 @@ class Emails(Manager):
         'delid uuid NOT NULL',  # remove after migrating
 
         'thrid bigint REFERENCES emails(id)',
+        'parent bigint REFERENCES emails(id)',
         'duplicate bigint REFERENCES emails(id)',
 
         'header bytea',

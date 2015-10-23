@@ -245,31 +245,9 @@ def migrate(env, init=False):
         db.init(env)
     env.username = env.username  # reset db connection
 
-    if not env.storage.get('last_sync'):
-        log.error('It is not synced yet')
-        return
-
-    from core.imap import Client
-    from core.syncer import THRID
-
-    imap = Client(env, env.email)
-    folders = imap.folders()
-    for attrs, delim, name in folders:
-        if name.startswith('%s/' % THRID):
-            thrid = name.replace('%s/' % THRID, '')
-            if '-' not in thrid:
-                continue
-
-            exists = env.sql('''
-            SELECT extid FROM emails WHERE delid=%s
-            ''', [thrid]).fetchall()
-            if exists:
-                newname = '%s/%s' % (THRID, exists[0][0])
-                log.info('Rename %r to %r', name, newname)
-                log.info(imap.im.rename(name, newname))
-            else:
-                log.info('Remove %r (no emails under it)', name)
-                log.info(imap.im.delete(name))
+    parent = env.emails.get_field('parent')
+    env.sql('ALTER TABLE emails ADD COLUMN %s' % parent)
+    env.db.commit()
 
 
 def deploy(opts):

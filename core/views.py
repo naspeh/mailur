@@ -541,7 +541,7 @@ def body(env, id):
             msgs = [parse(p['raw'], p['id'])['html'] for p in i]
             msg['_extra'] = {
                 'body': ctx_body(env, msg, msgs, show=True),
-                'labels': msg['labels']
+                'labels': ctx_labels(env, msg['labels'])
             }
             yield msg
 

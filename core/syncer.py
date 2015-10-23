@@ -10,6 +10,7 @@ import rapidjson as json
 import requests
 
 from . import imap_utf7, parser, log
+from .filters import humanize_subj, get_addr
 from .helpers import Timer, with_lock
 from .imap import Client
 
@@ -509,15 +510,15 @@ def update_thrids(env, folder=None, manual=True, commit=True):
         env.mogrify('labels && %s::varchar[]', [list(FOLDERS)])
     )
     emails = env.sql('''
-    SELECT id, fr, labels, array_prepend(in_reply_to, refs) AS refs
+    SELECT id, fr, subj, labels, array_prepend(in_reply_to, refs) AS refs
     FROM emails WHERE thrid IS NULL AND {where} ORDER BY time
     '''.format(where=where)).fetchall()
     log.info('  * Update thread ids for %s emails', len(emails))
 
     t, updated = Timer(), []
     for row in emails:
+        thrid = parent = None
         refs = [r for r in row['refs'] if r]
-        thrid = None
         folder = (set(FOLDERS) & set(row['labels'])).pop()
 
         m_label = [l for l in row['labels'] if l.startswith('%s/' % THRID)]
@@ -528,7 +529,10 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             SELECT id FROM emails
             WHERE extid=%(extid)s AND %(folder)s = ANY(labels)
             ''', {'extid': extid, 'folder': folder}).fetchall()
-            thrid = parent[0][0] if parent else None
+            if parent:
+                thrid = parent[0][0]
+                parent = thrid
+
         elif row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
             # Failed delivery
             text = env.sql('SELECT text FROM emails WHERE id=%s', [row['id']])
@@ -537,34 +541,66 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             if msgid:
                 msgid = msgid.group(1).strip()
                 parent = env.sql('''
-                SELECT thrid FROM emails
-                WHERE msgid=%(msgid)s AND %(folder)s = ANY(labels)
+                SELECT id, thrid FROM emails
+                WHERE
+                    %(folder)s = ANY(labels)
+                    AND thrid IS NOT NULL
+                    AND msgid=%(msgid)s
+                ORDER BY time DESC
                 LIMIT 1
                 ''', {'msgid': msgid, 'folder': folder}).fetchall()
-                thrid = parent[0][0] if parent else None
+                if parent:
+                    thrid = parent[0]['thrid']
+                    parent = parent[0]['id']
 
-        if not refs:
-            pass
-        else:
+        if refs:
             parent = env.sql('''
-            SELECT thrid FROM emails
-            WHERE msgid = %(ref)s AND %(folder)s = ANY(labels)
+            SELECT id, thrid FROM emails
+            WHERE
+                %(folder)s = ANY(labels)
+                AND thrid IS NOT NULL
+                AND msgid = %(ref)s
+            ORDER BY time DESC
             LIMIT 1
-            ''', {'ref': refs[0], 'folder': folder}).fetchall()
-            if not parent:
+            ''', {'ref': refs.pop(), 'folder': folder}).fetchall()
+            if not parent and refs:
                 parent = env.sql('''
-                SELECT thrid FROM emails
+                SELECT id, thrid FROM emails
                 WHERE
-                    msgid = ANY(%(refs)s::varchar[])
-                    AND %(folder)s = ANY(labels)
+                    %(folder)s = ANY(labels)
+                    AND thrid IS NOT NULL
+                    AND msgid = ANY(%(refs)s::varchar[])
                 ORDER BY time DESC
                 LIMIT 1
                 ''', {'refs': refs, 'folder': folder}).fetchall()
-            thrid = parent[0][0] if parent else None
+            if parent:
+                thrid = parent[0]['thrid']
+                parent = parent[0]['id']
 
         if thrid is None:
-            thrid = row['id']
-        env.emails.update({'thrid': thrid}, 'id=%s', [row['id']])
+            parent = env.sql('''
+            SELECT id, thrid FROM emails
+            WHERE
+                %(folder)s = ANY(labels)
+                AND thrid IS NOT NULL
+                AND subj LIKE %(subj)s
+                AND array_to_string(fr || "to", ',') LIKE %(fr)s
+            ORDER BY time DESC
+            LIMIT 1
+            ''', {
+                'subj': '%{}'.format(humanize_subj(row['subj'])),
+                'folder': folder,
+                'fr': '%<{}>'.format(get_addr(row['fr'][0]))
+            }).fetchall()
+            if parent:
+                thrid = parent[0]['thrid']
+                parent = parent[0]['id']
+
+        updates = {
+            'thrid': row['id'] if thrid is None else thrid,
+            'parent': parent if parent else None
+        }
+        env.emails.update(updates, 'id=%s', [row['id']])
         updated.append(row['id'])
 
     if updated:
