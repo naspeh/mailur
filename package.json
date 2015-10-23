@@ -17,7 +17,7 @@
     "normalize.css": "3.0.3",
     "partialify": "3.1.5",
     "postcss-cli": "2.1.0",
-    "taboverride": "git://github.com/wjbryant/taboverride.git#01b79331aa2a7fd401c14a533e516cd3526a4e99",
+    "taboverride": "github:wjbryant/taboverride",
     "uglify-js": "2.4.24",
     "vue": "0.12.14",
     "whatwg-fetch": "0.9.0"
