@@ -180,6 +180,7 @@ def parse_part(env, part, msg_id, inner=False):
         )
         htm = lh.fromstring(htm)
         htm = cleaner.clean_html(htm)
+        htm.attrib['style'] = 'position: relative'
 
         # Fix img[@src]
         embedded = dict(content['embedded'])
