@@ -9,11 +9,12 @@ from core import Env
 def env():
     '''Test Environment'''
     with patch.object(Env, 'db_connect'):
-        return Env('test.user', conf={
-            'pg_username': '',
+        return Env('test', conf={
+            'pg_username': 'postgres',
             'pg_password': '',
             'google_id': '',
             'google_secret': '',
             'cookie_secret': 'secret',
-            'path_attachments': '/tmp/attachments'
+            'path_attachments': '/tmp/attachments',
+            'search_lang': ['simple']
         })

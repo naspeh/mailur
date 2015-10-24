@@ -173,6 +173,65 @@ def ctx_init(env):
     }
 
 
+def parse_query(env, query):
+    where = []
+
+    def replace(obj):
+        for name, value in obj.groupdict().items():
+            if not value:
+                continue
+            if name == 'labels':
+                value = value.split(',')
+                sql = 'labels @> %s::varchar[]'
+            elif name == 'subj':
+                value = value.strip('"')
+                sql = 'subj LIKE %s'
+            elif name == 'from':
+                value = '%<{}>%'.format(value)
+                sql = "array_to_string(fr, ',') LIKE %s"
+            elif name == 'to':
+                value = '%<{}>%'.format(value)
+                sql = "array_to_string(\"to\" || cc, ',') LIKE %s"
+            elif name == 'person':
+                value = '%<{}>%'.format(value)
+                sql = "array_to_string(\"to\" || cc || fr, ',') LIKE %s"
+            where.append(env.mogrify(sql, [value]))
+        return ''
+
+    pattern = (
+        r'('
+        r'in:(?P<labels>[^ ]*)'
+        r'|'
+        r'subj:(?P<subj>".*?"|[^ ]*)'
+        r'|'
+        r'from:(?P<from>[^ ]*)'
+        r'|'
+        r'to:(?P<to>[^ ]*)'
+        r'|'
+        r'person:(?P<person>[^ ]*)'
+        r')'
+    )
+    q = re.sub(pattern, replace, query)
+    q = re.sub('[ ]+', ' ', q)
+
+    if q.strip():
+        tsq = []
+        for lang in env('search_lang'):
+            tsq.append(env.mogrify(
+                'plainto_tsquery(%(lang)s, %(query)s)',
+                {'lang': lang, 'query': q}
+            ))
+        tsq = ' || '.join(tsq)
+        where.append(
+            'search @@ ({tsq}) ORDER BY ts_rank(search, {tsq}) DESC'
+            .format(tsq=tsq)
+        )
+
+    where = ' AND '.join(where)
+    where = ('WHERE %s' % where) if where else ''
+    return where
+
+
 def ctx_emails(env, items, threads=False):
     emails, last = [], None
     for i in items:
@@ -462,7 +521,7 @@ def search(env):
     schema = v.parse({'+q': str})
     q = schema.validate(env.request.args)['q']
 
-    if q.startswith('g '):
+    if q.startswith('g: '):
         # Gmail search
         q = q[2:]
         ids = syncer.search(env, env.email, q)[:env('ui_per_page')]
@@ -474,20 +533,12 @@ def search(env):
         WHERE id = ANY(%(ids)s::uuid[])
         ''', {'ids': ids})
     else:
-        tsq = []
-        for lang in env('search_lang'):
-            tsq.append(env.mogrify(
-                'plainto_tsquery(%(lang)s, %(query)s)',
-                {'lang': lang, 'query': q}
-            ))
-        tsq = ' || '.join(tsq)
-
+        where = parse_query(env, q)
         i = env.sql('''
         WITH search(id) AS (
             SELECT id
             FROM emails
-            WHERE search @@ ({tsq})
-            ORDER BY ts_rank(search, {tsq}) DESC
+            {where}
         )
         SELECT
             e.id, thrid, subj, labels, time, fr, "to", cc, text, created,
@@ -496,7 +547,7 @@ def search(env):
         JOIN emails e ON e.id = s.id
         WHERE '\\All' = ANY(labels)
         LIMIT {limit}
-        '''.format(tsq=tsq, limit=env('ui_per_page')))
+        '''.format(where=where, limit=env('ui_per_page')))
 
     ctx = ctx_emails(env, i)
     ctx['header'] = ctx_header(env, 'Search by %r' % q)
