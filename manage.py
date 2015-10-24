@@ -157,11 +157,13 @@ sync.choices = ['fast', 'full']
 
 
 @for_all
-def parse(env, limit=1000, offset=0):
+def parse(env, limit=1000, offset=0, where=None):
     from core import syncer
     from core.helpers import Timer
 
-    sql = 'SELECT count(id) FROM emails WHERE raw IS NOT NULL'
+    where = where or 'raw IS NOT NULL'
+
+    sql = 'SELECT count(id) FROM emails WHERE {where}'.format(where=where)
     count = env.sql(sql).fetchone()[0] - offset
     if count <= 0:
         return
@@ -172,10 +174,10 @@ def parse(env, limit=1000, offset=0):
     for offset in range(offset, count, limit):
         i = env.sql('''
         SELECT id FROM emails
-        WHERE raw IS NOT NULL
+        WHERE {where}
         ORDER BY created DESC
         LIMIT %s OFFSET %s
-        ''' % (limit, offset))
+        '''.format(where=where), (limit, offset))
         for row in i:
             raw = env.sql('SELECT raw FROM emails WHERE id=%s', [row['id']])
             raw = raw.fetchone()[0].tobytes()
@@ -410,7 +412,8 @@ def get_full(argv):
         .arg('-u', '--username')\
         .arg('-l', '--limit', type=int, default=1000)\
         .arg('-o', '--offset', type=int, default=0)\
-        .exe(lambda a: parse(Env(a.username), a.limit, a.offset))
+        .arg('-w', '--where')\
+        .exe(lambda a: parse(Env(a.username), a.limit, a.offset, a.where))
 
     cmd('thrids')\
         .arg('-u', '--username')\

@@ -167,7 +167,6 @@ def parse_part(env, part, msg_id, inner=False):
 
     if content['html']:
         htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()
-        htm = re.sub(r'<(/?)body([^>]*)>', r'<\1div\2>', htm)
         if not htm:
             content['html'] = ''
             return content
@@ -180,7 +179,12 @@ def parse_part(env, part, msg_id, inner=False):
         )
         htm = lh.fromstring(htm)
         htm = cleaner.clean_html(htm)
-        htm.attrib['style'] = 'position: relative'
+
+        body = htm.xpath('//body')
+        if body:
+            # Replace body tag with div and clean styles
+            body[0].tag = 'div'
+            body[0].attrib['style'] = ''
 
         # Fix img[@src]
         embedded = dict(content['embedded'])
