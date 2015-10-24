@@ -530,7 +530,7 @@ def search(env):
             id, thrid, subj, labels, time, fr, "to", cc, text, created,
             html, attachments
         FROM emails
-        WHERE id = ANY(%(ids)s::uuid[])
+        WHERE id = ANY(%(ids)s)
         ''', {'ids': ids})
     else:
         where = parse_query(env, q)
