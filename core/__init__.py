@@ -28,7 +28,7 @@ def get_conf(conf=None):
 
     app_dir = Path(__file__).parent.resolve()
     base_dir = app_dir.parent
-    log_handlers = ['console_simple', 'console_detail']
+    log_handlers = ['console_simple', 'console_detail', 'file']
     with v.parsing(additional_properties=False):
         schema = v.parse({
             'debug': v.Nullable(bool, False),
