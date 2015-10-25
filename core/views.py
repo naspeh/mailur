@@ -154,10 +154,8 @@ def labels(env):
         dict(l, url=url_query(env, 'in', l['name']))
         for l in i if not l['name'].startswith('%s/' % syncer.THRID)
     )
-    labels = (
-        dict(l, unread=0) if l['name'] in ['\\Pinned', '\\All'] else l
-        for l in labels
-    )
+    zero = ['\\Pinned', '\\All', syncer.THRID]
+    labels = (dict(l, unread=0) if l['name'] in zero else l for l in labels)
     labels = sorted(labels, key=lambda v: v['name'].lower())
     return bool(labels) and {'items': labels}
 
