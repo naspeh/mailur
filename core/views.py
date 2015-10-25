@@ -171,6 +171,7 @@ def ctx_init(env):
 
 
 def url_query(env, name, value):
+    value = value or ''
     if ' ' in value:
         value = '"%s"' % value.replace('"', '\\"')
     return env.url_for('emails', {'q': ':'.join([name, value])})
