@@ -16,11 +16,11 @@ send(`/info/?offset=${offset}`, null, (data) => {
 
     let title = document.title;
     let patterns = [
-        [/^\/$/, () => go('/emails/?in=\\Inbox')],
+        [/^\/$/, () => goToLabel('\\Inbox')],
         [/^\/(raw)\//, () => {
             location.href = '/api' + location.pathname;
         }],
-        [/^\/(emails|thread|search|body)\//, Emails],
+        [/^\/(emails|thread|body)\//, Emails],
         [/^\/compose\//, Compose],
         [/^\/login\//, Login],
         [/^\/pwd\//, Pwd],
@@ -273,7 +273,7 @@ let Sidebar = Component.extend({
         },
         search(e) {
             e.preventDefault();
-            go(encodeURI('/search/?q=' + this.search_query));
+            go(encodeURI('/emails/?q=' + this.search_query));
         },
         toggleHelp(e, value) {
             if(e) e.preventDefault();
@@ -468,7 +468,10 @@ let Emails = Component.extend({
         getLabels(names) {
             let result = [];
             for (let i of names) {
-                result.push({name: i, url: this.header.labels.base_url + i});
+                result.push({
+                    name: i,
+                    url: `${this.header.labels.base_url}"${i}"`
+                });
             }
             return result;
         },
@@ -749,7 +752,7 @@ function toggle(el, state) {
     el.style.display = state ? '' : 'none';
 }
 function goToLabel(label) {
-    go('/emails/?in=' + label);
+    go(`/emails/?q=in:${label}`);
 }
 function filterEmails(condition) {
     if (view.constructor != Emails || view.thread) return;

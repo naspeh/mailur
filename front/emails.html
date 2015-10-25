@@ -87,7 +87,7 @@
     </div>
 </li>
 <li v-if="next" class="emails-more">
-    <a v-on="click: go" href="{{next.url}}">Next page</a>
+    <a v-on="click: go" href="{{next && next.url}}">Next page</a>
 </li>
 </ul>
 <div v-if="reply_body" class="compose-body"></div>

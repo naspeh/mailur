@@ -22,7 +22,6 @@ rules = [
     Rule('/body/<id>/', endpoint='body'),
     Rule('/thread/<id>/', endpoint='thread'),
     Rule('/emails/', endpoint='emails'),
-    Rule('/search/', endpoint='search'),
     Rule('/mark/', endpoint='mark'),
     Rule('/thread/new/', endpoint='new_thread'),
     Rule('/compose/new/', endpoint='compose'),
@@ -152,7 +151,7 @@ def labels(env):
     GROUP BY l.name
     ''')
     labels = (
-        dict(l, url=env.url_for('emails', {'in': l['name']}))
+        dict(l, url=url_query(env, 'in', l['name']))
         for l in i if not l['name'].startswith('%s/' % syncer.THRID)
     )
     labels = (
@@ -173,16 +172,24 @@ def ctx_init(env):
     }
 
 
-def parse_query(env, query):
-    where = []
+def url_query(env, name, value):
+    if ' ' in value:
+        value = '"%s"' % value.replace('"', '\\"')
+    return env.url_for('emails', {'q': ':'.join([name, value])})
+
+
+def parse_query(env, query, page):
+    where, labels = [], []
 
     def replace(obj):
         for name, value in obj.groupdict().items():
             if not value:
                 continue
             if name == 'labels':
+                value = value.strip('"')
                 value = value.split(',')
-                sql = 'labels @> %s::varchar[]'
+                labels.extend(value)
+                sql = ''
             elif name == 'subj':
                 value = value.strip('"')
                 sql = 'subj LIKE %s'
@@ -195,12 +202,14 @@ def parse_query(env, query):
             elif name == 'person':
                 value = '%<{}>%'.format(value)
                 sql = "array_to_string(\"to\" || cc || fr, ',') LIKE %s"
-            where.append(env.mogrify(sql, [value]))
+
+            if sql:
+                where.append(env.mogrify(sql, [value]))
         return ''
 
     pattern = (
         r'('
-        r'in:(?P<labels>[^ ]*)'
+        r'in:(?P<labels>".*?"|[^ ]*)'
         r'|'
         r'subj:(?P<subj>".*?"|[^ ]*)'
         r'|'
@@ -214,6 +223,7 @@ def parse_query(env, query):
     q = re.sub(pattern, replace, query)
     q = re.sub('[ ]+', ' ', q)
 
+    fields = 'id, id AS sort'
     if q.strip():
         tsq = []
         for lang in env('search_lang'):
@@ -222,14 +232,22 @@ def parse_query(env, query):
                 {'lang': lang, 'query': q}
             ))
         tsq = ' || '.join(tsq)
-        where.append(
-            'search @@ ({tsq}) ORDER BY ts_rank(search, {tsq}) DESC'
-            .format(tsq=tsq)
-        )
+        where.append('search @@ (%s)' % tsq)
+        fields = 'id, ts_rank(search, %s) AS sort' % tsq
+
+    labels = list(
+        labels if set(labels) & set(syncer.FOLDERS + ('\\Inbox',))
+        else set(labels) | {'\\All'}
+    )
+    where.append(env.mogrify('labels @> %s::varchar[]', [labels]))
+
+    if page['last']:
+        where.append(env.mogrify('created < %s', [page['last']]))
 
     where = ' AND '.join(where)
     where = ('WHERE %s' % where) if where else ''
-    return where
+    sql = 'SELECT {} FROM emails {}'.format(fields, where)
+    return sql, labels
 
 
 def ctx_emails(env, items, threads=False):
@@ -241,7 +259,7 @@ def ctx_emails(env, items, threads=False):
             'thrid': i['thrid'],
             'subj': i['subj'],
             'subj_human': f.humanize_subj(i['subj']),
-            'subj_url': env.url_for('emails', {'subj': i['subj']}),
+            'subj_url': url_query(env, 'subj', i['subj']),
             'preview': f.get_preview(i['text'], i['attachments']),
             'body': False,
             'pinned': '\\Pinned' in i['labels'],
@@ -290,7 +308,7 @@ def ctx_person(env, addr):
     return {
         'full': addr,
         'short': f.format_addr(env, addr),
-        'url': env.url_for('emails', {'person': email}),
+        'url': url_query(env, 'person', email),
         'image': f.get_gravatar(email, size=75),
     }
 
@@ -340,7 +358,7 @@ def ctx_header(env, title, labels=None):
     labels = {
         'items': ctx_labels(env, labels),
         'all': ctx_all_labels(env),
-        'base_url': env.url_for('emails', {'in': ''}),
+        'base_url': url_query(env, 'in', ''),
     }
     return {
         'title': title,
@@ -420,46 +438,37 @@ def thread(env, id):
 @login_required
 @adapt_page()
 def emails(env, page):
-    schema = v.parse({
-        'person': str,
-        'subj': str,
-        'in': str
-    })
-    args = schema.validate(env.request.args)
-    label = args.get('in')
-    if label:
-        subj = label
-        l = [label] if label in ['\\Trash', '\\Spam'] else [label, '\\All']
-        where = env.mogrify('%s::varchar[] <@ labels', [l])
-    elif args.get('subj'):
-        subj = 'Filter by subj %r' % args['subj']
-        where = env.mogrify('''
-        %s = subj AND '\\All' = ANY(labels)
-        ''', [args['subj']])
-    elif args.get('person'):
-        subj = 'Filter by person %r' % args['person']
-        where = env.mogrify('''
-        (fr[1] LIKE %(fr)s OR "to"[1] LIKE %(fr)s) AND '\\All' = ANY(labels)
-        ''', {'fr': '%%<{}>'.format(args['person'])}
-        )
+    schema = v.parse({'q': v.Nullable(str, '')})
+    q = schema.validate(env.request.args)['q']
+    if q.startswith('g! '):
+        # Gmail search
+        ids = syncer.search(env, env.email, q[3:])
+        select = env.mogrify('''
+        (SELECT * FROM unnest(%s::bigint[][]) WITH ORDINALITY) AS ids(id, sort)
+        ''', [list(reversed(ids))])
+        labels = ['\\All']
     else:
-        return env.abort(400)
+        select, labels = parse_query(env, q, page)
+        select = '(%s) AS ids' % select
 
-    if page['last']:
-        where = env.mogrify(where + ' AND created < %s', [page['last']])
+    i = env.sql('''
+    SELECT count(distinct thrid) FROM emails e JOIN {} ON e.id = ids.id
+    '''.format(select))
+    count = i.fetchone()[0]
 
     i = env.sql('''
     WITH
     thread_ids AS (
-        SELECT thrid, max(time)
-        FROM emails
-        WHERE {where}
+        SELECT thrid, max(ids.sort) AS sort
+        FROM emails e
+        JOIN {select} ON e.id = ids.id
         GROUP BY thrid
         ORDER BY 2 DESC
         LIMIT {page[limit]} OFFSET {page[offset]}
     ),
-    threads  AS (
+    threads AS (
         SELECT
+            max(t.sort) AS sort,
             t.thrid,
             json_agg(e.labels) AS labels,
             array_agg(id) AS id_list,
@@ -472,25 +481,21 @@ def emails(env, page):
     SELECT
         id, t.thrid, subj, t.labels, time, fr, text, "to", cc, created,
         attachments, count, subj_list
-    FROM emails e
-    JOIN threads t ON e.thrid = t.thrid
-    WHERE id IN (
-        SELECT id FROM emails
-        WHERE id = ANY(t.id_list)
-        ORDER BY time DESC LIMIT 1
-    )
-    ORDER BY time DESC
-    '''.format(where=where, page=page))
+    FROM threads t
+    JOIN emails e ON e.thrid = t.thrid
+    WHERE id IN (SELECT unnest(t.id_list) ORDER BY 1 DESC LIMIT 1)
+    ORDER BY t.sort DESC
+    '''.format(select=select, page=page))
 
     def emails():
         for msg in i:
             base_subj = dict(msg["subj_list"])
             base_subj = base_subj[sorted(base_subj)[0]]
-            labels = sum(msg['labels'], [])
-            if label not in ('\\Pinned', '\\Unread'):
-                labels = list(set(labels) - {label})
             msg = dict(msg, **{
-                'labels': labels,
+                'labels': list(
+                    set(sum(msg['labels'], [])) -
+                    (set(labels) - {'\\Pinned', '\\Unread'})
+                ),
                 '_extra': {
                     'count': msg['count'] > 1 and msg['count'],
                     'subj_human': f.humanize_subj(msg['subj'], base_subj)
@@ -498,11 +503,11 @@ def emails(env, page):
             })
             yield msg
 
-    sql = 'SELECT count(distinct thrid) FROM emails WHERE %s' % where
-    count = env.sql(sql).fetchone()[0]
-
     ctx = ctx_emails(env, emails(), threads=True)
     ctx['count'] = count
+    ctx['threads'] = True
+    ctx['header'] = ctx_header(env, q, labels)
+    ctx['search_query'] = q
     ctx['next'] = page['count'] < count and {'url': env.url(
         env.request.path,
         dict(
@@ -511,47 +516,6 @@ def emails(env, page):
             page=page['next']
         )
     )}
-    ctx['header'] = ctx_header(env, subj, label and [label])
-    ctx['threads'] = True
-    return ctx
-
-
-@login_required
-def search(env):
-    schema = v.parse({'+q': str})
-    q = schema.validate(env.request.args)['q']
-
-    if q.startswith('g: '):
-        # Gmail search
-        q = q[2:]
-        ids = syncer.search(env, env.email, q)[:env('ui_per_page')]
-        i = env.sql('''
-        SELECT
-            id, thrid, subj, labels, time, fr, "to", cc, text, created,
-            html, attachments
-        FROM emails
-        WHERE id = ANY(%(ids)s)
-        ''', {'ids': ids})
-    else:
-        where = parse_query(env, q)
-        i = env.sql('''
-        WITH search(id) AS (
-            SELECT id
-            FROM emails
-            {where}
-        )
-        SELECT
-            e.id, thrid, subj, labels, time, fr, "to", cc, text, created,
-            html, attachments
-        FROM search s
-        JOIN emails e ON e.id = s.id
-        WHERE '\\All' = ANY(labels)
-        LIMIT {limit}
-        '''.format(where=where, limit=env('ui_per_page')))
-
-    ctx = ctx_emails(env, i)
-    ctx['header'] = ctx_header(env, 'Search by %r' % q)
-    ctx['search_query'] = q
     return ctx
 
 
@@ -823,7 +787,7 @@ def draft(env, thrid, action):
             draft(env, thrid, 'rm')
         syncer.sync_gmail(env, env.email, only=['\\All'], fast=1, force=1)
 
-        url = env.url_for('emails', {'in': '\\Sent'})
+        url = url_query(env, 'in', '\\Sent')
         if parent.get('thrid'):
             url = env.url_for('thread', {'id': parent['thrid']})
         return {'url': url}

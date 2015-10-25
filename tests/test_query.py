@@ -4,37 +4,82 @@ from core.views import parse_query
 
 
 @mark.parametrize('query, expected', [
-    ('', ''),
-    ('subj:Test%', "WHERE subj LIKE 'Test%'"),
-    ('subj:"Test subj"', "WHERE subj LIKE 'Test subj'"),
-    ('in:\\Inbox', "WHERE labels @> ARRAY['\\Inbox']::varchar[]"),
-    ('in:\\Inbox,\\Unread', (
-        "WHERE labels @> ARRAY['\\Inbox', '\\Unread']::varchar[]"
+    ('', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
     )),
-    ('in:\\Inbox subj:"Test subj"', (
-        "WHERE labels @> ARRAY['\\Inbox']::varchar[] AND subj LIKE 'Test subj'"
+    ('subj:Test%', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE subj LIKE 'Test%' AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
+    )),
+    ('subj:"Test subj"', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE subj LIKE 'Test subj' AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
+    )),
+    ('in:\\Inbox', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE labels @> ARRAY['\\Inbox']::varchar[]",
+        ['\\Inbox']
+    )),
+    ('in:"\\Inbox"', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE labels @> ARRAY['\\Inbox']::varchar[]",
+        ['\\Inbox']
+    )),
+    ('in:\\Spam', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE labels @> ARRAY['\\Spam']::varchar[]",
+        ['\\Spam']
+    )),
+    ('in:\\Inbox,\\Unread', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE labels @> ARRAY['\\Inbox', '\\Unread']::varchar[]",
+        ['\\Inbox', '\\Unread']
+    )),
+    ('in:\\Inbox subj:"Test 1"', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE subj LIKE 'Test 1' AND labels @> ARRAY['\\Inbox']::varchar[]",
+        ['\\Inbox']
     )),
     ('from:user@test.com', (
-        "WHERE array_to_string(fr, ',') LIKE '%<user@test.com>%'"
+        "SELECT id, id AS sort FROM emails"
+        " WHERE array_to_string(fr, ',') LIKE '%<user@test.com>%'"
+        " AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
     )),
     ('to:user@test.com', (
-        "WHERE array_to_string(\"to\" || cc, ',') LIKE '%<user@test.com>%'"
+        "SELECT id, id AS sort FROM emails"
+        " WHERE array_to_string(\"to\" || cc, ',') LIKE '%<user@test.com>%'"
+        " AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
     )),
     ('person:q@test.com', (
-        "WHERE array_to_string(\"to\" || cc || fr, ',') LIKE '%<q@test.com>%'"
+        "SELECT id, id AS sort FROM emails"
+        " WHERE array_to_string(\"to\" || cc || fr, ',') LIKE '%<q@test.com>%'"
+        " AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
     )),
     ('test', (
-        "WHERE search @@ (plainto_tsquery('simple', 'test'))"
-        " ORDER BY ts_rank(search, plainto_tsquery('simple', 'test')) DESC"
+        "SELECT id, ts_rank(search, plainto_tsquery('simple', 'test')) AS sort"
+        " FROM emails"
+        " WHERE search @@ (plainto_tsquery('simple', 'test'))"
+        " AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
     )),
-    ('t1 subj:Test t2', (
-        "WHERE subj LIKE 'Test'"
-        " AND search @@ (plainto_tsquery('simple', 't1 t2'))"
-        " ORDER BY ts_rank(search, plainto_tsquery('simple', 't1 t2')) DESC"
+    ('t subj:Test t2', (
+        "SELECT id, ts_rank(search, plainto_tsquery('simple', 't t2')) AS sort"
+        " FROM emails"
+        " WHERE subj LIKE 'Test'"
+        " AND search @@ (plainto_tsquery('simple', 't t2'))"
+        " AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
     )),
 ])
 def test_parsing(env, query, expected):
-    result = parse_query(env, query)
+    result = parse_query(env, query, {'last': None})
     assert result == expected
 
-    env.sql('SELECT id FROM emails %s' % result).fetchone()
+    env.sql('{} ORDER BY sort'.format(result[0])).fetchone()
