@@ -705,7 +705,7 @@ def compose(env, id=None):
                 ctx['quote'] = re.sub(parent_url, asset['url'], quote)
 
     ctx['links'] = {
-        a: env.url_for('draft', {'thrid': str(thrid) or 'new', 'action': a})
+        a: env.url_for('draft', {'thrid': str(thrid or 'new'), 'action': a})
         for a in ('preview', 'rm', 'send', 'upload')
     }
     return ctx
@@ -765,7 +765,7 @@ def draft(env, thrid, action):
             '+fr': Email,
             '+subj': str,
             '+body': str,
-            'id': str,
+            'id': v.Nullable(str),
             'quote': v.Nullable(str, ''),
         })
         msg = schema.validate(env.request.json)

@@ -1,8 +1,8 @@
 <div class="header">
     <h3>{{header.title}}</h3>
 </div>
-<div v-if="hide">Sending...</div>
-<form class="compose" v-if="!hide">
+<form class="compose">
+    <div v-if="hide" class="compose-hide"></div>
     <input name="fr" v-model="fr" type="text" placeholder="From" required>
     <div class="compose-to">
         <input name="to" type="text" placeholder="To" required>

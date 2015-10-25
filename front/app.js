@@ -727,9 +727,6 @@ let Compose = Component.extend({
                 error: (err => {
                     error(err);
                     this.$data.hide = false;
-                    setTimeout(() => {
-                        $('.compose-body')[0].scrollIntoView(true);
-                    }, 500);
                 })
             });
         }

@@ -341,6 +341,7 @@ body {
 }
 .compose {
     padding: 10px;
+    position: relative;
 
     input[type="text"] {
         .mix_input;
@@ -374,6 +375,21 @@ body {
             margin-bottom: -1px;
         }
     }
+    .compose-hide {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-color:rgba(0, 0, 0, 0.85);
+        &:after {
+            content: 'Sending...';
+            color: #fff;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+    }
 }
 .slides {
     position: fixed;
@@ -382,7 +398,7 @@ body {
     bottom: 0;
     left: 0;
     z-index: 10;
-    background-color:rgba(0, 0, 0, 0.85);
+    background-color:rgba(0, 0, 0, 0.65);
     padding: 30px 20px;
     color: #fff;
     text-align: center;
