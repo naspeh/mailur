@@ -358,7 +358,6 @@ def ctx_header(env, title, labels=None):
     labels = {
         'items': ctx_labels(env, labels),
         'all': ctx_all_labels(env),
-        'base_url': url_query(env, 'in', ''),
     }
     return {
         'title': title,

@@ -468,10 +468,7 @@ let Emails = Component.extend({
         getLabels(names) {
             let result = [];
             for (let i of names) {
-                result.push({
-                    name: i,
-                    url: `${this.header.labels.base_url}"${i}"`
-                });
+                result.push({name: i, url: '/emails/?q=in:' + escapeQuery(i)});
             }
             return result;
         },
@@ -751,8 +748,11 @@ function toggle(el, state) {
     }
     el.style.display = state ? '' : 'none';
 }
+function escapeQuery(v) {
+    return v.indexOf(' ') == -1 ? v : '"' + v + '"';
+}
 function goToLabel(label) {
-    go(`/emails/?q=in:${label}`);
+    go('/emails/?q=in:' + escapeQuery(label));
 }
 function filterEmails(condition) {
     if (view.constructor != Emails || view.thread) return;
