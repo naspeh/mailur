@@ -665,7 +665,6 @@ def compose(env, id=None):
             fr = parent['fr'][0]
         else:
             to = parent['reply_to'] or parent['fr']
-            to += [a for a in parent['to'] if f.get_addr(a) != env.email]
             fr = [a for a in parent['to'] if f.get_addr(a) == env.email]
             fr = fr[0] if fr else env.email
 
@@ -674,6 +673,7 @@ def compose(env, id=None):
             to = []
         elif args.get('target') == 'all':
             to += parent['cc']
+            to += [a for a in parent['to'] if f.get_addr(a) != env.email]
 
         ctx.update({
             'fr': fr,
