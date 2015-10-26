@@ -504,13 +504,17 @@ let Emails = Component.extend({
             this.labels = this.getLabelsByPicked();
         },
         details(e) {
-            if(e) e.preventDefault();
+            e.preventDefault();
             let body = e.targetVM.$data.body;
             body.details = !body.details;
         },
-        getOrGo(e) {
+        getOrGo(e, details) {
             e.preventDefault();
             let ctx = e.targetVM;
+            if (details && ctx.body.show && !ctx.body.details) {
+                ctx.body.details = true;
+                return;
+            }
             if (ctx.body_url) {
                 if (ctx.body) {
                     ctx.body.show = !ctx.body.show;
@@ -523,7 +527,6 @@ let Emails = Component.extend({
             } else {
                 go(ctx.thread_url);
             }
-            return false;
         },
         pin(e) {
             let email = e.targetVM.$data,
@@ -563,6 +566,18 @@ let Emails = Component.extend({
         },
         extract(e) {
             this.newThread({action: 'new', ids: [e.targetVM.id]});
+        },
+        unreadFromHere(e) {
+            e.preventDefault();
+
+            let ids = [];
+            for (let v of this.emails.items) {
+                if (v.id < e.targetVM.id) {
+                    continue;
+                }
+                ids.push(v.id);
+            }
+            mark({action: '+', name: '\\Unread', ids: ids}, () => {});
         },
         delete(e) {
             mark({action: '+', name: '\\Trash', ids: [e.targetVM.id]});
