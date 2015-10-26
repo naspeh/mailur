@@ -267,7 +267,7 @@ let Sidebar = Component.extend({
             });
         },
         initData(data) {
-            data.$set('search_query', '');
+            data.$set('search_query', this.search_query || '');
             data.$set('errors', []);
             return data;
         },
