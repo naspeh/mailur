@@ -33,8 +33,8 @@
         <li v-if="draft" class="email-draft">Draft</li>
         <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
         <li class="email-pick"><input v-on="change: pick($data)" v-model="checked" type="checkbox" class="mousetrap"></li>
-        <li class="email-pic" v-style="'background-image:url(' + fr.image + ')'"></li>
-        <li class="email-from" title="{{fr.full}}">{{fr.short}}</li>
+        <li class="email-pic" v-on="click: getOrGo" v-style="'background-image:url(' + fr.image + ')'"></li>
+        <li class="email-from" v-on="click: getOrGo" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">
             <a v-repeat="getLabels(labels)" href="{{url}}" v-on="click: go" class="label">{{name}}</a>
         </li>
