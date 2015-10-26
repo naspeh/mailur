@@ -77,6 +77,12 @@ from core.views import parse_query
         " AND labels @> ARRAY['\\All']::varchar[]",
         ['\\All']
     )),
+    ('show:few', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE labels && ARRAY['\\Unread', '\\Pinned']::varchar[]"
+        " AND labels @> ARRAY['\\All']::varchar[]",
+        ['\\All']
+    )),
 ])
 def test_parsing(env, query, expected):
     result = parse_query(env, query, {'last': None})

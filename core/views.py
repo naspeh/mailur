@@ -14,7 +14,6 @@ rules = [
     Rule('/gmail/', endpoint='gmail_connect'),
     Rule('/gmail/callback/', endpoint='gmail_callback'),
     Rule('/info/', endpoint='info'),
-    Rule('/init/', endpoint='init'),
     Rule('/pwd/', endpoint='reset_password'),
     Rule('/pwd/<username>/<token>/', endpoint='reset_password'),
     Rule('/labels/', endpoint='labels'),
@@ -184,11 +183,11 @@ def parse_query(env, query, page):
         for name, value in obj.groupdict().items():
             if not value:
                 continue
+            sql = ''
             if name == 'labels':
                 value = value.strip('"')
                 value = value.split(',')
                 labels.extend(value)
-                sql = ''
             elif name == 'subj':
                 value = value.strip('"')
                 sql = 'subj LIKE %s'
@@ -201,6 +200,10 @@ def parse_query(env, query, page):
             elif name == 'person':
                 value = '%<{}>%'.format(value)
                 sql = "array_to_string(\"to\" || cc || fr, ',') LIKE %s"
+            elif name == 'show':
+                if value == 'few':
+                    few = ['\\Unread', '\\Pinned']
+                    where.append(env.mogrify('labels && %s::varchar[]', [few]))
 
             if sql:
                 where.append(env.mogrify(sql, [value]))
@@ -217,6 +220,8 @@ def parse_query(env, query, page):
         r'to:(?P<to>[^ ]*)'
         r'|'
         r'person:(?P<person>[^ ]*)'
+        r'|'
+        r'show:(?P<show>few)'
         r')'
     )
     q = re.sub(pattern, replace, query)
@@ -449,6 +454,13 @@ def emails(env, page):
         select, labels = parse_query(env, q, page)
         select = '(%s) AS ids' % select
 
+    ctx = threads(env, select, labels, page)
+    ctx['header'] = ctx_header(env, q, labels)
+    ctx['search_query'] = q
+    return ctx
+
+
+def threads(env, select, labels, page):
     i = env.sql('''
     SELECT count(distinct thrid) FROM emails e JOIN {} ON e.id = ids.id
     '''.format(select))
@@ -504,8 +516,6 @@ def emails(env, page):
     ctx = ctx_emails(env, emails(), threads=True)
     ctx['count'] = count
     ctx['threads'] = True
-    ctx['header'] = ctx_header(env, q, labels)
-    ctx['search_query'] = q
     ctx['next'] = page['count'] < count and {'url': env.url(
         env.request.path,
         dict(
