@@ -32,7 +32,7 @@ from core.views import parse_query
     ('in:\\Inbox', (
         "SELECT id, id AS sort FROM emails"
         " WHERE labels @> ARRAY['\\Inbox']::varchar[]",
-        {'few': True, 'labels': ['\\Inbox']}
+        {'few': False, 'labels': ['\\Inbox']}
     )),
     ('in:"test box"', (
         "SELECT id, id AS sort FROM emails"
@@ -89,6 +89,21 @@ from core.views import parse_query
     )),
 ])
 def test_parsing(env, query, expected):
+    result = parse_query(env, query)
+    assert result == expected
+
+    env.sql('{} ORDER BY sort'.format(result[0])).fetchone()
+
+
+@mark.parametrize('query, expected', [
+    ('in:\\Inbox', (
+        "SELECT id, id AS sort FROM emails"
+        " WHERE labels @> ARRAY['\\Inbox']::varchar[]",
+        {'few': True, 'labels': ['\\Inbox']}
+    )),
+])
+def test_inbox_few(env, query, expected):
+    env.conf['ui_inbox_few'] = True
     result = parse_query(env, query)
     assert result == expected
 

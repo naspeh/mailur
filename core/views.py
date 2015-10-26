@@ -183,6 +183,7 @@ def parse_query(env, query, page=None):
         for name, value in obj.groupdict().items():
             if not value:
                 continue
+
             sql = ''
             if name == 'labels':
                 value = value.strip('"')
@@ -238,7 +239,10 @@ def parse_query(env, query, page=None):
         fields = 'id, ts_rank(search, %s) AS sort' % tsq
 
     if ctx['few'] is None:
-        ctx['few'] = not where and ctx['labels'] == ['\\Inbox']
+        ctx['few'] = (
+            env('ui_inbox_few')
+            and not where and ctx['labels'] == ['\\Inbox']
+        )
 
     labels = set(ctx['labels'])
     labels = sorted(
