@@ -584,7 +584,6 @@ def update_thrids(env, folder=None, manual=True, commit=True):
 
         if thrid is None and row['fr'] and row['to']:
             fr = get_addr(row['sender'][0] if row['sender'] else row['fr'][0])
-            to = get_addr(row['to'][0])
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
@@ -592,13 +591,13 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 AND id < %(id)s
                 AND subj LIKE %(subj)s
                 AND array_to_string(sender || fr || "to", ',') LIKE %(fr)s
-                AND array_to_string(sender || fr || "to", ',') LIKE %(to)s
+                AND (sender || fr || "to") && %(to)s
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{
                 'subj': '%{}'.format(humanize_subj(row['subj'])),
                 'fr': '%<{}>%'.format(fr),
-                'to': '%<{}>%'.format(to),
+                'to': row['to'],
                 'id': row['id']
             })).fetchall()
             if parent:

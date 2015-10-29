@@ -142,6 +142,7 @@ def info(env):
 
 @login_required
 def labels(env):
+    # TODO: count message from thread without particular label
     i = env.sql('''
     WITH labels(name) AS (SELECT DISTINCT unnest(labels) FROM emails)
     SELECT l.name, count(e.id) AS unread FROM labels l
@@ -177,7 +178,7 @@ def url_query(env, name, value):
 
 
 def parse_query(env, query, page=None):
-    where, ctx = [], {'labels': [], 'few': None}
+    where, ctx = [], {'labels': []}
 
     def replace(obj):
         for name, value in obj.groupdict().items():
@@ -201,8 +202,6 @@ def parse_query(env, query, page=None):
             elif name == 'person':
                 value = '%<{}>%'.format(value)
                 sql = "array_to_string(\"to\" || cc || fr, ',') LIKE %s"
-            elif name == 'show':
-                ctx['few'] = value == 'few'
 
             if sql:
                 where.append(env.mogrify(sql, [value]))
@@ -219,14 +218,12 @@ def parse_query(env, query, page=None):
         r'to:(?P<to>[^ ]*)'
         r'|'
         r'person:(?P<person>[^ ]*)'
-        r'|'
-        r'show:(?P<show>few|all)'
         r')'
     )
     q = re.sub(pattern, replace, query)
     q = re.sub('[ ]+', ' ', q)
 
-    fields = 'id, id AS sort'
+    fields = 'id'
     if q.strip():
         tsq = []
         for lang in env('search_lang'):
@@ -237,12 +234,7 @@ def parse_query(env, query, page=None):
         tsq = ' || '.join(tsq)
         where.append('search @@ (%s)' % tsq)
         fields = 'id, ts_rank(search, %s) AS sort' % tsq
-
-    if ctx['few'] is None:
-        ctx['few'] = (
-            env('ui_inbox_few')
-            and not where and ctx['labels'] == ['\\Inbox']
-        )
+        ctx['order_by'] = 'sort'
 
     labels = set(ctx['labels'])
     labels = sorted(
@@ -451,13 +443,13 @@ def thread(env, id):
 def emails(env, page):
     schema = v.parse({'q': v.Nullable(str, '')})
     q = schema.validate(env.request.args)['q']
-    ctx = {'labels': ['\\All'], 'few': False}
+    ctx = {'labels': ['\\All']}
     if q.startswith('g! '):
         # Gmail search
         ids = syncer.search(env, env.email, q[3:])
         select_ids = env.mogrify('''
-        (SELECT * FROM unnest(%s::bigint[][]) WITH ORDINALITY) AS ids(id, sort)
-        ''', [list(reversed(ids))])
+        (SELECT * FROM unnest(%s::bigint[][])) AS ids(id)
+        ''', [ids])
     else:
         select_ids, ctx = parse_query(env, q, page)
         select_ids = '(%s) AS ids' % select_ids
@@ -474,16 +466,10 @@ def threads(env, select_ids, ctx, page):
     '''.format(select_ids))
     count = i.fetchone()[0]
 
-    where = ''
-    if ctx['few']:
-        where = env.mogrify('''
-        WHERE e.labels && %s::varchar[]
-        ''', [['\\Unread', '\\Pinned']])
-
     i = env.sql('''
     WITH
     thread_ids AS (
-        SELECT thrid, max(ids.sort) AS sort
+        SELECT thrid, max(ids.{order_by}) AS sort
         FROM emails e
         JOIN {select_ids} ON e.id = ids.id
         GROUP BY thrid
@@ -498,7 +484,6 @@ def threads(env, select_ids, ctx, page):
             json_object_agg(e.time, e.subj) AS subj_list
         FROM thread_ids t
         JOIN emails e ON e.thrid = t.thrid
-        {where}
         GROUP BY t.thrid
         ORDER BY 1 DESC
         LIMIT {page[limit]} OFFSET {page[offset]}
@@ -510,7 +495,11 @@ def threads(env, select_ids, ctx, page):
     JOIN emails e ON e.thrid = t.thrid
     WHERE id IN (SELECT unnest(t.id_list) ORDER BY 1 DESC LIMIT 1)
     ORDER BY t.sort DESC
-    '''.format(select_ids=select_ids, page=page, where=where))
+    '''.format(
+        select_ids=select_ids,
+        page=page,
+        order_by=ctx.get('order_by', 'id')
+    ))
 
     def emails():
         for msg in i:
