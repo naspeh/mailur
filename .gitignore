@@ -1,5 +1,6 @@
 *.pyc
 conf.json
+/deploy/authorized_keys
 /deploy/nginx-site.conf
 /attachments
 /node_modules

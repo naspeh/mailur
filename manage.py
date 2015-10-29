@@ -18,7 +18,7 @@ def sh(cmd):
     return 0
 
 
-def reqs(dev=False, clear=False):
+def reqs(target='newest', clear=False):
     requirements = (
         'Werkzeug '
         'aiohttp '
@@ -38,7 +38,10 @@ def reqs(dev=False, clear=False):
     requirements += (
         'pytest '
         'ptpdb '
-    ) if dev else ''
+    ) if target == 'dev' else ''
+
+    if target == 'frozen':
+        requirements = '-r requirements.txt'
 
     sh('[ -d "$VIRTUAL_ENV" ] || (echo "ERROR: no virtualenv" && exit 1)')
     sh(
@@ -52,7 +55,8 @@ def reqs(dev=False, clear=False):
         'pip install --no-index -f ../wheels {requirements}'
         .format(requirements=requirements)
     )
-    not dev and sh('pip freeze | sort > requirements.txt')
+    if target == 'newest':
+        sh('pip freeze | sort > requirements.txt')
 
 
 def front(env, force=False, clean=False):
@@ -276,23 +280,35 @@ def deploy(opts):
 
     if opts['docker']:
         sh('''
-        r="$(docker inspect --format='{{{{ .State.Running }}}}' mailur)"
+        r="$(docker inspect --format='{{{{ .State.Running }}}}' {tag})"
         ([ "true" == "$r" ] || (
-            docker run -d --net=host --name=mailur \
+            docker run -d --net=host --name={tag} \
+                --restart={restart} \
                 -v {cwd}:{path[src]} \
                 -v {cwd}/../attachments:{path[attachments]} \
                 -v {cwd}/../pgdata:{path[pgdata]} \
                 -v {cwd}/../log:{path[log]} \
-                {docker_image} \
+                {image} \
             &&
-            docker exec -i mailur \
-                /bin/bash -c "cat >> /root/.ssh/authorized_keys" \
-                < ~/.ssh/id_rsa.pub
             sleep 5
         ))
-        '''.format(docker_image=opts['docker_image'], **ctx))
+        '''.format(
+            image=opts['docker_image'],
+            tag=opts['docker_tag'],
+            restart=opts['docker_restart'],
+            **ctx
+        ))
 
     cmd = []
+    if opts['keys']:
+        cmd.append(
+            '[ -f {keys} ] || (echo "ERROR: no authorized_keys" && exit 1) &&'
+            'rsync -v {keys} /root/.ssh/authorized_keys &&'
+            'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys &&'
+            '/home/dockerfiles/manage.py general'
+            .format(keys='%s/deploy/authorized_keys' % ctx['path']['src'])
+        )
+
     if opts['pkgs']:
         cmd.append(
             'pacman --noconfirm -Sy'
@@ -306,26 +322,17 @@ def deploy(opts):
             '   npm'
         )
 
-    if opts['dot']:
-        cmd.append('''
-        pacman --noconfirm -Sy python-requests &&
-        ([ -d {path[dotfiles]} ] || mkdir {path[dotfiles]}) &&
-        cd {path[dotfiles]} &&
-        ([ -d .git ] || git clone https://github.com/naspeh/dotfiles.git .) &&
-        git pull && ./manage.py init --boot vim zsh bin
-        ''')
-
     cmd.append('''
     ([ -d {path[src]} ] || (
        git clone https://github.com/naspeh/mailur.git {path[src]}
     )) &&
     cd {path[src]} && git pull;
     ([ -d {path[attachments]} ] || mkdir {path[attachments]}) &&
-    chown http:http {path[attachments]}
+    chown http:http {path[attachments]} &&
     rsync -vL {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
-    cat /etc/fcrontab/* | fcrontab - &&
+    cat /etc/fcrontab/* | fcrontab -
     ''')
 
     if opts['env']:
@@ -334,7 +341,7 @@ def deploy(opts):
             mkdir -p {path[env]} && virtualenv {path[env]}
         )) &&
         ([ -d {path[wheels]} ] || mkdir -p {path[wheels]}) &&
-        {bin}pip install -f {path[wheels]} -r {path[src]}/requirements.txt &&
+        {manage} reqs -t frozen &&
         echo '../env' > .venv
         ''')
 
@@ -349,7 +356,8 @@ def deploy(opts):
             mkdir -m 0775 /run/postgresql &&
             chown postgres:postgres /run/postgresql
         )) &&
-        supervisorctl update && supervisorctl restart postgres &&
+        sleep 5 &&
+        supervisorctl update && supervisorctl restart postgres
         ''')
 
     cmd.append(
@@ -377,18 +385,20 @@ def get_base(argv):
         return p
 
     cmd('reqs', help='update python requirements')\
-        .arg('-d', '--dev', action='store_true')\
+        .arg('-t', '--target', choices=('dev', 'frozen'), default='newest')\
         .arg('-c', '--clear', action='store_true')\
-        .exe(lambda a: reqs(a.dev, a.clear))
+        .exe(lambda a: reqs(a.target, a.clear))
 
     cmd('deploy')\
         .arg('-s', '--ssh', default="root@localhost -p2200")\
-        .arg('--dot', action='store_true')\
         .arg('-c', '--docker', action='store_true')\
         .arg('-i', '--docker-image', default='naspeh/web')\
+        .arg('-t', '--docker-tag', default='mailur')\
+        .arg('-r', '--docker-restart', choices=('no', 'always'), default='no')\
         .arg('-e', '--env', action='store_true')\
         .arg('-p', '--pkgs', action='store_true')\
         .arg('-d', '--db', action='store_true')\
+        .arg('-k', '--keys', action='store_true')\
         .exe(lambda a: deploy(a.__dict__))
     return parser, cmd
 
