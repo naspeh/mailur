@@ -587,18 +587,18 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
-                %(folder)s = ANY(labels)
-                AND id < %(id)s
-                AND subj LIKE %(subj)s
-                AND array_to_string(sender || fr || "to", ',') LIKE %(fr)s
-                AND (sender || fr || "to") && %(to)s::varchar[]
+              %(folder)s = ANY(labels)
+              AND id < %(id)s
+              AND subj LIKE %(subj)s
+              AND array_to_string(sender || fr || "to" || cc, ',') LIKE %(fr)s
+              AND (sender || fr || "to" || cc) && %(to)s::varchar[]
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{
                 'subj': '%{}'.format(humanize_subj(row['subj'])),
                 'fr': '%<{}>%'.format(fr),
                 'to': row['to'],
-                'id': row['id']
+                'id': row['id'],
             })).fetchall()
             if parent:
                 thrid = parent[0]['thrid']
