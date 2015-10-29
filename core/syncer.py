@@ -517,7 +517,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
     )
     emails = env.sql('''
     SELECT
-        id, fr, sender, "to", subj, labels,
+        id, fr, sender, "to", cc, subj, labels,
         array_prepend(in_reply_to, refs) AS refs
     FROM emails WHERE thrid IS NULL AND {where} ORDER BY id
     '''.format(where=where)).fetchall()
@@ -597,7 +597,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             ''', dict(ctx, **{
                 'subj': '%{}'.format(humanize_subj(row['subj'])),
                 'fr': '%<{}>%'.format(fr),
-                'to': row['to'],
+                'to': row['to'] + row['cc'],
                 'id': row['id'],
             })).fetchall()
             if parent:
