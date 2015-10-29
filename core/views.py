@@ -570,7 +570,7 @@ def body(env, id):
             msg['embedded'] = parsed['embedded']
             msgs = [
                 parse(p['raw'], p['id'])['html']
-                for p in i if p['id'] <= msg['parent']
+                for p in i if msg['parent'] and p['id'] <= msg['parent']
             ]
             msg['_extra'] = {
                 'body': ctx_body(env, msg, msgs, show=True),
