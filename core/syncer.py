@@ -591,7 +591,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 AND id < %(id)s
                 AND subj LIKE %(subj)s
                 AND array_to_string(sender || fr || "to", ',') LIKE %(fr)s
-                AND (sender || fr || "to") && %(to)s
+                AND (sender || fr || "to") && %(to)s::varchar[]
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{

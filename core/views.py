@@ -466,17 +466,19 @@ def threads(env, select_ids, ctx, page):
     '''.format(select_ids))
     count = i.fetchone()[0]
 
+    # Use ts_rank when fulltext search
+    # order_by = ctx.get('order_by', 'id')
     i = env.sql('''
     WITH
     thread_ids AS (
-        SELECT thrid, max(ids.{order_by}) AS sort
+        SELECT thrid
         FROM emails e
         JOIN {select_ids} ON e.id = ids.id
         GROUP BY thrid
     ),
     threads AS (
         SELECT
-            max(t.sort) AS sort,
+            max(id) AS max_id,
             t.thrid,
             json_agg(e.labels) AS labels,
             array_agg(id) AS id_list,
@@ -494,7 +496,7 @@ def threads(env, select_ids, ctx, page):
     FROM threads t
     JOIN emails e ON e.thrid = t.thrid
     WHERE id IN (SELECT unnest(t.id_list) ORDER BY 1 DESC LIMIT 1)
-    ORDER BY t.sort DESC
+    ORDER BY t.max_id DESC
     '''.format(
         select_ids=select_ids,
         page=page,
