@@ -47,7 +47,7 @@ def reqs(target='newest', clear=False):
     sh(
         (
             'rm -rf $VIRTUAL_ENV && virtualenv $VIRTUAL_ENV && '
-            if clear else ''
+            if clear or target == 'newest' else ''
         ) +
         'pip install -U wheel && '
         'pip wheel -w ../wheels/ -f ../wheels/ {requirements} &&'
