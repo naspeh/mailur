@@ -525,7 +525,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
 
     t, updated = Timer(), []
     for row in emails:
-        thrid = parent = None
+        thrid = pid = None
         refs = [r for r in row['refs'] if r]
         ctx = {'folder': folder or (set(FOLDERS) & set(row['labels'])).pop()}
 
@@ -533,15 +533,14 @@ def update_thrids(env, folder=None, manual=True, commit=True):
         if manual and m_label:
             # Manual thread
             extid = m_label.pop().replace('%s/' % THRID, '')
-            parent = env.sql('''
+            thrid = env.sql('''
             SELECT id FROM emails
             WHERE extid=%(extid)s AND %(folder)s = ANY(labels)
-            ''', dict(ctx, extid=extid)).fetchall()
-            if parent:
-                thrid = parent[0][0]
-                parent = thrid
+            ''', dict(ctx, extid=extid)).fetchone()
+            if thrid:
+                thrid = thrid[0]
 
-        elif row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
+        if not pid and row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
             # Failed delivery
             text = env.sql('SELECT text FROM emails WHERE id=%s', [row['id']])
             text = text.fetchone()[0]
@@ -555,12 +554,12 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                     AND msgid=%(msgid)s
                 ORDER BY id DESC
                 LIMIT 1
-                ''', dict(ctx, msgid=msgid)).fetchall()
+                ''', dict(ctx, msgid=msgid)).fetchone()
                 if parent:
-                    thrid = parent[0]['thrid']
-                    parent = parent[0]['id']
+                    thrid = thrid or parent['thrid']
+                    pid = parent['id']
 
-        if not thrid and refs:
+        if not pid and refs:
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
@@ -568,7 +567,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 AND msgid = %(ref)s
             ORDER BY id DESC
             LIMIT 1
-            ''', dict(ctx, ref=refs[0])).fetchall()
+            ''', dict(ctx, ref=refs[0])).fetchone()
             if not parent and refs:
                 parent = env.sql('''
                 SELECT id, thrid FROM emails
@@ -577,12 +576,12 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                     AND msgid = ANY(%(refs)s::varchar[])
                 ORDER BY id DESC
                 LIMIT 1
-                ''', dict(ctx, refs=refs[1:])).fetchall()
+                ''', dict(ctx, refs=refs[1:])).fetchone()
             if parent:
-                thrid = parent[0]['thrid']
-                parent = parent[0]['id']
+                thrid = thrid or parent['thrid']
+                pid = parent['id']
 
-        if thrid is None and row['fr'] and row['to']:
+        if not pid and row['fr'] and row['to']:
             fr = row['sender'][0] if row['sender'] else row['fr'][0]
             fr = parseaddr(fr)[1]
             parent = env.sql('''
@@ -600,14 +599,14 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 'fr': '%<{}>%'.format(fr),
                 'to': row['to'] + row['cc'],
                 'id': row['id'],
-            })).fetchall()
+            })).fetchone()
             if parent:
-                thrid = parent[0]['thrid']
-                parent = parent[0]['id']
+                thrid = thrid or parent['thrid']
+                pid = parent['id']
 
         updates = {
             'thrid': thrid if thrid else row['id'],
-            'parent': parent if parent else None
+            'parent': pid
         }
         env.emails.update(updates, 'id=%s', [row['id']])
         updated.append(row['id'])
