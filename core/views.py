@@ -371,7 +371,7 @@ def ctx_header(env, title, labels=None):
 
 
 def ctx_body(env, msg, msgs, show=False):
-    if msgs and isinstance(msgs[0], dict):
+    if msgs and not isinstance(msgs[0], str):
         msgs = (m['html'] for m in msgs if m['id'] <= msg['parent'])
     if not show and '\\Unread' not in msg['labels']:
         return False
@@ -541,37 +541,42 @@ def body(env, id):
     row = env.sql('''
     SELECT
         id, thrid, subj, labels, time, fr, "to", cc, text, created,
-        raw, attachments, parent
+        html, raw, attachments, parent
     FROM emails WHERE id=%s LIMIT 1
     ''', [id]).fetchone()
     if not row:
         return env.abort(404)
 
     i = env.sql('''
-    SELECT id, raw, labels FROM emails
-    WHERE thrid=%s AND id!=%s AND time<%s
+    SELECT id, raw, html FROM emails
+    WHERE thrid=%s AND id!=%s AND id<=%s
     ORDER BY time DESC
-    ''', [row['thrid'], id, row['time']])
+    ''', [row['thrid'], id, row['parent']])
 
     def emails():
         for msg in [row]:
             if not msg['raw']:
                 continue
 
-            parsed = parse(msg['raw'], msg['id'])
-            msg = dict(msg)
-            msg['html'] = (
-                parser.text2html(parsed['text'])
-                if env.request.args.get('text') else
-                parsed['html']
-            )
-            msg['text'] = parsed['text']
-            msg['attachments'] = parsed['attachments']
-            msg['embedded'] = parsed['embedded']
-            msgs = [
-                parse(p['raw'], p['id'])['html']
-                for p in i if msg['parent'] and p['id'] <= msg['parent']
-            ]
+            if env.request.args.get('parse'):
+                parsed = parse(msg['raw'], msg['id'])
+                msg = dict(msg)
+                msg['html'] = (
+                    parser.text2html(parsed['text'])
+                    if env.request.args.get('text') else
+                    parsed['html']
+                )
+                msg['text'] = parsed['text']
+                msg['attachments'] = parsed['attachments']
+                msg['embedded'] = parsed['embedded']
+                msgs = [
+                    parse(p['raw'], p['id'])['html']
+                    for p in i if msg['parent'] and p['id'] <= msg['parent']
+                ]
+            else:
+                msg = dict(msg)
+                msgs = i.fetchall()
+
             msg['_extra'] = {
                 'body': ctx_body(env, msg, msgs, show=True),
                 'labels': ctx_labels(env, msg['labels'])

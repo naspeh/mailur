@@ -92,6 +92,28 @@ def decode_date(text, *args):
     return tm
 
 
+def clean_html(htm):
+    htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
+    if not htm:
+        return ''
+
+    cleaner = Cleaner(
+        links=False,
+        safe_attrs_only=False,
+        kill_tags=['head', 'style'],
+        remove_tags=['html', 'base']
+    )
+    htm = lh.fromstring(htm)
+    htm = cleaner.clean_html(htm)
+
+    body = htm.xpath('//body')
+    if body:
+        # Replace body tag with div and clean styles
+        body[0].tag = 'div'
+        body[0].attrib['style'] = ''
+    return lh.tostring(htm, encoding='utf-8').decode()
+
+
 def parse_part(env, part, msg_id, inner=False):
     content = OrderedDict([
         ('files', []),
@@ -146,6 +168,7 @@ def parse_part(env, part, msg_id, inner=False):
         }
         content['files'] += [attachment]
 
+    content['html'] = clean_html(content['html'])
     if inner:
         return content
 
@@ -166,25 +189,7 @@ def parse_part(env, part, msg_id, inner=False):
             env.files.write(path, item['payload'])
 
     if content['html']:
-        htm = re.sub(r'^\s*<\?xml.*?\?>', '', content['html']).strip()
-        if not htm:
-            content['html'] = ''
-            return content
-
-        cleaner = Cleaner(
-            links=False,
-            safe_attrs_only=False,
-            kill_tags=['head', 'style'],
-            remove_tags=['html', 'base']
-        )
-        htm = lh.fromstring(htm)
-        htm = cleaner.clean_html(htm)
-
-        body = htm.xpath('//body')
-        if body:
-            # Replace body tag with div and clean styles
-            body[0].tag = 'div'
-            body[0].attrib['style'] = ''
+        htm = lh.fromstring(content['html'])
 
         # Fix img[@src]
         embedded = dict(content['embedded'])
