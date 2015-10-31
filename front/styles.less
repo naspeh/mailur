@@ -200,6 +200,16 @@ body {
                 margin-right: 10px;
             }
         }
+        .email-addr {
+            margin-right: 5px;
+            &:after {
+                content: ",";
+                font-weight: bold;
+            }
+            &:last-child:after {
+                content: "";
+            }
+        }
     }
     .email-attachments {
         font-size: 80%;
