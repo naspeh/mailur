@@ -19,6 +19,10 @@ def get_addr(v):
     return parseaddr(v)[1]
 
 
+def equal_addr(v, expected):
+    return get_addr(v).lower() == expected.lower()
+
+
 def get_gravatar(addr, size=20, default='identicon'):
     params = urlencode((('d', default), ('s', size)))
     hash = md5(addr.strip().lower().encode()).hexdigest()
