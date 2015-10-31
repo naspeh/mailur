@@ -2,6 +2,7 @@ import re
 import time
 import uuid
 from contextlib import contextmanager
+from email.utils import parseaddr
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -10,7 +11,6 @@ import rapidjson as json
 import requests
 
 from . import imap_utf7, parser, log
-from .filters import humanize_subj, get_addr
 from .helpers import Timer, with_lock
 from .imap import Client
 
@@ -583,7 +583,8 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 parent = parent[0]['id']
 
         if thrid is None and row['fr'] and row['to']:
-            fr = get_addr(row['sender'][0] if row['sender'] else row['fr'][0])
+            fr = row['sender'][0] if row['sender'] else row['fr'][0]
+            fr = parseaddr(fr)[1]
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
@@ -595,7 +596,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{
-                'subj': '%{}'.format(humanize_subj(row['subj'])),
+                'subj': row['subj'],
                 'fr': '%<{}>%'.format(fr),
                 'to': row['to'] + row['cc'],
                 'id': row['id'],

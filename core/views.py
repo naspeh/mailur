@@ -1,5 +1,6 @@
 import functools as ft
 import re
+from email.utils import parseaddr
 
 import valideer as v
 from werkzeug.routing import Map, Rule
@@ -199,7 +200,7 @@ def parse_query(env, query, page=None):
             elif name == 'to':
                 value = '%<{}>%'.format(value)
                 sql = "array_to_string(\"to\" || cc, ',') LIKE %s"
-            elif name == 'person':
+            elif name == 'email':
                 value = '%<{}>%'.format(value)
                 sql = "array_to_string(\"to\" || cc || fr, ',') LIKE %s"
 
@@ -217,7 +218,7 @@ def parse_query(env, query, page=None):
         r'|'
         r'to:(?P<to>[^ ]*)'
         r'|'
-        r'person:(?P<person>[^ ]*)'
+        r'email:(?P<email>[^ ]*)'
         r')'
     )
     q = re.sub(pattern, replace, query)
@@ -307,12 +308,14 @@ def ctx_links(env, id, thrid=None, to=None):
     }
 
 
-def ctx_person(env, addr):
-    email = f.get_addr(addr)
+def ctx_person(env, contact):
+    name, email = parseaddr(contact)
     return {
-        'full': addr,
-        'short': f.format_addr(env, addr),
-        'url': url_query(env, 'person', email),
+        'full': contact,
+        'short': name if env('ui_use_names') else email,
+        'name': name,
+        'email': email,
+        'url': url_query(env, 'email', email),
         'image': f.get_gravatar(email, size=75),
     }
 
@@ -681,14 +684,11 @@ def compose(env, id=None):
             attachments, embedded
         FROM emails WHERE id=%s LIMIT 1
         ''', [id]).fetchone()
-        if f.equal_addr(parent['fr'][0], env.email):
+        if env.equal_email(parent['fr'][0]):
             to = parent['to']
         else:
             to = parent['reply_to'] or parent['fr']
-            fr = [
-                a for a in parent['to'] + parent['cc']
-                if f.equal_addr(a, env.email)
-            ]
+            fr = [a for a in parent['to'] + parent['cc'] if env.equal_email(a)]
             fr = fr[0] if fr else ctx['fr']
 
         forward = args.get('target') == 'forward'
@@ -696,7 +696,7 @@ def compose(env, id=None):
             to = []
         elif args.get('target') == 'all':
             to += parent['cc']
-            to += [a for a in parent['to'] if not f.equal_addr(a, env.email)]
+            to += [a for a in parent['to'] if not env.equal_email(a)]
 
         ctx.update({
             'fr': fr,

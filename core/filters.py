@@ -1,6 +1,5 @@
 import datetime as dt
 import re
-from email.utils import parseaddr
 from hashlib import md5
 from urllib.parse import urlencode
 
@@ -8,19 +7,6 @@ import lxml.html as lh
 import rapidjson as json
 from werkzeug.utils import secure_filename
 from unidecode import unidecode
-
-
-def format_addr(env, v):
-    v = parseaddr(v)
-    return v[0] if env('ui_use_names') else v[1]
-
-
-def get_addr(v):
-    return parseaddr(v)[1]
-
-
-def equal_addr(v, expected):
-    return get_addr(v).lower() == expected.lower()
 
 
 def get_gravatar(addr, size=20, default='identicon'):

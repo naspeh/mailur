@@ -5,6 +5,7 @@ import os
 import shutil
 import uuid
 from contextlib import contextmanager
+from email.utils import parseaddr
 from pathlib import Path
 
 import bcrypt
@@ -213,6 +214,10 @@ class Env:
     @cached_property
     def email(self):
         return self.storage.get('gmail_info', {}).get('email')
+
+    def equal_email(self, addr):
+        addr = parseaddr(addr)[1]
+        return addr.lower() == self.email.lower()
 
     @cached_property
     def token(self):

@@ -68,9 +68,18 @@
                 <img  v-attr="src: fr.image">
                 <ul>
                     <li>Subject: <a v-on="click: go" href="{{subj_url}}" title="Filter by subject">{{subj}}</a></li>
-                    <li>From: <a v-on="click: go" href="{{fr.url}}" title="Filter by person">{{fr.full}}</a></li>
-                    <li>To: <a v-repeat="to" v-on="click: go" href="{{url}}" title="Filter by person">{{full}}</a>&nbsp;</li>
-                    <li>Cc: <a v-repeat="cc" v-on="click: go" href="{{url}}" title="Filter by person">{{full}}</a>&nbsp;</li>
+                    <li>From:
+                        <b v-if="fr.name">{{fr.name}}</b>
+                        <a v-on="click: go" href="{{fr.url}}" title="Filter by email">{{fr.email}}</a>
+                    </li>
+                    <li>To: <template v-repeat="to">
+                        <b v-if="name">{{name}}</b>
+                        <a v-on="click: go" href="{{url}}" title="Filter by email">{{email}}</a>
+                    </template></li>
+                    <li>Cc: <template v-repeat="cc">
+                        <b v-if="name">{{name}}</b>
+                        <a v-on="click: go" href="{{url}}" title="Filter by email">{{email}}</a>
+                    </template></li>
                 </ul>
             </div>
         </div>
