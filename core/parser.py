@@ -109,8 +109,12 @@ def clean_html(htm):
     body = htm.xpath('//body')
     if body:
         # Replace body tag with div and clean styles
+        style = body[0].attrib.get('style')
+        if style:
+            style = style.replace(' ', '')
+            style = re.sub('(?<!min-)height:100%', 'min-height: 100%', style)
+            body[0].attrib['style'] = style
         body[0].tag = 'div'
-        body[0].attrib['style'] = ''
     return lh.tostring(htm, encoding='utf-8').decode()
 
 
