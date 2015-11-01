@@ -375,7 +375,10 @@ def ctx_header(env, title, labels=None):
 
 def ctx_body(env, msg, msgs, show=False):
     if msgs and not isinstance(msgs[0], str):
-        msgs = (m['html'] for m in msgs if m['id'] <= msg['parent'])
+        msgs = (
+            m['html'] for m in msgs
+            if msg['parent'] and m['id'] <= msg['parent']
+        )
     if not show and '\\Unread' not in msg['labels']:
         return False
     attachments = msg.get('attachments')
