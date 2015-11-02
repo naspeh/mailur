@@ -1,3 +1,50 @@
+<div v-class="header: 1, labels-show: labels_edit">
+    <form v-if="!labels_edit" class="search-form" v-on="submit: search">
+        <input type="text" v-model="search_query">
+        <button type="submit" class="search"></button>
+    </form>
+    <div class="labels">
+        <button type="submit" class="labels-b-search"></button>
+        <template v-repeat="header.buttons">
+        <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
+        </template>
+
+        <div class="labels-edit">
+        <a v-repeat="getLabels(labels)" v-on="click: go" href="{{url}}" class="label">
+            {{name}}
+            <span  v-on="click: mark('-', name, $event)" class="label-del" title="Delete"></span>
+        </a>
+        <button class="labels--edit" title="Edit labels"></button>
+        </div>
+        <div v-if="labels" class="labels-input">
+            <span><input/></span>
+            <button class="labels--ok"></button>
+            <button class="labels--cancel"></button>
+        </div>
+    </div>
+</div>
+<div class="nav-info">
+    <a href="#" v-on="click: showHelp" class="nav-help" title="Keyboard shortcut help"></a>
+    <a href="#" v-on="click: logout" class="nav-logout" title="Logout"></a>
+    <div v-if="username" class="nav-user">
+        {{username}}
+        (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
+    </div>
+    <img class="nav-pic" src="{{image}}">
+    <div v-if="last_sync" class="nav-last-sync">Last sync at {{last_sync}}</div>
+</div>
+<div class="sidebar">
+    <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
+    <template v-if="labels">
+    <ul class="labels">
+    <li v-repeat="labels.items">
+        <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
+            {{name}} <span v-if="unread" class="label-count">{{unread}}</span>
+        </a>
+    </li>
+    </ul>
+    </template>
+</div>
 <div v-if="show_help" class="help">
     <h3>
         Keyboard shortcuts
@@ -8,29 +55,4 @@
 <div v-if="errors.length" class="errors">
     <a v-on="click: closeErrors" class="errors-close" title="Close">X</a>
     <div v-repeat="errors" class="error">{{$value}}</div>
-</div>
-<div class="sidebar">
-    <b>
-        {{username}}
-        (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
-    </b>
-    <nav>
-        <a href="#" v-on="click: logout" class="logout" title="Logout"></a>
-        <a href="#" v-on="click: showHelp" class="help-toggle" title="Keyboard shortcut help"></a>
-        <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
-    </nav>
-    <template v-if="labels">
-    <form class="search-form" action="/search/" v-on="submit: search">
-        <input type="text" v-model="search_query">
-        <button type="submit" class="search"></button>
-    </form>
-    <ul class="labels">
-    <li v-repeat="labels.items">
-        <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
-            {{name}}<template v-if="unread"> ({{unread}})</template>
-        </a>
-    </li>
-    </ul>
-    </template>
-    <div v-if="last_sync" class="last-sync">Last sync at {{last_sync}}</div>
 </div>

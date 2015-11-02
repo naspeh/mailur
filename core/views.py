@@ -167,6 +167,7 @@ def ctx_init(env):
     return {
         'username': env.username,
         'email': env.email,
+        'image': f.get_gravatar(env.email),
         'last_sync': last_sync
     }
 
@@ -316,7 +317,7 @@ def ctx_person(env, contact):
         'name': name,
         'email': email,
         'url': url_query(env, 'email', email),
-        'image': f.get_gravatar(email, size=75),
+        'image': f.get_gravatar(email),
     }
 
 
@@ -461,7 +462,7 @@ def emails(env, page):
         select_ids = '(%s) AS ids' % select_ids
 
     res = threads(env, select_ids, ctx, page)
-    res['header'] = ctx_header(env, q, ctx['labels'])
+    res['header'] = ctx_header(env, '', ctx['labels'])
     res['search_query'] = q
     return res
 

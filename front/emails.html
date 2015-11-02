@@ -1,27 +1,5 @@
-<div v-class="thread: thread">
-
-<div v-class="header: 1, labels-show: labels_edit">
-    <h3>{{header.title}}</h3>
-    <div class="labels">
-        <template v-repeat="header.buttons">
-        <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
-        </template>
-
-        <div class="labels-edit">
-        <a v-repeat="getLabels(labels)" v-on="click: go" href="{{url}}" class="label">
-            {{name}}
-            <span  v-on="click: mark('-', name, $event)" class="label-del" title="Delete"></span>
-        </a>
-        <button class="labels--edit" title="Edit labels"></button>
-        </div>
-        <div v-if="labels" class="labels-input">
-            <span><input/></span>
-            <button class="labels--ok"></button>
-            <button class="labels--cancel"></button>
-        </div>
-    </div>
-</div>
-<ul v-if="emails" class="emails">
+<div v-if="header.title" class="title">{{header.title}}</div>
+<ul v-if="emails" v-class="emails: 1, thread: thread">
 <li v-repeat="emails.items" track-by="id" v-class="
         email: 1,
         email-show: body.show,
@@ -31,8 +9,8 @@
 >
     <ul class="email-line">
         <li v-if="draft" class="email-draft">Draft</li>
-        <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
         <li class="email-pick"><input v-on="change: pick($data)" v-model="checked" type="checkbox" class="mousetrap"></li>
+        <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
         <li class="email-pic" v-on="click: getOrGo($event, true)" v-style="'background-image:url(' + fr.image + ')'"></li>
         <li class="email-from" v-on="click: getOrGo($event, true)" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">
@@ -112,5 +90,4 @@
     <div class="slides-title">
         <a href="{{slide.url}}" target="_blank">{{slide.name}}</a>
     </div>
-</div>
 </div>
