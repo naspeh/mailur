@@ -4,7 +4,7 @@
         <button type="submit" class="search"></button>
     </form>
     <div class="labels">
-        <button v-on="click: showSearch" class="labels-b-search"></button>
+        <button v-on="click: showSearch" class="labels-b-search" title="Show search bar"></button>
         <button v-on="click: archive" class="labels-b-arch" title="Archive"></button>
         <button v-if="showTrash" v-on="click: del" class="labels-b-del" title="Delete"></button>
         <button v-if="showSpam" v-on="click: spam" class="labels-b-spam" title="Spam"></button>
