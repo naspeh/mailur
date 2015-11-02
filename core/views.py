@@ -158,7 +158,7 @@ def labels(env):
     zero = ['\\Pinned', '\\All', syncer.THRID]
     labels = (dict(l, unread=0) if l['name'] in zero else l for l in labels)
     labels = sorted(labels, key=lambda v: v['name'].lower())
-    return bool(labels) and {'items': labels}
+    return bool(labels) and {'items': labels, 'all': ctx_all_labels(env)}
 
 
 def ctx_init(env):
@@ -321,7 +321,7 @@ def ctx_person(env, contact):
     }
 
 
-def ctx_labels(env, labels, ignore=None):
+def ctx_labels(env, labels, ignore=None, all=True):
     if not labels:
         return False
     ignore = re.compile('(%s)' % '|'.join(
@@ -344,34 +344,6 @@ def ctx_all_labels(env):
     items = (r[0] for r in i.fetchall())
     items = set(items) | set(syncer.FOLDERS)
     return ctx_labels(env, sorted(items))
-
-
-def ctx_header(env, title, labels=None):
-    labels = list(labels) if labels else []
-    buttons = (
-        ([] if '\\Inbox' not in labels else [{
-            'name': 'arch',
-            'label': '\\Inbox',
-            'action': '-',
-            'title': 'Archive'
-        }]) +
-        ([] if '\\Trash' in labels else [
-            {'name': 'del', 'label': '\\Trash', 'title': 'Delete'}
-        ]) +
-        ([] if '\\Spam' in labels else [
-            {'name': 'spam', 'label': '\\Spam', 'title': 'Report spam'}
-        ]) +
-        [{'name': 'merge', 'title': 'Merge threads to one'}]
-    )
-    labels = {
-        'items': ctx_labels(env, labels),
-        'all': ctx_all_labels(env),
-    }
-    return {
-        'title': title,
-        'buttons': buttons,
-        'labels': labels
-    }
 
 
 def ctx_body(env, msg, msgs, show=False):
@@ -439,8 +411,9 @@ def thread(env, id):
         last = emails[-1]
         last['body'] = ctx_body(env, msgs[0], msgs[1:], show=True)
 
-        ctx['header'] = ctx_header(env, subj, labels)
+        ctx['title'] = subj
         ctx['thread'] = True
+        ctx['labels'] = ctx_labels(env, labels)
         ctx['reply_url'] = env.url_for('compose', {'target': 'all', 'id': id})
     return ctx
 
@@ -462,7 +435,7 @@ def emails(env, page):
         select_ids = '(%s) AS ids' % select_ids
 
     res = threads(env, select_ids, ctx, page)
-    res['header'] = ctx_header(env, '', ctx['labels'])
+    res['labels'] = ctx_labels(env, ctx['labels'])
     res['search_query'] = q
     return res
 
@@ -592,7 +565,8 @@ def body(env, id):
 
     ctx = ctx_emails(env, emails())
     email = ctx['emails']['items'][0]
-    ctx['header'] = ctx_header(env, email['subj'], email['labels'])
+    ctx['title'] = email['subj']
+    ctx['labels'] = ctx_labels(env, email['labels'])
     return ctx
 
 

@@ -1,4 +1,4 @@
-<div v-if="header.title" class="title">{{header.title}}</div>
+<div v-if="title" class="title">{{title}}</div>
 <ul v-if="emails" v-class="emails: 1, thread: thread">
 <li v-repeat="emails.items" track-by="id" v-class="
         email: 1,
@@ -8,13 +8,14 @@
     "
 >
     <ul class="email-line">
-        <li v-if="draft" class="email-draft">Draft</li>
+        <li><!--space--></li>
         <li class="email-pick"><input v-on="change: pick($data)" v-model="checked" type="checkbox" class="mousetrap"></li>
+        <li v-if="draft" class="email-draft">Draft</li>
         <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
         <li class="email-pic" v-on="click: getOrGo($event, true)" v-style="'background-image:url(' + fr.image + ')'"></li>
         <li class="email-from" v-on="click: getOrGo($event, true)" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">
-            <a v-repeat="getLabels(labels)" href="{{url}}" v-on="click: go" class="label">{{name}}</a>
+            <a v-repeat="labels" href="{{ $value | labelUrl}}" v-on="click: go" class="label">{{$value}}</a>
         </li>
         <li class="email-info" v-on="click: getOrGo">
             <span v-if="count" class="email-count">{{count}}</span>

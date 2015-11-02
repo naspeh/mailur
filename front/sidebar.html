@@ -4,19 +4,20 @@
         <button type="submit" class="search"></button>
     </form>
     <div class="labels">
-        <button type="submit" class="labels-b-search"></button>
-        <template v-repeat="header.buttons">
-        <button v-on="click: mark(action, label)" class="labels-b-{{name}}" title="{{title}}"></button>
-        </template>
+        <button v-on="click: showSearch" class="labels-b-search"></button>
+        <button v-on="click: archive" class="labels-b-arch" title="Archive"></button>
+        <button v-if="showTrash" v-on="click: del" class="labels-b-del" title="Delete"></button>
+        <button v-if="showSpam" v-on="click: spam" class="labels-b-spam" title="Spam"></button>
+        <button v-on="click: merge" class="labels-b-merge" title="Merge threads to one"></button>
 
         <div class="labels-edit">
-        <a v-repeat="getLabels(labels)" v-on="click: go" href="{{url}}" class="label">
-            {{name}}
-            <span  v-on="click: mark('-', name, $event)" class="label-del" title="Delete"></span>
+        <a v-repeat="labels_sel" v-on="click: go" href="{{$value | labelUrl}}" class="label">
+            {{$value}}
+            <span  v-on="click: mark('-', $value, $event)" class="label-del" title="Delete"></span>
         </a>
         <button class="labels--edit" title="Edit labels"></button>
         </div>
-        <div v-if="labels" class="labels-input">
+        <div v-if="labels_sel" class="labels-input">
             <span><input/></span>
             <button class="labels--ok"></button>
             <button class="labels--cancel"></button>

@@ -33,8 +33,8 @@ send(`/info/?offset=${offset}`, null, (data) => {
                 } else {
                     view.$data = data;
                 }
-                if (data.header) {
-                    document.title = `${data.header.title} - ${title}`;
+                if (data.title) {
+                    document.title = `${data.title} - ${title}`;
                 }
             },
             error: (data) => error(data)
@@ -125,6 +125,9 @@ let hotkeys = [
     [['g #'], 'Go to Trash', () => goToLabel('\\Trash')],
     [['?'], 'Toggle keyboard shortcut help', () => sidebar.toggleHelp()]
 ];
+Vue.filter('labelUrl', (value) => {
+    return '/emails/?q=in:' + escapeQuery(value);
+});
 let Component = Vue.extend({
     replace: false,
     mixins: [{
@@ -164,7 +167,6 @@ p._setData = function(data) {
     }
     p._setDataOrig.bind(this)(data);
 };
-
 let Login = Component.extend({
     template: require('./login.html'),
     methods: {
@@ -249,7 +251,6 @@ let Sidebar = Component.extend({
     replace: true,
     template: require('./sidebar.html'),
     created() {
-        this.url = '/labels/';
         this.fetch((data) => this.$mount('.sidebar'));
 
         this.help = '';
@@ -258,17 +259,39 @@ let Sidebar = Component.extend({
             this.help += `<div><b>${item[0][0]}</b>: ${item[1]}</div>`;
         }
     },
+    ready() {
+        this.$watch('labels_sel', () => this.$nextTick(() => {
+            if (this.resetLabels === undefined) {
+                this.resetLabels = this.initLabels();
+            }
+            if (this.resetLabels) this.resetLabels();
+        }));
+    },
+    computed: {
+        showTrash() {
+            return this.labels_sel.indexOf('\\Trash') === -1;
+        },
+        showSpam() {
+            return this.labels_sel.indexOf('\\Spam') === -1;
+        },
+    },
     methods: {
         fetch(callback) {
             let self = this;
-            send(this.url, null, (data) => {
-                self.$data = Object.assign({labels: data}, user);
+            send('/labels/', null, (data) => {
+                self.$data = Object.assign({
+                    labels: data,
+                    labels_edit: this.labels_edit,
+                    labels_sel: this.labels_sel,
+                }, user);
                 if (callback) callback(data);
             });
         },
         initData(data) {
             data.$set('search_query', this.search_query || '');
-            data.$set('errors', []);
+            data.$set('errors', data.errors || []);
+            data.$set('labels_sel', data.labels_sel || []);
+            data.$set('labels_edit', data.labels_edit || false);
             return data;
         },
         search(e) {
@@ -291,97 +314,42 @@ let Sidebar = Component.extend({
         closeErrors(e) {
             this.errors = [];
         },
+        showSearch(e) {
+            this.labels_edit = false;
+            Mousetrap.bind('esc', (e => {
+                this.labels_edit = true;
+                Mousetrap.unbind('esc');
+            }));
+        },
         logout(e) {
             send('/logout/', null, (data) => {
                 user = null;
                 location.href = '/login/';
             });
-        }
-    }
-});
-let Emails = Component.extend({
-    template: require('./emails.html'),
-    ready() {
-        this.$watch('emails.items', (newVal, oldVal) => {
-            if (!this.thread) return;
-
-            let ids = [];
-            for (let el of this.emails.items) {
-                if (el.unread) ids.push(el.vid);
-            }
-            if (ids.length) {
-                mark({action: '-', name: '\\Unread', ids: ids}, () => {}, this);
-            }
-        });
-        this.$watch('labels', () => this.$nextTick(this.resetLabels));
-    },
-    directives: {
-        body(value) {
-            this.el.innerHTML = value;
-            for (let el of $('a', this.el)) {
-                el.target = '_blank';
-            }
-            for (let el of $('.email-quote-toggle', this.el)) {
-                let quote = el.nextElementSibling;
-                el.addEventListener('click', (e) => toggle(quote));
-                toggle(quote);
-            }
         },
-    },
-    computed: {
-        last_email() {
-            return this.emails.items.slice(-1)[0];
-        },
-    },
-    methods: {
-        initData(data) {
-            sidebar.search_query = data.search_query || '';
-
-            if(!data.emails) {
-                // TODO: maybe should update template instead of filling
-                data.$set('labels', []);
-                if(!data.header) data.$set('header', {title: '', buttons: []});
-                return data;
+        mark(action, name, e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
             }
-
-            if (data.checked_list === undefined) {
-                data.$set('checked_list', new Set());
-                this.permanent('checked_list');
-            }
-            for (let email of data.emails.items) {
-                email.vid = email[data.threads ? 'thrid' : 'id'];
-                email.$set('checked', data.checked_list.has(email.vid));
-            }
-
-            data.$set('slide', null);
-            data.$set('labels_edit',
-                this.getPicked(data).length > 0 || data.thread ? true : false
-            );
-            data.$set('labels',  this.getLabelsByPicked(data));
-
-            this.$nextTick(() => {
-                if (this.resetLabels === undefined) {
-                    this.resetLabels = this.initLabels();
-                }
-                this.resetLabels();
-            });
-            return data;
+            mark({action: action || '+', name: name});
         },
-        initReply(url, focus) {
-            if(!url) return;
-
-            this.$data.$set('reply_body', true);
-            send(url, null, (data) => {
-                let reply = $('.compose-body')[0];
-                new Compose({data: data, el: reply});
-                if (focus) {
-                    setTimeout(() => reply.scrollIntoView(true), 500);
-                }
-            });
+        archive(e) {
+            this.mark('-', '\\Inbox', e);
         },
-        reply(e) {
+        del(e) {
+            this.mark('+', '\\Trash', e);
+        },
+        spam(e) {
+            this.mark('+', '\\Spam', e);
+        },
+        merge(e) {
             e.preventDefault();
-            this.initReply(e.target.href, true);
+            e.stopPropagation();
+            newThread({
+                action: 'merge',
+                ids: this.getPicked(this, (el) => el.thrid)
+            }, (data) => reload());
         },
         initLabels() {
             let container = $('.header .labels')[0];
@@ -395,12 +363,13 @@ let Emails = Component.extend({
             let edit = $$('.labels-input');
 
             let save = () => {
-                vm.labels = tags.value().split(',');
+                let new_labels = tags.value().split(',');
                 mark({
                     action: '=',
-                    name: vm.labels,
-                    old_name: this.getLabelsByPicked(this)
+                    name: new_labels,
+                    old_name: vm.labels_sel
                 });
+                vm.labels_sel = new_labels;
                 reset();
             };
             let init = () => {
@@ -408,7 +377,7 @@ let Emails = Component.extend({
                 toggle(edit, true);
                 toggle(labels, false);
 
-                compl = horsey(input, {suggestions: vm.header.labels.all});
+                compl = horsey(input, {suggestions: vm.labels.all});
                 tags = insignia(input, {
                     deletion: true,
                     delimiter: ',',
@@ -416,7 +385,7 @@ let Emails = Component.extend({
                         return value.trim();
                     },
                     validate(value, tags) {
-                        let valid = vm.header.labels.all.indexOf(value) !== -1;
+                        let valid = vm.labels.all.indexOf(value) !== -1;
                         valid = valid || !value.startsWith('\\');
                         return valid && tags.indexOf(value) === -1;
                     },
@@ -426,7 +395,7 @@ let Emails = Component.extend({
             let clear = () => {
                 if (tags) tags.destroy();
                 if (compl) compl.destroy();
-                input.value = vm.labels.join(',');
+                input.value = vm.labels_sel.join(',');
             };
             let reset = () => {
                 clear();
@@ -465,12 +434,80 @@ let Emails = Component.extend({
             $$('.labels--edit').addEventListener('click', (e) => init());
             return reset;
         },
-        getLabels(names) {
-            let result = [];
-            for (let i of names) {
-                result.push({name: i, url: '/emails/?q=in:' + escapeQuery(i)});
+    }
+});
+let Emails = Component.extend({
+    template: require('./emails.html'),
+    ready() {
+        this.$watch('emails.items', (newVal, oldVal) => {
+            if (!this.thread) return;
+
+            let ids = [];
+            for (let el of this.emails.items) {
+                if (el.unread) ids.push(el.vid);
             }
-            return result;
+            if (ids.length) {
+                mark({action: '-', name: '\\Unread', ids: ids}, () => {}, this);
+            }
+        });
+    },
+    directives: {
+        body(value) {
+            this.el.innerHTML = value;
+            for (let el of $('a', this.el)) {
+                el.target = '_blank';
+            }
+            for (let el of $('.email-quote-toggle', this.el)) {
+                let quote = el.nextElementSibling;
+                el.addEventListener('click', (e) => toggle(quote));
+                toggle(quote);
+            }
+        },
+    },
+    computed: {
+        last_email() {
+            return this.emails.items.slice(-1)[0];
+        },
+    },
+    methods: {
+        initData(data) {
+            data.$set('slide', null);
+            if(!data.emails) {
+                if(!data.title) data.$set('title', '');
+                return data;
+            }
+            if (data.checked_list === undefined) {
+                data.$set('checked_list', new Set());
+                this.permanent('checked_list');
+            }
+            for (let email of data.emails.items) {
+                email.vid = email[data.threads ? 'thrid' : 'id'];
+                email.$set('checked', data.checked_list.has(email.vid));
+            }
+
+            // Update sidebar
+            sidebar.search_query = data.search_query || '';
+            sidebar.labels_edit = (
+                this.getPicked(data).length > 0 || data.thread ? true : false
+            );
+            sidebar.labels_sel = this.getLabelsByPicked(data);
+            return data;
+        },
+        initReply(url, focus) {
+            if(!url) return;
+
+            this.$data.$set('reply_body', true);
+            send(url, null, (data) => {
+                let reply = $('.compose-body')[0];
+                new Compose({data: data, el: reply});
+                if (focus) {
+                    setTimeout(() => reply.scrollIntoView(true), 500);
+                }
+            });
+        },
+        reply(e) {
+            e.preventDefault();
+            this.initReply(e.target.href, true);
         },
         getPicked(data, callback) {
             data = data || this;
@@ -487,7 +524,7 @@ let Emails = Component.extend({
         getLabelsByPicked(data) {
             data = data || this;
             let labels = array_union(
-                data.header.labels.items,
+                data.labels,
                 ...this.getPicked(data, (el) => el.labels)
             );
             return labels;
@@ -500,8 +537,8 @@ let Emails = Component.extend({
             } else {
                 this.checked_list.delete(data.vid);
             }
-            this.labels_edit = this.getPicked().length > 0;
-            this.labels = this.getLabelsByPicked();
+            sidebar.labels_edit = this.getPicked().length > 0;
+            sidebar.labels_sel = this.getLabelsByPicked();
         },
         details(e) {
             e.preventDefault();
@@ -543,29 +580,8 @@ let Emails = Component.extend({
             mark(data);
             return false;
         },
-        mark(action, name, e) {
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-
-            // FIXME
-            if (!name) return this.merge();
-
-            mark({action: action || '+', name: name});
-        },
-        newThread(params, callback) {
-            callback = callback || (data => go(data.url));
-            send('/thread/new/', params, callback);
-        },
-        merge(e) {
-            this.newThread({
-                action: 'merge',
-                ids: this.getPicked(this, (el) => el.thrid)
-            }, (data) => reload());
-        },
         extract(e) {
-            this.newThread({action: 'new', ids: [e.targetVM.id]});
+            newThread({action: 'new', ids: [e.targetVM.id]});
         },
         unreadFromHere(e) {
             e.preventDefault();
@@ -785,6 +801,11 @@ function go(url) {
 }
 function reload() {
     return history.replaceState({}, getPath());
+}
+
+function newThread(params, callback) {
+    callback = callback || (data => go(data.url));
+    send('/thread/new/', params, callback);
 }
 function error(err) {
     console.log(err);
