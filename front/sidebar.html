@@ -25,19 +25,19 @@
     </div>
 </div>
 <div class="nav-info">
-    <a href="#" v-on="click: showHelp" class="nav-help" title="Keyboard shortcut help"></a>
-    <a href="#" v-on="click: logout" class="nav-logout" title="Logout"></a>
+    <img class="nav-pic" src="{{image}}">
     <div v-if="username" class="nav-user">
         {{username}}
         (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
     </div>
-    <img class="nav-pic" src="{{image}}">
     <div v-if="last_sync" class="nav-last-sync">Last sync at {{last_sync}}</div>
+    <div v-on="click: logout" class="nav-logout" title="Logout"></div>
 </div>
 <div class="sidebar">
     <ul class="font-size">
-        <li v-on="click: fontSize('normal')" class="font-size-normal" title="Normal size"></li>
-        <li v-on="click: fontSize('bigger')" class="font-size-bigger" title="Bigger size"></li>
+        <li v-on="click: showHelp" class="nav-help" title="Keyboard shortcut help"></li>
+        <li v-on="click: fontSize('normal')" class="font-size-normal" title="Normal fonr size"></li>
+        <li v-on="click: fontSize('bigger')" class="font-size-bigger" title="Bigger font size"></li>
     </ul>
 
     <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>

@@ -91,47 +91,38 @@ body {
     top: 0;
     right: 0;
     z-index: 10;
-    height: 27px;
-    padding: 3px;
+    box-sizing: border-box;
+    height: 35px;
+    padding: 2px;
     font-size: 14px;
     line-height: 14px;
     text-align: right;
+    white-space: nowrap;
     background-color: #eee;
-    border: 1px solid #fff;
+    border-bottom: 1px solid #fff;
     border-radius: 0 0 0 10px;
 
     .nav-user {
-        margin-right: 50px;
+        margin-right: 30px;
         font-weight: bold;
-        white-space: nowrap;
         max-width: 180px;
-        overflow: hidden;
+        overflow: ellipsis;
     }
     .nav-last-sync {
-        margin-right: 50px;
+        display: inline-block;
         font-size: 0.8em;
-        white-space: nowrap;
-        max-width: 180px;
-        overflow: hidden;
-    }
-    .nav-pic {
-        position: absolute;
-        top: 0;
-        right: 20px;
-        width: 30px;
-        height: 30px;
-    }
-    .nav-help {
-        .icon-keyboard();
-        position: absolute;
-        top: 17px;
-        right: 3px;
     }
     .nav-logout {
         .icon-logout();
-        position: absolute;
-        top: 0;
-        right: 3px;
+        display: inline-block;
+        color: @ColorL;
+        font-size: 1em;
+        cursor: pointer;
+    }
+    .nav-pic {
+        float: right;
+        width: 30px;
+        height: 30px;
     }
 }
 body > .sidebar {
@@ -150,7 +141,7 @@ body > .sidebar {
 
     .font-size {
         .mix_reset_list();
-        margin: 0.3em 0;
+        margin: 0 0.3em;
 
         li {
             .icon-font();
@@ -163,6 +154,10 @@ body > .sidebar {
         }
         .font-size-bigger {
             font-size: 1em;
+        }
+        .nav-help {
+            .icon-keyboard();
+            margin-right: 0.3em;
         }
     }
     .compose-new {
@@ -222,7 +217,8 @@ body > .header {
     top: 0px;
     right: 280px;
     left: @SidebarW;
-    height: 25px;
+    box-sizing: border-box;
+    height: 35px;
     padding: 9px 0 1px 0;
     white-space: nowrap;
 
