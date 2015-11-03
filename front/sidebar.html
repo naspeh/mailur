@@ -40,7 +40,7 @@
     <ul class="labels">
     <li v-repeat="labels.items">
         <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
-            {{name}} <span v-if="unread" class="label-count">{{unread}}</span>
+            <span class="label-count">{{unread}}</span>{{name}}
         </a>
     </li>
     </ul>

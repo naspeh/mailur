@@ -4,7 +4,7 @@
 @Space: 1.25em;
 @Size: 1em;
 @SizeIcon: @Size * 1.1;
-@SidebarW: 130px;
+@SidebarW: 140px;
 
 @ColorA: #777;
 @ColorB: #008000;
@@ -141,9 +141,11 @@ body > .sidebar {
     bottom: 0;
     width: @SidebarW - 10px;
     padding: 0 5px;
+    text-align: center;
     white-space: nowrap;
     overflow-x: hidden;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 
     .compose-new {
         .icon-compose();
@@ -154,19 +156,40 @@ body > .sidebar {
     .labels {
         .mix_reset_list();
         position: relative;
+        font-size: 0.9em;
+        text-align: left;
 
         a {
             display: block;
-        }
-        .label-unread {
-            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 2px 0;
+
+            &:hover {
+                text-decoration: none;
+                background-color: @ColorL;
+                color: #fff;
+
+                .label-count {
+                    color: @ColorL;
+                }
+                &.label-unread .label-count {
+                    color: #fff;
+                }
+            }
         }
         .label-count {
-            padding: 0 3px;
-            background-color: @ColorL;
-            border-radius: 0.4em;
+            display: inline-block;
             color: #fff;
-            font-size: 0.8em;
+            min-width: 1.4em;
+            padding: 2px;
+            font-size: 0.7em;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .label-unread .label-count {
+            color: #333;
         }
     }
 }
