@@ -8,7 +8,6 @@
     "
 >
     <ul class="email-line">
-        <li><!--space--></li>
         <li class="email-pick"><input v-on="change: pick($data)" v-model="checked" type="checkbox" class="mousetrap"></li>
         <li v-if="draft" class="email-draft">Draft</li>
         <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>

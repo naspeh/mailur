@@ -275,13 +275,15 @@ body > .header {
         position: relative;
         white-space: nowrap;
         overflow: hidden;
-        font-size: 1em;
-        line-height: @Size+@Space*0.6;
-        color: @ColorA;
+        box-sizing: border-box;
+        width: 100%;
+        padding-left: @Space * 0.3;
         background-color: @Color1bg;
         border-top: 1px solid @Color1b;
         border-radius: 0.5em;
-        width: 100%;
+        font-size: 1em;
+        line-height: @Size+@Space*0.6;
+        color: @ColorA;
 
         & li {
             display: inline-block;
