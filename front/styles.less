@@ -3,8 +3,8 @@
 @Space: 1.25em;
 @Size: 1em;
 @SizeIcon: @Size * 1.1;
-@SidebarW: 20%;
-@NavInfoW: 23%;
+@SidebarW: 10em;
+@NavInfoW: 20%;
 
 @ColorA: #777;
 @ColorB: #008000;
@@ -147,9 +147,12 @@ body > .sidebar {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 
-    .font-size {
+    .nav-options {
         .mix_reset_list();
-        margin: 0 0.3em;
+        max-width: 10em;
+        margin: 0 auto;
+        margin-top: 0.5em;
+        border-top: 1px solid #eee;
 
         li {
             .icon-font();
@@ -227,7 +230,7 @@ body > .header {
     z-index: 100;
     position: absolute;
     top: 0px;
-    right: @NavInfoW + 2%;
+    right: @NavInfoW + @NavInfoW / 20;
     left: @SidebarW;
     box-sizing: border-box;
     height: 35px;
@@ -240,7 +243,7 @@ body > .header {
         bottom: 3px;
         margin: 0;
         width: 100%;
-        max-width: 800px;
+        max-width: 40em;
         background-color: #fff;
 
         input[type="text"] {
@@ -248,13 +251,13 @@ body > .header {
             display: inline-block;
             box-sizing: border-box;
             width: 100%;
-            padding-right: 2em;
+            padding-right: 2.1em;
             font-weight: bold;
         }
         .search {
             .icon-search();
             .mix_button();
-            margin-left: -2em;
+            margin-left: -2.1em;
         }
     }
     &.labels-show {
@@ -292,6 +295,9 @@ body > .header {
     }
     .labels-input {
         display: inline-block;
+        position: absolute;
+        bottom: 0;
+
         &:hover {
             cursor: pointer;
             background-color: @Color0bg;

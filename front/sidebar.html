@@ -34,12 +34,6 @@
     <div v-on="click: logout" class="nav-logout" title="Logout"></div>
 </div>
 <div class="sidebar">
-    <ul class="font-size">
-        <li v-on="click: showHelp" class="nav-help" title="Keyboard shortcut help"></li>
-        <li v-on="click: fontSize('normal')" class="font-size-normal" title="Normal fonr size"></li>
-        <li v-on="click: fontSize('bigger')" class="font-size-bigger" title="Bigger font size"></li>
-    </ul>
-
     <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
     <template v-if="labels">
     <ul class="labels">
@@ -50,6 +44,12 @@
     </li>
     </ul>
     </template>
+    <ul class="nav-options">
+        <li v-on="click: showHelp" class="nav-help" title="Keyboard shortcut help"></li>
+        <li v-on="click: fontSize('normal')" class="font-size-normal" title="Normal fonr size"></li>
+        <li v-on="click: fontSize('bigger')" class="font-size-bigger" title="Bigger font size"></li>
+    </ul>
+
 </div>
 <div v-if="show_help" class="help">
     <h3>

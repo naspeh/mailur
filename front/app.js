@@ -130,7 +130,7 @@ Vue.filter('labelUrl', (value) => {
     return '/emails/?q=in:' + escapeQuery(value);
 });
 Vue.filter('trancate', (value, max) => {
-    max = max || 12;
+    max = max || 15;
     if (value.length > max) {
         value = value.slice(0, max - 1) + '…';
     }
