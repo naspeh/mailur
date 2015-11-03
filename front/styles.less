@@ -1,4 +1,3 @@
-@import (css) url(https://fonts.googleapis.com/css?family=PT+Sans:400,700&subset=latin,cyrillic);
 @import url(./font/fontello.less);
 
 @Space: 1.25em;
@@ -66,8 +65,11 @@ body {
     min-width: 600px;
     margin: 0 auto;
     font-size: @Size;
-    font-family: 'PT Sans', sans-serif;
+    font-family: sans-serif;
 
+    &.bigger {
+        font-size: 1.2em;
+    }
     & > .body {
         position: absolute;
         top: 35px;

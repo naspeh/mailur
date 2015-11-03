@@ -296,9 +296,14 @@ let Sidebar = Component.extend({
             data.$set('labels_edit', data.labels_edit || false);
             return data;
         },
-        fontSize(value) {
-            session.fontSize = value;
-            $('body')[0].style.fontSize = value == 'normal' ? '1em' : '1.2em';
+        fontSize(val) {
+            session.fontSize = val;
+            let cls = 'bigger', body = $('body')[0].classList;
+            if (val == cls) {
+                body.add(cls);
+            } else {
+                body.remove(cls);
+            }
         },
         search(e) {
             e.preventDefault();
