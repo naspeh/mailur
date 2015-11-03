@@ -7,6 +7,7 @@ import insignia from 'insignia';
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
 
+let session = localStorage || {};
 let array_union = require('lodash/array/union');
 
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
@@ -252,6 +253,7 @@ let Sidebar = Component.extend({
     template: require('./sidebar.html'),
     created() {
         this.fetch((data) => this.$mount('.sidebar'));
+        this.fontSize(session.fontSize || 'normal');
 
         this.help = '';
         for (let item of hotkeys) {
@@ -293,6 +295,10 @@ let Sidebar = Component.extend({
             data.$set('labels_sel', data.labels_sel || []);
             data.$set('labels_edit', data.labels_edit || false);
             return data;
+        },
+        fontSize(value) {
+            session.fontSize = value;
+            $('body')[0].style.fontSize = value == 'normal' ? '1em' : '1.2em';
         },
         search(e) {
             e.preventDefault();

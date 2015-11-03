@@ -4,7 +4,7 @@
 @Space: 1.25em;
 @Size: 1em;
 @SizeIcon: @Size * 1.1;
-@SidebarW: 140px;
+@SidebarW: 10em;
 
 @ColorA: #777;
 @ColorB: #008000;
@@ -64,7 +64,6 @@
 body {
     position: relative;
     min-width: 600px;
-    max-width: 1024px;
     margin: 0 auto;
     font-size: @Size;
     font-family: 'PT Sans', sans-serif;
@@ -139,25 +138,43 @@ body > .sidebar {
     top: 0;
     left: 0;
     bottom: 0;
-    width: @SidebarW - 10px;
-    padding: 0 5px;
+    width: @SidebarW - 0.6em;
+    padding: 0 0.2em;
     text-align: center;
     white-space: nowrap;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 
+    .font-size {
+        .mix_reset_list();
+        margin: 0.3em 0;
+
+        li {
+            .icon-font();
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .font-size-normal {
+            font-size: 0.7em;
+        }
+        .font-size-bigger {
+            font-size: 1em;
+        }
+    }
     .compose-new {
         .icon-compose();
         .mix_button;
         display: inline-block;
-        margin: 10px 0;
+        margin: 0.3em 0;
     }
     .labels {
         .mix_reset_list();
         position: relative;
         font-size: 0.9em;
         text-align: left;
+        margin: 0.3em 0;
 
         a {
             display: block;
@@ -206,6 +223,7 @@ body > .header {
     .search-form {
         margin: 0;
         width: 100%;
+        max-width: 800px;
         background-color: #fff;
 
         input[type="text"] {
@@ -244,7 +262,7 @@ body > .header {
         .icon-archive();
     }
     .labels-b-merge {
-        .icon-details();
+        .icon-plus();
     }
     .labels-edit {
         display: inline-block;

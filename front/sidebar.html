@@ -35,6 +35,11 @@
     <div v-if="last_sync" class="nav-last-sync">Last sync at {{last_sync}}</div>
 </div>
 <div class="sidebar">
+    <ul class="font-size">
+        <li v-on="click: fontSize('normal')" class="font-size-normal" title="Normal size"></li>
+        <li v-on="click: fontSize('bigger')" class="font-size-bigger" title="Bigger size"></li>
+    </ul>
+
     <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
     <template v-if="labels">
     <ul class="labels">
