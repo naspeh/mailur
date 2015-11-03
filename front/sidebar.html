@@ -12,7 +12,7 @@
 
         <div class="labels-edit">
         <a v-repeat="labels_sel" v-on="click: go" href="{{$value | labelUrl}}" class="label">
-            {{$value}}
+            {{$value | trancate}}
             <span  v-on="click: mark('-', $value, $event)" class="label-del" title="Delete"></span>
         </a>
         <button class="labels--edit" title="Edit labels"></button>
@@ -30,7 +30,7 @@
         {{username}}
         (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
     </div>
-    <div v-if="last_sync" class="nav-last-sync">Last sync at {{last_sync}}</div>
+    <div v-if="last_sync" class="nav-last-sync">({{last_sync}} - last sync)</div>
     <div v-on="click: logout" class="nav-logout" title="Logout"></div>
 </div>
 <div class="sidebar">

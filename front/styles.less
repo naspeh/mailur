@@ -3,7 +3,8 @@
 @Space: 1.25em;
 @Size: 1em;
 @SizeIcon: @Size * 1.1;
-@SidebarW: 10em;
+@SidebarW: 20%;
+@NavInfoW: 23%;
 
 @ColorA: #777;
 @ColorB: #008000;
@@ -62,7 +63,7 @@
 /* General */
 body {
     position: relative;
-    min-width: 600px;
+    min-width: 500px;
     margin: 0 auto;
     font-size: @Size;
     font-family: sans-serif;
@@ -93,7 +94,9 @@ body {
     z-index: 10;
     box-sizing: border-box;
     height: 35px;
+    max-width: @NavInfoW;
     padding: 2px;
+    padding-right: 55px;
     font-size: 14px;
     line-height: 14px;
     text-align: right;
@@ -103,24 +106,28 @@ body {
     border-radius: 0 0 0 10px;
 
     .nav-user {
-        margin-right: 30px;
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-weight: bold;
-        max-width: 180px;
-        overflow: ellipsis;
     }
     .nav-last-sync {
-        display: inline-block;
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-size: 0.8em;
     }
     .nav-logout {
         .icon-logout();
-        display: inline-block;
+        position: absolute;
+        top: 5px;
+        right: 32px;
         color: @ColorL;
-        font-size: 1em;
+        font-size: 18px;
         cursor: pointer;
     }
     .nav-pic {
-        float: right;
+        position: absolute;
+        top: 0;
+        right: 0;
         width: 30px;
         height: 30px;
     }
@@ -131,7 +138,8 @@ body > .sidebar {
     top: 0;
     left: 0;
     bottom: 0;
-    width: @SidebarW - 0.6em;
+    box-sizing: border-box;
+    width: @SidebarW;
     padding: 0 0.2em;
     text-align: center;
     white-space: nowrap;
@@ -163,15 +171,19 @@ body > .sidebar {
     .compose-new {
         .icon-compose();
         .mix_button;
-        display: inline-block;
-        margin: 0.3em 0;
+        display: block;
+        max-width: 6em;
+        margin: 0.3em auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .labels {
         .mix_reset_list();
+        display: inline-block;
         position: relative;
         font-size: 0.9em;
         text-align: left;
-        margin: 0.3em 0;
+        max-width: 100%;
 
         a {
             display: block;
@@ -212,17 +224,20 @@ body > .sidebar {
     }
 }
 body > .header {
-    z-index: 100px;
+    z-index: 100;
     position: absolute;
     top: 0px;
-    right: 280px;
+    right: @NavInfoW + 2%;
     left: @SidebarW;
     box-sizing: border-box;
     height: 35px;
-    padding: 9px 0 1px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
     white-space: nowrap;
 
     .search-form {
+        position: absolute;
+        bottom: 3px;
         margin: 0;
         width: 100%;
         max-width: 800px;
@@ -231,13 +246,15 @@ body > .header {
         input[type="text"] {
             .mix_input();
             display: inline-block;
+            box-sizing: border-box;
             width: 100%;
+            padding-right: 2em;
             font-weight: bold;
         }
         .search {
             .icon-search();
             .mix_button();
-            margin-right: -20px;
+            margin-left: -2em;
         }
     }
     &.labels-show {
@@ -247,6 +264,8 @@ body > .header {
     }
     .labels {
         display: none;
+        position: absolute;
+        bottom: 3px;
     }
     button {
         .mix_button();
@@ -268,6 +287,8 @@ body > .header {
     }
     .labels-edit {
         display: inline-block;
+        position: absolute;
+        bottom: 0;
     }
     .labels-input {
         display: inline-block;

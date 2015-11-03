@@ -129,6 +129,13 @@ let hotkeys = [
 Vue.filter('labelUrl', (value) => {
     return '/emails/?q=in:' + escapeQuery(value);
 });
+Vue.filter('trancate', (value, max) => {
+    max = max || 12;
+    if (value.length > max) {
+        value = value.slice(0, max - 1) + '…';
+    }
+    return value;
+});
 let Component = Vue.extend({
     replace: false,
     mixins: [{
@@ -820,7 +827,7 @@ function newThread(params, callback) {
 }
 function error(err) {
     console.log(err);
-    sidebar.errors.push(err);
+    if (sidebar) sidebar.errors.push(err);
 }
 function mark(params, callback, emails) {
     view = emails || view;

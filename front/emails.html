@@ -14,7 +14,7 @@
         <li class="email-pic" v-on="click: getOrGo($event, true)" v-style="'background-image:url(' + fr.image + ')'"></li>
         <li class="email-from" v-on="click: getOrGo($event, true)" title="{{fr.full}}">{{fr.short}}</li>
         <li v-if="labels" class="email-labels">
-            <a v-repeat="labels" href="{{ $value | labelUrl}}" v-on="click: go" class="label">{{$value}}</a>
+            <a v-repeat="labels" href="{{ $value | labelUrl}}" v-on="click: go" class="label">{{$value | trancate}}</a>
         </li>
         <li class="email-info" v-on="click: getOrGo">
             <span v-if="count" class="email-count">{{count}}</span>
