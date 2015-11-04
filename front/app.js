@@ -3,6 +3,7 @@ import Vue from 'vue';
 import createHistory from 'history/lib/createBrowserHistory';
 import horsey from 'horsey';
 import insignia from 'insignia';
+import tabOverride from 'taboverride/build/output/taboverride';
 
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
@@ -728,6 +729,9 @@ let Compose = Component.extend({
 
         let text = $('.compose textarea')[0];
         Mousetrap(text).bind('ctrl+enter', (e) => self.send());
+
+        tabOverride.tabSize(4);
+        tabOverride.set(text);
     },
     methods : {
         getContext() {
