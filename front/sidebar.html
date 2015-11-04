@@ -1,8 +1,8 @@
 <div v-class="header: 1, labels-exists: 1, labels-show: labels_edit">
     <form class="search" v-on="submit: search">
         <input v-on="focus: focusSearch" type="text" v-model="search_query">
-        <button type="submit" class="input--ok"></button>
         <button v-on="click: resetSearch" type="button" class="input--x"></button>
+        <button type="submit" class="input--ok"></button>
     </form>
     <div class="labels">
         <button v-on="click: showSearch" class="labels--search" title="Show search bar"></button>
@@ -19,8 +19,8 @@
         </div>
         <div v-if="labels_sel" class="labels-input">
             <span><input/></span>
-            <button type="submit" class="input--ok"></button>
             <button type="button" class="input--x"></button>
+            <button type="submit" class="input--ok"></button>
         </div>
     </div>
 </div>

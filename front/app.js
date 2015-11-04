@@ -37,6 +37,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
                 if (data.title) {
                     document.title = `${data.title} - ${title}`;
                 }
+                sidebar.fetch();
             },
             error: (data) => error(data)
         });
@@ -267,8 +268,6 @@ let Sidebar = Component.extend({
             Mousetrap.bind(item[0], item[2].bind(this), 'keyup');
             this.help += `<div><b>${item[0][0]}</b>: ${item[1]}</div>`;
         }
-    },
-    ready() {
         this.$watch('labels_sel', () => this.$nextTick(() => {
             if (this.resetLabels === undefined) {
                 this.resetLabels = this.initLabels();
@@ -288,17 +287,21 @@ let Sidebar = Component.extend({
         fetch(callback) {
             let self = this;
             send('/labels/', null, (data) => {
-                self.$data = Object.assign({
-                    labels: data,
-                    labels_edit: this.labels_edit,
-                    labels_sel: this.labels_sel,
-                }, user);
+                self.$data = Object.assign({labels: data}, user);
                 if (callback) callback(data);
             });
         },
         initData(data) {
-            data.$set('search_query', this.search_query || '');
             data.$set('errors', data.errors || []);
+
+            if (view && view.constructor == Emails) {
+                data.search_query = view.search_query;
+                data.labels_sel = view.getLabelsByPicked();
+                data.labels_edit = (
+                    view.getPicked().length > 0 || view.thread ? true : false
+                );
+            }
+            data.$set('search_query', data.search_query || '');
             data.$set('labels_sel', data.labels_sel || []);
             data.$set('labels_edit', data.labels_edit || false);
             return data;
@@ -513,13 +516,6 @@ let Emails = Component.extend({
                 email.vid = email[data.threads ? 'thrid' : 'id'];
                 email.$set('checked', data.checked_list.has(email.vid));
             }
-
-            // Update sidebar
-            sidebar.search_query = data.search_query || '';
-            sidebar.labels_edit = (
-                this.getPicked(data).length > 0 || data.thread ? true : false
-            );
-            sidebar.labels_sel = this.getLabelsByPicked(data);
             return data;
         },
         initReply(url, focus) {
@@ -566,6 +562,7 @@ let Emails = Component.extend({
             } else {
                 this.checked_list.delete(data.vid);
             }
+            //TODO: move to sidebar
             sidebar.labels_edit = this.getPicked().length > 0;
             sidebar.labels_sel = this.getLabelsByPicked();
         },
@@ -836,6 +833,9 @@ function newThread(params, callback) {
     callback = callback || (data => go(data.url));
     send('/thread/new/', params, callback);
 }
+function debug(...items) {
+    if (conf.debug) console.log(...items);
+}
 function error(err) {
     console.log(err);
     if (sidebar) sidebar.errors.push(err);
@@ -894,7 +894,7 @@ function connect() {
             }
             if (data.last_sync) {
                 send('/info/', null, (data) => {
-                    console.log(`Notify: last sync at ${data.last_sync}`);
+                    debug(`Notify: last sync at ${data.last_sync}`);
                     sidebar.last_sync = data.last_sync;
                 });
             }

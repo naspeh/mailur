@@ -39,13 +39,13 @@
 
     &:hover, &:active, &:focus {
         outline: none;
-    }
-    &:focus {
         border-bottom: 1px solid @ColorC;
     }
 }
-.mix_form {
+.mix_inputform {
     button {
+        position: relative;
+        bottom: -0.1em;
         border: none;
         background: none;
         padding: 0;
@@ -61,15 +61,16 @@
     input {
         .mix_input();
         box-sizing: border-box;
-        padding-right: 2.6em;
+        padding-right: 2.9em;
     }
     .input--ok {
         .icon-ok();
-        margin-left: -2.6em;
         opacity: 0.5;
+        font-size: 1.2em;
     }
     .input--x {
-        .icon-cancel();
+        .icon-x();
+        margin-left: -2.9em;
         color: @Color0b;
         opacity: 0.5;
     }
@@ -141,9 +142,11 @@ body > .sidebar {
     height: 100%;
     width: @SidebarW;
     padding-right: 0.5em;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     text-align: center;
     white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
 
     .nav-info {
         .mix_links();
@@ -186,7 +189,7 @@ body > .sidebar {
         .mix_reset_list();
         margin-bottom: 0.3em;
         box-sizing: border-box;
-        height: 1.6em;
+        height: 1.7em;
         padding: 0.2em;
         border-right: 1px solid #ccc;
         border-bottom: 1px solid #ccc;
@@ -212,10 +215,6 @@ body > .sidebar {
     }
     .labels {
         .mix_reset_list();
-        position: absolute;
-        top: 6em;
-        bottom: 0;
-        overflow-y: auto;
         font-size: 0.9em;
         text-align: left;
 
@@ -270,7 +269,7 @@ body > .header {
     white-space: nowrap;
 
     .search {
-        .mix_form();
+        .mix_inputform();
         margin: 0;
         width: 100%;
         max-width: 40em;
@@ -282,6 +281,9 @@ body > .header {
             box-sizing: border-box;
             font-weight: bold;
         }
+        .input--ok {
+            .icon-search();
+        }
     }
     .labels {
         display: none;
@@ -289,7 +291,7 @@ body > .header {
             display: inline-block;
         }
         .labels-input {
-            .mix_form();
+            .mix_inputform();
             display: none;
         }
         .labels-b-spam {
@@ -559,7 +561,7 @@ body > .header {
 
     .label-del {
         &:after {
-            content: ' X ';
+            content: ' \e80E ';
         }
         &:hover {
             color: @ColorC;
@@ -588,6 +590,9 @@ body > .header {
     .compose-send {
         .icon-send();
         .mix_button();
+        &:before {
+            margin-right: 0.3em;
+        }
     }
     .compose-preview {
         .mix_button();
@@ -663,7 +668,7 @@ body > .header {
         padding: 10px;
         cursor: pointer;
         &:after {
-            content: 'X';
+            content: '\e80E';
         }
     }
     .slides-prev {
