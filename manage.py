@@ -59,6 +59,41 @@ def reqs(target='newest', clear=False):
         sh('pip freeze | sort > requirements.txt')
 
 
+def npm():
+    with open('package.json', 'br') as f:
+        packages = json.loads(f.read().decode())
+
+    packages['dependencies'] = {}
+    with open('package.json', 'bw') as f:
+        f.write(json.dumps(packages, sort_keys=True).encode())
+
+    sh(
+        'npm install --save --save-exact'
+        '   less'
+        '   postcss-cli'
+        '   autoprefixer'
+        '   clean-css'
+        '   core-js'
+        '   browserify'
+        '   babelify'
+        '   partialify'
+        '   uglify-js'
+        # js linting
+        '   jshint'
+        '   eslint'
+        # libs
+        '   normalize.css'
+        '   history'
+        '   lodash'
+        '   mousetrap'
+        '   vue'
+        '   wjbryant/taboverride'
+        '   whatwg-fetch'
+        '   insignia'
+        '   horsey'
+    )
+
+
 def front(env, force=False, clean=False):
     def get_version():
         return sp.check_output((
@@ -450,31 +485,7 @@ def get_full(argv):
     ))
 
     cmd('npm', help='update nodejs packages')\
-        .exe(lambda a: sh(
-            'npm install --save --save-exact'
-            '   less'
-            '   postcss-cli'
-            '   autoprefixer'
-            '   clean-css'
-            '   core-js'
-            '   browserify'
-            '   babelify'
-            '   partialify'
-            '   uglify-js'
-            # js linting
-            '   jshint'
-            '   eslint'
-            # libs
-            '   normalize.css'
-            '   history'
-            '   lodash'
-            '   mousetrap'
-            '   vue'
-            '   wjbryant/taboverride'
-            '   whatwg-fetch'
-            '   insignia'
-            '   horsey'
-        ))
+        .exe(lambda a: npm())
 
     cmd('static', help='generate front')\
         .arg('-f', '--force', action='store_true')\
