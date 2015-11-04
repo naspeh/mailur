@@ -349,7 +349,7 @@ let Sidebar = Component.extend({
         resetSearch(e) {
             $('.search .input--x')[0].focus();
             if (e) e.preventDefault();
-            this.search_query = view.search_query;
+            this.search_query = '';
             if (this._search) {
                 this._search = false;
                 this.labels_edit = true;
