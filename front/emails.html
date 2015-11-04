@@ -1,5 +1,5 @@
 <div v-if="title" class="title">
-    <a v-if="emails.length < count" v-on="click: go" href="?full=1" class="thread-full" title="Show all messages">{{count}} messages</a>
+    <a v-if="hidden" v-on="click: go" href="?full=1" class="thread-full" title="Show all messages">{{hidden}} hidden</a>
     {{title}}
 </div>
 <ul v-if="emails" v-class="emails: 1, thread: thread">

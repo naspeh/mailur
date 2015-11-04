@@ -437,7 +437,7 @@ def thread(env, id):
 
         ctx['title'] = subj
         ctx['thread'] = True
-        ctx['count'] = count
+        ctx['hidden'] = count - len(emails)
         ctx['labels'] = ctx_labels(env, labels)
         ctx['reply_url'] = env.url_for('compose', {'target': 'all', 'id': id})
     return ctx
