@@ -1,55 +1,52 @@
-<div v-class="header: 1, labels-show: labels_edit">
-    <form v-if="!labels_edit" class="search-form" v-on="submit: search">
-        <input type="text" v-model="search_query">
-        <button type="submit" class="search"></button>
+<div v-class="header: 1, labels-exists: 1, labels-show: labels_edit">
+    <form class="search" v-on="submit: search">
+        <input v-on="focus: focusSearch" type="text" v-model="search_query">
+        <button type="submit" class="input--ok"></button>
+        <button v-on="click: resetSearch" type="button" class="input--x"></button>
     </form>
     <div class="labels">
-        <button v-on="click: showSearch" class="labels-b-search" title="Show search bar"></button>
-        <button v-on="click: archive" class="labels-b-arch" title="Archive"></button>
-        <button v-if="showTrash" v-on="click: del" class="labels-b-del" title="Delete"></button>
-        <button v-if="showSpam" v-on="click: spam" class="labels-b-spam" title="Spam"></button>
-        <button v-on="click: merge" class="labels-b-merge" title="Merge threads to one"></button>
-
-        <div class="labels-edit">
-        <a v-repeat="labels_sel" v-on="click: go" href="{{$value | labelUrl}}" class="label">
-            {{$value | trancate}}
-            <span  v-on="click: mark('-', $value, $event)" class="label-del" title="Delete"></span>
-        </a>
-        <button class="labels--edit" title="Edit labels"></button>
+        <button v-on="click: showSearch" class="labels--search" title="Show search bar"></button>
+        <div class="labels-current">
+            <button v-on="click: archive" class="labels-b-arch" title="Archive"></button>
+            <button v-if="showTrash" v-on="click: del" class="labels-b-del" title="Delete"></button>
+            <button v-if="showSpam" v-on="click: spam" class="labels-b-spam" title="Spam"></button>
+            <button v-on="click: merge" class="labels-b-merge" title="Merge threads to one"></button>
+            <a v-repeat="labels_sel" v-on="click: go" href="{{$value | labelUrl}}" class="label">
+                {{$value | trancate}}
+                <span  v-on="click: mark('-', $value, $event)" class="label-del" title="Delete"></span>
+            </a>
+            <button class="labels--edit" title="Edit labels"></button>
         </div>
         <div v-if="labels_sel" class="labels-input">
             <span><input/></span>
-            <button class="labels--ok"></button>
-            <button class="labels--cancel"></button>
+            <button type="submit" class="input--ok"></button>
+            <button type="button" class="input--x"></button>
         </div>
     </div>
 </div>
-<div class="nav-info">
-    <img class="nav-pic" src="{{image}}">
-    <div v-if="username" class="nav-user">
-        {{username}}
-        (<span v-if="email">{{email}}</span><a v-if="!email" href="/api/gmail/">connect</a>)
-    </div>
-    <div v-if="last_sync" class="nav-last-sync">({{last_sync}} - last sync)</div>
-    <div v-on="click: logout" class="nav-logout" title="Logout"></div>
-</div>
 <div class="sidebar">
-    <a v-if="email" href="/compose/new/" v-on="click: go" class="compose-new">Compose</a>
-    <template v-if="labels">
-    <ul class="labels">
-    <li v-repeat="labels.items">
-        <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
-            <span class="label-count">{{unread}}</span>{{name}}
-        </a>
-    </li>
+    <div class="nav-info">
+        <img class="nav-pic" src="{{image}}">
+        <div v-if="username" class="nav-username">{{username}}</div>
+        <a v-on="click: logout" class="nav-logout" title="Logout" href="#"></a>
+        <div class="nav-email">
+            <span v-if="email">{{email}}</span>
+            <a v-if="!email" href="/api/gmail/">connect</a>
+        </div>
+        <div v-if="last_sync" class="nav-last-sync">{{last_sync}} - last sync</div>
+    </div>
+    <div class="nav-options">
+        <a v-on="click: showHelp" class="nav-help" title="Keyboard shortcut help" href="#"></a>
+        <a v-on="click: toggleFont" class="nav-font" title="Toggle font size" href="#"></a>
+        <a v-if="email" href="/compose/new/" v-on="click: go" class="nav-compose">Compose</a>
+    </div>
+    <ul v-if="labels" class="labels">
+        <li v-repeat="labels.items">
+            <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
+                <span class="label-count">{{unread}}</span>{{name}}
+            </a>
+        </li>
     </ul>
-    </template>
-    <ul class="nav-options">
-        <li v-on="click: showHelp" class="nav-help" title="Keyboard shortcut help"></li>
-        <li v-on="click: fontSize('normal')" class="font-size-normal" title="Normal fonr size"></li>
-        <li v-on="click: fontSize('bigger')" class="font-size-bigger" title="Bigger font size"></li>
-    </ul>
-
 </div>
 <div v-if="show_help" class="help">
     <h3>

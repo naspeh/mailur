@@ -260,7 +260,7 @@ let Sidebar = Component.extend({
     template: require('./sidebar.html'),
     created() {
         this.fetch((data) => this.$mount('.sidebar'));
-        this.fontSize(session.fontSize || 'normal');
+        this.setFont(session.bigger || false);
 
         this.help = '';
         for (let item of hotkeys) {
@@ -303,14 +303,14 @@ let Sidebar = Component.extend({
             data.$set('labels_edit', data.labels_edit || false);
             return data;
         },
-        fontSize(val) {
-            session.fontSize = val;
-            let cls = 'bigger', body = $('body')[0].classList;
-            if (val == cls) {
-                body.add(cls);
-            } else {
-                body.remove(cls);
-            }
+        setFont(val) {
+            $('body')[0].classList[val ? 'add' : 'remove']('bigger');
+        },
+        toggleFont(e) {
+            e.preventDefault();
+            let val = session.bigger ? '' : 1;
+            this.setFont(val);
+            session.bigger = val;
         },
         search(e) {
             e.preventDefault();
@@ -332,14 +332,28 @@ let Sidebar = Component.extend({
         closeErrors(e) {
             this.errors = [];
         },
-        showSearch(e) {
-            this.labels_edit = false;
-            Mousetrap.bind('esc', (e => {
-                this.labels_edit = true;
+        focusSearch(e) {
+            Mousetrap(e.target).bind('esc', (e) => {
+                // TODO: check multiple fires
                 Mousetrap.unbind('esc');
-            }));
+                this.resetSearch();
+            });
+        },
+        showSearch(e) {
+            this._search = true;
+            this.labels_edit = false;
+        },
+        resetSearch(e) {
+            $('.search .input--x')[0].focus();
+            if (e) e.preventDefault();
+            this.search_query = view.search_query;
+            if (this._search) {
+                this._search = false;
+                this.labels_edit = true;
+            }
         },
         logout(e) {
+            e.preventDefault();
             send('/logout/', null, (data) => {
                 user = null;
                 location.href = '/login/';
@@ -370,15 +384,14 @@ let Sidebar = Component.extend({
             }, (data) => reload());
         },
         initLabels() {
-            let container = $('.header .labels')[0];
+            let container = $('.header.labels-exists')[0];
             if (!container) return;
 
             let vm = this;
             let $$ = container.querySelector.bind(container);
-            let labels = $$('.labels-edit');
 
             let tags, compl;
-            let edit = $$('.labels-input');
+            let input = $$('.labels-input input');
 
             let save = () => {
                 let new_labels = tags.value().split(',');
@@ -392,8 +405,7 @@ let Sidebar = Component.extend({
             };
             let init = () => {
                 clear();
-                toggle(edit, true);
-                toggle(labels, false);
+                container.classList.add('labels-input-on');
 
                 compl = horsey(input, {suggestions: vm.labels.all});
                 tags = insignia(input, {
@@ -417,10 +429,8 @@ let Sidebar = Component.extend({
             };
             let reset = () => {
                 clear();
-                toggle(labels, true);
-                toggle(edit, false);
+                container.classList.remove('labels-input-on');
             };
-            let input = edit.querySelector('input');
 
             Mousetrap(input)
                 .bind(['esc'], (e) => {
@@ -447,9 +457,9 @@ let Sidebar = Component.extend({
                 .bind('esc esc', (e) => reset())
                 .bind('ctrl+enter', (e) => save());
 
-            $$('.labels--ok').addEventListener('click', (e) => save());
-            $$('.labels--cancel').addEventListener('click', (e) => reset());
             $$('.labels--edit').addEventListener('click', (e) => init());
+            $$('.labels .input--ok').addEventListener('click', (e) => save());
+            $$('.labels .input--x').addEventListener('click', (e) => reset());
             return reset;
         },
     }
