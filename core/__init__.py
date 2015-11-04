@@ -61,6 +61,7 @@ def get_conf(conf=None):
             'ui_ws_enabled': v.Nullable(bool, True),
             'ui_ws_timeout': v.Nullable(int, 1000),
             'ui_firebug': v.Nullable(bool, False),
+            'ui_thread_few': v.Nullable(int, 5),
             'host_ws': v.Nullable(str, 'ws://localhost/async/'),
             'host_web': v.Nullable(strip_slash, 'http://localhost:8000'),
             'search_lang': v.Nullable([str], ['simple', 'english']),

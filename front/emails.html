@@ -1,4 +1,7 @@
-<div v-if="title" class="title">{{title}}</div>
+<div v-if="title" class="title">
+    <a v-if="emails.length < count" v-on="click: go" href="?full=1" class="thread-full" title="Show all messages">{{count}} messages</a>
+    {{title}}
+</div>
 <ul v-if="emails" v-class="emails: 1, thread: thread">
 <li v-repeat="emails.items" track-by="id" v-class="
         email: 1,

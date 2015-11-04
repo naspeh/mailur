@@ -379,31 +379,52 @@ def ctx_quote(env, msg, forward=False):
 
 @login_required
 def thread(env, id):
-    i = env.sql('''
-    SELECT
-        id, thrid, subj, labels, time, fr, "to", text, cc, created,
-        html, attachments, parent
-    FROM emails
-    WHERE thrid = %s
-    ORDER BY time
-    ''', [id])
-    msgs, labels = [], set()
+    count = env.sql('SELECT count(id) FROM emails WHERE thrid = %s', [id])
+    count = count.fetchone()[0]
+    if count:
+        if env.request.args.get('full'):
+            where = env.mogrify('thrid = %s', [id])
+        else:
+            where = env.mogrify('''
+            id IN (
+              SELECT id FROM emails
+                WHERE thrid = %(thrid)s
+                ORDER BY id DESC LIMIT %(few)s
+            ) OR id IN (
+              SELECT id FROM emails
+                WHERE labels && %(labels)s::varchar[] AND thrid = %(thrid)s
+            )
+            ''', {
+                'thrid': id,
+                'labels': ['\\Unread', '\\Pinned'],
+                'few': env('ui_thread_few')
+            })
 
-    def emails():
-        for n, msg in enumerate(i):
-            msg = dict(msg)
-            labels.update(msg['labels'])
-            if n == 0:
-                subj = msg['subj']
-            msg['_extra'] = {
-                'subj_changed': f.is_subj_changed(msg['subj'], subj),
-                'subj_human': f.humanize_subj(msg['subj'], subj),
-                'body': ctx_body(env, msg, msgs)
-            }
-            yield msg
-            msgs.insert(0, msg)
+        i = env.sql('''
+        SELECT
+            id, thrid, subj, labels, time, fr, "to", text, cc, created,
+            html, attachments, parent
+        FROM emails
+        WHERE {where}
+        ORDER BY id
+        '''.format(where=where))
+        msgs, labels = [], set()
 
-    ctx = ctx_emails(env, emails())
+        def emails():
+            for n, msg in enumerate(i):
+                msg = dict(msg)
+                labels.update(msg['labels'])
+                if n == 0:
+                    subj = msg['subj']
+                msg['_extra'] = {
+                    'subj_changed': f.is_subj_changed(msg['subj'], subj),
+                    'subj_human': f.humanize_subj(msg['subj'], subj),
+                    'body': ctx_body(env, msg, msgs)
+                }
+                yield msg
+                msgs.insert(0, msg)
+
+    ctx = ctx_emails(env, emails() if count else [])
     if ctx['emails']:
         emails = ctx['emails']['items']
         subj = f.humanize_subj(emails[0]['subj'])
@@ -413,6 +434,7 @@ def thread(env, id):
 
         ctx['title'] = subj
         ctx['thread'] = True
+        ctx['count'] = count
         ctx['labels'] = ctx_labels(env, labels)
         ctx['reply_url'] = env.url_for('compose', {'target': 'all', 'id': id})
     return ctx
