@@ -379,9 +379,13 @@ def ctx_quote(env, msg, forward=False):
 
 @login_required
 def thread(env, id):
-    count = env.sql('SELECT count(id) FROM emails WHERE thrid = %s', [id])
-    count = count.fetchone()[0]
+    i = env.sql('''
+    SELECT count(id), json_agg(labels)
+    FROM emails WHERE thrid = %s
+    ''', [id])
+    count, labels = i.fetchone()
     if count:
+        labels = set(sum((r for r in labels), []))
         if env.request.args.get('full'):
             where = env.mogrify('thrid = %s', [id])
         else:
@@ -408,12 +412,11 @@ def thread(env, id):
         WHERE {where}
         ORDER BY id
         '''.format(where=where))
-        msgs, labels = [], set()
+        msgs = []
 
         def emails():
             for n, msg in enumerate(i):
                 msg = dict(msg)
-                labels.update(msg['labels'])
                 if n == 0:
                     subj = msg['subj']
                 msg['_extra'] = {
