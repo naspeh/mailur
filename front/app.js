@@ -380,7 +380,8 @@ let Sidebar = Component.extend({
             e.stopPropagation();
             newThread({
                 action: 'merge',
-                ids: this.getPicked(this, (el) => el.thrid)
+                // FIXME: it isn't good to call view here
+                ids: view.getPicked(view, (el) => el.thrid)
             }, (data) => reload());
         },
         initLabels() {
