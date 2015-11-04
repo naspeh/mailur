@@ -345,6 +345,7 @@ let Sidebar = Component.extend({
         showSearch(e) {
             this._search = true;
             this.labels_edit = false;
+            this.$nextTick(() => $('.search input')[0].focus());
         },
         resetSearch(e) {
             $('.search .input--x')[0].focus();
