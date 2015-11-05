@@ -136,12 +136,6 @@ body {
         .title {
             font-weight: bold;
             margin-bottom: .5em;
-            .thread-full {
-                .mix_link();
-                display: inline-block;
-                margin-right: .5em;
-                font-size: 0.8em;
-            }
         }
     }
 }
@@ -427,6 +421,21 @@ body > .header {
             background-color: @Color1bg;
         }
     }
+    .email-hidden {
+        .mix_links();
+        a {
+            display: block;
+            padding: .5em;
+            background-color: @Color1bg;
+            border-top: 1px solid @Color1b;
+            border-radius: .5em;
+            text-align: center;
+            font-size: .9em;
+            &:after, &:before {
+                content: " -- ";
+            }
+        }
+    }
     .email-body {
         display: none;
     }
@@ -470,19 +479,21 @@ body > .header {
     }
     .email-details {
         .mix_links();
-        font-size: 0.7em;
-        padding: .5em;
+        padding: .3em;
         margin: 0 .5em;
         border-bottom: 1px solid @Color1bg;
+        overflow: hidden;
 
         .email-actions {
             a {
-                margin-right: 1em;
+                font-size: 0.7em;
                 white-space: nowrap;
+                margin-right: 0.5em;
             }
         }
         .email-extra {
             margin-top: 0.5em;
+            font-size: 0.8em;
 
             ul {
                 .mix_reset_list();
