@@ -34,6 +34,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
     let initComponent = (current) => {
         send(getPath(), null, {
             success(data) {
+                $one('.body').scrollTop = 0;
                 if (!view || view.constructor != current) {
                     view = new current({data: data, el: '.body'});
                 } else {
