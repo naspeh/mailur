@@ -296,7 +296,7 @@ let Slider = Component.extend({
             }
         },
         next(e) {
-            this.next(e, (i => i + 1));
+            this.prev(e, (i => i + 1));
         },
         fix() {
             let fix = (x, y) => !y ? 0 : Math.round((x - y) / 2) + 'px';
