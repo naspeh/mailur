@@ -257,6 +257,57 @@ let Pwd = Component.extend({
         }
     }
 });
+let Slider = Component.extend({
+    template: require('./slider.html'),
+    data() {
+        return {slide: null, slides: []};
+    },
+    created() {
+        this.$mount('.overlay');
+
+        Mousetrap
+            .bind('esc', (e => this.close()))
+            .bind('left', (e => this.prev()))
+            .bind('right', (e => this.next()));
+    },
+    methods: {
+        close(e) {
+            if (e) e.preventDefault();
+            this.$destroy();
+            $one('.slider').remove();
+            Mousetrap.unbind(['esc', 'left', 'right']);
+        },
+        prev(e, callback) {
+            callback = callback || (i => i - 1);
+            for (let v of this.slides) {
+                if (v.url == this.slide.url) {
+                    this.slide = v;
+                    break;
+                }
+            }
+            let i = this.slides.indexOf(this.slide);
+            i = callback(i);
+            if (i < 0) {
+                this.slide = this.slides.splice(-1)[0];
+            } else if (i > this.slides.length - 1) {
+                this.slide = this.slides[0];
+            } else {
+                this.slide = this.slides[i];
+            }
+        },
+        next(e) {
+            this.next(e, (i => i + 1));
+        },
+        fix() {
+            let fix = (x, y) => !y ? 0 : Math.round((x - y) / 2) + 'px';
+            let box = $('.slider-img')[0], img = box.firstElementChild;
+            img.style.maxWidth = box.clientWidth;
+            img.style.maxHeight = box.clientHeight;
+            img.style.top = fix(box.clientHeight, img.clientHeight);
+            img.style.left = fix(box.clientWidth, img.clientWidth);
+        }
+    }
+});
 let Sidebar = Component.extend({
     replace: true,
     template: require('./sidebar.html'),
@@ -294,6 +345,7 @@ let Sidebar = Component.extend({
         },
         initData(data) {
             data.$set('errors', data.errors || []);
+            data.$set('slide', null);
 
             if (view && view.constructor == Emails) {
                 data.search_query = view.search_query;
@@ -505,7 +557,6 @@ let Emails = Component.extend({
     },
     methods: {
         initData(data) {
-            data.$set('slide', null);
             if(!data.emails) {
                 if(!data.title) data.$set('title', '');
                 return data;
@@ -626,60 +677,21 @@ let Emails = Component.extend({
         delete(e) {
             mark({action: '+', name: '\\Trash', ids: [e.targetVM.id]});
         },
-        showSlides(e) {
+        showSlider(e) {
             if (e.targetVM.maintype != 'image') {
                 return;
             }
 
             e.preventDefault();
-            this.slides = [];
+            let slides = [];
             for (let i of e.targetVM.$parent.body.attachments.items) {
                 if(i.maintype == 'image') {
-                    this.slides.push(i);
+                    slides.push(i);
                 }
             }
-
-            this.slide = e.targetVM;
-            Mousetrap
-                .bind('esc', (e => this.closeSlides()))
-                .bind('left', (e => this.prevSlides()))
-                .bind('right', (e => this.nextSlides()));
+            new Slider({data: {slide: e.targetVM, slides: slides}});
         },
-        closeSlides(e) {
-            if (e) e.preventDefault();
-            this.slide = null;
-            Mousetrap.unbind(['esc', 'left', 'right']);
-        },
-        prevSlides(e, callback) {
-            callback = callback || (i => i - 1);
-            for (let v of this.slides) {
-                if (v.url == this.slide.url) {
-                    this.slide = v;
-                    break;
-                }
-            }
-            let i = this.slides.indexOf(this.slide);
-            i = callback(i);
-            if (i < 0) {
-                this.slide = this.slides.splice(-1)[0];
-            } else if (i > this.slides.length - 1) {
-                this.slide = this.slides[0];
-            } else {
-                this.slide = this.slides[i];
-            }
-        },
-        nextSlides(e) {
-            this.prevSlides(e, (i => i + 1));
-        },
-        fixSlide() {
-            let fix = (x, y) => !y ? 0 : Math.round((x - y) / 2) + 'px';
-            let box = $('.slides-img')[0], img = box.firstElementChild;
-            img.style.maxWidth = box.clientWidth;
-            img.style.maxHeight = box.clientHeight;
-            img.style.top = fix(box.clientHeight, img.clientHeight);
-            img.style.left = fix(box.clientWidth, img.clientWidth);
-        }
-    },
+    }
 });
 let Compose = Component.extend({
     template: require('./compose.html'),
@@ -800,6 +812,9 @@ function $(selector, root) {
     root = root || document;
     let elements = Array.from(root.querySelectorAll(selector));
     return elements;
+}
+function $one(...params) {
+    return $(...params)[0];
 }
 function toggle(el, state) {
     if (state === undefined) {

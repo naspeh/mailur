@@ -267,7 +267,7 @@ body > .sidebar {
     }
 }
 body > .header {
-    z-index: 100;
+    z-index: 10;
     position: absolute;
     top: 0;
     right: 0;
@@ -572,7 +572,7 @@ body > .header {
 
     .label-del {
         &:after {
-            content: ' \e80E ';
+            content: ' X ';
         }
         &:hover {
             color: @ColorC;
@@ -625,7 +625,7 @@ body > .header {
         right: 0;
         bottom: 0;
         left: 0;
-        z-index: 100;
+        z-index: 10;
         background-color:rgba(0, 0, 0, 0.65);
         &:after {
             content: 'Sending...';
@@ -642,25 +642,28 @@ body > .header {
         display: none;
     }
 }
-.slides {
+.slider {
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 200;
+    z-index: 100;
     background-color:rgba(0, 0, 0, 0.85);
     padding: 30px 20px;
     color: #fff;
     text-align: center;
 
-    .slides-loading {
+    &.slider-show {
+        display: block;
+    }
+    .slider-loading {
         position: absolute;
         top: 50%;
         left: 50%;
         .icon-loading();
     }
-    .slides-img {
+    .slider-img {
         position: relative;
         height: 100%;
         width: 100%;
@@ -671,18 +674,18 @@ body > .header {
             left: 0;
         }
     }
-    .slides-close {
+    .slider-close {
         position: absolute;
         top: 0;
         right: 0;
-        z-index: 210;
+        z-index: 110;
         padding: 10px;
         cursor: pointer;
         &:after {
-            content: '\e80E';
+            content: 'X';
         }
     }
-    .slides-prev {
+    .slider-prev {
         position: absolute;
         top: 30px;
         bottom: 30px;
@@ -690,7 +693,7 @@ body > .header {
         width: 30%;
         cursor: pointer;
     }
-    .slides-next {
+    .slider-next {
         position: absolute;
         top: 30px;
         bottom: 30px;
@@ -698,7 +701,7 @@ body > .header {
         width: 70%;
         cursor: pointer;
     }
-    .slides-title {
+    .slider-title {
         a {
             text-decoration: none;
             color: #fff;
@@ -764,7 +767,7 @@ body > .header {
 }
 .nsg-tag-remove {
     &:after {
-        content: ' \e80E ';
+        content: ' X ';
         cursor: pointer;
     }
     &:hover {

@@ -68,7 +68,7 @@
         <div v-if="body.attachments" class="email-attachments">
             <ul>
                 <li v-repeat="body.attachments.items">
-                    <a v-on="click: showSlides" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a>
+                    <a v-on="click: showSlider" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a>
                 </li>
             </ul>
         </div>
@@ -82,15 +82,3 @@
 </li>
 </ul>
 <div v-if="reply_body" class="compose-body"></div>
-<div v-if="slide" class="slides">
-    <div class="slides-close" v-on="click: closeSlides" title="Close"></div>
-    <div class="slides-loading"></div>
-    <div class="slides-img">
-        <img v-on="load: fixSlide, complete: fixSlide" v-attr="src: slide.url" />
-    </div>
-    <div class="slides-prev" v-on="click: prevSlides"></div>
-    <div class="slides-next" v-on="click: nextSlides"></div>
-    <div class="slides-title">
-        <a href="{{slide.url}}" target="_blank">{{slide.name}}</a>
-    </div>
-</div>
