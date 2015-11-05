@@ -643,14 +643,14 @@ body > .header {
     }
 }
 .slider {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
     z-index: 100;
     background-color:rgba(0, 0, 0, 0.85);
-    padding: 30px 20px;
+    padding: 2em 0.5em 0.5em 0.5em;
     color: #fff;
     text-align: center;
 
@@ -674,12 +674,23 @@ body > .header {
             left: 0;
         }
     }
+    .slider-title {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        z-index: 110;
+        a {
+            display: inline-block;
+            padding: .5em 1em;
+            color: #fff;
+        }
+    }
     .slider-close {
         position: absolute;
         top: 0;
         right: 0;
         z-index: 110;
-        padding: 10px;
+        padding: 0.5em;
         cursor: pointer;
         &:after {
             content: 'X';
@@ -687,25 +698,19 @@ body > .header {
     }
     .slider-prev {
         position: absolute;
-        top: 30px;
-        bottom: 30px;
+        top: 0;
+        bottom: 0;
         left: 0;
         width: 30%;
         cursor: pointer;
     }
     .slider-next {
         position: absolute;
-        top: 30px;
-        bottom: 30px;
+        top: 0;
+        bottom: 0;
         right: 0;
         width: 70%;
         cursor: pointer;
-    }
-    .slider-title {
-        a {
-            text-decoration: none;
-            color: #fff;
-        }
     }
 }
 .help {

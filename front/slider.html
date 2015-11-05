@@ -1,4 +1,7 @@
 <div class="slider">
+    <div class="slider-title">
+        <a href="{{slide.url}}" target="_blank">{{slide.name}}</a>
+    </div>
     <div class="slider-close" v-on="click: close" title="Close"></div>
     <div class="slider-loading"></div>
     <div class="slider-img">
@@ -6,7 +9,4 @@
     </div>
     <div class="slider-prev" v-on="click: prev"></div>
     <div class="slider-next" v-on="click: next"></div>
-    <div class="slider-title">
-        <a href="{{slide.url}}" target="_blank">{{slide.name}}</a>
-    </div>
 </div>
