@@ -396,6 +396,9 @@ def deploy(opts):
         supervisorctl update && supervisorctl restart postgres
         ''')
 
+    if opts['npm']:
+        cmd.append('cd {path[src]} && npm i')
+
     cmd.append(
         'PATH="./node_modules/.bin;$PATH" {manage} static &&'
         'supervisorctl update &&'
@@ -435,6 +438,7 @@ def get_base(argv):
         .arg('-p', '--pkgs', action='store_true')\
         .arg('-d', '--db', action='store_true')\
         .arg('-k', '--keys', action='store_true')\
+        .arg('-n', '--npm', action='store_true')\
         .exe(lambda a: deploy(a.__dict__))
     return parser, cmd
 
