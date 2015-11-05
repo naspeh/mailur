@@ -380,17 +380,21 @@ def ctx_quote(env, msg, forward=False):
 @login_required
 def thread(env, id):
     i = env.sql('''
-    SELECT count(id), json_agg(labels)
+    SELECT count(id), json_agg(labels), array_agg(subj)
     FROM emails WHERE thrid = %s
     ''', [id])
-    count, labels = i.fetchone()
+    count, labels, subj = i.fetchone()
     if count:
+        subj = subj[0]
         labels = set(sum((r for r in labels), []))
-        if env.request.args.get('full'):
-            where = env.mogrify('thrid = %s', [id])
-        else:
-            where = env.mogrify('''
-            id IN (
+        where = env.mogrify('thrid = %s', [id])
+        if not env.request.args.get('full'):
+            i = env.sql('''
+            SELECT id FROM emails WHERE id IN (
+              SELECT id FROM emails
+                WHERE thrid = %(thrid)s
+                ORDER BY id LIMIT 1
+            ) OR id IN (
               SELECT id FROM emails
                 WHERE thrid = %(thrid)s
                 ORDER BY id DESC LIMIT %(few)s
@@ -403,6 +407,9 @@ def thread(env, id):
                 'labels': ['\\Unread', '\\Pinned'],
                 'few': env('ui_thread_few')
             })
+            ids = [r[0] for r in i]
+            if (count - len(ids)) > env('ui_thread_few'):
+                where = env.mogrify('id = ANY(%s)', [ids])
 
         i = env.sql('''
         SELECT
@@ -415,10 +422,8 @@ def thread(env, id):
         msgs = []
 
         def emails():
-            for n, msg in enumerate(i):
+            for msg in i:
                 msg = dict(msg)
-                if n == 0:
-                    subj = msg['subj']
                 msg['_extra'] = {
                     'subj_changed': f.is_subj_changed(msg['subj'], subj),
                     'subj_human': f.humanize_subj(msg['subj'], subj),
