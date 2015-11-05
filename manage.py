@@ -76,6 +76,7 @@ def npm():
         '   core-js'
         '   browserify'
         '   babelify'
+        '   babel-preset-es2015'
         '   partialify'
         '   uglify-js'
         # js linting
@@ -97,7 +98,7 @@ def npm():
 def front(env, force=False, clean=False):
     def get_version():
         return sp.check_output((
-            'find manage.py conf.json {0}'
+            'find manage.py conf.json node_modules {0}'
             '   -type f'
             '   ! -name version'
             '   ! -name index.html'

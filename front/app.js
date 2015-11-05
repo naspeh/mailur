@@ -13,8 +13,12 @@ let array_union = require('lodash/array/union');
 
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
 let user, view, sidebar, history, offset = new Date().getTimezoneOffset() / 60;
+let initUser = (data, url) => {
+    user = data.username ? data : null;
+    if (url) go(url);
+};
 send(`/info/?offset=${offset}`, null, (data) => {
-    Login.options.init(data);
+    initUser(data);
 
     let title = document.title;
     let patterns = [
@@ -205,7 +209,7 @@ let Login = Component.extend({
                         this.$data = data;
                         return;
                     }
-                    Login.options.init(data, '/');
+                    initUser(data, '/');
                 })
                 .catch((data) => {
                     this.error = 'Something went wrong, please try again';
@@ -213,10 +217,6 @@ let Login = Component.extend({
                 });
         },
     },
-    init(data, url) {
-        user = data.username ? data : null;
-        if (url) go(url);
-    }
 });
 
 let Pwd = Component.extend({
@@ -251,7 +251,7 @@ let Pwd = Component.extend({
                         username: data.username,
                         password: password}
                     ).then((data) => {
-                        Login.options.init(data, '/');
+                        initUser(data, '/');
                     });
                 });
         }
@@ -953,7 +953,9 @@ function send(url, data, callback) {
     url = url.replace(location.origin, '');
     callback = {
         success: callback && callback.success || callback,
-        error: callback && callback.error || (ex => error([url, ex]))
+        error: callback && callback.error || (
+            !conf.debug ? (ex => error([url, ex])) : null
+        )
     };
 
     if (ws && conf.ws_proxy && ws.readyState === ws.OPEN) {
