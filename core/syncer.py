@@ -573,10 +573,10 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 SELECT id, thrid FROM emails
                 WHERE
                     %(folder)s = ANY(labels)
-                    AND array_prepend(msgid, refs) && %(refs)s::varchar[]
+                    AND (in_reply_to || refs) && %(refs)s::varchar[]
                 ORDER BY id DESC
                 LIMIT 1
-                ''', dict(ctx, refs=refs[1:])).fetchone()
+                ''', dict(ctx, refs=refs)).fetchone()
             if parent:
                 thrid = thrid or parent['thrid']
                 pid = parent['id']
