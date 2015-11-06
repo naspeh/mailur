@@ -444,7 +444,7 @@ def thread(env, id):
         ctx['thread'] = True
         ctx['hidden'] = count - len(emails)
         ctx['labels'] = ctx_labels(env, labels)
-        ctx['has_draft'] = bool(env.storage('compose', thrid=id))
+        ctx['has_draft'] = bool(env.storage('compose', thrid=id).get())
         ctx['reply_url'] = env.url_for('compose', {'target': 'all', 'id': id})
     return ctx
 

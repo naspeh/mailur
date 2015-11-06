@@ -41,13 +41,18 @@
         <a v-if="email" href="/compose/new/" v-on="click: go" class="nav-compose">Compose</a>
     </div>
     <ul class="nav-tabs">
-        <li><a v-on="click: newTab" href="#">New tab</a></li>
-        <li v-repeat="tabs"><a v-on="click: go" href="/{{$index}}{{url}}">
-            <span v-on="click: delTab" class="nav-tab-x"></span>
-            {{name}}
-        </a></li>
+        <li class="nav-title">
+            Tabs <span v-on="click: newTab" class="nav--new"></span>
+        </li>
+        <li v-repeat="tabs">
+            <a v-on="click: go" v-class="nav-active: $index == tab" href="/{{$index}}{{url}}">
+                <span v-on="click: delTab" class="nav--x"></span>
+                {{name}}
+            </a>
+        </li>
     </ul>
     <ul v-if="labels" class="nav-labels">
+        <li class="nav-title">Labels</li>
         <li v-repeat="labels.items">
             <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
                 <span class="label-count">{{unread}}</span>{{name}}

@@ -12,7 +12,7 @@ let session = localStorage || {};
 let array_union = require('lodash/array/union');
 
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
-let user, view, tab, sidebar, history;
+let user, view, views = [], tab, sidebar, history;
 let initUser = (data, url) => {
     user = data.username ? data : null;
     if (url) go(url);
@@ -36,9 +36,10 @@ send(`/info/?offset=${offset}`, null, (data) => {
     let initComponent = (current) => {
         send(getPath(), null, {
             success(data) {
-                $one('.body').scrollTop = 0;
+                let body = $('.body-active')[0];
+                body.scrollTop = 0;
                 if (!view || view.constructor != current) {
-                    view = new current({data: data, el: '.body'});
+                    view = new current({data: data, el: body});
                 } else {
                     view.$data = data;
                 }
@@ -46,7 +47,11 @@ send(`/info/?offset=${offset}`, null, (data) => {
                     document.title = `${data.title} - ${title}`;
                 }
                 sidebar.fetch();
-                sidebar.saveTab();
+                if (tab !== undefined) {
+                    sidebar.saveTab();
+                    views[tab] = view;
+                }
+
             },
             error: (data) => error(data)
         });
@@ -62,7 +67,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
         if (user && !user.last_sync) {
             new Component({
                 template: require('./empty.html'),
-                el: '.body',
+                el: '.body-active',
                 data: data
             });
             return;
@@ -71,7 +76,28 @@ send(`/info/?offset=${offset}`, null, (data) => {
             pattern = '^(/([0-9]+))?' + pattern;
             let info = RegExp(pattern).exec(location.pathname);
             if (info) {
-                tab = info[2] && parseInt(info[2]);
+                let body, load = true, tabNew = info[2] && parseInt(info[2]);
+                if (tab === undefined || tab != tabNew) {
+                    tab = tabNew;
+                    view = views[tab];
+                    body = $(`.body-${tab}`);
+                    if (body.length) {
+                        load = false;
+                        body = body[0];
+                    } else {
+                        body = document.createElement('div');
+                        body.classList.add('body', `body-${tab}`);
+                        $('body')[0].appendChild(body);
+                    }
+                    for (let el of Array.from($('.body'))) {
+                        el.classList.remove('body-active');
+                    }
+                    body.classList.add('body-active');
+                    if (!load) {
+                        view.activate();
+                        return;
+                    }
+                }
                 if (current.component) {
                     initComponent(current);
                 } else {
@@ -167,6 +193,7 @@ let Component = Vue.extend({
                 url = url ? url : e.target.href;
                 go(url);
             },
+            activate() {}
         },
     }],
 });
@@ -189,6 +216,7 @@ p._setData = function(data) {
     p._setDataOrig.bind(this)(data);
 };
 let Login = Component.extend({
+    name: 'Login',
     template: require('./login.html'),
     methods: {
         initData(data) {
@@ -227,6 +255,7 @@ let Login = Component.extend({
 });
 
 let Pwd = Component.extend({
+    name: 'Pwd',
     template: require('./pwd.html'),
     methods: {
         initData(data) {
@@ -265,6 +294,7 @@ let Pwd = Component.extend({
     }
 });
 let Slider = Component.extend({
+    name: 'Slider',
     template: require('./slider.html'),
     data() {
         return {slide: null, slides: []};
@@ -281,7 +311,7 @@ let Slider = Component.extend({
         close(e) {
             if (e) e.preventDefault();
             this.$destroy();
-            $one('.slider').remove();
+            $('.slider')[0].remove();
             Mousetrap.unbind(['esc', 'left', 'right']);
         },
         prev(e, callback) {
@@ -317,6 +347,7 @@ let Slider = Component.extend({
 });
 let Sidebar = Component.extend({
     replace: true,
+    name: 'Sidebar',
     template: require('./sidebar.html'),
     created() {
         this.fetch((data) => this.$mount('.sidebar'));
@@ -354,6 +385,7 @@ let Sidebar = Component.extend({
             });
         },
         initData(data) {
+            data.$set('tab', tab);
             data.$set('tabs', session.tabs ? JSON.parse(session.tabs) : []);
 
             data.$set('errors', data.errors || []);
@@ -374,6 +406,7 @@ let Sidebar = Component.extend({
         saveTab() {
             if (tab === undefined || !view) return;
 
+            this.tab = tab;
             this.tabs.$set(tab, {
                 url: getPath().replace(RegExp('^/[0-9]+'), ''),
                 name: view.title || view.search_query
@@ -427,10 +460,10 @@ let Sidebar = Component.extend({
         showSearch(e) {
             this._search = true;
             this.labels_edit = false;
-            this.$nextTick(() => $('.search input')[0].focus());
+            this.$nextTick(() => $$('.search input')[0].focus());
         },
         resetSearch(e) {
-            $('.search .input--x')[0].focus();
+            $$('.search .input--x')[0].focus();
             if (e) e.preventDefault();
             this.search_query = '';
             if (this._search) {
@@ -471,12 +504,10 @@ let Sidebar = Component.extend({
             }, (data) => reload());
         },
         initLabels() {
-            let container = $('.header.labels-exists')[0];
+            let container = $$('.header.labels-exists')[0];
             if (!container) return;
 
             let vm = this;
-            let $$ = container.querySelector.bind(container);
-
             let tags, compl;
             let input = $$('.labels-input input');
 
@@ -552,6 +583,7 @@ let Sidebar = Component.extend({
     }
 });
 let Emails = Component.extend({
+    name: 'Emails',
     template: require('./emails.html'),
     ready() {
         this.$watch('emails.items', (newVal, oldVal) => {
@@ -569,10 +601,10 @@ let Emails = Component.extend({
     directives: {
         body(value) {
             this.el.innerHTML = value;
-            for (let el of $('a', this.el)) {
+            for (let el of $$('a', this.el)) {
                 el.target = '_blank';
             }
-            for (let el of $('.email-quote-toggle', this.el)) {
+            for (let el of $$('.email-quote-toggle', this.el)) {
                 let quote = el.nextElementSibling;
                 el.addEventListener('click', (e) => toggle(quote));
                 toggle(quote);
@@ -585,6 +617,9 @@ let Emails = Component.extend({
         },
     },
     methods: {
+        activate() {
+            if (this.replyView) this.replyView.activate();
+        },
         initData(data) {
             if(!data.emails) {
                 if(!data.title) data.$set('title', '');
@@ -609,10 +644,10 @@ let Emails = Component.extend({
 
             this.$data.$set('reply_body', true);
             send(url, null, (data) => {
-                let reply = $('.compose-body')[0];
-                new Compose({data: data, el: reply});
+                let reply = $$('.compose-body')[0];
+                this.replyView = new Compose({data: data, el: reply});
                 if (focus) {
-                    setTimeout(() => reply.scrollIntoView(true), 500);
+                    this.replyView.activate();
                 }
             });
         },
@@ -727,6 +762,7 @@ let Emails = Component.extend({
     }
 });
 let Compose = Component.extend({
+    name: 'Compose',
     template: require('./compose.html'),
     ready() {
         let self = this;
@@ -742,7 +778,7 @@ let Compose = Component.extend({
         this.$watch('files', this.preview);
 
         let input, compl, tags;
-        input = $('.compose-to input')[0];
+        input = $$('.compose-to input')[0];
         input.value = this.to;
 
         compl = horsey(input, {suggestions: (done) => {
@@ -772,13 +808,16 @@ let Compose = Component.extend({
                 tags.convert();
             });
 
-        let text = $('.compose textarea')[0];
-        Mousetrap(text).bind('ctrl+enter', (e) => self.send());
+        this.text = $$('.compose textarea')[0];
+        Mousetrap(this.text).bind('ctrl+enter', (e) => self.send());
 
         tabOverride.tabSize(4);
-        tabOverride.set(text);
+        tabOverride.set(this.text);
     },
     methods : {
+        activate() {
+            this.text.focus();
+        },
         getContext() {
             let ctx = {};
             let fields = [
@@ -846,8 +885,8 @@ function $(selector, root) {
     let elements = Array.from(root.querySelectorAll(selector));
     return elements;
 }
-function $one(...params) {
-    return $(...params)[0];
+function $$(selector, root) {
+    return $(selector, root || $('.body-active')[0]);
 }
 function toggle(el, state) {
     if (state === undefined) {

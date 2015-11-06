@@ -125,6 +125,7 @@ body {
         }
     }
     &> .body {
+        display: none;
         position: absolute;
         top: @HeaderH;
         right: 0;
@@ -133,6 +134,10 @@ body {
         padding-right: 0.5em;
         overflow: auto;
         -webkit-overflow-scrolling: touch;
+
+        &.body-active {
+            display: block;
+        }
         .title {
             font-weight: bold;
             margin-bottom: .5em;
@@ -219,18 +224,24 @@ body > .sidebar {
     }
     .nav-labels, .nav-tabs {
         .mix_reset_list();
+        margin-bottom: .5em;
+        border-right: 1px solid #eee;
         font-size: 0.9em;
         text-align: left;
 
         a {
+            position: relative;
             display: block;
+            box-sizing: border-box;
+            padding: .1em 2em .1em .5em;
+            margin-right: -1px;
+            border-radius: .5em 0 0 .5em;
             overflow: hidden;
             text-overflow: ellipsis;
-            padding: 2px 0;
 
             &:hover, &:active {
-                text-decoration: none;
                 background-color: @ColorL;
+                border-color: @ColorL;
                 color: #fff;
 
                 .label-count {
@@ -241,30 +252,48 @@ body > .sidebar {
                 }
             }
         }
+        .nav-title {
+            margin-left: .3em;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .nav-active {
+            background-color: #eee;
+            font-weight: bold;
+        }
+        .nav--new {
+            .icon-plus();
+            .mix_link();
+            cursor: pointer;
+        }
+        .nav--x {
+            .icon-x();
+            display: inline-block;
+            opacity: .5;
+
+            &:before {
+                font-size: .8em;
+            }
+            &:hover {
+                opacity: 1;
+            }
+        }
         .label-count {
             display: inline-block;
-            color: #fff;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            padding: .1em 0;
             min-width: 2em;
-            margin: 0 3px;
-            font-size: 0.7em;
-            font-weight: bold;
+            color: #fff;
             text-align: center;
-            vertical-align: middle;
         }
         .label-unread {
             font-weight: bold;
+
             .label-count {
-                color: #333;
-            }
-        }
-        .nav-tab-x {
-            .icon-x();
-            &:before {
-                font-size: .7em;
-            }
-            &:hover {
-                color: @ColorC;
-                background: #fff;
+                color: @ColorL;
             }
         }
     }
