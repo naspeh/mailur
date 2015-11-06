@@ -49,7 +49,7 @@ def gmail_callback(env):
 
 
 def login(env):
-    ctx = {}
+    ctx = {'title': 'Login'}
     if env.request.method == 'POST':
         args = env.request.json
         schema = v.parse({'+username': str, '+password': str})
@@ -106,7 +106,7 @@ def adapt_page():
 
 def reset_password(env, username=None, token=None):
     def inner(env):
-        ctx = {}
+        ctx = {'title': 'Reset Password'}
         if env.request.method == 'POST':
             schema = v.parse({'+password': str, '+password_confirm': str})
             args = schema.validate(env.request.json)
@@ -167,7 +167,7 @@ def ctx_init(env):
     return {
         'username': env.username,
         'email': env.email,
-        'image': f.get_gravatar(env.email),
+        'image': env.email and f.get_gravatar(env.email),
         'last_sync': last_sync
     }
 

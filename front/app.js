@@ -8,7 +8,6 @@ import tabOverride from 'taboverride/build/output/taboverride';
 Vue.config.debug = conf.debug;
 Vue.config.proto = false;
 
-let session = localStorage || {};
 let array_union = require('lodash/array/union');
 
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
@@ -17,6 +16,22 @@ let initUser = (data, url) => {
     user = data.username ? data : null;
     if (url) go(url);
 };
+let session = {
+    storage: localStorage || {},
+    key(key) {
+        return `${user.username}_${key}`;
+    },
+    get(key, none) {
+        if (!user || !user.username) return none;
+        let val = this.storage[this.key(key)];
+        val = val && JSON.parse(val);
+        return val !== undefined ? val : none;
+    },
+    set(key, val) {
+        if (!user || !user.username) return;
+        this.storage[this.key(key)] = JSON.stringify(val);
+    }
+};
 
 let offset = new Date().getTimezoneOffset() / 60;
 send(`/info/?offset=${offset}`, null, (data) => {
@@ -24,7 +39,10 @@ send(`/info/?offset=${offset}`, null, (data) => {
 
     let title = document.title;
     let patterns = [
-        ['\/$', () => goToLabel('\\Inbox')],
+        ['\/$', () => {
+            let first = session.get('tabs', [])[0];
+            return first ? go(first.url) : goToLabel('\\Inbox');
+        }],
         ['\/(raw)\/', () => {
             location.href = '/api' + location.pathname;
         }],
@@ -43,15 +61,12 @@ send(`/info/?offset=${offset}`, null, (data) => {
                 } else {
                     view.$data = data;
                 }
+                views[tab] = view;
+
                 if (data.title) {
                     document.title = `${data.title} - ${title}`;
                 }
-                sidebar.fetch();
-                if (tab !== undefined) {
-                    sidebar.saveTab();
-                    views[tab] = view;
-                }
-
+                if (sidebar) sidebar.saveTab();
             },
             error: (data) => error(data)
         });
@@ -73,11 +88,18 @@ send(`/info/?offset=${offset}`, null, (data) => {
             return;
         }
         for (let [pattern, current] of patterns) {
-            pattern = '^(/([0-9]+))?' + pattern;
+            pattern = '^(/([0-9]+))?' + `(${pattern})`;
             let info = RegExp(pattern).exec(location.pathname);
             if (info) {
-                let body, load = true, tabNew = info[2] && parseInt(info[2]);
-                if (tab === undefined || tab != tabNew) {
+                let body, load = true;
+                let tabNew = info[2] ? parseInt(info[2]) : 0;
+                let tabs = session.get('tabs', []);
+                if (tabNew > tabs.length) {
+                    tab = tabs.length;
+                    go(info[3] + location.search);
+                    return;
+                }
+                if (tab != tabNew) {
                     tab = tabNew;
                     view = views[tab];
                     body = $(`.body-${tab}`);
@@ -94,6 +116,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
                     }
                     body.classList.add('body-active');
                     if (view && !load) {
+                        if (sidebar) sidebar.fetch();
                         view.activate();
                         return;
                     }
@@ -351,7 +374,7 @@ let Sidebar = Component.extend({
     template: require('./sidebar.html'),
     created() {
         this.fetch((data) => this.$mount('.sidebar'));
-        this.setFont(session.bigger || false);
+        this.setFont(session.get('bigger', false));
 
         this.help = '';
         for (let item of hotkeys) {
@@ -365,7 +388,7 @@ let Sidebar = Component.extend({
             if (this.resetLabels) this.resetLabels();
         }));
         this.$watch('tabs', (val) => {
-            session.tabs = JSON.stringify(val);
+            session.set('tabs', val);
         });
     },
     computed: {
@@ -386,7 +409,7 @@ let Sidebar = Component.extend({
         },
         initData(data) {
             data.$set('tab', tab);
-            data.$set('tabs', session.tabs ? JSON.parse(session.tabs) : []);
+            data.$set('tabs', session.get('tabs', []));
 
             data.$set('errors', data.errors || []);
             data.$set('slide', null);
@@ -404,13 +427,14 @@ let Sidebar = Component.extend({
             return data;
         },
         saveTab() {
-            if (tab === undefined || !view) return;
+            if (!view) return;
 
             this.tab = tab;
             this.tabs.$set(tab, {
                 url: getPath().replace(RegExp('^/[0-9]+'), ''),
                 name: view.title || view.search_query
             });
+            sidebar.fetch();
         },
         newTab(e) {
             e.preventDefault();
@@ -426,9 +450,9 @@ let Sidebar = Component.extend({
         },
         toggleFont(e) {
             e.preventDefault();
-            let val = session.bigger ? '' : 1;
+            let val = session.get('bigger') ? '' : 1;
             this.setFont(val);
-            session.bigger = val;
+            session.set('bigger', val);
         },
         search(e) {
             e.preventDefault();
@@ -916,7 +940,7 @@ function getPath() {
 }
 function go(url) {
     url = url.replace(location.origin, '');
-    if (tab !== undefined && !RegExp('^/[0-9]+/').test(url)) {
+    if (!RegExp('^/[0-9]+/').test(url)) {
         url = `/${tab}${url}`;
     }
     return history.pushState({}, url);
