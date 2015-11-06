@@ -93,7 +93,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
                         el.classList.remove('body-active');
                     }
                     body.classList.add('body-active');
-                    if (!load) {
+                    if (view && !load) {
                         view.activate();
                         return;
                     }
