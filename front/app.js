@@ -51,11 +51,13 @@ send(`/info/?offset=${offset}`, null, (data) => {
         ['\/login\/', Login],
         ['\/pwd\/', Pwd],
     ];
-    let initComponent = (current) => {
+    let initComponent = (current, tab) => {
         send(getPath(), null, {
             success(data) {
-                let body = $('.body-active')[0];
+                let view = views[tab];
+                let body = $(`.body-${tab}`)[0];
                 body.scrollTop = 0;
+
                 if (!view || view.constructor != current) {
                     view = new current({data: data, el: body});
                 } else {
@@ -66,7 +68,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
                 if (data.title) {
                     document.title = `${data.title} - ${title}`;
                 }
-                if (sidebar) sidebar.saveTab();
+                if (sidebar) sidebar.saveTab(tab, view);
             },
             error: (data) => error(data)
         });
@@ -91,38 +93,36 @@ send(`/info/?offset=${offset}`, null, (data) => {
             pattern = '^(/([0-9]+))?' + `(${pattern})`;
             let info = RegExp(pattern).exec(location.pathname);
             if (info) {
-                let body, load = true;
+                let body, tabs = session.get('tabs', []);
                 let tabNew = info[2] ? parseInt(info[2]) : 0;
-                let tabs = session.get('tabs', []);
+                let load = tabNew == tab;
                 if (tabNew > tabs.length) {
                     tab = tabs.length;
                     go(info[3] + location.search);
                     return;
                 }
-                if (tab != tabNew) {
-                    tab = tabNew;
-                    view = views[tab];
-                    body = $(`.body-${tab}`);
-                    if (body.length) {
-                        load = false;
-                        body = body[0];
-                    } else {
-                        body = document.createElement('div');
-                        body.classList.add('body', `body-${tab}`);
-                        $('body')[0].appendChild(body);
-                    }
-                    for (let el of Array.from($('.body'))) {
-                        el.classList.remove('body-active');
-                    }
-                    body.classList.add('body-active');
-                    if (view && !load) {
-                        if (sidebar) sidebar.activate();
-                        view.activate();
-                        return;
-                    }
+                tab = tabNew;
+                view = views[tab];
+                body = $(`.body-${tab}`);
+                if (body.length) {
+                    body = body[0];
+                } else {
+                    load = true;
+                    body = document.createElement('div');
+                    body.classList.add('body', `body-${tab}`);
+                    $('body')[0].appendChild(body);
+                }
+                for (let el of Array.from($('.body'))) {
+                    el.classList.remove('body-active');
+                }
+                body.classList.add('body-active');
+                if (view && !load) {
+                    if (sidebar) sidebar.activate();
+                    view.activate();
+                    return;
                 }
                 if (current.component) {
-                    initComponent(current);
+                    initComponent(current, tab);
                 } else {
                     current();
                 }
@@ -409,6 +409,7 @@ let Sidebar = Component.extend({
         },
         activate(data) {
             data = data || this;
+            data.$set('tab', tab);
             data.$set('errors', data.errors || []);
             data.$set('slide', null);
 
@@ -425,21 +426,20 @@ let Sidebar = Component.extend({
             }
         },
         initData(data) {
-            data = data || this;
-            data.$set('tab', tab);
             data.$set('tabs', session.get('tabs', []));
             this.activate(data);
             return data;
         },
-        saveTab() {
-            if (!view) return;
+        saveTab(t, v) {
+            t = t || tab;
+            v = v || view;
+            if (!v) return;
 
-            this.tab = tab;
-            this.tabs.$set(tab, {
+            this.tabs.$set(t, {
                 url: getPath().replace(RegExp('^/[0-9]+'), ''),
-                name: view.title || view.search_query
+                name: v.title || v.search_query
             });
-            sidebar.activate();
+            if (t == tab) sidebar.activate();
         },
         newTab(e) {
             e.preventDefault();
