@@ -116,7 +116,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
                     }
                     body.classList.add('body-active');
                     if (view && !load) {
-                        if (sidebar) sidebar.fetch();
+                        if (sidebar) sidebar.activate();
                         view.activate();
                         return;
                     }
@@ -407,10 +407,8 @@ let Sidebar = Component.extend({
                 if (callback) callback(data);
             });
         },
-        initData(data) {
-            data.$set('tab', tab);
-            data.$set('tabs', session.get('tabs', []));
-
+        activate(data) {
+            data = data || this;
             data.$set('errors', data.errors || []);
             data.$set('slide', null);
 
@@ -424,6 +422,12 @@ let Sidebar = Component.extend({
             data.$set('search_query', data.search_query || '');
             data.$set('labels_sel', data.labels_sel || []);
             data.$set('labels_edit', data.labels_edit || false);
+        },
+        initData(data) {
+            data = data || this;
+            data.$set('tab', tab);
+            data.$set('tabs', session.get('tabs', []));
+            this.activate(data);
             return data;
         },
         saveTab() {
@@ -434,7 +438,7 @@ let Sidebar = Component.extend({
                 url: getPath().replace(RegExp('^/[0-9]+'), ''),
                 name: view.title || view.search_query
             });
-            sidebar.fetch();
+            sidebar.activate();
         },
         newTab(e) {
             e.preventDefault();
