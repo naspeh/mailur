@@ -413,15 +413,16 @@ let Sidebar = Component.extend({
             data.$set('slide', null);
 
             if (view && view.constructor == Emails) {
-                data.search_query = view.search_query;
-                data.labels_sel = view.getLabelsByPicked();
-                data.labels_edit = (
+                data.$set('search_query', view.search_query);
+                data.$set('labels_sel', view.getLabelsByPicked());
+                data.$set('labels_edit', (
                     view.getPicked().length > 0 || view.thread ? true : false
-                );
+                ));
+            } else {
+                data.$set('search_query', '');
+                data.$set('labels_sel', []);
+                data.$set('labels_edit', false);
             }
-            data.$set('search_query', data.search_query || '');
-            data.$set('labels_sel', data.labels_sel || []);
-            data.$set('labels_edit', data.labels_edit || false);
         },
         initData(data) {
             data = data || this;
