@@ -115,7 +115,7 @@ def get_parsed(env, data, msgid=None):
             v = (v[1].split('@')[0], v[1])
         return '"{}" <{}>'.format(*v)
 
-    def clean(key, value):
+    def clean(key, value, ctx):
         if not value:
             if key in ('to', 'fr', 'cc', 'bcc', 'reply_to', 'sender', 'refs'):
                 return []
@@ -127,7 +127,11 @@ def get_parsed(env, data, msgid=None):
         elif key in ('attachments',):
             return json.dumps(value)
         elif key in ('refs',):
-            return ['<%s>' % v for v in re.split('[<>\s]+', value) if v]
+            refs = ['<%s>' % v for v in re.split('[<>\s]+', value) if v]
+            in_reply_to = clean('in-reply-to', ctx['in-reply-to'], ctx)
+            if in_reply_to and in_reply_to not in refs:
+                refs.insert(0, in_reply_to)
+            return refs
         else:
             return value
 
@@ -149,7 +153,7 @@ def get_parsed(env, data, msgid=None):
         ('embedded', 'embedded'),
     )
     msg = parser.parse(env, data, msgid)
-    return ((field, clean(field, msg[key])) for key, field in pairs)
+    return ((field, clean(field, msg[key], msg)) for key, field in pairs)
 
 
 def fetch_headers(env, imap, uids):
