@@ -40,7 +40,14 @@
         <a v-on="click: toggleFont" class="nav-font" title="Toggle font size" href="#"></a>
         <a v-if="email" href="/compose/new/" v-on="click: go" class="nav-compose">Compose</a>
     </div>
-    <ul v-if="labels" class="labels">
+    <ul class="nav-tabs">
+        <li><a v-on="click: newTab" href="#">New tab</a></li>
+        <li v-repeat="tabs"><a v-on="click: go" href="/{{$index}}{{url}}">
+            <span v-on="click: delTab" class="nav-tab-x"></span>
+            {{name}}
+        </a></li>
+    </ul>
+    <ul v-if="labels" class="nav-labels">
         <li v-repeat="labels.items">
             <a href="{{url}}" v-on="click: go" v-class="label-unread: unread">
                 <span class="label-count">{{unread}}</span>{{name}}

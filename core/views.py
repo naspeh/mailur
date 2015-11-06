@@ -444,6 +444,7 @@ def thread(env, id):
         ctx['thread'] = True
         ctx['hidden'] = count - len(emails)
         ctx['labels'] = ctx_labels(env, labels)
+        ctx['has_draft'] = bool(env.storage('compose', thrid=id))
         ctx['reply_url'] = env.url_for('compose', {'target': 'all', 'id': id})
     return ctx
 
@@ -721,7 +722,7 @@ def compose(env, id=None):
     if saved.get():
         ctx.update(saved.get())
     ctx['draft'] = saved.get() is not None
-    ctx['header'] = {'title': ctx.get('subj') or 'New message'}
+    ctx['title'] = ctx.get('subj') or 'New message'
 
     if ctx['forward'] and not ctx['draft']:
         env.files.copy(f.slugify(id), saved_path)

@@ -217,7 +217,7 @@ body > .sidebar {
             display: inline-block;
         }
     }
-    .labels {
+    .nav-labels, .nav-tabs {
         .mix_reset_list();
         font-size: 0.9em;
         text-align: left;
@@ -253,9 +253,18 @@ body > .sidebar {
         }
         .label-unread {
             font-weight: bold;
-
             .label-count {
                 color: #333;
+            }
+        }
+        .nav-tab-x {
+            .icon-x();
+            &:before {
+                font-size: .7em;
+            }
+            &:hover {
+                color: @ColorC;
+                background: #fff;
             }
         }
     }

@@ -64,13 +64,11 @@
             </div>
         </div>
         <div class="email-text" v-body="body.text || ''"></div>
-        <div v-if="body.attachments" class="email-attachments">
-            <ul>
-                <li v-repeat="body.attachments.items">
-                    <a v-on="click: showSlider" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a>
-                </li>
-            </ul>
-        </div>
+        <ul v-if="body.attachments" class="email-attachments">
+            <li v-repeat="body.attachments.items">
+                <a v-on="click: showSlider" href="{{url}}" title="{{name}}" target="_blank">{{name}}</a>
+            </li>
+        </ul>
         <div v-if="body.text === undefined" class="email-text">
             <b>Loading...</b>
         </div>

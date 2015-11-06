@@ -12,24 +12,26 @@ let session = localStorage || {};
 let array_union = require('lodash/array/union');
 
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
-let user, view, sidebar, history, offset = new Date().getTimezoneOffset() / 60;
+let user, view, tab, sidebar, history;
 let initUser = (data, url) => {
     user = data.username ? data : null;
     if (url) go(url);
 };
+
+let offset = new Date().getTimezoneOffset() / 60;
 send(`/info/?offset=${offset}`, null, (data) => {
     initUser(data);
 
     let title = document.title;
     let patterns = [
-        [/^\/$/, () => goToLabel('\\Inbox')],
-        [/^\/(raw)\//, () => {
+        ['\/$', () => goToLabel('\\Inbox')],
+        ['\/(raw)\/', () => {
             location.href = '/api' + location.pathname;
         }],
-        [/^\/(emails|thread|body)\//, Emails],
-        [/^\/compose\//, Compose],
-        [/^\/login\//, Login],
-        [/^\/pwd\//, Pwd],
+        ['\/(emails|thread|body)\/', Emails],
+        ['\/compose\/', Compose],
+        ['\/login\/', Login],
+        ['\/pwd\/', Pwd],
     ];
     let initComponent = (current) => {
         send(getPath(), null, {
@@ -44,6 +46,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
                     document.title = `${data.title} - ${title}`;
                 }
                 sidebar.fetch();
+                sidebar.saveTab();
             },
             error: (data) => error(data)
         });
@@ -65,7 +68,10 @@ send(`/info/?offset=${offset}`, null, (data) => {
             return;
         }
         for (let [pattern, current] of patterns) {
-            if (pattern.test(location.pathname)) {
+            pattern = '^(/([0-9]+))?' + pattern;
+            let info = RegExp(pattern).exec(location.pathname);
+            if (info) {
+                tab = info[2] && parseInt(info[2]);
                 if (current.component) {
                     initComponent(current);
                 } else {
@@ -327,6 +333,9 @@ let Sidebar = Component.extend({
             }
             if (this.resetLabels) this.resetLabels();
         }));
+        this.$watch('tabs', (val) => {
+            session.tabs = JSON.stringify(val);
+        });
     },
     computed: {
         showTrash() {
@@ -345,6 +354,8 @@ let Sidebar = Component.extend({
             });
         },
         initData(data) {
+            data.$set('tabs', session.tabs ? JSON.parse(session.tabs) : []);
+
             data.$set('errors', data.errors || []);
             data.$set('slide', null);
 
@@ -359,6 +370,23 @@ let Sidebar = Component.extend({
             data.$set('labels_sel', data.labels_sel || []);
             data.$set('labels_edit', data.labels_edit || false);
             return data;
+        },
+        saveTab() {
+            if (tab === undefined || !view) return;
+
+            this.tabs.$set(tab, {
+                url: getPath().replace(RegExp('^/[0-9]+'), ''),
+                name: view.title || view.search_query
+            });
+        },
+        newTab(e) {
+            e.preventDefault();
+            tab = this.tabs.length;
+            go('/');
+        },
+        delTab(e) {
+            e.preventDefault();
+            this.tabs.$remove(e.targetVM.$index);
         },
         setFont(val) {
             $('body')[0].classList[val ? 'add' : 'remove']('bigger');
@@ -570,10 +598,14 @@ let Emails = Component.extend({
                 email.vid = email[data.threads ? 'thrid' : 'id'];
                 email.$set('checked', data.checked_list.has(email.vid));
             }
+
+            if (data.has_draft) this.$nextTick(() => {
+                this.initReply(this.reply_url, true);
+            });
             return data;
         },
         initReply(url, focus) {
-            if(!url) return;
+            if(!url) url = this.reply_url;
 
             this.$data.$set('reply_body', true);
             send(url, null, (data) => {
@@ -844,7 +876,11 @@ function getPath() {
     return location.pathname + location.search;
 }
 function go(url) {
-    return history.pushState({}, url.replace(location.origin, ''));
+    url = url.replace(location.origin, '');
+    if (tab !== undefined && !RegExp('^/[0-9]+/').test(url)) {
+        url = `/${tab}${url}`;
+    }
+    return history.pushState({}, url);
 }
 function reload() {
     return history.replaceState({}, getPath());
@@ -967,6 +1003,9 @@ function parseJson(data) {
 }
 function send(url, data, callback) {
     url = url.replace(location.origin, '');
+    if (tab !== undefined) {
+        url = url.replace(RegExp('^/' + tab), '');
+    }
     callback = {
         success: callback && callback.success || callback,
         error: callback && callback.error || (
