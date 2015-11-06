@@ -56,7 +56,7 @@ from core.views import parse_query
         " AND labels @> ARRAY['\\All']::varchar[]",
         {'labels': ['\\All']}
     )),
-    ('person:q@test.com', (
+    ('email:q@test.com', (
         "SELECT id FROM emails"
         " WHERE array_to_string(\"to\" || cc || fr, ',') LIKE '%<q@test.com>%'"
         " AND labels @> ARRAY['\\All']::varchar[]",

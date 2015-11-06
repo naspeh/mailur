@@ -523,9 +523,15 @@ def update_thrids(env, folder=None, manual=True, commit=True):
     '''.format(where=where)).fetchall()
     log.info('  * Update thread ids for %s emails', len(emails))
 
+    def yet(condition):
+        if thrid and pid:
+            return False
+        return condition
+
     t, updated = Timer(), []
     for row in emails:
         thrid = pid = None
+
         refs = [r for r in row['refs'] if r]
         ctx = {'folder': folder or (set(FOLDERS) & set(row['labels'])).pop()}
 
@@ -540,7 +546,7 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             if thrid:
                 thrid = thrid[0]
 
-        if not pid and row['fr'][0].endswith('<mailer-daemon@googlemail.com>'):
+        if yet(row['fr'][0].endswith('<mailer-daemon@googlemail.com>')):
             # Failed delivery
             text = env.sql('SELECT text FROM emails WHERE id=%s', [row['id']])
             text = text.fetchone()[0]
@@ -557,9 +563,9 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 ''', dict(ctx, msgid=msgid)).fetchone()
                 if parent:
                     thrid = thrid or parent['thrid']
-                    pid = parent['id']
+                    pid = pid or parent['id']
 
-        if not pid and refs:
+        if yet(refs):
             parent = env.sql('''
             SELECT id, thrid FROM emails
             WHERE
@@ -579,9 +585,9 @@ def update_thrids(env, folder=None, manual=True, commit=True):
                 ''', dict(ctx, refs=refs)).fetchone()
             if parent:
                 thrid = thrid or parent['thrid']
-                pid = parent['id']
+                pid = pid or parent['id']
 
-        if not pid and row['fr'] and row['to']:
+        if yet(row['fr'] and row['to']):
             fr = row['sender'][0] if row['sender'] else row['fr'][0]
             fr = parseaddr(fr)[1]
             parent = env.sql('''
@@ -595,14 +601,14 @@ def update_thrids(env, folder=None, manual=True, commit=True):
             ORDER BY id DESC
             LIMIT 1
             ''', dict(ctx, **{
-                'subj': row['subj'],
+                'subj': '%{}'.format(row['subj']) if row['subj'] else '',
                 'fr': '%<{}>%'.format(fr),
                 'to': row['to'] + row['cc'],
                 'id': row['id'],
             })).fetchone()
             if parent:
                 thrid = thrid or parent['thrid']
-                pid = parent['id']
+                pid = pid or parent['id']
 
         updates = {
             'thrid': thrid if thrid else row['id'],
