@@ -52,19 +52,17 @@
     }
 }
 .mix_inputform {
+    position: relative;
     box-sizing: border-box;
     padding: 0;
     margin: 0;
 
     button {
         display: inline-block;
-        position: relative;
-        bottom: -1px;
-        border: none;
-        background: none;
+        vertical-align: bottom;
         box-sizing: border-box;
-        margin: 0;
         padding: .2em;
+        border: none;
         border-radius: 0 .3em .3em 0;
         background-color: @ColorC;
         color: #fff;
@@ -79,6 +77,7 @@
     input {
         .mix_input();
         display: inline-block;
+        vertical-align: bottom;
         box-sizing: border-box;
         min-width: 5em;
         padding: 0 .3em;
@@ -372,9 +371,8 @@ body > .header {
     right: 0;
     left: @SidebarW;
     box-sizing: border-box;
-    padding-right: 0.5em;
+    padding: 0.5em 0.5em 0 0;
     height: @HeaderH;
-    line-height: @HeaderH;
     overflow-x: auto;
     white-space: nowrap;
 
@@ -384,12 +382,11 @@ body > .header {
         width: 100%;
         max-width: 40em;
         background-color: #fff;
-        padding-left: 3em;
-        padding-top: .3em;
-        margin-left: -3em;
 
         input[type="text"] {
             font-weight: bold;
+            padding-left: 3em;
+            margin-left: -3em;
         }
         .input--ok {
             .icon-search();
