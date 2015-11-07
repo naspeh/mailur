@@ -52,14 +52,18 @@ send(`/info/?offset=${offset}`, null, (data) => {
         ['\/pwd\/', Pwd],
     ];
     let initComponent = (current, tab) => {
+        let body = $('body')[0];
+        body.classList.add('reload');
+
         send(getPath(), null, {
             success(data) {
+                body.classList.remove('reload');
                 let view = views[tab];
-                let body = $(`.body-${tab}`)[0];
-                body.scrollTop = 0;
+                let box = $(`.body-${tab}`)[0];
+                box.scrollTop = 0;
 
                 if (!view || view.constructor != current) {
-                    view = new current({data: data, el: body});
+                    view = new current({data: data, el: box});
                 } else {
                     view.$data = data;
                 }
@@ -70,7 +74,11 @@ send(`/info/?offset=${offset}`, null, (data) => {
                 }
                 if (sidebar) sidebar.saveTab(tab, view);
             },
-            error: (data) => error(data)
+            error: (data) => {
+                body.classList.remove('reload');
+                body.classList.remove('error');
+                error(data);
+            }
         });
     };
     history = createHistory();
@@ -456,7 +464,13 @@ let Sidebar = Component.extend({
         },
         delTab(e) {
             e.preventDefault();
+            e.stopPropagation();
             this.tabs.$remove(e.targetVM.$index);
+        },
+        reload(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            reload();
         },
         setFont(val) {
             $('body')[0].classList[val ? 'add' : 'remove']('bigger');

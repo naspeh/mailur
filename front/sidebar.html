@@ -48,6 +48,7 @@
             <a v-on="click: go" v-class="nav-active: $index == tab" href="/{{$index}}{{url}}">
                 <span v-on="click: delTab" class="nav--x"></span>
                 {{name}}
+                <span v-if="$index == tab" v-on="click: reload" class="nav--reload"></span>
             </a>
         </li>
     </ul>

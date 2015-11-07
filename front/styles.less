@@ -101,6 +101,11 @@
 }
 
 /* General */
+@keyframes spin {
+    to {
+        transform: rotate(1turn);
+    }
+}
 body {
     position: relative;
     min-width: 500px;
@@ -147,6 +152,29 @@ body {
         .title {
             font-weight: bold;
             margin-bottom: .5em;
+        }
+    }
+
+    .nav--reload {
+        .icon-reload();
+        opacity: .5;
+    }
+    &.reload {
+        .nav--reload {
+            .icon-loading();
+            opacity: 1;
+            color: @ColorC;
+
+            &:before {
+                animation: spin 1s infinite;
+            }
+        }
+    }
+    &.error {
+        .nav--reload {
+            .icon-x();
+            opacity: 1;
+            color: @ColorC;
         }
     }
 }
@@ -238,7 +266,9 @@ body > .sidebar {
             position: relative;
             display: block;
             box-sizing: border-box;
-            padding: .1em 2em .1em .5em;
+            height: 1.5em;
+            line-height: 1.5em;
+            padding: 0 2em 0 .5em;
             margin-right: -1px;
             border-radius: .5em 0 0 .5em;
             overflow: hidden;
@@ -277,6 +307,20 @@ body > .sidebar {
 
             &:before {
                 font-size: .8em;
+            }
+            &:hover {
+                opacity: 1;
+            }
+        }
+        .nav--reload {
+            display: block;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+
+            &:before {
+                line-height: 1.5em;
             }
             &:hover {
                 opacity: 1;
@@ -716,6 +760,10 @@ body > .header {
         top: 50%;
         left: 50%;
         .icon-loading();
+
+        &:before {
+            animation: spin 1s infinite;
+        }
     }
     .slider-img {
         position: relative;
