@@ -467,15 +467,15 @@ body > .header {
         .mix_links();
         a {
             display: block;
-            padding: .5em 2em;
+            padding: .5em 1em;
             background-color: @Color1bg;
             border-top: 1px solid @Color1b;
             border-radius: .5em;
             text-align: left;
             font-size: .9em;
 
-            &:after {
-                content: " ... ";
+            &:before, &:after {
+                content: " --- ";
             }
         }
     }
