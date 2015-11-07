@@ -17,11 +17,12 @@
 
 /* Mixins */
 .mix_button() {
-    color: @ColorA;
+    box-sizing: border-box;
     border: 1px solid @Color0b;
+    border-radius: .3em;
+    padding: .2em .3em;
     background-color: @Color1bg;
-    border-radius: 5px;
-    padding: 2px 5px;
+    color: @ColorA;
     font-weight: bold;
     text-decoration: none;
     &:hover {
@@ -32,12 +33,14 @@
 }
 .mix_button_icon() {
     .mix_button();
+
     &:before {
         margin-right: 0;
     }
 }
 .mix_input() {
     display: block;
+    box-sizing: border-box;
     width: 100%;
     border: 0;
     padding: 0;
@@ -49,15 +52,24 @@
     }
 }
 .mix_inputform {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+
     button {
+        display: inline-block;
         position: relative;
-        bottom: -0.1em;
+        bottom: -1px;
         border: none;
         background: none;
-        padding: 0;
-        margin: 0;
-        color: @ColorC;
         box-sizing: border-box;
+        margin: 0;
+        padding: .2em;
+        border-radius: 0 .3em .3em 0;
+        background-color: @ColorC;
+        color: #fff;
+        font-size: 1em;
+        opacity: .5;
 
         &:hover, &:active, &:focus {
             outline: none;
@@ -66,19 +78,26 @@
     }
     input {
         .mix_input();
+        display: inline-block;
         box-sizing: border-box;
-        padding-right: 2.9em;
+        min-width: 5em;
+        padding: 0 .3em;
     }
     .input--ok {
         .icon-ok();
-        opacity: 0.5;
-        font-size: 1.2em;
+
+        &:before {
+            margin-right: 0;
+        }
     }
     .input--x {
         .icon-x();
-        margin-left: -2.9em;
-        color: @Color0b;
-        opacity: 0.5;
+        border-radius: .3em 0 0 0;
+        background-color: #ccc;
+
+        &:before {
+            margin-right: 0;
+        }
     }
 }
 .mix_reset_list() {
@@ -361,15 +380,15 @@ body > .header {
 
     .search {
         .mix_inputform();
-        margin: 0;
+        display: inline-block;
         width: 100%;
         max-width: 40em;
         background-color: #fff;
+        padding-left: 3em;
+        padding-top: .3em;
+        margin-left: -3em;
 
         input[type="text"] {
-            .mix_input();
-            display: inline-block;
-            box-sizing: border-box;
             font-weight: bold;
         }
         .input--ok {
@@ -404,6 +423,8 @@ body > .header {
         .labels--edit {
             .icon-edit();
             .mix_button_icon();
+
+            margin-left: .2em;
         }
         .labels--search {
             .icon-search();
@@ -480,7 +501,7 @@ body > .header {
             padding: 0 3px;
             color: @ColorA;
             background-color: @Color0bg;
-            border-radius: 0.4em;
+            border-radius: 0.3em;
             font-weight: normal;
         }
         .email-subj {
@@ -661,6 +682,7 @@ body > .header {
 }
 .label {
     background: #eee;
+    box-sizing: border-box;
     border: 1px solid #eee;
     padding: 1px;
     margin: 1px;
@@ -711,9 +733,11 @@ body > .header {
         .mix_button();
     }
     .compose-to {
+        .mix_inputform();
         border-bottom: 1px solid #ccc;
 
         input {
+            min-width: 12em;
             margin-bottom: -1px;
         }
     }
@@ -883,11 +907,12 @@ body > .header {
     }
 }
 .nsg-input {
-    display: inline!important;
+    display: inline-block;
     outline: none;
+    box-sizing: border-box;
     border: none;
     border-bottom: 1px solid @ColorC;
-    padding: 0 2px;
+    padding: 0 .2em;
 
     &:focus {
         background-color: #fff;
