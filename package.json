@@ -30,7 +30,7 @@
     "postcss-cli": "2.3.2",
     "taboverride": "github:wjbryant/taboverride",
     "uglify-js": "2.5.0",
-    "vue": "0.12.14",
+    "vue": "0.12.16",
     "whatwg-fetch": "0.10.1"
   },
   "jshintConfig": {

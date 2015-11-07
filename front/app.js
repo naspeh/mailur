@@ -381,12 +381,6 @@ let Sidebar = Component.extend({
             Mousetrap.bind(item[0], item[2].bind(this), 'keyup');
             this.help += `<div><b>${item[0][0]}</b>: ${item[1]}</div>`;
         }
-        this.$watch('labels_sel', () => this.$nextTick(() => {
-            if (this.resetLabels === undefined) {
-                this.resetLabels = this.initLabels();
-            }
-            if (this.resetLabels) this.resetLabels();
-        }));
         this.$watch('tabs', (val) => {
             session.set('tabs', val);
         });
@@ -398,6 +392,9 @@ let Sidebar = Component.extend({
         showSpam() {
             return this.labels_sel.indexOf('\\Spam') === -1;
         },
+        showMerge() {
+            return this.picked.length > 1;
+        }
     },
     methods: {
         fetch(callback) {
@@ -415,15 +412,23 @@ let Sidebar = Component.extend({
 
             if (view && view.constructor == Emails) {
                 data.$set('search_query', view.search_query);
+                data.$set('picked', view.getPicked(view, (el) => el.thrid));
                 data.$set('labels_sel', view.getLabelsByPicked());
                 data.$set('labels_edit', (
-                    view.getPicked().length > 0 || view.thread ? true : false
+                    data.picked.length > 0 || view.thread ? true : false
                 ));
             } else {
                 data.$set('search_query', '');
+                data.$set('picked', []);
                 data.$set('labels_sel', []);
                 data.$set('labels_edit', false);
             }
+            this.$nextTick(() => {
+                if (this.resetLabels === undefined) {
+                    this.resetLabels = this.initLabels();
+                }
+                if (this.resetLabels) this.resetLabels();
+            });
         },
         initData(data) {
             data.$set('tabs', session.get('tabs', []));
@@ -431,20 +436,23 @@ let Sidebar = Component.extend({
             return data;
         },
         saveTab(t, v) {
-            t = t || tab;
-            v = v || view;
+            t = t !== undefined ? t : tab;
+            v = v !== undefined ? v : view;
             if (!v) return;
 
             this.tabs.$set(t, {
                 url: getPath().replace(RegExp('^/[0-9]+'), ''),
                 name: v.title || v.search_query
             });
-            if (t == tab) sidebar.activate();
+            if (t == tab) {
+                view = v;
+                sidebar.activate();
+            }
         },
         newTab(e) {
             e.preventDefault();
             tab = this.tabs.length;
-            go('/');
+            goToLabel('\\Inbox');
         },
         delTab(e) {
             e.preventDefault();
@@ -523,20 +531,18 @@ let Sidebar = Component.extend({
         spam(e) {
             this.mark('+', '\\Spam', e);
         },
-        merge(e) {
+        link(e) {
             e.preventDefault();
             e.stopPropagation();
-            newThread({
-                action: 'merge',
-                // FIXME: it isn't good to call view here
-                ids: view.getPicked(view, (el) => el.thrid)
-            }, (data) => reload());
+            newThread({action: 'merge', ids: this.picked}, () => reload());
         },
         initLabels() {
-            let container = $$('.header.labels-exists')[0];
+            let container = $('.header.labels-exists')[0];
             if (!container) return;
 
             let vm = this;
+            let $$ = container.querySelector.bind(container);
+
             let tags, compl;
             let input = $$('.labels-input input');
 
@@ -712,9 +718,7 @@ let Emails = Component.extend({
             } else {
                 this.checked_list.delete(data.vid);
             }
-            //TODO: move to sidebar
-            sidebar.labels_edit = this.getPicked().length > 0;
-            sidebar.labels_sel = this.getLabelsByPicked();
+            sidebar.activate();
         },
         details(e) {
             e.preventDefault();

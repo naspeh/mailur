@@ -31,18 +31,18 @@
     <div class="email-body">
         <div v-if="body.show" class="email-details">
             <div class="email-actions">
-                <a href="#" v-on="click: details">Details</a>
-                <a v-if="to_all" href="{{links.replyall}}" v-on="click: reply">Reply to all</a>
-                <a href="{{links.reply}}" v-on="click: reply">Reply</a>
-                <a href="{{links.forward}}" v-on="click: reply">Forward</a>
-                <a href="#" v-on="click: unreadFromHere">Mark unread from here</a>
+                <a href="#" v-on="click: details" class="icon-ellipsis">Details</a>
+                <a v-if="to_all" href="{{links.replyall}}" v-on="click: reply" class="icon-replyall">Reply to all</a>
+                <a href="{{links.reply}}" v-on="click: reply" class="icon-reply">Reply</a>
+                <a href="{{links.forward}}" v-on="click: reply" class="icon-forward">Forward</a>
+                <a href="#" v-on="click: unreadFromHere" class="icon-unread" title="Mark unread from this message">Mark unread</a>
                 <template v-if="thread && emails.length > 1"}}>
+                <a href="#" v-on="click: extract" class="icon-unlink" title="Unlink thread by this message">Unlink</a>
                 <a href="{{links.body}}" v-on="click: go">Show this message</a>
-                <a href="#" v-on="click: extract">Extract new thread</a>
                 </template>
                 <a v-if="!thread" href="{{links.thread}}">Show full thread</a>
-                <a href="#" v-on="click: delete" title="Delete this message">Delete</a>
                 <a href="{{links.raw}}" target="_blank">Show original</a>
+                <a href="#" v-on="click: delete" title="Delete this message">Delete</a>
             </div>
             <div class="email-extra" v-show="body.details">
                 <img  v-attr="src: fr.image">
