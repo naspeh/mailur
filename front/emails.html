@@ -40,7 +40,7 @@
                 <a href="#" v-on="click: extract" class="icon-unlink" title="Unlink thread by this message">Unlink</a>
                 <a href="{{links.body}}" v-on="click: go">Show this message</a>
                 </template>
-                <a v-if="!thread" href="{{links.thread}}">Show full thread</a>
+                <a v-if="!thread" v-on="click: go" href="{{links.thread}}">Show full thread</a>
                 <a href="{{links.raw}}" target="_blank">Show original</a>
                 <a href="#" v-on="click: delete" class="icon-trash" title="Delete this message">Delete</a>
             </div>
