@@ -461,14 +461,15 @@ body > .header {
         .mix_links();
         a {
             display: block;
-            padding: .5em;
+            padding: .5em 2em;
             background-color: @Color1bg;
             border-top: 1px solid @Color1b;
             border-radius: .5em;
-            text-align: center;
+            text-align: left;
             font-size: .9em;
-            &:after, &:before {
-                content: " -- ";
+
+            &:after {
+                content: " ... ";
             }
         }
     }
