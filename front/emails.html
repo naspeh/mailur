@@ -42,7 +42,7 @@
                 </template>
                 <a v-if="!thread" href="{{links.thread}}">Show full thread</a>
                 <a href="{{links.raw}}" target="_blank">Show original</a>
-                <a href="#" v-on="click: delete" title="Delete this message">Delete</a>
+                <a href="#" v-on="click: delete" class="icon-trash" title="Delete this message">Delete</a>
             </div>
             <div class="email-extra" v-show="body.details">
                 <img  v-attr="src: fr.image">

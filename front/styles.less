@@ -30,6 +30,12 @@
         text-decoration: none;
     }
 }
+.mix_button_icon() {
+    .mix_button();
+    &:before {
+        margin-right: 0;
+    }
+}
 .mix_input() {
     display: block;
     width: 100%;
@@ -336,28 +342,28 @@ body > .header {
             display: none;
         }
         .labels-b-spam {
-            .mix_button();
             .icon-spam();
+            .mix_button_icon();
         }
         .labels-b-del {
-            .mix_button();
             .icon-trash();
+            .mix_button_icon();
         }
         .labels-b-arch {
-            .mix_button();
             .icon-archive();
+            .mix_button_icon();
         }
         .labels-b-link {
-            .mix_button();
             .icon-link();
+            .mix_button_icon();
         }
         .labels--edit {
-            .mix_button();
-            .icon-tags();
+            .icon-edit();
+            .mix_button_icon();
         }
         .labels--search {
-            .mix_button();
             .icon-search();
+            .mix_button_icon();
         }
     }
     &.labels-show {
@@ -573,7 +579,7 @@ body > .header {
 
     .email-quote-toggle {
         .icon-ellipsis;
-        .mix_button;
+        .mix_button_icon();
         display: inline-block;
         font-size: 0.75em;
         padding: 0 5px;
@@ -652,9 +658,6 @@ body > .header {
     .compose-send {
         .icon-send();
         .mix_button();
-        &:before {
-            margin-right: 0.3em;
-        }
     }
     .compose-preview {
         .mix_button();
