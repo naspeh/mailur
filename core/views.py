@@ -693,8 +693,6 @@ def compose(env, id=None):
             to = parent['to']
         else:
             to = parent['reply_to'] or parent['fr']
-            fr = [a for a in parent['to'] + parent['cc'] if env.equal_email(a)]
-            fr = fr[0] if fr else ctx['fr']
 
         forward = args.get('target') == 'forward'
         if forward:
