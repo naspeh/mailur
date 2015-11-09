@@ -689,7 +689,8 @@ let Emails = Component.extend({
             return data;
         },
         initReply(url, focus) {
-            if(!url) url = this.reply_url;
+            if (!url) url = this.reply_url;
+            if (this.replyView) this.replyView.$destroy();
 
             this.$data.$set('reply_body', true);
             send(url, null, (data) => {
