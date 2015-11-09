@@ -384,7 +384,7 @@ def thread(env, id):
     count, labels = i.fetchone()
     if count:
         labels = set(sum((r for r in labels), []))
-        subj = env.sql('SELECT subj %s' % where).fetchone()[0]
+        subj = env.sql('SELECT subj %s ORDER BY id' % where).fetchone()[0]
         if not env.request.args.get('full'):
             i = env.sql('''
             SELECT id FROM emails WHERE id IN (
