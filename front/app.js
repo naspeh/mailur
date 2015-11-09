@@ -1100,12 +1100,11 @@ function send(url, data, cb, icon) {
         callback = {
             success: (data => {
                 if (sidebar) sidebar.closeErrors();
-                body.classList.remove('body-loading', 'body-error');
+                body.classList.remove('body-loading');
                 return cb.success(data);
             }),
             error: (ex => {
                 body.classList.remove('body-loading');
-                body.classList.add('body-error');
                 return cb.error(ex);
             }),
         };
