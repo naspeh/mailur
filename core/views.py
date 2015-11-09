@@ -679,7 +679,7 @@ def compose(env, id=None):
     fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
     ctx = {
         'fr': fr, 'to': '', 'subj': '', 'body': '', 'files': [],
-        'quoted': False, 'forward': False, 'id': id
+        'quoted': False, 'forward': False, 'id': id, 'draft': False
     }
     parent = {}
     if id:

@@ -689,6 +689,7 @@ let Emails = Component.extend({
             return data;
         },
         initReply(url, focus) {
+
             if (!url) url = this.reply_url;
             if (this.replyView) this.replyView.$destroy();
 
@@ -890,7 +891,6 @@ let Compose = Component.extend({
             let self = this;
             send(this.links.preview + '?save=1', this.getContext(), (data) => {
                 self.$data.$set('html', data);
-                self.$data.$set('draft', true);
             });
         },
         clear(e) {
