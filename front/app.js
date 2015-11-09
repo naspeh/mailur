@@ -52,12 +52,8 @@ send(`/info/?offset=${offset}`, null, (data) => {
         ['\/pwd\/', Pwd],
     ];
     let initComponent = (current, tab) => {
-        let body = $('body')[0];
-        body.classList.add('reload');
-
         send(getPath(), null, {
             success(data) {
-                body.classList.remove('reload');
                 let view = views[tab];
                 let box = $(`.body-${tab}`)[0];
                 box.scrollTop = 0;
@@ -74,12 +70,8 @@ send(`/info/?offset=${offset}`, null, (data) => {
                 }
                 if (sidebar) sidebar.saveTab(tab, view);
             },
-            error: (data) => {
-                body.classList.remove('reload');
-                body.classList.remove('error');
-                error(data);
-            }
-        });
+            error: (data) => error(data)
+        }, true);
     };
     history = createHistory();
     history.listen((location) => {
@@ -689,7 +681,6 @@ let Emails = Component.extend({
             return data;
         },
         initReply(url, focus) {
-
             if (!url) url = this.reply_url;
             if (this.replyView) this.replyView.$destroy();
 
@@ -700,7 +691,7 @@ let Emails = Component.extend({
                 if (focus) {
                     this.replyView.activate();
                 }
-            });
+            }, true);
         },
         reply(e) {
             e.preventDefault();
@@ -755,7 +746,7 @@ let Emails = Component.extend({
                     ctx.body = {show: true};
                     send(ctx.body_url, null, (data) => {
                         ctx.body = data.emails.items[0].body;
-                    });
+                    }, true);
                 }
             } else {
                 go(ctx.thread_url);
@@ -816,8 +807,11 @@ let Compose = Component.extend({
     ready() {
         let self = this;
 
-        send(this.links.preview, this.getContext(), (data) =>
-            self.$data.$set('html', data)
+        send(
+            this.links.preview,
+            this.getContext(),
+            (data) => self.$data.$set('html', data),
+            true
         );
         this.$watch('fr', this.preview);
         this.$watch('to', this.preview);
@@ -891,13 +885,13 @@ let Compose = Component.extend({
             let self = this;
             send(this.links.preview + '?save=1', this.getContext(), (data) => {
                 self.$data.$set('html', data);
-            });
+            }, true);
         },
         clear(e) {
             send(this.links.rm, null, (data) => {
                 view = null;
                 reload();
-            });
+            }, true);
         },
         upload(e) {
             let self = this;
@@ -922,7 +916,7 @@ let Compose = Component.extend({
                     error(err);
                     this.$data.hide = false;
                 })
-            });
+            }, true);
         }
     }
 });
@@ -975,7 +969,7 @@ function reload() {
 
 function newThread(params, callback) {
     callback = callback || (data => go(data.url));
-    send('/thread/new/', params, callback);
+    send('/thread/new/', params, callback, true);
 }
 function debug(...items) {
     if (conf.debug) console.log(...items);
@@ -1001,7 +995,7 @@ function mark(params, callback, emails) {
         params.last = view.$data.emails.last;
     }
     callback = callback || ((data) => reload());
-    send('/mark/', params, callback);
+    send('/mark/', params, callback, true);
 }
 function connect() {
     ws = new WebSocket(conf.host_ws);
@@ -1088,17 +1082,36 @@ function parseJson(data) {
         }
     });
 }
-function send(url, data, callback) {
+function send(url, data, cb, icon) {
     url = url.replace(location.origin, '');
     if (tab !== undefined) {
         url = url.replace(RegExp('^/' + tab), '');
     }
-    callback = {
-        success: callback && callback.success || callback,
-        error: callback && callback.error || (
+    cb = {
+        success: cb && cb.success || cb,
+        error: cb && cb.error || (
             !conf.debug ? (ex => error([url, ex])) : null
         )
     };
+    let callback;
+    if (icon) {
+        let body = $('body')[0];
+        body.classList.add('body-loading');
+        callback = {
+            success: (data => {
+                if (sidebar) sidebar.closeErrors();
+                body.classList.remove('body-loading', 'body-error');
+                return cb.success(data);
+            }),
+            error: (ex => {
+                body.classList.remove('body-loading');
+                body.classList.add('body-error');
+                return cb.error(ex);
+            }),
+        };
+    } else {
+        callback = cb;
+    }
 
     if (ws && conf.ws_proxy && ws.readyState === ws.OPEN) {
         data = {
