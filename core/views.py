@@ -379,15 +379,12 @@ def ctx_quote(env, msg, forward=False):
 
 @login_required
 def thread(env, id):
-    i = env.sql('''
-    SELECT count(id), json_agg(labels), array_agg(subj)
-    FROM emails WHERE thrid = %s
-    ''', [id])
-    count, labels, subj = i.fetchone()
+    where = env.mogrify('FROM emails WHERE thrid = %s', [id])
+    i = env.sql('SELECT count(id), json_agg(labels) %s' % where)
+    count, labels = i.fetchone()
     if count:
-        subj = subj[0]
         labels = set(sum((r for r in labels), []))
-        where = env.mogrify('thrid = %s', [id])
+        subj = env.sql('SELECT subj %s' % where).fetchone()[0]
         if not env.request.args.get('full'):
             i = env.sql('''
             SELECT id FROM emails WHERE id IN (
@@ -409,14 +406,13 @@ def thread(env, id):
             })
             ids = [r[0] for r in i]
             if (count - len(ids)) > env('ui_thread_few'):
-                where = env.mogrify('id = ANY(%s)', [ids])
+                where = env.mogrify('FROM emails WHERE id = ANY(%s)', [ids])
 
         i = env.sql('''
         SELECT
             id, thrid, subj, labels, time, fr, "to", text, cc, created,
             html, attachments, parent
-        FROM emails
-        WHERE {where}
+        {where}
         ORDER BY id
         '''.format(where=where))
         msgs = []
