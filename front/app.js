@@ -440,15 +440,15 @@ let Sidebar = Component.extend({
             t = t !== undefined ? t : tab;
             v = v !== undefined ? v : view;
 
-            if (v && t == tab) {
-                view = v;
-                sidebar.activate();
-            }
             let url = getPath().replace(RegExp('^/[0-9]+'), '');
             this.tabs.$set(t, {
                 url: url,
                 name: v ? v.title || v.search_query || url : url
             });
+            if (t == tab) {
+                view = v;
+                sidebar.activate();
+            }
         },
         newTab(e) {
             e.preventDefault();
@@ -960,9 +960,11 @@ function getPath() {
 }
 function go(url) {
     url = url.replace(location.origin, '');
-    if (!RegExp('^/[0-9]+/').test(url)) {
+    let pattern = RegExp('^/([0-9]+/)');
+    if (!pattern.test(url)) {
         url = `/${tab}${url}`;
     }
+    tab = parseInt(pattern.exec(url)[1]);
     if (sidebar) sidebar.saveTab();
     return history.pushState({}, url);
 }
