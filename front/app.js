@@ -443,8 +443,8 @@ let Sidebar = Component.extend({
 
             let url, name;
             url = getPath().replace(RegExp('^/[0-9]+'), '');
-            name = this.tabs[t] ? this.tabs[t].name : url;
-            name = v ? v.name || v.search_query || name : name;
+            name = v && (v.title || v.search_query);
+            name = name || (this.tabs[t] ? this.tabs[t].name : url);
             this.tabs.$set(t, {url: url, name: name});
             if (t == tab) {
                 view = v;
