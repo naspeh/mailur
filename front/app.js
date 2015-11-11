@@ -41,7 +41,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
     let patterns = [
         ['\/$', () => {
             let last = sidebar.tabs.slice(-1);
-            return last ? go(last[0].url) : goToLabel('\\Inbox');
+            return last.length > 0 ? go(last[0].url) : goToLabel('\\Inbox');
         }],
         ['\/(raw)\/', () => {
             location.href = '/api' + location.pathname;
@@ -444,10 +444,10 @@ let Sidebar = Component.extend({
                 view = v;
                 sidebar.activate();
             }
-            let title = '(no title)';
+            let url = getPath().replace(RegExp('^/[0-9]+'), '');
             this.tabs.$set(t, {
-                url: getPath().replace(RegExp('^/[0-9]+'), ''),
-                name: v ? v.title || v.search_query || title : title
+                url: url,
+                name: v ? v.title || v.search_query || url : url
             });
         },
         newTab(e) {
