@@ -40,8 +40,8 @@ send(`/info/?offset=${offset}`, null, (data) => {
     let title = document.title;
     let patterns = [
         ['\/$', () => {
-            let first = session.get('tabs', [])[0];
-            return first ? go(first.url) : goToLabel('\\Inbox');
+            let last = sidebar.tabs.slice(-1);
+            return last ? go(last[0].url) : goToLabel('\\Inbox');
         }],
         ['\/(raw)\/', () => {
             location.href = '/api' + location.pathname;
@@ -93,11 +93,12 @@ send(`/info/?offset=${offset}`, null, (data) => {
             pattern = '^(/([0-9]+))?' + `(${pattern})`;
             let info = RegExp(pattern).exec(location.pathname);
             if (info) {
-                let body, tabs = session.get('tabs', []);
-                let tabNew = info[2] ? parseInt(info[2]) : 0;
-                let load = tabNew == tab;
-                if (tabNew > tabs.length) {
-                    tab = tabs.length;
+                let tabNew = info[2] ? parseInt(info[2]) : (
+                    sidebar.tabs.length && sidebar.tabs.length - 1
+                );
+                let body, load = tabNew == tab;
+                if (tabNew > sidebar.tabs.length) {
+                    tab = sidebar.tabs.length;
                     go(info[3] + location.search);
                     return;
                 }
@@ -438,16 +439,16 @@ let Sidebar = Component.extend({
         saveTab(t, v) {
             t = t !== undefined ? t : tab;
             v = v !== undefined ? v : view;
-            if (!v) return;
 
-            this.tabs.$set(t, {
-                url: getPath().replace(RegExp('^/[0-9]+'), ''),
-                name: v.title || v.search_query
-            });
-            if (t == tab) {
+            if (v && t == tab) {
                 view = v;
                 sidebar.activate();
             }
+            let title = '(no title)';
+            this.tabs.$set(t, {
+                url: getPath().replace(RegExp('^/[0-9]+'), ''),
+                name: v ? v.title || v.search_query || title : title
+            });
         },
         newTab(e) {
             e.preventDefault();
@@ -961,6 +962,7 @@ function go(url) {
     if (!RegExp('^/[0-9]+/').test(url)) {
         url = `/${tab}${url}`;
     }
+    if (sidebar) sidebar.saveTab();
     return history.pushState({}, url);
 }
 function reload() {
