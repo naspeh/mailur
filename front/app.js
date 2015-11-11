@@ -92,13 +92,14 @@ send(`/info/?offset=${offset}`, null, (data) => {
         for (let [pattern, current] of patterns) {
             pattern = '^(/([0-9]+))?' + `(${pattern})`;
             let info = RegExp(pattern).exec(location.pathname);
+            let tabs = session.get('tabs', []);
             if (info) {
                 let tabNew = info[2] ? parseInt(info[2]) : (
-                    sidebar.tabs.length && sidebar.tabs.length - 1
+                    tabs.length && tabs.length - 1
                 );
                 let body, load = tabNew == tab;
-                if (tabNew > sidebar.tabs.length) {
-                    tab = sidebar.tabs.length;
+                if (tabNew > tabs.length) {
+                    tab = tabs.length;
                     go(info[3] + location.search);
                     return;
                 }
