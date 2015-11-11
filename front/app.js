@@ -453,6 +453,7 @@ let Sidebar = Component.extend({
         newTab(e) {
             e.preventDefault();
             tab = this.tabs.length;
+            view = null;
             goToLabel('\\Inbox');
         },
         delTab(e) {
