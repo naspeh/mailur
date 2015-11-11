@@ -256,21 +256,17 @@ def update_email(env, row, where, params):
     doc = []
     for lang in env('search_lang'):
         people = sum((row[key] for key in ['fr', 'to', 'cc', 'bcc']), [])
-        msgids = [row['msgid'], row['in_reply_to']] + row['refs']
-        msgids = [i for i in msgids if i]
         doc.append(
             env.mogrify('''
             setweight(to_tsvector(%(lang)s, %(subj)s), 'A') ||
             setweight(to_tsvector(%(lang)s, %(text)s), 'C') ||
             setweight(to_tsvector(%(lang)s, %(people)s), 'D') ||
-            setweight(to_tsvector(%(lang)s, %(msgids)s), 'D') ||
             setweight(to_tsvector(%(lang)s, %(files)s), 'D')
             ''', {
                 'lang': lang,
                 'subj': row['subj'],
                 'text': row['text'],
                 'people': '\\n'.join(people),
-                'msgids': '\\n'.join(msgids),
                 'files': json.dumps(row['attachments'])
             })
         )
