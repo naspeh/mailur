@@ -402,7 +402,8 @@ def deploy(opts):
             chown postgres:postgres /run/postgresql
         )) &&
         sleep 5 &&
-        supervisorctl update && supervisorctl restart postgres
+        supervisorctl update && supervisorctl restart postgres &&
+        {manage} db-init -r -ptest test
         ''')
 
     if opts['npm']:

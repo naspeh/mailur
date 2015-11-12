@@ -66,7 +66,7 @@ class WebEnv(Env):
                 status = '500 %s' % e
             response = self.make_response(status=status)
         finally:
-            if self.username:
+            if self.valid_username or self.valid_token:
                 self.db.rollback()
         self.session.save_cookie(response, max_age=dt.timedelta(days=7))
         return response
