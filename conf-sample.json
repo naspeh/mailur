@@ -5,5 +5,6 @@
     "cookie_secret": "3e611768fc3283f387ba8dc3a066ba0b",
     "path_attachments": "../attachments",
     "google_id": "863129422071-pn82hd7jtcfsp8mlolrkc3rb9n4qvu18.apps.googleusercontent.com",
-    "google_secret": "U8Y08BSZC_aL6BynK5jZw1q1"
+    "google_secret": "U8Y08BSZC_aL6BynK5jZw1q1",
+    "ui_greeting": "<p><b>Default user:</b><br>username: test<br>password: test</p>"
 }
