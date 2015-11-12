@@ -297,7 +297,7 @@ def migrate(env, init=False):
 
 
 def deploy(opts):
-    root = Path('/var/local/mailur')
+    root = Path('/home/mailur')
     path = dict(
         src=str(root / 'src'),
         env=str(root / 'env'),
@@ -319,12 +319,7 @@ def deploy(opts):
         r="$(docker inspect --format='{{{{ .State.Running }}}}' {tag})"
         ([ "true" == "$r" ] || (
             docker run -d --net=host --name={tag} \
-                --restart={restart} \
-                -v {cwd}:{path[src]} \
-                -v {cwd}/../attachments:{path[attachments]} \
-                -v {cwd}/../pgdata:{path[pgdata]} \
-                -v {cwd}/../log:{path[log]} \
-                {image} \
+                --restart={restart} {mount} {image} \
             &&
             sleep 5
         ))
@@ -332,6 +327,12 @@ def deploy(opts):
             image=opts['docker_image'],
             tag=opts['docker_tag'],
             restart=opts['docker_restart'],
+            mount='' if not opts['docker_mount'] else '''
+                -v {cwd}:{path[src]} \
+                -v {cwd}/../attachments:{path[attachments]} \
+                -v {cwd}/../pgdata:{path[pgdata]} \
+                -v {cwd}/../log:{path[log]} \
+            '''.format(**ctx).strip(),
             **ctx
         ))
 
@@ -365,6 +366,11 @@ def deploy(opts):
     cd {path[src]} && git pull;
     ([ -d {path[attachments]} ] || mkdir {path[attachments]}) &&
     chown http:http {path[attachments]} &&
+    ([ -f {path[src]}/deploy/nginx-site.conf ] ||
+        ln -s \
+            {path[src]}/deploy/nginx-site-local.conf \
+            {path[src]}/deploy/nginx-site.conf
+    ) &&
     rsync -vL {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
     rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
     rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
@@ -377,7 +383,9 @@ def deploy(opts):
             mkdir -p {path[env]} && virtualenv {path[env]}
         )) &&
         ([ -d {path[wheels]} ] || mkdir -p {path[wheels]}) &&
-        {manage} reqs -t frozen &&
+        cd {path[src]} &&
+        source {path[env]}/bin/activate &&
+        ./manage.py reqs -t frozen &&
         echo '../env' > .venv
         ''')
 
@@ -434,6 +442,7 @@ def get_base(argv):
         .arg('-i', '--docker-image', default='naspeh/web')\
         .arg('-t', '--docker-tag', default='mailur')\
         .arg('-r', '--docker-restart', choices=('no', 'always'), default='no')\
+        .arg('-m', '--docker-mount', action='store_true')\
         .arg('-e', '--env', action='store_true')\
         .arg('-p', '--pkgs', action='store_true')\
         .arg('-d', '--db', action='store_true')\
