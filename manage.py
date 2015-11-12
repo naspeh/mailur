@@ -10,7 +10,10 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def sh(cmd):
+def sh(cmd, ssh=None):
+    if ssh:
+        return sh('ssh {} "{}"'.format(ssh, cmd.replace('"', '\\"')))
+
     log.info(cmd)
     code = sp.call(cmd, shell=True)
     if code:
@@ -336,16 +339,19 @@ def deploy(opts):
             **ctx
         ))
 
-    cmd = []
     if opts['keys']:
-        cmd.append(
-            '[ -f {keys} ] || (echo "ERROR: no authorized_keys" && exit 1) &&'
-            'rsync -v {keys} /root/.ssh/authorized_keys &&'
-            'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys &&'
-            '/home/dockerfiles/manage.py general'
-            .format(keys='%s/deploy/authorized_keys' % ctx['path']['src'])
+        sh(
+            'cd /home/dockerfiles && '
+            'git remote set-url origin'
+            '   https://github.com/naspeh/dockerfiles.git &&'
+            'git pull origin master &&'
+            './manage.py general -l -k {keys}'
+            .format(keys='%s/deploy/authorized_keys' % ctx['path']['src']),
+            opts['ssh']
         )
+        return
 
+    cmd = []
     if opts['pkgs']:
         cmd.append(
             'pacman --noconfirm -Sy'
@@ -367,14 +373,12 @@ def deploy(opts):
     ([ -f conf.json ] || cp conf-sample.json conf.json) &&
     ([ -d {path[attachments]} ] || mkdir {path[attachments]}) &&
     chown http:http {path[attachments]} &&
-    ([ -f {path[src]}/deploy/nginx-site.conf ] ||
-        ln -s \
-            {path[src]}/deploy/nginx-site-local.conf \
-            {path[src]}/deploy/nginx-site.conf
+    ([ -f deploy/nginx-site.conf ] ||
+        ln -s {path[src]}/deploy/nginx-site-local.conf deploy/nginx-site.conf
     ) &&
-    rsync -vL {path[src]}/deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
-    rsync -v {path[src]}/deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
-    rsync -v {path[src]}/deploy/fcrontab /etc/fcrontab/10-mailur &&
+    rsync -vL deploy/nginx-site.conf /etc/nginx/site-mailur.conf &&
+    rsync -v deploy/supervisor.ini /etc/supervisor.d/mailur.ini &&
+    rsync -v deploy/fcrontab /etc/fcrontab/10-mailur &&
     cat /etc/fcrontab/* | fcrontab -
     ''')
 
@@ -393,10 +397,10 @@ def deploy(opts):
     if opts['db']:
         cmd.append('''
         ([ -d {path[pgdata]} ] && chown -R postgres:postgres {path[pgdata]}) &&
-        ([ -f {path[pgdata]}/postgresql.conf ] ||
-            sudo -upostgres \
-                initdb --locale en_US.UTF-8 -E UTF8 -D {path[pgdata]}
-        ) &&
+        ([ -f {path[pgdata]}/postgresql.conf ] || (
+            su - postgres -c \
+                "initdb --locale en_US.UTF-8 -E UTF8 -D {path[pgdata]}"
+        )) &&
         ([ -d /run/postgresql ] || (
             mkdir -m 0775 /run/postgresql &&
             chown postgres:postgres /run/postgresql
@@ -416,10 +420,7 @@ def deploy(opts):
     )
 
     cmd = '\n'.join(cmd).format(**ctx)
-    if opts['ssh']:
-        sh('ssh {} "{}"'.format(opts['ssh'], cmd.replace('"', '\\"')))
-    else:
-        sh(cmd)
+    sh(cmd, opts['ssh'])
 
 
 def get_base(argv):
