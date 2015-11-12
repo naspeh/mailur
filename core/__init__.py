@@ -33,13 +33,13 @@ def get_conf(conf=None):
     with v.parsing(additional_properties=False):
         schema = v.parse({
             'debug': v.Nullable(bool, False),
-            'readonly': v.Nullable(bool, True),
-            'enabled': v.Nullable(bool, True),
             '+pg_username': str,
             '+pg_password': str,
-            '+google_id': str,
-            '+google_secret': str,
             '+cookie_secret': str,
+            'google_id': str,
+            'google_secret': str,
+            'readonly': v.Nullable(bool, True),
+            'enabled': v.Nullable(bool, True),
             'log_handlers': (
                 v.Nullable([v.Enum(log_handlers)], log_handlers[:1])
             ),

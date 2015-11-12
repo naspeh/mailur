@@ -40,7 +40,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
     let title = document.title;
     let patterns = [
         ['\/$', () => {
-            let last = sidebar.tabs.slice(-1);
+            let last = session.get('tabs', []).slice(-1);
             return last.length > 0 ? go(last[0].url) : goToLabel('\\Inbox');
         }],
         ['\/(raw)\/', () => {

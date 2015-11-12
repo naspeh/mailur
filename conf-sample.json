@@ -1,0 +1,7 @@
+{
+    "debug": true,
+    "pg_username": "postgres",
+    "pg_password": "",
+    "cookie_secret": "3e611768fc3283f387ba8dc3a066ba0b",
+    "path_attachments": "../attachments"
+}

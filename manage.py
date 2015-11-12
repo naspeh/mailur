@@ -364,6 +364,7 @@ def deploy(opts):
        git clone https://github.com/naspeh/mailur.git {path[src]}
     )) &&
     cd {path[src]} && git pull;
+    ([ -f conf.json ] || cp conf-sample.json conf.json) &&
     ([ -d {path[attachments]} ] || mkdir {path[attachments]}) &&
     chown http:http {path[attachments]} &&
     ([ -f {path[src]}/deploy/nginx-site.conf ] ||
