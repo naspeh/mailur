@@ -13,7 +13,6 @@ It is already usable as an alternative Gmail interface with a set of unique feat
 
 [Markdown]: https://daringfireball.net/projects/markdown/syntax
 
-![Screenshots](https://pusto.org/mailur/alpha/screenshots.gif)
 **Backend.** Python3. Main JSON-RPC server and WebSocket server for push notifications (with help of [Werkzeug][], [psycopg2][], [aiohttp][], [lxml][]).
 
 [Werkzeug]: http://werkzeug.pocoo.org/
@@ -35,3 +34,5 @@ It is already usable as an alternative Gmail interface with a set of unique feat
 ```
 
 Then, open http://localhost in your browser.
+
+![Screenshots](https://pusto.org/mailur/alpha/screenshots.gif)
