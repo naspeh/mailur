@@ -1,6 +1,6 @@
-**alpha state :: [info][] :: [public demo][] :: [short video][]**
+**alpha state :: [more info][] :: [public demo][] :: [short video][]**
 
-[info]: https://pusto.org/mailur/
+[more info]: https://pusto.org/mailur/
 [public demo]: http://mail.pusto.org
 [short video]: https://vimeo.com/145416826
 
