@@ -35,4 +35,6 @@ It is already usable as an alternative Gmail interface with a set of unique feat
 
 Then, open http://localhost in your browser.
 
+**Contributions are welcome.**
+
 ![Screenshots](https://pusto.org/mailur/alpha/screenshots.gif)
