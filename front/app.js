@@ -179,7 +179,7 @@ let hotkeys = [
     [['r a'], 'Reply all', () => {
         if (view.thread) go(view.last_email.links.replyall);
     }],
-    [['c'], 'Compose', () => go('/compose/')],
+    [['c'], 'Compose', () => go('/compose/new')],
     [['g i'], 'Go to Inbox', () => goToLabel('\\Inbox')],
     [['g d'], 'Go to Drafts', () => goToLabel('\\Drafts')],
     [['g s'], 'Go to Sent messages', () => goToLabel('\\Sent')],
