@@ -11,7 +11,7 @@ Vue.config.proto = false;
 let array_union = require('lodash/array/union');
 
 let ws, wsTry = 0, handlers = {}, handlerSeq = 0;
-let user, view, views = [], tab, sidebar, history;
+let user, view, views = [], tab, sidebar, title, history;
 let initUser = (data, url) => {
     user = data.username ? data : null;
     if (url) go(url);
@@ -36,8 +36,8 @@ let session = {
 let offset = new Date().getTimezoneOffset() / 60;
 send(`/info/?offset=${offset}`, null, (data) => {
     initUser(data);
+    title = document.title;
 
-    let title = document.title;
     let patterns = [
         ['\/$', () => {
             let last = session.get('tabs', []).slice(-1);
@@ -65,9 +65,6 @@ send(`/info/?offset=${offset}`, null, (data) => {
                 }
                 views[tab] = view;
 
-                if (data.title) {
-                    document.title = `${data.title} - ${title}`;
-                }
                 if (sidebar) sidebar.saveTab(tab, view);
             },
             error: (data) => error(data)
@@ -449,6 +446,7 @@ let Sidebar = Component.extend({
             if (t == tab) {
                 view = v;
                 sidebar.activate();
+                if (name) document.title = `${name} - ${title}`;
             }
         },
         newTab(e) {
@@ -665,10 +663,6 @@ let Emails = Component.extend({
             if (this.replyView) this.replyView.activate();
         },
         initData(data) {
-            if(!data.emails) {
-                if(!data.title) data.$set('title', '');
-                return data;
-            }
             if (data.checked_list === undefined) {
                 data.$set('checked_list', new Set());
                 this.permanent('checked_list');
