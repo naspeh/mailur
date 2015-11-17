@@ -13,7 +13,7 @@ It is already usable as an alternative Gmail interface with a set of unique feat
 
 [Markdown]: https://daringfireball.net/projects/markdown/syntax
 
-### Backend
+#### Backend
 Python3. Main JSON-RPC server and WebSocket server for push notifications (with help of [Werkzeug][], [psycopg2][], [aiohttp][], [lxml][]).
 
 [Werkzeug]: http://werkzeug.pocoo.org/
@@ -21,7 +21,7 @@ Python3. Main JSON-RPC server and WebSocket server for push notifications (with 
 [aiohttp]: http://aiohttp.readthedocs.org/
 [lxml]: http://lxml.de/
 
-### Frontend
+#### Frontend
 [ES6][]. Single-page application based on [vuejs][]. Also it used [less][] as CSS preprocessor and [browserify][] for bundling up all dependencies.
 
 [es6]: http://www.ecma-international.org/ecma-262/6.0/
@@ -29,7 +29,7 @@ Python3. Main JSON-RPC server and WebSocket server for push notifications (with 
 [less]: http://lesscss.org/
 [browserify]: http://browserify.org/
 
-### Run locally
+#### Run locally
 The simplest way is running docker container.
 
 ```bash
@@ -40,7 +40,7 @@ Then, open http://localhost in your browser.
 
 For manual installation look at [deploy folder](https://github.com/naspeh/mailur/tree/master/deploy) and [manage.py: deploy target](https://github.com/naspeh/mailur/blob/master/manage.py#L302), these files I use for deploying to docker container and servers.
 
-#### Dependencies:
+##### Dependencies:
 - PostgreSQL 9.4
 - Python >= 3.4
 - `./manage.py reqs -t frozen` or `pip install -r requirements.txt`
