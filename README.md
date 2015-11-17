@@ -13,16 +13,14 @@ It is already usable as an alternative Gmail interface with a set of unique feat
 
 [Markdown]: https://daringfireball.net/projects/markdown/syntax
 
-#### Backend
-Python3. Main JSON-RPC server and WebSocket server for push notifications (with help of [Werkzeug][], [psycopg2][], [aiohttp][], [lxml][]).
+**Backend.** Python3. Main JSON-RPC server and WebSocket server for push notifications (with help of [Werkzeug][], [psycopg2][], [aiohttp][], [lxml][]).
 
 [Werkzeug]: http://werkzeug.pocoo.org/
 [psycopg2]: http://initd.org/psycopg/
 [aiohttp]: http://aiohttp.readthedocs.org/
 [lxml]: http://lxml.de/
 
-#### Frontend
-[ES6][]. Single-page application based on [vuejs][]. Also it used [less][] as CSS preprocessor and [browserify][] for bundling up all dependencies.
+**Frontend.** [ES6][]. Single-page application based on [vuejs][]. Also it used [less][] as CSS preprocessor and [browserify][] for bundling up all dependencies.
 
 [es6]: http://www.ecma-international.org/ecma-262/6.0/
 [vuejs]: http://vuejs.org/
