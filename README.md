@@ -45,6 +45,7 @@ For manual installation look at [deploy folder](https://github.com/naspeh/mailur
 - `npm install`
 - 2 gunicorn workers for main server and websocket server
 - nginx to proxy gunicorn workers and serve static folder with frontend
+- cron for running synchronization like [here](https://github.com/naspeh/mailur/blob/master/deploy/fcrontab)
 
 **Contributions are welcome.**
 
