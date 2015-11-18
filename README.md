@@ -36,7 +36,7 @@ The simplest way is running docker container.
 
 Then, open http://localhost in your browser.
 
-For manual installation look at [deploy folder](https://github.com/naspeh/mailur/tree/master/deploy) and [manage.py: deploy target](https://github.com/naspeh/mailur/blob/master/manage.py#L302), these files I use for deploying to docker container and servers.
+For manual installation look at [deploy folder](https://github.com/naspeh/mailur/tree/master/deploy) and [manage.py: deploy](https://github.com/naspeh/mailur/blob/master/manage.py#L302), these files are used for deploying to docker container.
 
 ##### Dependencies:
 - PostgreSQL 9.4
