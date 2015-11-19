@@ -281,7 +281,7 @@ def shell(env):
 
 
 @for_all
-def migrate(env, init=False):
+def migrate(env, init=False, clean=False):
     from core import db
 
     log.info('Migrate for %s', env.db_name)
@@ -292,9 +292,10 @@ def migrate(env, init=False):
         env.storage.rm('last_sync')
         env.db.commit()
 
-    clean_emails()
+    if clean:
+        clean_emails()
 
-    if init:
+    if clean or init:
         db.init(env)
     env.username = env.username  # reset db connection
 
@@ -489,8 +490,10 @@ def get_full(argv):
         .exe(lambda a: db.init(Env(a.username), a.password, a.reset))
 
     cmd('migrate')\
+        .arg('-u', '--username')\
         .arg('-i', '--init', action='store_true')\
-        .exe(lambda a: migrate(env, a.init))
+        .arg('-c', '--clean', action='store_true')\
+        .exe(lambda a: migrate(Env(a.username), a.init, a.clean))
 
     cmd('shell').exe(lambda a: shell(env))
     cmd('run').exe(lambda a: run(env))
