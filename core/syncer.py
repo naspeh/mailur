@@ -163,9 +163,9 @@ def fetch_headers(env, imap, uids):
         log.info('  * No headers to fetch')
         return {}
 
+    ids = []
     q = ['INTERNALDATE', 'RFC822.SIZE', 'RFC822.HEADER', 'X-GM-MSGID']
     for data in imap.fetch_batch(uids, q, 'add emails with headers'):
-        ids = []
         for uid, row in data:
             extid = row['X-GM-MSGID']
             id = env.sql("SELECT nextval('seq_emails_id')").fetchone()[0]
