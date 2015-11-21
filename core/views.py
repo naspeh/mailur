@@ -778,7 +778,6 @@ def draft(env, thrid, action):
         return files
 
     elif action == 'send':
-        from email.utils import parseaddr
         import dns.resolver
         import dns.exception
 
@@ -893,7 +892,7 @@ def sendmail(env, msg):
         encode_base64(a)
         email.attach(a)
 
-    email['From'] = msg['fr']
+    email['From'] = formataddr(parseaddr(msg['fr']))
     email['To'] = ', '.join(formataddr(a) for a in getaddresses(msg['to']))
     email['Date'] = formatdate()
     email['Subject'] = msg['subj']
