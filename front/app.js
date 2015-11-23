@@ -663,18 +663,19 @@ let Emails = Component.extend({
             if (this.replyView) this.replyView.activate();
         },
         initData(data) {
-            if (data.checked_list === undefined) {
-                data.$set('checked_list', new Set());
-                this.permanent('checked_list');
+            if (data.emails) {
+                if (data.checked_list === undefined) {
+                    data.$set('checked_list', new Set());
+                    this.permanent('checked_list');
+                }
+                if (data.has_draft) this.$nextTick(() => {
+                    this.initReply(this.reply_url, true);
+                });
+                for (let email of data.emails.items) {
+                    email.vid = email[data.threads ? 'thrid' : 'id'];
+                    email.$set('checked', data.checked_list.has(email.vid));
+                }
             }
-            for (let email of data.emails.items) {
-                email.vid = email[data.threads ? 'thrid' : 'id'];
-                email.$set('checked', data.checked_list.has(email.vid));
-            }
-
-            if (data.has_draft) this.$nextTick(() => {
-                this.initReply(this.reply_url, true);
-            });
             return data;
         },
         initReply(url, focus) {
