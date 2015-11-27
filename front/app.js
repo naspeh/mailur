@@ -585,10 +585,10 @@ let Sidebar = Component.extend({
             let clear = () => {
                 if (tags) tags.destroy();
                 if (compl) compl.destroy();
-                input.value = vm.labels_sel.join(',');
             };
             let reset = () => {
                 clear();
+                input.value = vm.labels_sel.join(',');
                 container.classList.remove('labels-input-on');
             };
 
@@ -607,12 +607,14 @@ let Sidebar = Component.extend({
                 .bind(['backspace'], (e) => {
                     if (e.target.value !== '') return;
 
-                    // Clean previous tag
                     let prev = e.target.previousElementSibling.children;
-                    if (prev.length > 0) {
-                        prev[prev.length - 1].innerHTML = '';
-                    }
+                    if (prev.length === 0)  return;
+
+                    // Clean previous tag
+                    prev = prev[prev.length - 1];
+                    prev.querySelector('.nsg-tag-remove').click();
                     tags.convert();
+                    init();
                 })
                 .bind('esc esc', (e) => reset())
                 .bind('ctrl+enter', (e) => save());
