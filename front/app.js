@@ -911,7 +911,6 @@ let Compose = Component.extend({
             reload();
         },
         clear(e) {
-            let self = this;
             send(this.links.rm, null, this.reset, true);
         },
         upload(e) {
