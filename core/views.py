@@ -495,7 +495,7 @@ def threads(env, select_ids, ctx, page):
     ),
     threads AS (
         SELECT
-            max(id) AS max_id,
+            max(time),
             t.thrid,
             json_agg(e.labels) AS labels,
             array_agg(id) AS id_list,
@@ -513,7 +513,7 @@ def threads(env, select_ids, ctx, page):
     FROM threads t
     JOIN emails e ON e.thrid = t.thrid
     WHERE id IN (SELECT unnest(t.id_list) ORDER BY 1 DESC LIMIT 1)
-    ORDER BY t.max_id DESC
+    ORDER BY e.time DESC
     '''.format(
         select_ids=select_ids,
         page=page,
