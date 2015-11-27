@@ -232,7 +232,6 @@ class Emails(Manager):
         'updated timestamp NOT NULL DEFAULT current_timestamp',
         'msgid varchar UNIQUE',
         'extid varchar UNIQUE',
-        'delid uuid NOT NULL',  # remove after migrating
 
         'thrid bigint REFERENCES emails(id)',
         'parent bigint REFERENCES emails(id)',

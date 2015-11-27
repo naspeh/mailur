@@ -1,6 +1,5 @@
 import re
 import time
-import uuid
 from contextlib import contextmanager
 from email.utils import parseaddr
 from multiprocessing import Pool
@@ -175,9 +174,6 @@ def fetch_headers(env, imap, uids):
                 'size': row['RFC822.SIZE'],
                 'time': row['INTERNALDATE'],
                 'extid': extid,
-                'delid': uuid.uuid5(
-                    uuid.NAMESPACE_URL, '%s\r%s' % (imap.email, extid)
-                ),
             }
             fields.update(get_parsed(env, fields['header'], id))
             try:

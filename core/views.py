@@ -483,7 +483,7 @@ def threads(env, select_ids, ctx, page):
     '''.format(select_ids))
     count = i.fetchone()[0]
 
-    # Use ts_rank when fulltext search
+    # TODO: Use ts_rank when fulltext search
     # order_by = ctx.get('order_by', 'id')
     i = env.sql('''
     WITH
