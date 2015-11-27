@@ -835,6 +835,7 @@ let Compose = Component.extend({
         input.addEventListener('insignia-evaluated', (e) => {
             self.to = tags.value();
         });
+        input.addEventListener('horsey-selected', (e) => tags.convert());
 
         Mousetrap(input)
             .bind(['esc'], (e) => {
