@@ -581,6 +581,10 @@ let Sidebar = Component.extend({
                     },
                 });
                 input.focus();
+                input.addEventListener(
+                    'horsey-selected',
+                    (e => tags.convert())
+                );
             };
             let clear = () => {
                 if (tags) tags.destroy();
@@ -666,6 +670,8 @@ let Emails = Component.extend({
         },
         initData(data) {
             if (data.emails) {
+                data.$set('reply_body', false);
+
                 if (data.checked_list === undefined) {
                     data.$set('checked_list', new Set());
                     this.permanent('checked_list');
@@ -684,10 +690,19 @@ let Emails = Component.extend({
             if (!url) url = this.reply_url;
             if (this.replyView) this.replyView.$destroy();
 
-            this.$data.$set('reply_body', true);
+            this.reply_body = true;
             send(url, null, (data) => {
                 let reply = $$('.compose-body')[0];
-                this.replyView = new Compose({data: data, el: reply});
+                let self = this;
+                this.replyView = new Compose({
+                    data: data,
+                    el: reply,
+                    methods: {
+                        reset() {
+                            self.reply_body = false;
+                        }
+                    }
+                });
                 if (focus) {
                     this.replyView.activate();
                 }
@@ -813,6 +828,7 @@ let Compose = Component.extend({
             (data) => self.$data.$set('html', data),
             true
         );
+
         this.$watch('fr', this.preview);
         this.$watch('to', this.preview);
         this.$watch('subj', this.preview);
@@ -834,8 +850,10 @@ let Compose = Component.extend({
                 return value.trim();
             },
         });
-        input.addEventListener('insignia-evaluated', (e) => {
-            self.to = tags.value();
+        input.addEventListener('insignia-converted', (e) => {
+            if (self.to != tags.tags().join(', ')) {
+                self.to = tags.tags().join(', ');
+            }
         });
         input.addEventListener('horsey-selected', (e) => tags.convert());
 
@@ -889,11 +907,12 @@ let Compose = Component.extend({
                 self.draft = true;
             }, true);
         },
+        reset() {
+            reload();
+        },
         clear(e) {
-            send(this.links.rm, null, (data) => {
-                view = null;
-                reload();
-            }, true);
+            let self = this;
+            send(this.links.rm, null, this.reset, true);
         },
         upload(e) {
             let self = this;
@@ -970,6 +989,8 @@ function go(url) {
     return history.pushState({}, url);
 }
 function reload() {
+    view = null;
+    views[tab] = null;
     return history.replaceState({}, getPath());
 }
 
@@ -1095,9 +1116,7 @@ function send(url, data, cb, icon) {
     }
     cb = {
         success: cb && cb.success || cb,
-        error: cb && cb.error || (
-            !conf.debug ? (ex => error([url, ex])) : null
-        )
+        error: (cb && cb.error) || (ex => error([url, ex]))
     };
     let callback;
     if (icon) {
