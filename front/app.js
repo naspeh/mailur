@@ -884,6 +884,7 @@ let Compose = Component.extend({
             let self = this;
             send(this.links.preview + '?save=1', this.getContext(), (data) => {
                 self.$data.$set('html', data);
+                self.draft = true;
             }, true);
         },
         clear(e) {
