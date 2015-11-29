@@ -4,7 +4,7 @@
     "pg_password": "",
     "cookie_secret": "3e611768fc3283f387ba8dc3a066ba0b",
     "path_attachments": "../attachments",
-    "google_id": "863129422071-7brjunvglkocs23ggpm46nngciig4g3t.apps.googleusercontent.com",
-    "google_secret": "HHLvdhHcDr1Czq4sIjnQLcuz",
+    "google_id": "1070338767892-lgkv4u33f2r5ap6gv24vvod37qgbfl29.apps.googleusercontent.com",
+    "google_secret": "y3oB9atgq8IaMiO7mxsW6-Eo",
     "ui_greeting": "<p><b>Default user:</b><br>username: test<br>password: test</p>"
 }
