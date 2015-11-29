@@ -1,5 +1,11 @@
-<template v-if="email">
+<template v-if="email && !gmail_failed">
 Please wait for complete synchronization.
 </template>
 
-<a v-if="!email" href="/api/gmail/">Please, connect your gmail account.</a>
+<a v-if="email && gmail_failed" href="/api/gmail/">
+    Please, reconnect your gmail account.
+</a>
+
+<a v-if="!email" href="/api/gmail/">
+    Please, connect your gmail account.
+</a>

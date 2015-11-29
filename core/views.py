@@ -167,6 +167,7 @@ def ctx_init(env):
     return {
         'username': env.username,
         'email': env.email,
+        'gmail_failed': env.storage.get('gmail_failed'),
         'image': env.email and f.get_gravatar(env.email),
         'last_sync': last_sync
     }

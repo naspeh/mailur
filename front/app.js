@@ -78,7 +78,7 @@ send(`/info/?offset=${offset}`, null, (data) => {
         if (user && conf.ws_enabled && !ws) {
             connect();
         }
-        if (user && !user.last_sync) {
+        if (user && (!user.last_sync || user.gmail_failed)) {
             new Component({
                 template: require('./empty.html'),
                 el: '.body-active',

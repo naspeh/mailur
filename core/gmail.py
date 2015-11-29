@@ -47,6 +47,7 @@ def auth_callback(env, redirect_uri, code):
             'https://www.googleapis.com/oauth2/v1/userinfo',
             headers={'Authorization': 'Bearer %s' % auth['access_token']}
         ).json()
+        env.storage.rm('gmail_failed')
         env.storage.set('gmail', auth)
         env.storage.set('gmail_info', info)
         env.db.commit()
@@ -70,6 +71,8 @@ def auth_refresh(env, email):
         env.storage.set('gmail', value)
         env.db.commit()
         return
+
+    env.storage.set('gmail_failed', True)
     raise AuthError('%s: %s' % (res.reason, res.text))
 
 
