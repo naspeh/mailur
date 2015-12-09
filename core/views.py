@@ -701,9 +701,9 @@ def compose(env, id=None):
         FROM emails WHERE id=%s LIMIT 1
         ''', [id]).fetchone()
         if env.equal_email(parent['fr'][0]):
-            to = parent['to']
+            to = parent['to'][:]
         else:
-            to = parent['reply_to'] or parent['fr']
+            to = (parent['reply_to'] or parent['fr'])[:]
 
         forward = args.get('target') == 'forward'
         if forward:
