@@ -11,7 +11,7 @@
 >
     <a class="email-line" v-on="click: getOrGo" href="{{links.thread}}"><ul>
         <li class="email-pick">
-            <input v-on="click: onPick,change: onPick" v-model="checked" type="checkbox" class="mousetrap">
+            <input  v-on="click: onPick, change: onPick" v-model="checked" type="checkbox" class="mousetrap">
         </li>
         <li v-if="draft" class="email-draft">Draft</li>
         <li v-if="!draft" class="email-pin" v-on="click: pin" title="Toggle Pin"></li>
@@ -20,7 +20,7 @@
         <li v-if="labels" class="email-labels">
             <span v-repeat="labels" v-on="click: goToLabel" class="label">{{$value | trancate}}</span>
         </li>
-        <li v-if="count" class="email-count">{{count}}</li>
+        <li v-if="count" class="email-count"><span>{{count}}</span></li>
         <li v-class="email-subj: 1, email-subj-changed: subj_changed">{{subj_human}}</li>
         <li class="email-preview">{{preview}}</li>
         <li class="email-expander">&nbsp;</li>

@@ -457,8 +457,6 @@ body > .header {
         background-color: @Color1bg;
         border-top: 1px solid @Color1b;
         border-radius: 0.5em;
-        font-size: 1em;
-        line-height: @Size+@Space*0.6;
         color: @ColorA;
 
         & ul {
@@ -466,7 +464,10 @@ body > .header {
 
             & li {
                 display: inline-block;
+                position: relative;
                 vertical-align: middle;
+                font-size: 1em;
+                line-height: @Size+@Space*0.6;
             }
         }
         .label {
@@ -484,7 +485,6 @@ body > .header {
             text-align: center;
         }
         .email-pic {
-            display: inline-block;
             height: @SizeIcon;
             width: @SizeIcon;
             background-size: @SizeIcon @SizeIcon;
@@ -495,7 +495,7 @@ body > .header {
             overflow: hidden;
             cursor: pointer;
         }
-        .email-count {
+        .email-count span {
             padding: 0 3px;
             color: @ColorA;
             background-color: @Color0bg;
