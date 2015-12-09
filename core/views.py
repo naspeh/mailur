@@ -709,8 +709,8 @@ def compose(env, id=None):
         if forward:
             to = []
         elif args.get('target') == 'all':
-            to += parent['cc']
-            to += [a for a in parent['to'] if not env.equal_email(a)]
+            to += parent['to'] + parent['cc']
+            to = list(set(a for a in to if not env.equal_email(a)))
 
         ctx.update({
             'fr': fr,

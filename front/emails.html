@@ -20,7 +20,7 @@
         <li v-if="labels" class="email-labels">
             <a v-repeat="labels" v-on="click: goToLabel" href="{{$value | labelUrl}}" class="label">{{$value | trancate}}</a>
         </li>
-        <li><a href="{{url}}">
+        <li><a href="{{links.thread}}" v-on="click: getOrGo">
             <span v-if="count" class="email-count">{{count}}</span>
             <span v-class="email-subj: 1, email-subj-changed: subj_changed">{{subj_human}}</span>
             <span class="email-preview">{{preview}}</span>

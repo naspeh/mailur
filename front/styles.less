@@ -458,6 +458,10 @@ body > .header {
         border-radius: 0.5em;
         color: @ColorA;
 
+        a {
+            color: @ColorA;
+            text-decoration: none;
+        }
         & li {
             display: inline-block;
             position: relative;
@@ -488,14 +492,8 @@ body > .header {
         .email-from {
             max-width: 120px;
             overflow: hidden;
-            cursor: pointer;
-
-            a {
-                color: @ColorA;
-                text-decoration: none;
-            }
         }
-        .email-count span {
+        .email-count {
             padding: 0 3px;
             color: @ColorA;
             background-color: @Color0bg;
