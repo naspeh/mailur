@@ -446,8 +446,7 @@ body > .header {
 }
 .email {
     .email-line {
-        display: block;
-        text-decoration: none;
+        .mix_reset_list();
         position: relative;
         white-space: nowrap;
         overflow: hidden;
@@ -459,16 +458,12 @@ body > .header {
         border-radius: 0.5em;
         color: @ColorA;
 
-        & ul {
-            .mix_reset_list();
-
-            & li {
-                display: inline-block;
-                position: relative;
-                vertical-align: middle;
-                font-size: 1em;
-                line-height: @Size+@Space*0.6;
-            }
+        & li {
+            display: inline-block;
+            position: relative;
+            vertical-align: middle;
+            font-size: 1em;
+            line-height: @Size+@Space*0.6;
         }
         .label {
             font-size: 90%;
@@ -494,6 +489,11 @@ body > .header {
             max-width: 120px;
             overflow: hidden;
             cursor: pointer;
+
+            a {
+                color: @ColorA;
+                text-decoration: none;
+            }
         }
         .email-count span {
             padding: 0 3px;
