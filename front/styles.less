@@ -446,7 +446,8 @@ body > .header {
 }
 .email {
     .email-line {
-        .mix_reset_list();
+        display: block;
+        text-decoration: none;
         position: relative;
         white-space: nowrap;
         overflow: hidden;
@@ -460,9 +461,13 @@ body > .header {
         line-height: @Size+@Space*0.6;
         color: @ColorA;
 
-        & li {
-            display: inline-block;
-            vertical-align: middle;
+        & ul {
+            .mix_reset_list();
+
+            & li {
+                display: inline-block;
+                vertical-align: middle;
+            }
         }
         .label {
             font-size: 90%;

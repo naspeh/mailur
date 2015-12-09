@@ -742,18 +742,23 @@ let Emails = Component.extend({
             }
             sidebar.activate();
         },
-        details(e) {
-            e.preventDefault();
-            let body = e.targetVM.$data.body;
-            body.details = !body.details;
+        onPick(e) {
+            e.stopPropagation();
+            this.pick(e.targetVM);
         },
-        getOrGo(e, details) {
+        goToLabel(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            goToLabel(e.targetVM.$value);
+        },
+        goToPerson(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            go(e.targetVM.fr.url);
+        },
+        getOrGo(e) {
             e.preventDefault();
             let ctx = e.targetVM;
-            if (details && ctx.body.show && !ctx.body.details) {
-                ctx.body.details = true;
-                return;
-            }
             if (ctx.body_url) {
                 if (ctx.body) {
                     ctx.body.show = !ctx.body.show;
@@ -768,6 +773,8 @@ let Emails = Component.extend({
             }
         },
         pin(e) {
+            e.preventDefault();
+            e.stopPropagation();
             let email = e.targetVM.$data,
                 data = {action: '+', name: '\\Pinned', ids: [email.id]};
 
@@ -781,6 +788,11 @@ let Emails = Component.extend({
             email.pinned = !email.pinned;
             mark(data);
             return false;
+        },
+        details(e) {
+            e.preventDefault();
+            let body = e.targetVM.$data.body;
+            body.details = !body.details;
         },
         extract(e) {
             newThread({action: 'new', ids: [e.targetVM.id]});
