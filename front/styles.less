@@ -462,15 +462,17 @@ body > .header {
             color: @ColorA;
             text-decoration: none;
         }
-        & li {
+        & > li {
             display: inline-block;
             vertical-align: middle;
             font-size: 1em;
             line-height: @Size+@Space*0.6;
         }
-        .label {
-            .mix_link();
-            font-size: 90%;
+        .email-labels {
+            .mix_links();
+            .label {
+                font-size: 90%;
+            }
         }
         .email-pin {
             .icon-pin;
@@ -508,10 +510,6 @@ body > .header {
             &.email-subj-changed {
                 display: inline-block;
             }
-        }
-        .email-info {
-            width: 100%;
-            cursor: pointer;
         }
         .email-expander {
             display: inline-block;
