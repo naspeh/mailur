@@ -338,7 +338,7 @@ def deploy(opts):
                 -v {cwd}/../log:{path[log]} \
             '''.format(**ctx).strip(),
             **ctx
-        ))
+        ), opts['ssh'])
 
     if opts['keys']:
         sh(
