@@ -7,9 +7,9 @@
 Mailur aims to become a powerful Gmail-inspired webmail.
 
 It is already usable as an alternative Gmail client with a set of unique features:
-- internal lightweight tabs
 - linking few threads together
 - composing emails with [Markdown][]
+- internal lightweight tabs
 
 [Markdown]: https://daringfireball.net/projects/markdown/syntax
 
