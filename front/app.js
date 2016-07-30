@@ -152,6 +152,7 @@ let hotkeys = [
     [['s shift+p', '* t'], 'Select unpinned conversations', () => {
         filterEmails((i) => i.pinned || view.pick(i, true));
     }],
+    [['s t'], 'Show threads', () => go(location.href + '&by_thread=1')],
     [['m !', '!'], 'Report as spam', () => mark({action: '+', name: '\\Spam'})],
     [['m #', '#'] , 'Delete', () => mark({action: '+', name: '\\Trash'})],
     // [['m p'], 'Mark as pinned',

@@ -181,12 +181,15 @@ def url_query(env, name, value):
 
 
 def parse_query(env, query, page=None):
-    where, ctx = [], {'labels': []}
+    where, ctx = [], {'labels': [], 'by_thread': True}
 
     def replace(obj):
         for name, value in obj.groupdict().items():
             if not value:
                 continue
+
+            if name != 'labels' and ctx['by_thread']:
+                ctx['by_thread'] = False
 
             sql = ''
             if name == 'labels':
@@ -248,6 +251,7 @@ def parse_query(env, query, page=None):
         where.append('search @@ (%s)' % tsq)
         fields = 'id, ts_rank(search, %s) AS sort' % tsq
         ctx['order_by'] = 'sort'
+        ctx['by_thread'] = False
 
     labels = set(ctx['labels'])
     labels = sorted(
@@ -320,14 +324,14 @@ def ctx_links(env, id, thrid=None, to=None):
     }
 
 
-def ctx_person(env, contact):
+def ctx_person(env, contact, target='from'):
     name, email = parseaddr(contact)
     return {
         'full': contact,
         'short': name if env('ui_use_names') else email,
         'name': name,
         'email': email,
-        'url': url_query(env, 'email', email),
+        'url': url_query(env, target, email),
         'image': f.get_gravatar(email),
     }
 
@@ -413,10 +417,10 @@ def thread(env, id):
             ''', {
                 'thrid': id,
                 'labels': ['\\Unread', '\\Pinned'],
-                'few': env('ui_thread_few')
+                'few': env('ui_tiny_thread')
             })
             ids = [r[0] for r in i]
-            if (count - len(ids)) > env('ui_thread_few'):
+            if (count - len(ids)) > env('ui_tiny_thread'):
                 where = env.mogrify('FROM emails WHERE id = ANY(%s)', [ids])
 
         i = env.sql('''
@@ -428,7 +432,7 @@ def thread(env, id):
         '''.format(where=where))
         msgs = []
 
-        def emails():
+        def iter_emails():
             for msg in i:
                 msg = dict(msg)
                 msg['_extra'] = {
@@ -439,7 +443,7 @@ def thread(env, id):
                 yield msg
                 msgs.insert(0, msg)
 
-    ctx = ctx_emails(env, emails() if count else [])
+    ctx = ctx_emails(env, iter_emails() if count else [])
     if ctx['emails']:
         emails = ctx['emails']['items']
         subj = f.humanize_subj(emails[0]['subj'])
@@ -459,8 +463,12 @@ def thread(env, id):
 @login_required
 @adapt_page()
 def emails(env, page):
-    schema = v.parse({'q': v.Nullable(str, '')})
-    q = schema.validate(env.request.args)['q']
+    schema = v.parse({
+        'q': v.Nullable(str, ''),
+        'by_thread': v.Nullable(str, env('ui_by_thread'))
+    })
+    args = schema.validate(env.request.args)
+    q = args['q']
     ctx = {'labels': ['\\All']}
     if q.startswith('g! '):
         # Gmail search
@@ -468,11 +476,34 @@ def emails(env, page):
         select_ids = env.mogrify('''
         (SELECT * FROM unnest(%s::bigint[][])) AS ids(id)
         ''', [ids])
+        ctx['by_thread'] = False
     else:
         select_ids, ctx = parse_query(env, q, page)
         select_ids = '(%s) AS ids' % select_ids
 
-    res = threads(env, select_ids, ctx, page)
+    if args['by_thread'] or ctx['by_thread']:
+        res = threads(env, select_ids, ctx, page)
+    else:
+        i = env.sql('''
+        SELECT
+            e.id, thrid, subj, labels, time, fr, "to", text, cc, created,
+            html, attachments, parent
+        FROM emails e
+        JOIN {select_ids} ON e.id = ids.id
+        ORDER BY {order_by}
+        LIMIT {page[limit]} OFFSET {page[offset]}
+        '''.format(
+            select_ids=select_ids,
+            page=page,
+            order_by=ctx.get('order_by', 'id')
+        ))
+
+        def emails():
+            for msg in i:
+                msg = dict(msg)
+                yield msg
+
+        res = ctx_emails(env, emails())
     res['labels'] = ctx_labels(env, ctx['labels'])
     res['search_query'] = q
     return res
@@ -521,7 +552,7 @@ def threads(env, select_ids, ctx, page):
         order_by=ctx.get('order_by', 'id')
     ))
 
-    def emails():
+    def iter_emails():
         for msg in i:
             base_subj = dict(msg["subj_list"])
             base_subj = base_subj[sorted(base_subj)[0]]
@@ -537,7 +568,7 @@ def threads(env, select_ids, ctx, page):
             })
             yield msg
 
-    ctx = ctx_emails(env, emails(), threads=True)
+    ctx = ctx_emails(env, iter_emails(), threads=True)
     ctx['count'] = count
     ctx['threads'] = True
     ctx['next'] = page['count'] < count and {'url': env.url(
@@ -571,7 +602,7 @@ def body(env, id):
     ORDER BY time DESC
     ''', [row['thrid'], id, row['parent']])
 
-    def emails():
+    def iter_emails():
         for msg in [row]:
             if not msg['raw']:
                 continue
@@ -601,7 +632,7 @@ def body(env, id):
             }
             yield msg
 
-    ctx = ctx_emails(env, emails())
+    ctx = ctx_emails(env, iter_emails())
     email = ctx['emails']['items'][0]
     ctx['title'] = email['subj']
     ctx['labels'] = ctx_labels(env, email['labels'])
