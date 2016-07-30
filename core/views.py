@@ -181,18 +181,17 @@ def url_query(env, name, value):
 
 
 def parse_query(env, query, page=None):
-    where, ctx = [], {'labels': [], 'by_thread': True}
+    where, ctx = [], {'labels': []}
 
     def replace(obj):
         for name, value in obj.groupdict().items():
             if not value:
                 continue
 
-            if name != 'labels' and ctx['by_thread']:
-                ctx['by_thread'] = False
-
             sql = ''
-            if name == 'labels':
+            if name == 'thr':
+                ctx['by_thread'] = value.lower() in ('1', 'true', 'yes')
+            elif name == 'labels':
                 value = value.strip('"')
                 value = value.split(',')
                 ctx['labels'].extend(value)
@@ -239,6 +238,9 @@ def parse_query(env, query, page=None):
         r'msgid:(?P<msgid>[^ ]*)'
         r'|'
         r'ref:(?P<ref>[^ ]*)'
+        r'|'
+        # Options
+        r'thr:(?P<thr>[^ ]*)'
         r')'
     )
     q = re.sub(pattern, replace, query)
@@ -256,7 +258,11 @@ def parse_query(env, query, page=None):
         where.append('search @@ (%s)' % tsq)
         fields = 'id, ts_rank(search, %s) AS sort' % tsq
         ctx['order_by'] = 'sort DESC, id DESC'
-        ctx['by_thread'] = False
+
+    ctx['by_thread'] = (
+        (not bool(where) or env('ui_by_thread'))
+        if 'by_thread' not in ctx else ctx['by_thread']
+    )
 
     labels = set(ctx['labels'])
     labels = sorted(
@@ -468,25 +474,20 @@ def thread(env, id):
 @login_required
 @adapt_page()
 def emails(env, page):
-    schema = v.parse({
-        'q': v.Nullable(str, ''),
-        'by_thread': v.Nullable(str, env('ui_by_thread'))
-    })
-    args = schema.validate(env.request.args)
-    q = args['q']
-    ctx = {'labels': ['\\All']}
+    schema = v.parse({'q': v.Nullable(str, '')})
+    q = schema.validate(env.request.args)['q']
+    ctx = {'labels': ['\\All'], 'by_thread': False}
     if q.startswith('g! '):
         # Gmail search
         ids = syncer.search(env, env.email, q[3:])
         select_ids = env.mogrify('''
         (SELECT * FROM unnest(%s::bigint[][])) AS ids(id)
         ''', [ids])
-        ctx['by_thread'] = False
     else:
         select_ids, ctx = parse_query(env, q, page)
         select_ids = '(%s) AS ids' % select_ids
 
-    if args['by_thread'] or ctx['by_thread']:
+    if ctx['by_thread']:
         res = threads(env, select_ids, ctx, page)
     else:
         i = env.sql('''
