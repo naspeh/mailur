@@ -62,6 +62,7 @@ def get_conf(conf=None):
             'ui_ws_timeout': v.Nullable(int, 1000),
             'ui_firebug': v.Nullable(bool, False),
             'ui_thread_few': v.Nullable(int, 5),
+            'from_emails': v.Nullable([str]),
             'host_ws': v.Nullable(str, 'ws://localhost/async/'),
             'host_web': v.Nullable(strip_slash, 'http://localhost:8000'),
             'search_lang': v.Nullable([str], ['simple', 'english']),
@@ -217,8 +218,11 @@ class Env:
         return self.storage.get('gmail_info', {}).get('email')
 
     def equal_email(self, addr):
-        addr = parseaddr(addr)[1]
-        return addr.lower() == self.email.lower()
+        addr = parseaddr(addr)[1].lower()
+        for my in self.from_emails:
+            if parseaddr(my)[1].lower() == addr:
+                return True
+        return False
 
     @cached_property
     def token(self):

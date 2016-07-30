@@ -702,6 +702,7 @@ def compose(env, id=None):
         ''', [id]).fetchone()
         if env.equal_email(parent['fr'][0]):
             to = parent['to'][:]
+            fr = parent['fr'][0]
         else:
             to = (parent['reply_to'] or parent['fr'])[:]
 
