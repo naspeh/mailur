@@ -87,14 +87,14 @@ def npm():
         '   eslint'
         # libs
         '   normalize.css'
-        '   history'
-        '   lodash'
-        '   mousetrap'
-        '   vue'
+        '   history@1.13.0'
+        '   lodash@3.10.1'
+        '   mousetrap@1.5.3'
+        '   vue@0.12.16'
         '   wjbryant/taboverride'
         '   whatwg-fetch'
-        '   insignia'
-        '   horsey'
+        '   insignia@4.4.0'
+        '   horsey@2.6.1'
     )
 
 
