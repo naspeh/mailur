@@ -142,7 +142,7 @@ def front(env, force=False, clean=False):
         'ws_timeout': env('ui_ws_timeout'),
         'firebug': env('ui_firebug'),
         'greeting': env('ui_greeting'),
-        'from_emails': env('from_emails'),
+        'from_emails': env.from_emails,
     }
     ctx = {
         'conf': conf,

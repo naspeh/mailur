@@ -217,9 +217,13 @@ class Env:
     def email(self):
         return self.storage.get('gmail_info', {}).get('email')
 
+    @property
+    def from_emails(self):
+        return self('from_emails') or [self.email]
+
     def equal_email(self, addr):
         addr = parseaddr(addr)[1].lower()
-        for my in self('from_emails'):
+        for my in self.from_emails:
             if parseaddr(my)[1].lower() == addr:
                 return True
         return False
