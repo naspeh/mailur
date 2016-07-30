@@ -255,7 +255,7 @@ def parse_query(env, query, page=None):
         tsq = ' || '.join(tsq)
         where.append('search @@ (%s)' % tsq)
         fields = 'id, ts_rank(search, %s) AS sort' % tsq
-        ctx['order_by'] = 'sort'
+        ctx['order_by'] = 'sort DESC, id DESC'
         ctx['by_thread'] = False
 
     labels = set(ctx['labels'])
