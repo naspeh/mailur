@@ -888,7 +888,7 @@ let Compose = Component.extend({
         // From
         input = $$('.compose-fr input')[0];
         input.value = this.fr;
-        compl = horsey(input, {suggestions: conf.from_emails});
+        compl = horsey(input, {suggestions: this.from_emails});
 
         tabOverride.tabSize(4);
         tabOverride.set(this.text);

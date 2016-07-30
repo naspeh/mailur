@@ -687,10 +687,11 @@ def compose(env, id=None):
         'target': v.Nullable(v.Enum(('all', 'forward')))
     })
     args = schema.validate(env.request.args)
-    fr = '"%s" <%s>' % (env.storage.get('gmail_info').get('name'), env.email)
+    fr = env.from_email
     ctx = {
         'fr': fr, 'to': '', 'subj': '', 'body': '', 'files': [],
-        'quoted': False, 'forward': False, 'id': id, 'draft': False
+        'quoted': False, 'forward': False, 'id': id, 'draft': False,
+        'from_emails': env.from_emails
     }
     parent = {}
     if id:

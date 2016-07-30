@@ -218,8 +218,15 @@ class Env:
         return self.storage.get('gmail_info', {}).get('email')
 
     @property
+    def from_email(self):
+        return '"%s" <%s>' % (
+            self.storage.get('gmail_info').get('name'),
+            self.email
+        )
+
+    @property
     def from_emails(self):
-        return self('from_emails') or [self.email]
+        return self('from_emails') or [self.from_email]
 
     def equal_email(self, addr):
         addr = parseaddr(addr)[1].lower()
