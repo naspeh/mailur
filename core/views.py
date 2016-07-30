@@ -208,6 +208,9 @@ def parse_query(env, query, page=None):
             elif name == 'email':
                 value = '%<{}>%'.format(value)
                 sql = "array_to_string(\"to\" || cc || fr, ',') LIKE %s"
+            elif name == 'thrid':
+                value = value.strip()
+                sql = "thrid = %s"
             elif name == 'msgid':
                 value = value.strip()
                 sql = "msgid = %s"
@@ -230,6 +233,8 @@ def parse_query(env, query, page=None):
         r'to:(?P<to>[^ ]*)'
         r'|'
         r'email:(?P<email>[^ ]*)'
+        r'|'
+        r'thrid:(?P<thrid>[^ ]*)'
         r'|'
         r'msgid:(?P<msgid>[^ ]*)'
         r'|'
