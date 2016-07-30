@@ -767,6 +767,13 @@ let Emails = Component.extend({
                     ctx.body = {show: true};
                     send(ctx.body_url, null, (data) => {
                         ctx.body = data.emails.items[0].body;
+                        if (!view.tread) {
+                            mark({
+                                action: '-',
+                                name: '\\Unread',
+                                ids: [e.targetVM.id]
+                            }, () => {});
+                        }
                     }, true);
                 }
             } else {
