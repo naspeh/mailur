@@ -687,7 +687,7 @@ def compose(env, id=None):
         'target': v.Nullable(v.Enum(('all', 'forward')))
     })
     args = schema.validate(env.request.args)
-    fr = env.from_email
+    fr = env.from_email()
     ctx = {
         'fr': fr, 'to': '', 'subj': '', 'body': '', 'files': [],
         'quoted': False, 'forward': False, 'id': id, 'draft': False,
@@ -702,14 +702,17 @@ def compose(env, id=None):
         FROM emails WHERE id=%s LIMIT 1
         ''', [id]).fetchone()
         to_all = parent['to'][:] + parent['cc'][:]
-        if env.equal_email(parent['fr'][0]):
-            fr = parent['fr'][0]
+        fr = env.from_email(parent['fr'])
+        if fr:
             to = to_all
         else:
-            for a in to_all:
-                if env.equal_email(a):
-                    fr = a
-                    break
+            fr_ = env.from_email(to_all)
+            if fr_:
+                fr = fr_
+                to_all = [
+                    a for a in to_all
+                    if parseaddr(a)[1] != parseaddr(fr)[1]
+                ]
             to = (parent['reply_to'] or parent['fr'])[:]
 
         forward = args.get('target') == 'forward'
@@ -718,7 +721,6 @@ def compose(env, id=None):
         elif args.get('target') == 'all':
             to += to_all
 
-        to = list(set(a for a in to if not env.equal_email(a))) or to
         ctx.update({
             'fr': fr,
             'to': ', '.join(to),

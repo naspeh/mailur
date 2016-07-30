@@ -196,7 +196,7 @@ class Env:
         # Clear cached properties
         self.__dict__.pop('db', None)
         self.__dict__.pop('conf', None)
-        self.__dict__.pop('email', None)
+        self.__dict__.pop('gmail_info', None)
         self.__dict__.pop('token', None)
         self.__dict__.pop('files', None)
 
@@ -214,26 +214,30 @@ class Env:
         return get_conf(dict(self.conf_default, **custom))
 
     @cached_property
-    def email(self):
-        return self.storage.get('gmail_info', {}).get('email')
+    def gmail_info(self):
+        return self.storage.get('gmail_info') or {}
 
     @property
-    def from_email(self):
-        return '"%s" <%s>' % (
-            self.storage.get('gmail_info').get('name'),
-            self.email
-        )
+    def email(self):
+        return self.gmail_info.get('email')
+
+    def from_email(self, emails=None):
+        if not emails:
+            return '"%s" <%s>' % (
+                self.gmail_info.get('name'),
+                self.email
+            )
+
+        for addr in emails:
+            addr = parseaddr(addr)[1].lower()
+            for my in self.from_emails:
+                if parseaddr(my)[1].lower() == addr:
+                    return my
+        return None
 
     @property
     def from_emails(self):
         return self('from_emails') or [self.from_email]
-
-    def equal_email(self, addr):
-        addr = parseaddr(addr)[1].lower()
-        for my in self.from_emails:
-            if parseaddr(my)[1].lower() == addr:
-                return True
-        return False
 
     @cached_property
     def token(self):
