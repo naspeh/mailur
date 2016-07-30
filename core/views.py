@@ -500,7 +500,7 @@ def emails(env, page):
         '''.format(
             select_ids=select_ids,
             page=page,
-            order_by=ctx.get('order_by', 'id')
+            order_by=ctx.get('order_by', 'id DESC')
         ))
 
         def emails():
@@ -521,7 +521,6 @@ def threads(env, select_ids, ctx, page):
     count = i.fetchone()[0]
 
     # TODO: Use ts_rank when fulltext search
-    # order_by = ctx.get('order_by', 'id')
     i = env.sql('''
     WITH
     thread_ids AS (
@@ -554,7 +553,6 @@ def threads(env, select_ids, ctx, page):
     '''.format(
         select_ids=select_ids,
         page=page,
-        order_by=ctx.get('order_by', 'id')
     ))
 
     def iter_emails():
