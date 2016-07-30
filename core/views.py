@@ -701,19 +701,24 @@ def compose(env, id=None):
             attachments, embedded
         FROM emails WHERE id=%s LIMIT 1
         ''', [id]).fetchone()
+        to_all = parent['to'][:] + parent['cc'][:]
         if env.equal_email(parent['fr'][0]):
-            to = parent['to'][:]
             fr = parent['fr'][0]
+            to = to_all
         else:
+            for a in to_all:
+                if env.equal_email(a):
+                    fr = a
+                    break
             to = (parent['reply_to'] or parent['fr'])[:]
 
         forward = args.get('target') == 'forward'
         if forward:
             to = []
         elif args.get('target') == 'all':
-            to += parent['to'] + parent['cc']
-            to = list(set(a for a in to if not env.equal_email(a)))
+            to += to_all
 
+        to = list(set(a for a in to if not env.equal_email(a))) or to
         ctx.update({
             'fr': fr,
             'to': ', '.join(to),
