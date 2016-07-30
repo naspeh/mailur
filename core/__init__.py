@@ -219,7 +219,7 @@ class Env:
 
     def equal_email(self, addr):
         addr = parseaddr(addr)[1].lower()
-        for my in self.from_emails:
+        for my in self('from_emails'):
             if parseaddr(my)[1].lower() == addr:
                 return True
         return False
