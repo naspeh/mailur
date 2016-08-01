@@ -222,13 +222,7 @@ class Env:
     def email(self):
         return self.gmail_info.get('email')
 
-    def from_email(self, emails=None):
-        if not emails:
-            return '"%s" <%s>' % (
-                self.gmail_info.get('name'),
-                self.email
-            )
-
+    def from_email(self, emails):
         for addr in emails:
             addr = parseaddr(addr)[1].lower()
             for my in self.from_emails:
@@ -238,7 +232,9 @@ class Env:
 
     @property
     def from_emails(self):
-        return self('from_emails') or [self.from_email]
+        return self('from_emails') or [
+            '"%s" <%s>' % (self.gmail_info.get('name'), self.email)
+        ]
 
     @cached_property
     def token(self):
