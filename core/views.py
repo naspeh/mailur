@@ -193,7 +193,7 @@ def parse_query(env, query, page=None):
             sql = ''
             if name == 'thr':
                 ctx['by_thread'] = value.lower() in ('1', 'true', 'yes')
-            elif name == 'labels':
+            elif name == 'in':
                 value = value.strip('"')
                 value = value.split(',')
                 ctx['labels'].extend(value)
@@ -225,7 +225,7 @@ def parse_query(env, query, page=None):
 
     pattern = (
         r'('
-        r'in:(?P<labels>".*?"|[^ ]*)'
+        r'in:(?P<in>".*?"|[^ ]*)'
         r'|'
         r'subj:(?P<subj>".*?"|[^ ]*)'
         r'|'
@@ -514,7 +514,9 @@ def emails(env, page):
         res = ctx_emails(env, emails())
     res['labels'] = ctx_labels(env, ctx['labels'])
 
-    if 'thr' not in (ctx['keywords'] - {'in'}):
+    from . import log
+    log.info('keywords=%(keywords)s', ctx)
+    if ctx['keywords'] != {'in'} and 'thr' not in ctx['keywords']:
         q += ' thr:0'
     res['search_query'] = q
     return res
