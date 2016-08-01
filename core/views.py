@@ -181,12 +181,14 @@ def url_query(env, name, value):
 
 
 def parse_query(env, query, page=None):
-    where, ctx = [], {'labels': []}
+    where, ctx = [], {'labels': [], 'keywords': set()}
 
     def replace(obj):
         for name, value in obj.groupdict().items():
             if not value:
                 continue
+            if name not in ctx['keywords']:
+                ctx['keywords'].add(name)
 
             sql = ''
             if name == 'thr':
@@ -511,6 +513,9 @@ def emails(env, page):
 
         res = ctx_emails(env, emails())
     res['labels'] = ctx_labels(env, ctx['labels'])
+
+    if 'thr' not in (ctx['keywords'] - {'labels'}):
+        q += ' thr:0'
     res['search_query'] = q
     return res
 
