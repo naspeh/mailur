@@ -514,7 +514,7 @@ def emails(env, page):
         res = ctx_emails(env, emails())
     res['labels'] = ctx_labels(env, ctx['labels'])
 
-    if 'thr' not in (ctx['keywords'] - {'labels'}):
+    if 'thr' not in (ctx['keywords'] - {'in'}):
         q += ' thr:0'
     res['search_query'] = q
     return res
