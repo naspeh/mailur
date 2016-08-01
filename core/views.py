@@ -722,7 +722,7 @@ def compose(env, id=None):
         'target': v.Nullable(v.Enum(('all', 'forward')))
     })
     args = schema.validate(env.request.args)
-    fr = env.from_email()
+    fr = env.from_emails[0]
     ctx = {
         'fr': fr, 'to': '', 'subj': '', 'body': '', 'files': [],
         'quoted': False, 'forward': False, 'id': id, 'draft': False,
