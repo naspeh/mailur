@@ -442,7 +442,7 @@ def sync_marks(env, imap, uid2id):
         ids_ = [r['id'] for r in emails]
         uids = [uid for uid, id in uid2id.items() if id in ids_]
         if not uids:
-            return
+            continue
 
         default = ('X-GM-LABELS', t['name'])
         key, value = store.get(t['name'], default)
