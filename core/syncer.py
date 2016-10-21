@@ -65,6 +65,13 @@ def _sync_gmail(env, email, fast=True, only=None):
             update_thrids(env, label)
             fetch_bodies(env, imap, id2uid)
 
+    tasks = [r[0] for r in env.sql('''
+    SELECT key FROM storage
+    WHERE key LIKE 'task:mark:%'
+    ''')]
+    if tasks:
+        log.info(' %s tasks are remaining: %s', len(tasks), tasks)
+
     if not fast or env.storage.get('last_sync'):
         env.storage.set('last_sync', time.time())
         notify(env, [], True)
@@ -442,6 +449,7 @@ def sync_marks(env, imap, uid2id):
         ids_ = [r['id'] for r in emails]
         uids = [uid for uid, id in uid2id.items() if id in ids_]
         if not uids:
+            log.info('  - no ids overlaping, skip: %s', task_id)
             continue
 
         default = ('X-GM-LABELS', t['name'])
