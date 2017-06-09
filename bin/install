@@ -60,9 +60,14 @@ userdb {
     default_fields = uid=vmail gid=vmail home=/home/vmail/%u master_user=%u
 }
 
-mail_plugins = $mail_plugins acl
+mail_plugins = $mail_plugins acl notify mail_log push_notification
 plugin {
     acl = vfile:/etc/dovecot/acl
+
+    mail_log_events = delete undelete expunge copy save flag_change
+    mail_log_fields = uid box msgid flags
+
+    push_notification_driver = dlog
 }
 namespace {
     prefix =
@@ -94,4 +99,4 @@ cat <<"EOF" > /etc/dovecot/acl
 EOF
 
 rc-update add dovecot
-rc-service dovecot start
+rc-service dovecot restart
