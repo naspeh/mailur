@@ -1,0 +1,94 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+# isync to get emails from gmail
+cd /tmp
+curl -O http://mirrors.kernel.org/ubuntu/pool/universe/i/isync/isync_1.2.1-2_amd64.deb
+dpkg -i isync_1.2.1-2_amd64.deb
+
+# smtp server for testing with Thunderbird
+apt-get -y install opensmtpd
+sed -i 's/listen.*/listen on 0.0.0.0/' /etc/smtpd.conf
+systemctl enable opensmtpd
+systemctl restart opensmtpd
+
+# dovecot
+apt-get -y install dovecot-imapd
+
+id -u vmail || (
+groupadd -g 5000 vmail
+useradd -m -d /home/vmail -s /bin/false -u 5000 -g vmail vmail
+)
+
+cat <<"EOF" > /etc/dovecot/dovecot.conf
+auth_debug=yes
+auth_debug_passwords=yes
+auth_verbose_passwords=sha1
+mail_debug=yes
+verbose_ssl=yes
+log_path = /var/log/dovecot.log
+
+protocols = imap
+ssl = required
+ssl_key = </etc/ssl/private/ssl-cert-snakeoil.key
+ssl_cert = </etc/ssl/certs/ssl-cert-snakeoil.pem
+ssl_client_ca_dir = /etc/ssl/certs/
+
+mail_location = mdbox:~/mails
+mdbox_rotate_size = 100M
+
+auth_master_user_separator = *
+passdb {
+    driver = passwd-file
+    args = /etc/dovecot/passwd.masters
+    master = yes
+    pass = yes
+}
+passdb {
+    driver = passwd-file
+    args = /etc/dovecot/passwd.users
+}
+userdb {
+    driver = passwd-file
+    args = /etc/dovecot/passwd.users
+    default_fields = uid=vmail gid=vmail home=/home/vmail/%u master_user=%u
+}
+
+mail_plugins = $mail_plugins acl
+plugin {
+    acl = vfile:/etc/dovecot/acl
+}
+namespace {
+    prefix =
+    separator = /
+    inbox = yes
+    mailbox INBOX {
+        auto = subscribe
+        #special_use = \All
+    }
+    mailbox Spam {
+        auto = subscribe
+        special_use = \Junk
+    }
+    mailbox Trash {
+        auto = subscribe
+        special_use = \Trash
+    }
+}
+EOF
+cat <<"EOF" > /etc/dovecot/passwd.masters
+root:{SHA256-CRYPT}$5$B9xOinAHt1RAIjzn$KY/xCDl9wu9jkIGpga/kqi1Szz4P9e9BdinItSYSQV2
+EOF
+cat <<"EOF" > /etc/dovecot/passwd.users
+user:{SHA256-CRYPT}$5$cUrO1/xHQA05WLNB$QeXNNtyNuh/flJZuqhjhDEQz71WvCaSklu6jOTpm12.::::::
+EOF
+cat <<"EOF" > /etc/dovecot/acl
+* owner lrwstipe
+* user=root lrwstipe
+EOF
+
+systemctl enable dovecot
+systemctl restart dovecot

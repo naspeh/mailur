@@ -1,0 +1,39 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+proj=mailur
+lxc_name=${lxc_name:-mlr}
+mount_src=${lxc_src-$(pwd)}
+
+lxc-create -t download -n $lxc_name -- -d ubuntu -r xenial -a amd64
+
+# mount src from host and also some cache directories
+[ -z "$mount_src" ] || (
+cache=$mount_src/.cache
+mkdir -p $cache/{pip,npm,apt}
+cat <<EOF >> /var/lib/lxc/$lxc_name/config
+lxc.mount.entry = $mount_src opt/$proj none bind,create=dir
+lxc.mount.entry = $cache/pip root/.cache/pip none bind,create=dir
+lxc.mount.entry = $cache/npm root/.npm none bind,create=dir
+lxc.mount.entry = $cache/apt var/cache/apt/archives none bind,create=dir
+EOF
+unset cache
+)
+
+lxc-start -n $lxc_name
+sleep 5
+
+# install ssh and authorized keys for easy access
+cat <<EOF | lxc-attach --clear-env -n $lxc_name -- /bin/bash
+set -exuo pipefail
+export DEBIAN_FRONTEND=noninteractive
+apt-get -y update
+apt-get -y install openssh-server curl ca-certificates
+
+mkdir -p /root/.ssh
+cat <<EOF0 >> /root/.ssh/authorized_keys
+$(cat ~/.ssh/id_rsa.pub)
+$([ ! -f /root/.ssh/id_rsa.pub ] ||  cat /root/.ssh/id_rsa.pub)
+EOF0
+EOF
