@@ -2,27 +2,30 @@
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
 
-export DEBIAN_FRONTEND=noninteractive
+# some useful stuff
+apk add curl htop vim
 
 # isync to get emails from gmail
-cd /tmp
-curl -O http://mirrors.kernel.org/ubuntu/pool/universe/i/isync/isync_1.2.1-2_amd64.deb
-dpkg -i isync_1.2.1-2_amd64.deb
+apk add isync
 
 # smtp server for testing with Thunderbird
-apt-get -y install opensmtpd
-sed -i 's/listen.*/listen on 0.0.0.0/' /etc/smtpd.conf
-systemctl enable opensmtpd
-systemctl restart opensmtpd
+apk add opensmtpd
+sed -i 's/^listen.*/listen on 0.0.0.0/' /etc/smtpd/smtpd.conf
+rc-update add smtpd
+rc-service smtpd restart
 
 # dovecot
-apt-get -y install dovecot-imapd
+apk add dovecot
 
 id -u vmail || (
-groupadd -g 5000 vmail
-useradd -m -d /home/vmail -s /bin/false -u 5000 -g vmail vmail
+addgroup -g 5000 -S vmail
+adduser -h /home/vmail -s /bin/false -u 5000 -DSG vmail vmail
 )
 
+[ -d '/etc/dovecot.bak' ] || (
+    mv /etc/dovecot{,.bak}
+    mkdir /etc/dovecot
+)
 cat <<"EOF" > /etc/dovecot/dovecot.conf
 auth_debug=yes
 auth_debug_passwords=yes
@@ -33,8 +36,8 @@ log_path = /var/log/dovecot.log
 
 protocols = imap
 ssl = required
-ssl_key = </etc/ssl/private/ssl-cert-snakeoil.key
-ssl_cert = </etc/ssl/certs/ssl-cert-snakeoil.pem
+ssl_key = </etc/ssl/dovecot/server.key
+ssl_cert = </etc/ssl/dovecot/server.pem
 ssl_client_ca_dir = /etc/ssl/certs/
 
 mail_location = mdbox:~/mails
@@ -90,5 +93,5 @@ cat <<"EOF" > /etc/dovecot/acl
 * user=root lrwstipe
 EOF
 
-systemctl enable dovecot
-systemctl restart dovecot
+rc-update add dovecot
+rc-service dovecot start

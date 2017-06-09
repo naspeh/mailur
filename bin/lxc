@@ -6,17 +6,16 @@ proj=mailur
 lxc_name=${lxc_name:-mlr}
 mount_src=${lxc_src-$(pwd)}
 
-lxc-create -t download -n $lxc_name -- -d ubuntu -r xenial -a amd64
+lxc-create -t download -n $lxc_name -- -d alpine -r edge -a amd64
 
 # mount src from host and also some cache directories
 [ -z "$mount_src" ] || (
 cache=$mount_src/.cache
-mkdir -p $cache/{pip,npm,apt}
+mkdir -p $cache/{pip,npm}
 cat <<EOF >> /var/lib/lxc/$lxc_name/config
 lxc.mount.entry = $mount_src opt/$proj none bind,create=dir
 lxc.mount.entry = $cache/pip root/.cache/pip none bind,create=dir
 lxc.mount.entry = $cache/npm root/.npm none bind,create=dir
-lxc.mount.entry = $cache/apt var/cache/apt/archives none bind,create=dir
 EOF
 unset cache
 )
@@ -25,11 +24,25 @@ lxc-start -n $lxc_name
 sleep 5
 
 # install ssh and authorized keys for easy access
-cat <<EOF | lxc-attach --clear-env -n $lxc_name -- /bin/bash
-set -exuo pipefail
-export DEBIAN_FRONTEND=noninteractive
-apt-get -y update
-apt-get -y install openssh-server curl ca-certificates
+cat <<EOF | lxc-attach --clear-env -n $lxc_name -- /bin/sh
+set -exu
+
+# The loopback configuration must appear first in /etc/network/interfaces
+# to prevent networking issues.
+echo "\
+auto lo
+iface lo inet loopback
+
+\$(cat /etc/network/interfaces)
+" > /etc/network/interfaces
+rc-service networking restart
+
+apk update
+apk add openssh bash
+rc-update add sshd
+rc-service sshd start
+sed -i 's|/bin/ash|/bin/bash|' /etc/passwd
+
 
 mkdir -p /root/.ssh
 cat <<EOF0 >> /root/.ssh/authorized_keys

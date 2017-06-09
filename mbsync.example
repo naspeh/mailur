@@ -13,11 +13,11 @@ SSLType IMAPS
 PipelineDepth 1
 
 IMAPAccount dovecot
-Host mlr
+Host localhost
 User user
 Pass user
 SSLType IMAPS
-CertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem
+CertificateFile /etc/ssl/dovecot/server.pem
 
 IMAPStore gmail
 Account gmail
