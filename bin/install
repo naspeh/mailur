@@ -34,11 +34,23 @@ mail_debug=yes
 verbose_ssl=yes
 log_path = /var/log/dovecot.log
 
-protocols = imap
 ssl = required
 ssl_key = </etc/ssl/dovecot/server.key
 ssl_cert = </etc/ssl/dovecot/server.pem
 ssl_client_ca_dir = /etc/ssl/certs/
+
+protocols = imap
+service imap-login {
+  inet_listener imap {
+    port = 143
+    address = localhost
+  }
+  inet_listener imaps {
+    port = 993
+    ssl = yes
+    address = *
+  }
+}
 
 mail_location = mdbox:~/mails
 mdbox_rotate_size = 100M
