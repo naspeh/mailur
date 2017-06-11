@@ -10,12 +10,12 @@ lxc-create -t download -n $lxc_name -- -d alpine -r edge -a amd64
 
 # mount src from host and also some cache directories
 [ -z "$mount_src" ] || (
-cache=$mount_src/.cache
-mkdir -p $cache/{pip,npm}
+cache=$mount_src/.cache/$lxc_name
+mkdir -p $cache/{root,home}
 cat <<EOF >> /var/lib/lxc/$lxc_name/config
 lxc.mount.entry = $mount_src opt/$proj none bind,create=dir
-lxc.mount.entry = $cache/pip root/.cache/pip none bind,create=dir
-lxc.mount.entry = $cache/npm root/.npm none bind,create=dir
+lxc.mount.entry = $cache/root root none bind,create=dir
+lxc.mount.entry = $cache/home home none bind,create=dir
 EOF
 unset cache
 )
@@ -43,10 +43,13 @@ rc-update add sshd
 rc-service sshd start
 sed -i 's|/bin/ash|/bin/bash|' /etc/passwd
 
-
 mkdir -p /root/.ssh
-cat <<EOF0 >> /root/.ssh/authorized_keys
+cat <<EOF0 > /root/.ssh/authorized_keys
 $(cat ~/.ssh/id_rsa.pub)
 $([ ! -f /root/.ssh/id_rsa.pub ] ||  cat /root/.ssh/id_rsa.pub)
 EOF0
+
+id -u $SUDO_USER || (
+adduser -h /home/$SUDO_USER -s /bin/bash -u $(id -u $SUDO_USER) -DSG users $SUDO_USER
+)
 EOF

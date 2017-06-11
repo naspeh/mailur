@@ -2,9 +2,6 @@
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
 
-# some useful stuff
-apk add curl htop vim
-
 # isync to get emails from gmail
 apk add isync
 

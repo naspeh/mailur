@@ -1,0 +1,24 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+# some useful stuff
+apk add curl htop
+
+apk add zsh zsh-vcs coreutils
+sed -i 's|/bin/bash|/bin/zsh|' /etc/passwd
+
+apk add the_silver_searcher the_silver_searcher-zsh-completion
+
+apk add neovim neovim-doc xauth xclip
+[ -f /usr/bin/vim ] || ln -s /usr/bin/nvim /usr/bin/vim
+sed -i -e 's|^#*\(X11Forwarding\) .*|\1 yes|' /etc/ssh/sshd_config
+rc-service sshd restart
+
+apk add python3
+env=/opt/mailur/env
+pip=$env/bin/pip
+python3 -m venv $env
+
+# ptpython for testing
+$pip install -U ptpython
