@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+import hashlib
+import imaplib
+import re
+from email import policy
+from email.mime.text import MIMEText
+from email.parser import BytesParser
+
+KW_PARSED = '$Parsed'
+KW_MSGID = '$M%s'
+KW_THRID = '$T%s'
+
+
+def parse(b):
+    msg = BytesParser(policy=policy.default).parsebytes(b)
+    txt = msg.get_body(preferencelist=('plain', 'html'))
+    return msg, txt.get_content()
+
+
+def combine_msg(m):
+    uid, time, flags, size = re.search(
+        r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\) RFC822 \{(\d+)\}',
+        m[0].decode()
+    ).groups()
+    msg = m[1].strip()
+    return uid, flags.split(), b'\r\n'.join((
+        b'size:' + size.encode(),
+        b'sha1:' + hashlib.sha1(msg).hexdigest().encode(),
+        b'internaldate:' + time.encode(),
+        msg,
+    ))
+
+
+def connect(folder=None):
+    con = imaplib.IMAP4('localhost', 143)
+    con.login('user*root', 'root')
+    con.enable('UTF8=ACCEPT')
+    return con
+
+
+def parse_folder(name):
+    src = connect()
+    src.select(name, readonly=True)
+    dst = connect()
+    dst.select(name)
+
+    ok, res = src.search(None, 'not keyword %s' % KW_PARSED)
+    ids = res[0].replace(b' ', b',')
+    if not ids:
+        print('All parsed already')
+        return
+
+    ok, res = src.fetch(ids, '(uid internaldate flags rfc822)')
+    msgs = [combine_msg(res[i]) for i in range(0, len(res), 2)]
+    for uid, flags, m in msgs:
+        orig, txt = parse(m)
+        msg = MIMEText(txt, _charset='utf-8')
+        msg.replace_header('Content-Transfer-Encoding', 'utf-8')
+        msg.set_payload(txt, 'utf-8')
+        for n, v in orig.items():
+            if n in msg:
+                continue
+            msg.add_header(n, v)
+        ok, res = src.append(
+            'Parsed', '\Seen', msg['internaldate'], msg.as_bytes()
+        )
+        new = re.search('\[APPENDUID \d* (\d*)\]', res[0].decode()).group(1)
+        ok, res = src.uid('search', 'inthread refs uid %s' % uid)
+        thrid = res[0].split()[0].decode()
+        flags = ' '.join([
+            KW_THRID % thrid,
+            KW_MSGID % uid,
+            KW_PARSED,
+        ])
+        res = dst.uid('store', uid, '+FLAGS', '(%s)' % flags)
+        print(new, uid, thrid, res)
+
+
+parse_folder('All')
