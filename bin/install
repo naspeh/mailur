@@ -69,22 +69,20 @@ userdb {
     default_fields = uid=vmail gid=vmail home=/home/vmail/%u master_user=%u
 }
 
-mail_plugins = $mail_plugins acl notify mail_log push_notification
+mail_plugins = $mail_plugins acl notify mail_log virtual
 plugin {
     acl = vfile:/etc/dovecot/acl
 
     mail_log_events = delete undelete expunge copy save flag_change
     mail_log_fields = uid box msgid flags
-
-    push_notification_driver = dlog
 }
 namespace {
     prefix =
     separator = /
     inbox = yes
-    mailbox INBOX {
+    mailbox Archive {
         auto = subscribe
-        #special_use = \All
+        special_use = \Archive
     }
     mailbox Spam {
         auto = subscribe
@@ -93,6 +91,19 @@ namespace {
     mailbox Trash {
         auto = subscribe
         special_use = \Trash
+    }
+    mailbox Parsed {
+        auto = subscribe
+    }
+}
+namespace {
+    prefix = -/
+    separator = /
+    location = virtual:/home/vmail/%u/-
+
+    mailbox All {
+        auto = subscribe
+        special_use = \All
     }
 }
 EOF
@@ -105,7 +116,19 @@ EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lrwstipe
 * user=root lrwstipe
+Parsed owner lr
+Parsed user=root lripe
 EOF
+
+path=/home/vmail/user/-/All
+mkdir -p $path
+cat <<"EOF" > $path/dovecot-virtual
+Archive
+Trash
+Spam
+  all
+EOF
+chown -R vmail:vmail /home/vmail
 
 rc-update add dovecot
 rc-service dovecot restart
