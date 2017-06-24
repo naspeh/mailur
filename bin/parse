@@ -7,8 +7,8 @@ from email.mime.text import MIMEText
 from email.parser import BytesParser
 
 KW_PARSED = '$Parsed'
-KW_MSGID = '$M%s'
-KW_THRID = '$T%s'
+KW_MSGID = 'M:%s'
+KW_THRID = 'T:%s'
 
 
 def parse(b):
@@ -62,17 +62,20 @@ def parse_folder(name):
                 continue
             msg.add_header(n, v)
         ok, res = src.append(
-            'Parsed', '\Seen', msg['internaldate'], msg.as_bytes()
+            'Parsed',
+            '(%s)' % uid,
+            msg['internaldate'],
+            msg.as_bytes()
         )
         new = re.search('\[APPENDUID \d* (\d*)\]', res[0].decode()).group(1)
         ok, res = src.uid('search', 'inthread refs uid %s' % uid)
         thrid = res[0].split()[0].decode()
         flags = ' '.join([
-            KW_THRID % thrid,
-            KW_MSGID % uid,
             KW_PARSED,
+            KW_MSGID % uid,
+            KW_THRID % thrid,
         ])
-        res = dst.uid('store', uid, '+FLAGS', '(%s)' % flags)
+        ok, res = dst.uid('store', uid, '+FLAGS', '(%s)' % flags)
         print(new, uid, thrid, res)
 
 
