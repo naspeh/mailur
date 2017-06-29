@@ -1,21 +1,36 @@
 #!/usr/bin/env python3
+import datetime as dt
 import hashlib
 import imaplib
+import json
 import re
 import sys
 from email import policy
 from email.mime.text import MIMEText
 from email.parser import BytesParser
+from email.utils import parsedate_to_datetime
 
 KW_PARSED = '$Parsed'
 KW_MSGID = 'M:%s'
 KW_THRID = 'T:%s'
 
 
-def parse(b):
-    msg = BytesParser(policy=policy.SMTPUTF8).parsebytes(b)
-    txt = msg.get_body(preferencelist=('plain', 'html'))
-    return msg, txt.get_content()
+def parse(b, time):
+    orig = BytesParser(policy=policy.SMTPUTF8).parsebytes(b)
+    msg = {
+        k: orig[k] for k in
+        'from to subject in-reply-to references cc bcc'.split()
+    }
+
+    date = orig['date']
+    msg['date'] = date and parsedate_to_datetime(date).isoformat()
+
+    arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
+    msg['arrived'] = arrived.isoformat()
+
+    txt = orig.get_body(preferencelist=('plain', 'html'))
+    msg['body'] = txt.get_content()
+    return msg, orig
 
 
 def combine_msg(m0, m1):
@@ -60,10 +75,11 @@ def parse_folder(name, criteria=None):
     ok, res = src.fetch(ids, '(uid internaldate flags binary.peek[])')
     msgs = [combine_msg(*res[i]) for i in range(0, len(res), 2)]
     for uid, flags, time, m in msgs:
-        orig, txt = parse(m)
-        msg = MIMEText(txt, _charset='utf-8')
+        parsed, orig = parse(m, time)
+        parsed_txt = json.dumps(parsed, sort_keys=True, ensure_ascii=False)
+        msg = MIMEText('')
         msg.replace_header('Content-Transfer-Encoding', 'utf-8')
-        msg.set_payload(txt, 'utf-8')
+        msg.set_payload(parsed_txt, 'utf-8')
         for n, v in orig.items():
             if n in msg:
                 continue

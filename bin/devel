@@ -20,5 +20,4 @@ env=/opt/mailur/env
 pip=$env/bin/pip
 python3 -m venv $env
 
-# ptpython for testing
-$pip install -U ptpython
+$pip install -U ptpython ptpdb flake8 wheel neovim

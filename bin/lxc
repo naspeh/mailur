@@ -49,7 +49,7 @@ $(cat ~/.ssh/id_rsa.pub)
 $([ ! -f /root/.ssh/id_rsa.pub ] ||  cat /root/.ssh/id_rsa.pub)
 EOF0
 
-id -u $SUDO_USER || (
-adduser -h /home/$SUDO_USER -s /bin/bash -u $(id -u $SUDO_USER) -DSG users $SUDO_USER
-)
+#id -u $SUDO_USER || (
+#adduser -h /home/$SUDO_USER -s /bin/bash -u $(id -u $SUDO_USER) -DSG users $SUDO_USER
+#)
 EOF
