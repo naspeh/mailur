@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mailur</title>
+  <script src="https://unpkg.com/vue"></script>
+</head>
+<body>
+  <div id="app">
+    <input v-model="query" @keyup.enter="get">
+    <button v-on:click="get">go!</button>
+    <div v-for="msg in emails">
+      <span>{{ msg.uid }}</span>
+      <i>{{ flags[msg.uid] }}</i>
+      <b>{{ msg.subject }}</b>
+      <span>{{ msg.date }}</span>
+    </div>
+  </div>
+
+  <script>
+  var app = new Vue({
+    el: '#app',
+    data: {
+      emails: [],
+      flags: {},
+      query: 'keyword T:1'
+    },
+    methods: {
+      get: function() {
+        fetch('/emails?q=' + app.query).then(function(response) {
+          return response.json();
+        }).then(function(res) {
+          app.emails = res.emails;
+          app.flags = res.flags
+        });
+      }
+    }
+  });
+  app.get();
+  </script>
+</body>
+</html>

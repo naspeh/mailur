@@ -15,12 +15,14 @@ KW_MSGID = 'M:%s'
 KW_THRID = 'T:%s'
 
 
-def parse(b, time):
+def parse(b, uid, time):
     orig = BytesParser(policy=policy.SMTPUTF8).parsebytes(b)
     msg = {
         k: orig[k] for k in
         'from to subject in-reply-to references cc bcc'.split()
     }
+
+    msg['uid'] = uid
 
     date = orig['date']
     msg['date'] = date and parsedate_to_datetime(date).isoformat()
@@ -75,11 +77,11 @@ def parse_folder(name, criteria=None):
     ok, res = src.fetch(ids, '(uid internaldate flags binary.peek[])')
     msgs = [combine_msg(*res[i]) for i in range(0, len(res), 2)]
     for uid, flags, time, m in msgs:
-        parsed, orig = parse(m, time)
+        parsed, orig = parse(m, uid, time)
         parsed_txt = json.dumps(parsed, sort_keys=True, ensure_ascii=False)
         msg = MIMEText('')
-        msg.replace_header('Content-Transfer-Encoding', 'utf-8')
-        msg.set_payload(parsed_txt, 'utf-8')
+        msg.replace_header('Content-Transfer-Encoding', 'binary')
+        msg.set_payload(parsed_txt.encode(), 'utf-8')
         for n, v in orig.items():
             if n in msg:
                 continue
@@ -103,4 +105,5 @@ def parse_folder(name, criteria=None):
         print(new, uid, thrid, res)
 
 
-parse_folder('All', sys.argv[1] if len(sys.argv) > 1 else None)
+if __name__ == '__main__':
+    parse_folder('All', sys.argv[1] if len(sys.argv) > 1 else None)
