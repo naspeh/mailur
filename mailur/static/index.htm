@@ -2,17 +2,21 @@
 <html>
 <head>
   <title>Mailur</title>
-  <script src="https://unpkg.com/vue"></script>
+  <script src="vue.js"></script>
 </head>
 <body>
   <div id="app">
     <input v-model="query" @keyup.enter="get">
+    <input type="checkbox" id="show_bodies" v-model="show_bodies">
+    <label for="show_bodies">bodies</label>
     <button v-on:click="get">go!</button>
     <div v-for="msg in emails">
       <span>{{ msg.uid }}</span>
       <i>{{ flags[msg.uid] }}</i>
       <b>{{ msg.subject }}</b>
       <span>{{ msg.date }}</span>
+      <span>{{ msg.message_id }}</span>
+      <div v-if="show_bodies" v-html="msg.body"></div>
     </div>
   </div>
 
@@ -22,7 +26,8 @@
     data: {
       emails: [],
       flags: {},
-      query: 'keyword T:1'
+      query: 'keyword T:1',
+      show_bodies: false,
     },
     methods: {
       get: function() {

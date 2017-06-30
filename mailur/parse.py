@@ -18,8 +18,8 @@ KW_THRID = 'T:%s'
 def parse(b, uid, time):
     orig = BytesParser(policy=policy.SMTPUTF8).parsebytes(b)
     msg = {
-        k: orig[k] for k in
-        'from to subject in-reply-to references cc bcc'.split()
+        k.replace('-', '_'): orig[k] for k in
+        'from to subject message-id in-reply-to references cc bcc'.split()
     }
 
     msg['uid'] = uid
@@ -60,7 +60,7 @@ def parse_folder(name, criteria=None):
     dst = connect()
     dst.select(name)
 
-    criteria = criteria or 'not keyword %s' % KW_PARSED
+    criteria = criteria or 'NOT KEYWORD %s' % KW_PARSED
     if criteria.lower() == 'all':
         parsed = connect()
         ok, count = parsed.select('Parsed')
@@ -74,7 +74,7 @@ def parse_folder(name, criteria=None):
         print('All parsed already')
         return
 
-    ok, res = src.fetch(ids, '(uid internaldate flags binary.peek[])')
+    ok, res = src.fetch(ids, '(UID INTERNALDATE FLAGS BINARY.PEEK[])')
     msgs = [combine_msg(*res[i]) for i in range(0, len(res), 2)]
     for uid, flags, time, m in msgs:
         parsed, orig = parse(m, uid, time)
@@ -92,7 +92,7 @@ def parse_folder(name, criteria=None):
         ])
         if del_flags:
             dst.uid('store', uid, '-FLAGS.SILENT', '(%s)' % del_flags)
-        ok, res = src.uid('search', 'inthread refs uid %s' % uid)
+        ok, res = src.uid('SEARCH', 'INTHREAD REFS UID %s' % uid)
         thrid = res[0].split()[0].decode()
         ok, res = src.append('Parsed', '(%s)' % uid, time, msg.as_bytes())
         new = re.search('\[APPENDUID \d* (\d*)\]', res[0].decode()).group(1)
@@ -101,7 +101,7 @@ def parse_folder(name, criteria=None):
             KW_MSGID % new,
             KW_THRID % thrid,
         ])
-        ok, res = dst.uid('store', uid, '+FLAGS', '(%s)' % flags)
+        ok, res = dst.uid('STORE', uid, '+FLAGS', '(%s)' % flags)
         print(new, uid, thrid, res)
 
 
