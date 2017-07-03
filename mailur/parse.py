@@ -10,21 +10,44 @@ from email.mime.text import MIMEText
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 
-KW_PARSED = '$Parsed'
-KW_MSGID = 'M:%s'
-KW_THRID = 'T:%s'
+HEADERS = (
+    'from to date message-id in-reply-to references cc bcc'
+    .split()
+)
+BOX_ALL = 'All'
+BOX_PARSED = 'Parsed'
 
 
-def parse(b, uid, time):
+def binary_msg(txt):
+    msg = MIMEText('')
+    msg.replace_header('Content-Transfer-Encoding', 'binary')
+    msg.set_payload(txt.encode(), 'utf-8')
+    return msg
+
+
+def connect():
+    con = imaplib.IMAP4('localhost', 143)
+    con.login('user*root', 'root')
+    con.enable('UTF8=ACCEPT')
+    return con
+
+
+def parsed_uids(con, uids):
+    ok, res = con.uid('FETCH', '1:*', 'FLAGS')
+    for i in res:
+        puid, uid = re.search(b'UID (\d+) FLAGS \([^)]*?(\d+)', i).groups()
+        if uid in uids:
+            yield puid
+
+
+def parse_msg(b, uid, time):
     orig = BytesParser(policy=policy.SMTPUTF8).parsebytes(b)
-    msg = {
-        k.replace('-', '_'): orig[k] for k in
-        'from to subject message-id in-reply-to references cc bcc'.split()
-    }
+    msg = {k.replace('-', '_'): orig[k] for k in HEADERS}
 
+    msg['subject'] = orig['subject']
     msg['uid'] = uid
 
-    date = orig['date']
+    date = msg['date']
     msg['date'] = date and parsedate_to_datetime(date).isoformat()
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
@@ -35,75 +58,49 @@ def parse(b, uid, time):
     return msg, orig
 
 
-def combine_msg(m0, m1):
-    uid, time, flags = re.search(
-        r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
-        m0.decode()
-    ).groups()
-    msg = m1.strip()
-    return uid, flags.split(), time, b'\r\n'.join((
-        b'sha1:' + hashlib.sha1(msg).hexdigest().encode(),
-        msg,
-    ))
-
-
-def connect(folder=None):
-    con = imaplib.IMAP4('localhost', 143)
-    con.login('user*root', 'root')
-    con.enable('UTF8=ACCEPT')
-    return con
-
-
-def parse_folder(name, criteria=None):
+def parse_folder(criteria):
     src = connect()
-    src.select(name, readonly=True)
-    dst = connect()
-    dst.select(name)
+    src.select(BOX_ALL)
 
-    criteria = criteria or 'NOT KEYWORD %s' % KW_PARSED
-    if criteria.lower() == 'all':
-        parsed = connect()
-        ok, count = parsed.select('Parsed')
-        if count[0] != b'0':
-            parsed.store('1:*', '+FLAGS.SILENT', '\Deleted')
-            parsed.expunge()
-            parsed.logout()
     ok, res = src.search(None, criteria)
-    ids = res[0].replace(b' ', b',')
-    if not ids:
+    uids = res[0].split(b' ')
+    if not uids:
         print('All parsed already')
         return
 
-    ok, res = src.fetch(ids, '(UID INTERNALDATE FLAGS BINARY.PEEK[])')
-    msgs = [combine_msg(*res[i]) for i in range(0, len(res), 2)]
-    for uid, flags, time, m in msgs:
-        parsed, orig = parse(m, uid, time)
-        parsed_txt = json.dumps(parsed, sort_keys=True, ensure_ascii=False)
-        msg = MIMEText('')
-        msg.replace_header('Content-Transfer-Encoding', 'binary')
-        msg.set_payload(parsed_txt.encode(), 'utf-8')
+    print('criteria: %r; uids: %s' % (criteria, res[0]))
+    ok, count = src.select(BOX_PARSED)
+    if count[0] != b'0':
+        if criteria.lower() != 'all':
+            puids = b','.join(parsed_uids(src, uids))
+        else:
+            ok, res = src.uid('SEARCH', None, criteria)
+            puids = res[0].replace(b' ', b',')
+        print('Delete: %s' % puids)
+        src.uid('STORE', puids, '+FLAGS.SILENT', '\Deleted')
+        src.expunge()
+
+    src.select(BOX_ALL, readonly=True)
+    ok, res = src.fetch(b','.join(uids), '(UID INTERNALDATE BINARY.PEEK[])')
+    msgs = [res[i] for i in range(0, len(res), 2)]
+    for m in msgs:
+        uid, time = re.search(
+            r'UID (\d+) INTERNALDATE ("[^"]+")', m[0].decode()
+        ).groups()
+        orig_raw = m[1].strip()
+        parsed, orig = parse_msg(orig_raw, uid, time)
+        msg = binary_msg(json.dumps(
+            parsed, sort_keys=True, ensure_ascii=False, indent=2
+        ))
+        msg.add_header('X-UID', '<%s>' % uid)
+        msg.add_header('X-SHA1', hashlib.sha1(orig_raw).hexdigest())
         for n, v in orig.items():
-            if n in msg:
+            if n.lower() not in HEADERS:
                 continue
             msg.add_header(n, v)
-        del_flags = ' '.join([
-            f for f in flags
-            if f.startswith('M:') or f.startswith('T:') or f == KW_PARSED
-        ])
-        if del_flags:
-            dst.uid('store', uid, '-FLAGS.SILENT', '(%s)' % del_flags)
-        ok, res = src.uid('SEARCH', 'INTHREAD REFS UID %s' % uid)
-        thrid = res[0].split()[0].decode()
         ok, res = src.append('Parsed', '(%s)' % uid, time, msg.as_bytes())
-        new = re.search('\[APPENDUID \d* (\d*)\]', res[0].decode()).group(1)
-        flags = ' '.join([
-            KW_PARSED,
-            KW_MSGID % new,
-            KW_THRID % thrid,
-        ])
-        ok, res = dst.uid('STORE', uid, '+FLAGS', '(%s)' % flags)
-        print(new, uid, thrid, res)
+        print(ok, res)
 
 
 if __name__ == '__main__':
-    parse_folder('All', sys.argv[1] if len(sys.argv) > 1 else None)
+    parse_folder(sys.argv[1] if len(sys.argv) > 1 else None)

@@ -76,6 +76,12 @@ plugin {
     mail_log_events = delete undelete expunge copy save flag_change
     mail_log_fields = uid box msgid flags
 }
+
+mail_attribute_dict = file:%h/dovecot-attributes
+protocol imap {
+  imap_metadata = yes
+}
+
 namespace {
     prefix =
     separator = /
@@ -84,6 +90,9 @@ namespace {
         special_use = \All
     }
     mailbox Parsed {
+        auto = subscribe
+    }
+    mailbox Test {
         auto = subscribe
     }
 }
@@ -102,6 +111,14 @@ namespace {
         special_use = \Trash
     }
 }
+
+service doveadm {
+    inet_listener {
+        port = 12345
+    }
+}
+doveadm_port = 12345
+doveadm_password = secret
 EOF
 cat <<"EOF" > /etc/dovecot/passwd.masters
 root:{SHA256-CRYPT}$5$B9xOinAHt1RAIjzn$KY/xCDl9wu9jkIGpga/kqi1Szz4P9e9BdinItSYSQV2
@@ -110,7 +127,8 @@ cat <<"EOF" > /etc/dovecot/passwd.users
 user:{SHA256-CRYPT}$5$cUrO1/xHQA05WLNB$QeXNNtyNuh/flJZuqhjhDEQz71WvCaSklu6jOTpm12.::::::
 EOF
 cat <<"EOF" > /etc/dovecot/acl
-Parsed owner lr
+* owner lr
+Test owner lrwstipe
 All owner lrst
 V/* owner lrst
 * user=root lrwstipe
@@ -124,13 +142,13 @@ All
 EOF
 cat <<"EOF" > $path/Trash/dovecot-virtual
 All
-  DELETED
+  KEYWORD $Trash
 EOF
 cat <<"EOF" > $path/Spam/dovecot-virtual
 All
-  NOT DELETED KEYWORD $Junk
+  NOT KEYWORD $Trash KEYWORD $Spam
 EOF
-chown -R vmail:vmail $path/..
 
+chown -R vmail:vmail /home/vmail
 rc-update add dovecot
 rc-service dovecot restart

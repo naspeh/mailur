@@ -4,37 +4,42 @@ import re
 
 from sanic import Sanic, response
 
-from .parse import connect
+from .parse import connect, parsed_uids, BOX_ALL, BOX_PARSED
 
 
 async def emails(request):
     query = request.raw_args['q']
     con = connect()
-    con.select('All')
-    ok, res = con.uid('SORT', '(DATE)', 'UTF-8', query)
+    con.select(BOX_ALL)
+    ok, res = con.uid('SORT', '(REVERSE DATE)', 'UTF-8', query)
     if ok != 'OK':
         raise ValueError(res)
-    ids = res[0].strip().decode().split()
-    print('query: %r; ids: %s' % (query, ids))
-    ok, res = con.uid('FETCH', ','.join(ids), '(UID FLAGS)')
+    print('query: %r; uids: %s' % (query, res[0]))
+    uids = res[0].strip().split()
+    if not uids:
+        return response.text('{}')
+    ok, res = con.uid('FETCH', b','.join(uids), '(UID FLAGS)')
     if ok != 'OK':
         raise ValueError(res)
     flags = dict(
         re.search(r'UID (\d+) FLAGS \(([^)]*)\)', i.decode()).groups()
         for i in res
     )
-    pids = [re.search(r' M:(\d*)', ' ' + flags[i]).group(1) for i in ids]
-    print('Parsed uids:', pids)
-    con.select('Parsed')
-    ok, res = con.uid('FETCH', ','.join(pids), '(FLAGS BINARY.PEEK[TEXT])')
+    con.select(BOX_PARSED)
+    puids = b','.join(parsed_uids(con, uids))
+    print('Parsed uids:', puids)
+    ok, res = con.uid('FETCH', puids, '(FLAGS BINARY.PEEK[TEXT])')
     if ok != 'OK':
         raise ValueError(res)
     msgs = {
-        re.search(r'FLAGS \(([^)]*)\)', res[i][0].decode()).group(1):
+        re.search(br'FLAGS \([^)]*?(\d+)', res[i][0]).group(1):
         res[i][1].decode()[:-1]
         for i in range(0, len(res), 2)
     }
-    msgs = '\n,'.join(msgs[i] for i in ids)
+    missing = set(uids) - set(msgs)
+    if missing:
+        raise ValueError('Missing parsed emails: %s', missing)
+    msgs = '\n,'.join(msgs[i] for i in uids)
     flags = json.dumps(flags)
     return response.text('{"emails": [%s], "flags": %s}' % (msgs, flags))
 
