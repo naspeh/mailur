@@ -125,6 +125,7 @@ root:{SHA256-CRYPT}$5$B9xOinAHt1RAIjzn$KY/xCDl9wu9jkIGpga/kqi1Szz4P9e9BdinItSYSQ
 EOF
 cat <<"EOF" > /etc/dovecot/passwd.users
 user:{SHA256-CRYPT}$5$cUrO1/xHQA05WLNB$QeXNNtyNuh/flJZuqhjhDEQz71WvCaSklu6jOTpm12.::::::
+demo:{SHA256-CRYPT}$5$cUrO1/xHQA05WLNB$QeXNNtyNuh/flJZuqhjhDEQz71WvCaSklu6jOTpm12.::::::
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr

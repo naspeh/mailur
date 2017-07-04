@@ -3,6 +3,7 @@ import datetime as dt
 import hashlib
 import imaplib
 import json
+import os
 import re
 import sys
 from email import policy
@@ -16,6 +17,7 @@ HEADERS = (
 )
 BOX_ALL = 'All'
 BOX_PARSED = 'Parsed'
+USER = os.environ.get('MLR_USER', 'user')
 
 
 def binary_msg(txt):
@@ -27,7 +29,7 @@ def binary_msg(txt):
 
 def connect():
     con = imaplib.IMAP4('localhost', 143)
-    con.login('user*root', 'root')
+    con.login('%s*root' % USER, 'root')
     con.enable('UTF8=ACCEPT')
     return con
 
