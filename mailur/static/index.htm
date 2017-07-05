@@ -6,12 +6,12 @@
 </head>
 <body>
   <div id="app">
-    <input v-model="query" @keyup.enter="get">
+    <input v-model.lazy.trim="query" @keyup.enter="get">
     <input type="checkbox" id="show_bodies" v-model="show_bodies">
     <label for="show_bodies">bodies</label>
     <button v-on:click="get">go!</button>
     <div v-for="msg in emails">
-      <span>{{ msg.uid }}</span>
+      <a v-bind:href="origin_url(msg)" target="_blank">{{ msg.uid }}</a>
       <i>{{ flags[msg.uid] }}</i>
       <b>{{ msg.subject }}</b>
       <span>{{ msg.date }}</span>
@@ -37,6 +37,9 @@
           app.emails = res.emails;
           app.flags = res.flags
         });
+      },
+      origin_url: function(item) {
+        return '/origin/' + item.uid;
       }
     }
   });

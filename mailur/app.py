@@ -1,10 +1,17 @@
-import json
 import pathlib
 import re
 
+import ujson as json
 from sanic import Sanic, response
+from sanic.config import LOGGING
 
+from . import log
 from .parse import connect, parsed_uids, BOX_ALL, BOX_PARSED
+
+LOGGING['loggers']['mailur'] = {
+    'level': 'DEBUG',
+    'handlers': ['internal', 'errorStream']
+}
 
 
 async def emails(request):
@@ -14,7 +21,7 @@ async def emails(request):
     ok, res = con.uid('SORT', '(REVERSE DATE)', 'UTF-8', query)
     if ok != 'OK':
         raise ValueError(res)
-    print('query: %r; uids: %s' % (query, res[0]))
+    log.debug('query: %r; uids: %s', query, res[0])
     uids = res[0].strip().split()
     if not uids:
         return response.text('{}')
@@ -27,33 +34,39 @@ async def emails(request):
     )
     con.select(BOX_PARSED)
     puids = b','.join(parsed_uids(con, uids))
-    print('Parsed uids:', puids)
-    ok, res = con.uid('FETCH', puids, '(FLAGS BINARY.PEEK[TEXT])')
+    log.debug('parsed uids: %s', puids)
+    ok, res = con.uid('FETCH', puids, '(BINARY.PEEK[2])')
     if ok != 'OK':
         raise ValueError(res)
-    msgs = {
-        re.search(br'FLAGS \([^)]*?(\d+)', res[i][0]).group(1):
-        res[i][1].decode()[:-1]
-        for i in range(0, len(res), 2)
-    }
-    missing = set(uids) - set(msgs)
+    msgs = {}
+    for i in range(0, len(res), 2):
+        data = json.loads(res[i][1].decode())
+        msgs[data['uid']] = data
+    missing = set(i.decode() for i in uids) - set(msgs)
     if missing:
         raise ValueError('Missing parsed emails: %s', missing)
-    msgs = '\n,'.join(msgs[i] for i in uids)
-    flags = json.dumps(flags)
-    return response.text('{"emails": [%s], "flags": %s}' % (msgs, flags))
+    txt = json.dumps({'emails': msgs, 'flags': flags})
+    return response.text(txt)
+
+
+async def origin(request, uid):
+    con = connect()
+    con.select(BOX_ALL)
+    ok, res = con.uid('FETCH', uid, 'body[]')
+    return response.text(res[0][1].decode())
 
 
 def get_app():
     app = Sanic()
+    r = app.add_route
+    r(emails, '/emails')
+    r(origin, '/origin/<uid>')
+
     static = str(pathlib.Path(__file__).parent / 'static')
     app.static('/', static + '/index.htm')
     app.static('/', static)
-
-    r = app.add_route
-    r(emails, '/emails')
     return app
 
 
 if __name__ == '__main__':
-    get_app().run(host="0.0.0.0", port=5000)
+    get_app().run(host="0.0.0.0", port=5000, log_config=LOGGING)

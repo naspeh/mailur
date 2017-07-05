@@ -116,6 +116,9 @@ service doveadm {
     inet_listener {
         port = 12345
     }
+    inet_listener http {
+        port = 8080
+    }
 }
 doveadm_port = 12345
 doveadm_password = secret
