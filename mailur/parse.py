@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sys
+from concurrent import futures
 from email.message import MIMEPart
 from email.parser import BytesParser
 from email.policy import SMTPUTF8
@@ -97,31 +98,10 @@ def multiappend(con, box, msgs):
     return con._command_complete(name, tag)
 
 
-def parse_folder(criteria):
-    src = connect()
-    src.select(BOX_ALL, readonly=True)
-
-    ok, res = src.search(None, criteria)
-    uids = res[0].split(b' ')
-    if not uids:
-        print(' - all parsed already')
-        return
-
-    print(' * criteria: %r; uids: %s' % (criteria, res[0]))
-    ok, count = src.select(BOX_PARSED)
-    if count[0] != b'0':
-        if criteria.lower() != 'all':
-            puids = b','.join(parsed_uids(src, uids))
-        else:
-            ok, res = src.uid('SEARCH', None, criteria)
-            puids = res[0].replace(b' ', b',')
-        if puids:
-            print(' * delete: %s' % puids)
-            src.uid('STORE', puids, '+FLAGS.SILENT', '\Deleted')
-            src.expunge()
-
-    src.select(BOX_ALL, readonly=True)
-    ok, res = src.fetch(b','.join(uids), '(UID INTERNALDATE BINARY.PEEK[])')
+def parse_batch(uids):
+    con = connect()
+    con.select(BOX_ALL, readonly=True)
+    ok, res = con.fetch(b','.join(uids), '(UID INTERNALDATE BINARY.PEEK[])')
 
     def iter_msgs(res):
         for i in range(0, len(res), 2):
@@ -132,7 +112,42 @@ def parse_folder(criteria):
             msg = create_msg(m[1], uid, time)
             yield time, msg.as_bytes()
 
-    print(multiappend(connect(), BOX_PARSED.encode(), iter_msgs(res)))
+    res = multiappend(con, BOX_PARSED.encode(), iter_msgs(res))
+    # con.logout()
+    return res
+
+
+def parse_folder(criteria):
+    src = connect()
+    src.select(BOX_ALL, readonly=True)
+
+    ok, res = src.search(None, criteria)
+    uids = res[0].split(b' ')
+    if not uids:
+        print(' - all parsed already')
+        return
+
+    print(' * criteria: %r; %s uids' % (criteria, len(uids)))
+    ok, count = src.select(BOX_PARSED)
+    if count[0] != b'0':
+        if criteria.lower() != 'all':
+            puids = b','.join(parsed_uids(src, uids))
+        else:
+            ok, res = src.uid('SEARCH', None, criteria)
+            puids = res[0].split(b' ')
+        if puids:
+            print(' * delete %s parsed messages' % len(puids))
+            src.uid('STORE', b','.join(puids), '+FLAGS.SILENT', '\Deleted')
+            src.expunge()
+
+    jobs = {}
+    size = 1000
+    with futures.ProcessPoolExecutor(os.cpu_count() * 2) as pool:
+        for i in range(0, len(uids), size):
+            j = pool.submit(parse_batch, uids[i:i+size])
+            jobs[j] = uids
+    for f in futures.as_completed(jobs):
+        print(f.result())
 
 
 if __name__ == '__main__':
