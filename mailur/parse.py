@@ -20,8 +20,9 @@ BOX_PARSED = 'Parsed'
 USER = os.environ.get('MLR_USER', 'user')
 
 
-def binary_msg(txt, maintype='text', subtype='plain'):
+def binary_msg(txt, mimetype='text/plain'):
     msg = MIMEPart(SMTPUTF8)
+    msg.set_type(mimetype)
     msg.add_header('Content-Transfer-Encoding', 'binary')
     msg.set_payload(txt.encode(), 'utf-8')
     return msg
@@ -69,11 +70,9 @@ def create_msg(raw, uid, time):
     msg.add_header('X-SHA1', hashlib.sha1(raw).hexdigest())
     msg.make_mixed()
 
-    msg.attach(binary_msg(uid, 'application', 'json'))
-    msg.attach(binary_msg(
-        json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2),
-        'application', 'json'
-    ))
+    meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
+    msg.attach(binary_msg(uid, 'application/json'))
+    msg.attach(binary_msg(meta_txt, 'application/json'))
     msg.attach(binary_msg(body))
     return msg
 
@@ -85,10 +84,10 @@ def parse_folder(criteria):
     ok, res = src.search(None, criteria)
     uids = res[0].split(b' ')
     if not uids:
-        print('All parsed already')
+        print(' - all parsed already')
         return
 
-    print('criteria: %r; uids: %s' % (criteria, res[0]))
+    print(' * criteria: %r; uids: %s' % (criteria, res[0]))
     ok, count = src.select(BOX_PARSED)
     if count[0] != b'0':
         if criteria.lower() != 'all':
@@ -97,7 +96,7 @@ def parse_folder(criteria):
             ok, res = src.uid('SEARCH', None, criteria)
             puids = res[0].replace(b' ', b',')
         if puids:
-            print('Delete: %s' % puids)
+            print(' * delete: %s' % puids)
             src.uid('STORE', puids, '+FLAGS.SILENT', '\Deleted')
             src.expunge()
 
@@ -110,7 +109,7 @@ def parse_folder(criteria):
         ).groups()
         orig_raw = m[1].strip()
         msg = create_msg(orig_raw, uid, time)
-        ok, res = src.append('Parsed', '(%s)' % uid, time, msg.as_bytes())
+        ok, res = src.append('Parsed', '', time, msg.as_bytes())
         print(ok, res)
 
 
