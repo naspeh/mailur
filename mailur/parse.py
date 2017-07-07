@@ -31,7 +31,8 @@ def binary_msg(txt, mimetype='text/plain'):
 def connect():
     con = imaplib.IMAP4('localhost', 143)
     con.login('%s*root' % USER, 'root')
-    con.enable('UTF8=ACCEPT')
+    # con.enable('UTF8=ACCEPT')
+    con.debug = 3
     return con
 
 
@@ -77,9 +78,28 @@ def create_msg(raw, uid, time):
     return msg
 
 
+def multiappend(con, box, msgs):
+    from imaplib import CRLF
+
+    name = b'APPEND'
+    tag = con._new_tag()
+    con.send(tag + b' %s %s' % (name, box))
+    index = 0
+    for time, msg in msgs:
+        args = (' () %s %s' % (time, '{%s}' % len(msg))).encode()
+        con.send(args + CRLF)
+        while con._get_response():
+            if con.tagged_commands[tag]:   # BAD/NO?
+                return tag
+        con.send(msg)
+        index += 1
+    con.send(CRLF)
+    return con._command_complete(name, tag)
+
+
 def parse_folder(criteria):
     src = connect()
-    src.select(BOX_ALL)
+    src.select(BOX_ALL, readonly=True)
 
     ok, res = src.search(None, criteria)
     uids = res[0].split(b' ')
@@ -102,15 +122,17 @@ def parse_folder(criteria):
 
     src.select(BOX_ALL, readonly=True)
     ok, res = src.fetch(b','.join(uids), '(UID INTERNALDATE BINARY.PEEK[])')
-    msgs = [res[i] for i in range(0, len(res), 2)]
-    for m in msgs:
-        uid, time = re.search(
-            r'UID (\d+) INTERNALDATE ("[^"]+")', m[0].decode()
-        ).groups()
-        orig_raw = m[1].strip()
-        msg = create_msg(orig_raw, uid, time)
-        ok, res = src.append('Parsed', '', time, msg.as_bytes())
-        print(ok, res)
+
+    def iter_msgs(res):
+        for i in range(0, len(res), 2):
+            m = res[i]
+            uid, time = re.search(
+                r'UID (\d+) INTERNALDATE ("[^"]+")', m[0].decode()
+            ).groups()
+            msg = create_msg(m[1], uid, time)
+            yield time, msg.as_bytes()
+
+    print(multiappend(connect(), BOX_PARSED.encode(), iter_msgs(res)))
 
 
 if __name__ == '__main__':
