@@ -1,6 +1,3 @@
-import imaplib
-from unittest.mock import patch, ANY
-
 from mailur import parse
 
 
@@ -22,24 +19,7 @@ def test_binary_msg():
     ])
 
 
-def login_gmail():
-    def uid(name, *a, **kw):
-        responces = getattr(login_gmail, name.lower(), None)
-        if responces:
-            return responces.pop()
-        return con.uid_origin(name, *a, **kw)
-
-    con = imaplib.IMAP4('localhost', 143)
-    con.login('test2*root', 'root')
-
-    con.uid_origin = con.uid
-    con.uid = uid
-    return con
-
-
-@patch('mailur.parse.login_gmail', login_gmail)
-@patch('mailur.parse.USER', 'test1')
-def test_gmail_fetch_and_parse():
+def test_gmail_fetch_and_parse(gmail, some):
     gm = parse.connect_gmail()
     assert gm.current_folder == b'All'
 
@@ -53,18 +33,18 @@ def test_gmail_fetch_and_parse():
     def gmail_uidnext():
         res = dc.getmetadata('gmail/uidnext/all')
         assert res == ('OK', [
-            (b'All (/private/gmail/uidnext/all {12}', ANY),
+            (b'All (/private/gmail/uidnext/all {12}', some),
             b')'
         ])
-        return res[1][0][1]
+        return some.value
 
     def mlr_uidnext():
         res = dc.getmetadata('mlr/uidnext')
         assert res == ('OK', [
-            (b'All (/private/mlr/uidnext {1}', ANY),
+            (b'All (/private/mlr/uidnext {1}', some),
             b')'
         ])
-        return res[1][0][1]
+        return some.value
 
     assert gmail_uidnext().endswith(b',1')
     assert dc.getmetadata('mlr/uidnext') == ('OK', [
@@ -73,7 +53,7 @@ def test_gmail_fetch_and_parse():
 
     msg = parse.binary_msg('42').as_bytes()
     gm.append('All', None, None, msg)
-    login_gmail.fetch = [('OK', [
+    gmail.fetch = [('OK', [
         (
             b'1 (X-GM-MSGID 777 X-GM-LABELS ("\\\\Inbox") UID 4774 '
             b'INTERNALDATE "08-Jul-2017 09:08:30 +0000" FLAGS () '
