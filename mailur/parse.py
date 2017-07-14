@@ -29,7 +29,7 @@ def binary_msg(txt, mimetype='text/plain'):
     msg = MIMEPart(SMTPUTF8)
     msg.set_type(mimetype)
     msg.add_header('Content-Transfer-Encoding', 'binary')
-    msg.set_payload(txt.encode(), 'utf-8')
+    msg.set_payload(txt, 'utf-8')
     return msg
 
 
@@ -88,11 +88,16 @@ def connect():
     return con
 
 
+def login_gmail():
+    con = imaplib.IMAP4_SSL('imap.gmail.com')
+    con.login(GM_USER, GM_PASS)
+    return con
+
+
 def connect_gmail(tag=b'\\All'):
     if isinstance(tag, str):
         tag = tag.encode()
-    con = imaplib.IMAP4_SSL('imap.gmail.com')
-    con.login(GM_USER, GM_PASS)
+    con = login_gmail()
     con.debug = IMAP_DEBUG
     ok, folders = con.list()
     for f in folders:
@@ -176,7 +181,7 @@ def parse_folder(criteria=None):
         criteria = 'UID %s:*' % uidnext
 
     ok, res = con.uid('SEARCH', None, criteria)
-    uids = [i for i in res[0].split(b' ') if int(i) >= uidnext]
+    uids = [i for i in res[0].split(b' ') if i and int(i) >= uidnext]
     if not uids:
         print('## all parsed already')
         return
@@ -203,6 +208,9 @@ def parse_folder(criteria=None):
 
 
 def process_batches(func, uids, *args, size=1000):
+    if len(uids) < size:
+        return func(uids, *args)
+
     jobs = {}
     with futures.ProcessPoolExecutor(os.cpu_count() * 2) as pool:
         jobs = {
@@ -214,6 +222,8 @@ def process_batches(func, uids, *args, size=1000):
 
 
 def fetch_batch(uids, folder):
+    if not uids:
+        return
     gm = connect_gmail(folder)
     fields = '(UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID BODY.PEEK[])'
     ok, res = gm.uid('FETCH', b','.join(uids), fields)

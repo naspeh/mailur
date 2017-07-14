@@ -1,0 +1,26 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+users=/etc/dovecot/passwd.users
+pass='{SHA256-CRYPT}$5$cUrO1/xHQA05WLNB$QeXNNtyNuh/flJZuqhjhDEQz71WvCaSklu6jOTpm12.'
+: > $users
+names="user demo test1 test2"
+for user in $names; do
+    echo "$user:$pass::::::" >> $users
+    path=/home/vmail/$user/V
+    mkdir -p $path/{INBOX,Trash,Spam}
+    cat <<"EOF" > $path/INBOX/dovecot-virtual
+All
+  NOT DELETED NOT KEYWORD $Junk KEYWORD $Inbox
+EOF
+cat <<"EOF" > $path/Trash/dovecot-virtual
+All
+  KEYWORD $Trash
+EOF
+cat <<"EOF" > $path/Spam/dovecot-virtual
+All
+  NOT KEYWORD $Trash KEYWORD $Spam
+EOF
+done
+
+chown -R vmail:vmail /home/vmail
