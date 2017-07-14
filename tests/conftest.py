@@ -17,7 +17,7 @@ def setup(gmail):
     ls -l /home/vmail
     bin/users
     ''', shell=True, cwd=root)
-    with patch('mailur.parse.USER', 'test1'):
+    with patch('mailur.imap.USER', 'test1'):
         yield
 
 
@@ -41,7 +41,7 @@ def some():
     return Some()
 
 
-def mock_gmail():
+def mock_gmail(self):
     def uid(name, *a, **kw):
         responces = getattr(gmail, name.lower(), None)
         if responces:
@@ -53,10 +53,11 @@ def mock_gmail():
 
     con.uid_origin = con.uid
     con.uid = uid
+    self.append = con.append
     return con
 
 
 @pytest.fixture
 def gmail():
-    with patch('mailur.parse.login_gmail', mock_gmail):
+    with patch('mailur.imap.Gmail.login', mock_gmail):
         yield gmail

@@ -1,4 +1,4 @@
-from mailur import parse
+from mailur import imap, parse
 
 
 def test_binary_msg():
@@ -19,37 +19,43 @@ def test_binary_msg():
     ])
 
 
-def test_gmail_fetch_and_parse(gmail, some):
-    gm = parse.connect_gmail()
-    assert gm.current_folder == b'All'
+def test_basic_gmail():
+    gm = imap.Gmail()
+    assert gm.current_folder == 'All'
 
-    dc = parse.connect()
-    assert hasattr(dc, 'multiappend')
-    assert hasattr(dc, 'setmetadata')
-    assert hasattr(dc, 'getmetadata')
+    gm = imap.Gmail('\\Junk')
+    assert gm.current_folder == 'V/Spam'
+
+    gm = imap.Gmail('\\Trash')
+    assert gm.current_folder == 'V/Trash'
+
+
+def test_fetch_and_parse(gmail, some):
+    gm = imap.Gmail()
+    lm = imap.Local()
     parse.fetch_folder()
     parse.parse_folder()
 
     def gmail_uidnext():
-        res = dc.getmetadata('gmail/uidnext/all')
-        assert res == ('OK', [
+        res = lm.getmetadata('gmail/uidnext/all')
+        assert res == [
             (b'All (/private/gmail/uidnext/all {12}', some),
             b')'
-        ])
+        ]
         return some.value
 
     def mlr_uidnext():
-        res = dc.getmetadata('mlr/uidnext')
-        assert res == ('OK', [
+        res = lm.getmetadata('mlr/uidnext')
+        assert res == [
             (b'All (/private/mlr/uidnext {1}', some),
             b')'
-        ])
+        ]
         return some.value
 
     assert gmail_uidnext().endswith(b',1')
-    assert dc.getmetadata('mlr/uidnext') == ('OK', [
+    assert lm.getmetadata('mlr/uidnext') == [
         b'All (/private/mlr/uidnext NIL)'
-    ])
+    ]
 
     msg = parse.binary_msg('42').as_bytes()
     gm.append('All', None, None, msg)
