@@ -12,13 +12,17 @@ sys.path.insert(0, str(root))
 
 @pytest.fixture
 def setup(gmail):
+    with patch('mailur.imap.USER', 'test1'):
+        yield
+
+
+@pytest.fixture
+def clean_users():
     call('''
     rm -rf /home/vmail/test*
     ls -l /home/vmail
     bin/users
     ''', shell=True, cwd=root)
-    with patch('mailur.imap.USER', 'test1'):
-        yield
 
 
 class Some(object):

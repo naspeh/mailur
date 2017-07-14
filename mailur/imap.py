@@ -45,6 +45,9 @@ class Gmail:
         self.fetch = ft.partial(fetch, con)
         self.search = ft.partial(search, con)
 
+        self.select_tag(tag)
+
+    def select_tag(self, tag, readonly=True):
         if isinstance(tag, str):
             tag = tag.encode()
         folders = self.list()
@@ -53,8 +56,8 @@ class Gmail:
                 continue
             folder = f.rsplit(b' "/" ', 1)[1]
             break
-        self.select(folder)
         self.current_folder = folder.decode()
+        return self.select(folder, readonly)
 
     @staticmethod
     def login():
@@ -94,18 +97,23 @@ class Local:
 @contextmanager
 def cmd(con, name):
     tag = con._new_tag()
-    con.send(b'%s %s ' % (tag, name.encode()))
-
-    yield tag, lambda: con._command_complete(name, tag)
+    def start(args):
+        if isinstance(args, str):
+            args = args.encode()
+        return con.send(b'%s %s %s' % (tag, name.encode(), args))
+    yield tag, start, lambda: con._command_complete(name, tag)
 
 
 def multiappend(con, msgs, box=Local.ALL):
     print('## append messages to "%s"' % box)
-    with cmd(con, 'APPEND') as (tag, complete):
-        con.send(box.encode())
+    with cmd(con, 'APPEND') as (tag, start, complete):
+        send = start
         for time, msg in msgs:
-            args = (' () %s %s' % (time, '{%s}' % len(msg))).encode()
-            con.send(args + CRLF)
+            args = (' () %s %s' % (time, '{%s}' % len(msg)))
+            if send == start:
+                args = '%s %s' % (box, args)
+            send(args.encode() + CRLF)
+            send = con.send
             while con._get_response():
                 if con.tagged_commands[tag]:   # BAD/NO?
                     return tag
@@ -122,17 +130,17 @@ def _mdkey(key):
 
 def setmetadata(con, key, value):
     key = _mdkey(key)
-    with cmd(con, 'SETMETADATA') as (tag, complete):
-        args = '%s (%s %s)' % (con.ALL, key, value)
-        con.send(args.encode() + CRLF)
+    with cmd(con, 'SETMETADATA') as (tag, start, complete):
+        args = '%s (%s %s)' % (Local.ALL, key, value)
+        start(args.encode() + CRLF)
         return check(complete())
 
 
 def getmetadata(con, key):
     key = _mdkey(key)
-    with cmd(con, 'GETMETADATA') as (tag, complete):
-        args = '%s (%s)' % (con.ALL, key)
-        con.send(args.encode() + CRLF)
+    with cmd(con, 'GETMETADATA') as (tag, start, complete):
+        args = '%s (%s)' % (Local.ALL, key)
+        start(args.encode() + CRLF)
         typ, data = complete()
         return check(con._untagged_response(typ, data, 'METADATA'))
 

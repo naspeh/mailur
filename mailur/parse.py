@@ -106,7 +106,7 @@ def parse_folder(criteria=None):
     print('## new: uidnext: %s' % uidnext)
 
     print('## criteria: %r; %s uids' % (criteria, len(uids)))
-    count = con.select(con.PARSED)
+    count = con.select(con.PARSED, readonly=False)
     if count[0] != b'0':
         if criteria.lower() != 'all':
             puids = list(parsed_uids(con, uids))
@@ -115,7 +115,7 @@ def parse_folder(criteria=None):
             puids = res[0].split(b' ')
         if puids:
             print('## delete %s parsed messages' % len(puids))
-            con.uid('STORE', b','.join(puids), '+FLAGS.SILENT', '\Deleted')
+            con.store(b','.join(puids), '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
     process_batches(parse_batch, uids)
@@ -123,8 +123,6 @@ def parse_folder(criteria=None):
 
 
 def fetch_batch(uids, folder):
-    if not uids:
-        return
     gm = imap.Gmail(folder)
     fields = '(UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID BODY.PEEK[])'
     res = gm.fetch(b','.join(uids), fields)
@@ -184,7 +182,9 @@ def fetch_folder(folder='\\All'):
 
 
 def process_batches(func, uids, *args, size=1000):
-    if len(uids) < size:
+    if not uids:
+        return
+    elif len(uids) < size:
         print('##', func(uids, *args))
         return
 
