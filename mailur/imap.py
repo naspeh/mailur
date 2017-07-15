@@ -29,6 +29,10 @@ def check_fn(func):
     return ft.wraps(func)(inner)
 
 
+def check_uid(con, name):
+    return check_fn(ft.partial(con.uid, name))
+
+
 class Gmail:
     ALL = '\\All'
     SPAM = '\\Junk'
@@ -41,8 +45,8 @@ class Gmail:
         self.logout = con.logout
         self.list = check_fn(con.list)
         self.status = check_fn(con.status)
+        self.fetch = check_uid(con, 'FETCH')
         self.select = ft.partial(select, con)
-        self.fetch = ft.partial(fetch, con)
         self.search = ft.partial(search, con)
 
         self.select_tag(tag)
@@ -77,8 +81,9 @@ class Local:
         self.status = check_fn(con.status)
         self.store = check_fn(con.store)
         self.expunge = check_fn(con.expunge)
+        self.fetch = check_uid(con, 'FETCH')
+        self.sort = check_uid(con, 'SORT')
         self.select = ft.partial(select, con)
-        self.fetch = ft.partial(fetch, con)
         self.search = ft.partial(search, con)
         self.getmetadata = ft.partial(getmetadata, con)
         self.setmetadata = ft.partial(setmetadata, con)
@@ -147,10 +152,6 @@ def getmetadata(con, key):
 
 def select(con, box, readonly=True):
     return check(con.select(box, readonly))
-
-
-def fetch(con, uids, parts):
-    return check(con.uid('FETCH', uids, parts))
 
 
 def search(con, *criteria):

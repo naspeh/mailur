@@ -10,13 +10,13 @@
     <input type="checkbox" id="show_bodies" v-model="show_bodies">
     <label for="show_bodies">bodies</label>
     <button v-on:click="get">go!</button>
-    <div v-for="msg in emails">
-      <a v-bind:href="origin_url(msg)" target="_blank">{{ msg.uid }}</a>
-      <i>{{ flags[msg.uid] }}</i>
-      <b>{{ msg.subject }}</b>
-      <span>{{ msg.date }}</span>
-      <span>{{ msg.message_id }}</span>
-      <div v-if="show_bodies" v-html="msg.body"></div>
+    <div v-for="uid in uids">
+      <a v-bind:href="origin_url(msgs[uid])" target="_blank">{{ uid }}</a>
+      <i>{{ flags[uid] }}</i>
+      <b>{{ msgs[uid].subject }}</b>
+      <span>{{ msgs[uid].date }}</span>
+      <span>{{ msgs[uid].message_id }}</span>
+      <div v-if="show_bodies" v-html="msgs[uid].body"></div>
     </div>
   </div>
 
@@ -24,7 +24,8 @@
   var app = new Vue({
     el: '#app',
     data: {
-      emails: [],
+      uids: [],
+      msgs: {},
       flags: {},
       query: 'all',
       show_bodies: false,
@@ -34,8 +35,9 @@
         fetch('/emails?q=' + app.query).then(function(response) {
           return response.json();
         }).then(function(res) {
-          app.emails = res.emails;
-          app.flags = res.flags
+          app.uids = res.uids;
+          app.msgs = res.msgs;
+          app.flags = res.flags;
         });
       },
       origin_url: function(item) {

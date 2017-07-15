@@ -5,8 +5,8 @@ import ujson as json
 from sanic import Sanic, response
 from sanic.config import LOGGING
 
-from . import log
-from .parse import connect, parsed_uids, BOX_ALL, BOX_PARSED
+from . import log, imap
+from .parse import parsed_uids
 
 LOGGING['loggers']['mailur'] = {
     'level': 'DEBUG',
@@ -16,28 +16,21 @@ LOGGING['loggers']['mailur'] = {
 
 async def emails(request):
     query = request.raw_args['q']
-    con = connect()
-    con.select(BOX_ALL)
-    ok, res = con.uid('SORT', '(REVERSE DATE)', 'UTF-8', query)
-    if ok != 'OK':
-        raise ValueError(res)
+    con = imap.Local()
+    res = con.sort('(REVERSE DATE)', 'UTF-8', query)
     log.debug('query: %r; uids: %s', query, res[0])
     uids = res[0].strip().split()
     if not uids:
         return response.text('{}')
-    ok, res = con.uid('FETCH', b','.join(uids), '(UID FLAGS)')
-    if ok != 'OK':
-        raise ValueError(res)
+    res = con.fetch(b','.join(uids), '(UID FLAGS)')
     flags = dict(
         re.search(r'UID (\d+) FLAGS \(([^)]*)\)', i.decode()).groups()
         for i in res
     )
-    con.select(BOX_PARSED)
+    con.select(con.PARSED)
     puids = b','.join(parsed_uids(con, uids))
     log.debug('parsed uids: %s', puids)
-    ok, res = con.uid('FETCH', puids, '(BINARY.PEEK[2])')
-    if ok != 'OK':
-        raise ValueError(res)
+    res = con.fetch(puids, '(BINARY.PEEK[2])')
     msgs = {}
     for i in range(0, len(res), 2):
         data = json.loads(res[i][1].decode())
@@ -45,14 +38,13 @@ async def emails(request):
     missing = set(i.decode() for i in uids) - set(msgs)
     if missing:
         raise ValueError('Missing parsed emails: %s', missing)
-    txt = json.dumps({'emails': msgs, 'flags': flags})
+    txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
     return response.text(txt)
 
 
 async def origin(request, uid):
-    con = connect()
-    con.select(BOX_ALL)
-    ok, res = con.uid('FETCH', uid, 'body[]')
+    con = imap.Local()
+    res = con.fetch(uid, 'body[]')
     return response.text(res[0][1].decode())
 
 
