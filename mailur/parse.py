@@ -24,7 +24,7 @@ GM_FLAGS = {
     '\\Seen': '\\Seen',
     '\\Draft': '\\Draft',
     '\\Inbox': '$Inbox',
-    '\\Junk': '$Junk',
+    '\\Junk': '$Spam',
 }
 
 
@@ -172,6 +172,14 @@ def fetch_batch(uids, folder):
             raw = headers.encode() + raw
 
             flags = re.sub(r'([^ ])*', flag, parts['flags'])
+            flags = ' '.join([
+                {
+                    '\\All': '',
+                    '\\Junk': '$Spam',
+                    '\\Trash': '$Trash'
+                }.get(folder),
+                flags
+            ]).strip()
             yield parts['time'], flags, raw
 
     con = imap.Local(box=None)

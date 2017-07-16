@@ -26,10 +26,10 @@ def test_basic_gmail():
     gm = imap.Gmail()
     assert gm.current_folder == 'All'
 
-    gm = imap.Gmail('\\Junk')
+    gm.select_tag('\\Junk')
     assert gm.current_folder == 'V/Spam'
 
-    gm = imap.Gmail('\\Trash')
+    gm.select_tag('\\Trash')
     assert gm.current_folder == 'V/Trash'
 
 
@@ -78,8 +78,8 @@ def test_fetch_and_parse(clean_users, gmail, some):
 
 
 def test_fetched_msg(clean_users, gmail):
-    def get_latest():
-        parse.fetch_folder()
+    def get_latest(tag='\\All'):
+        parse.fetch_folder(tag)
 
         lm = imap.Local()
         res = lm.fetch('*', '(flags body[])')
@@ -103,12 +103,18 @@ def test_fetched_msg(clean_users, gmail):
     uid = msg.get('X-GM-UID')
     assert uid and uid == '101'
 
-    gmail.add_emails(gm, [{'flags': '\\Flagged \\Inbox \\Junk'}])
+    gmail.add_emails(gm, [{'flags': '\\Flagged \\Inbox'}])
     flags, msg = get_latest()
     assert '\\Flagged' in flags
     assert '$Inbox' in flags
-    assert '$Junk' in flags
 
+    gmail.add_emails(gm, [{}])
+    flags, msg = get_latest('\\Junk')
+    assert '$Spam' in flags
+
+    gmail.add_emails(gm, [{}])
+    flags, msg = get_latest('\\Trash')
+    assert '$Trash' in flags
 
 def test_parsed_msg(gmail):
     gm = imap.Gmail()

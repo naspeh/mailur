@@ -57,6 +57,8 @@ def mock_gmail(self):
 
     con.uid_origin = con.uid
     con.uid = uid
+    con.select_origin = con.select
+    con.select = lambda n, readonly: con.select_origin('All', readonly)
     self.append = con.append
     return con
 

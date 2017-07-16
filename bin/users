@@ -11,7 +11,7 @@ for user in $names; do
     mkdir -p $path/{INBOX,Trash,Spam}
     cat <<"EOF" > $path/INBOX/dovecot-virtual
 All
-  NOT DELETED NOT KEYWORD $Junk KEYWORD $Inbox
+  NOT KEYWORD $Trash NOT KEYWORD $Junk KEYWORD $Inbox
 EOF
 cat <<"EOF" > $path/Trash/dovecot-virtual
 All
