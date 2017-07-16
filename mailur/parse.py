@@ -17,6 +17,15 @@ HEADERS = (
     'from to date message-id in-reply-to references cc bcc'
     .split()
 )
+GM_FLAGS = {
+    '\\Answered': '\\Answered',
+    '\\Flagged': '\\Flagged',
+    '\\Deleted': '\\Deleted',
+    '\\Seen': '\\Seen',
+    '\\Draft': '\\Draft',
+    '\\Inbox': '$Inbox',
+    '\\Junk': '$Junk',
+}
 
 
 def binary_msg(txt, mimetype='text/plain'):
@@ -79,7 +88,7 @@ def parse_batch(uids):
                 r'UID (\d+) INTERNALDATE ("[^"]+")', m[0].decode()
             ).groups()
             msg = create_msg(m[1], uid, time)
-            yield time, msg.as_bytes()
+            yield time, '', msg.as_bytes()
 
     return con.multiappend(iter_msgs(res), box=con.PARSED)
 
@@ -126,6 +135,12 @@ def fetch_batch(uids, folder):
     fields = '(UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID BODY.PEEK[])'
     res = gm.fetch(b','.join(uids), fields)
 
+    def flag(m):
+        flag = m.group()
+        if flag:
+            return GM_FLAGS.get(flag, '')
+        return ''
+
     def iter_msgs(res):
         for i in range(0, len(res), 2):
             m = res[i]
@@ -155,7 +170,9 @@ def fetch_batch(uids, folder):
                 ''
             ])
             raw = headers.encode() + raw
-            yield parts['time'], raw
+
+            flags = re.sub(r'([^ ])*', flag, parts['flags'])
+            yield parts['time'], flags, raw
 
     con = imap.Local(box=None)
     return con.multiappend(iter_msgs(res))

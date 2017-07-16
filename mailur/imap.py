@@ -113,8 +113,8 @@ def multiappend(con, msgs, box=Local.ALL):
     print('## append messages to "%s"' % box)
     with cmd(con, 'APPEND') as (tag, start, complete):
         send = start
-        for time, msg in msgs:
-            args = (' () %s %s' % (time, '{%s}' % len(msg)))
+        for time, flags, msg in msgs:
+            args = (' (%s) %s %s' % (flags, time, '{%s}' % len(msg)))
             if send == start:
                 args = '%s %s' % (box, args)
             send(args.encode() + CRLF)

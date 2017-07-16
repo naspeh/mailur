@@ -78,15 +78,22 @@ def test_fetch_and_parse(clean_users, gmail, some):
 
 
 def test_fetched_msg(clean_users, gmail):
+    def get_latest():
+        parse.fetch_folder()
+
+        lm = imap.Local()
+        res = lm.fetch('*', '(flags body[])')
+        msg = res[0][1]
+        print(msg.decode())
+        msg = email.message_from_bytes(msg)
+        line = res[0][0].decode()
+        print(line)
+        flags = re.search('FLAGS \(([^)]*)\)', line).group(1)
+        return flags, msg
+
     gm = imap.Gmail()
     gmail.add_emails(gm)
-    parse.fetch_folder()
-
-    lm = imap.Local()
-    res = lm.fetch('*', 'body[]')
-    msg = email.message_from_bytes(res[0][1])
-    print(msg.as_string())
-
+    _, msg = get_latest()
     # headers
     assert 'X-SHA1' in msg
     msgid = msg.get('X-GM-MSGID')
@@ -96,17 +103,25 @@ def test_fetched_msg(clean_users, gmail):
     uid = msg.get('X-GM-UID')
     assert uid and uid == '101'
 
+    gmail.add_emails(gm, [{'flags': '\\Flagged \\Inbox \\Junk'}])
+    flags, msg = get_latest()
+    assert '\\Flagged' in flags
+    assert '$Inbox' in flags
+    assert '$Junk' in flags
+
 
 def test_parsed_msg(gmail):
-    lm = imap.Local()
     gm = imap.Gmail()
 
     gmail.add_emails(gm)
     parse.fetch_folder()
     parse.parse_folder()
 
+    lm = imap.Local()
     lm.select(lm.PARSED)
     res = lm.fetch('*', 'body[]')
     msg = email.message_from_bytes(res[0][1])
+    print(msg.as_string())
+
     assert 'X-UID' in msg
     assert re.match('<\d+>', msg['X-UID'])
