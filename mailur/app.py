@@ -8,6 +8,8 @@ from sanic.config import LOGGING
 from . import log, imap
 from .parse import parsed_uids
 
+LOGGING['handlers'].pop('accessTimedRotatingFile')
+LOGGING['handlers'].pop('errorTimedRotatingFile')
 LOGGING['loggers']['mailur'] = {
     'level': 'DEBUG',
     'handlers': ['internal', 'errorStream']

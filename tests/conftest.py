@@ -63,5 +63,32 @@ def mock_gmail(self):
 
 @pytest.fixture
 def gmail():
+    from mailur import parse
+
+    def add_emails(con, items=None):
+        if items is None:
+            items = [{}]
+        gmail.fetch = [('OK', [])]
+        for item in items:
+            gmail.uid += 1
+            uid = gmail.uid
+            gid = 100 * uid
+            txt = item.get('txt', '42')
+            flags = item.get('flags', '').encode()
+            labels = item.get('labels', '').encode()
+            msg = parse.binary_msg(txt).as_bytes()
+            con.append('All', None, None, msg)
+            gmail.fetch[0][1].extend([
+                (
+                    b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '
+                    b'INTERNALDATE "08-Jul-2017 09:08:30 +0000" FLAGS (%s) '
+                    b'BODY[] {%d}' % (gid, gid, labels, uid, flags, len(msg)),
+                    msg
+                ),
+                b')'
+            ])
+    gmail.add_emails = add_emails
+    gmail.uid = 100
+
     with patch('mailur.imap.Gmail.login', mock_gmail):
         yield gmail

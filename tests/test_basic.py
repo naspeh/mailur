@@ -1,3 +1,6 @@
+import email
+import re
+
 from mailur import imap, parse
 
 
@@ -46,27 +49,10 @@ def test_fetch_and_parse(clean_users, gmail, some):
         assert res == [(b'All (/private/mlr/uidnext {1}', some), b')']
         return some.value
 
-    def add_msgs(items=None):
-        if items is None:
-            items = [(1042, 42, '42')]
-        gmail.fetch = [('OK', [])]
-        for gid, uid, txt in items:
-            msg = parse.binary_msg(txt).as_bytes()
-            gm.append('All', None, None, msg)
-            gmail.fetch[0][1].extend([
-                (
-                    b'1 (X-GM-MSGID %d X-GM-LABELS ("\\\\Inbox") UID %d '
-                    b'INTERNALDATE "08-Jul-2017 09:08:30 +0000" FLAGS () '
-                    b'BODY[] {%d}' % (gid, uid, len(msg)),
-                    msg
-                ),
-                b')'
-            ])
-
     assert gmail_uidnext().endswith(b',1')
     assert lm.getmetadata('mlr/uidnext') == [b'All (/private/mlr/uidnext NIL)']
 
-    add_msgs()
+    gmail.add_emails(gm)
     parse.fetch_folder()
     parse.parse_folder()
     assert gmail_uidnext().endswith(b',2')
@@ -74,7 +60,7 @@ def test_fetch_and_parse(clean_users, gmail, some):
     assert lm.select(lm.ALL) == [b'1']
     assert lm.select(lm.PARSED) == [b'1']
 
-    add_msgs([(10001, 101, '1'), (10002, 102, '2')])
+    gmail.add_emails(gm, [{'txt': '1'}, {'txt': '2'}])
     parse.fetch_folder()
     parse.parse_folder()
     assert gmail_uidnext().endswith(b',4')
@@ -89,3 +75,38 @@ def test_fetch_and_parse(clean_users, gmail, some):
     assert lm.select(lm.ALL) == [b'3']
     assert lm.select(lm.PARSED) == [b'3']
     assert lm.status(lm.PARSED, '(UIDNEXT)') == [b'Parsed (UIDNEXT 7)']
+
+
+def test_fetched_msg(clean_users, gmail):
+    gm = imap.Gmail()
+    gmail.add_emails(gm)
+    parse.fetch_folder()
+
+    lm = imap.Local()
+    res = lm.fetch('*', 'body[]')
+    msg = email.message_from_bytes(res[0][1])
+    print(msg.as_string())
+
+    # headers
+    assert 'X-SHA1' in msg
+    msgid = msg.get('X-GM-MSGID')
+    assert msgid and msgid == '10100'
+    thrid = msg.get('X-GM-THRID')
+    assert thrid and thrid == '10100'
+    uid = msg.get('X-GM-UID')
+    assert uid and uid == '101'
+
+
+def test_parsed_msg(gmail):
+    lm = imap.Local()
+    gm = imap.Gmail()
+
+    gmail.add_emails(gm)
+    parse.fetch_folder()
+    parse.parse_folder()
+
+    lm.select(lm.PARSED)
+    res = lm.fetch('*', 'body[]')
+    msg = email.message_from_bytes(res[0][1])
+    assert 'X-UID' in msg
+    assert re.match('<\d+>', msg['X-UID'])

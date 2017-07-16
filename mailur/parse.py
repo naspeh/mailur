@@ -59,7 +59,6 @@ def create_msg(raw, uid, time):
             continue
         msg.add_header(n, v)
     msg.add_header('X-UID', '<%s>' % uid)
-    msg.add_header('X-SHA1', hashlib.sha1(raw).hexdigest())
     msg.make_mixed()
 
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
@@ -141,10 +140,22 @@ def fetch_batch(uids, folder):
                 r'X-GM-LABELS \((?P<labels>[^)]*)\)'
                 r' ?|'
                 r'X-GM-MSGID (?P<msgid>\d+)'
-                r' ?){5}',
+                r' ?|'
+                r'X-GM-THRID (?P<thrid>\d+)'
+                r' ?){6}',
                 m[0].decode()
             ).groupdict()
-            yield parts['time'], m[1]
+            raw = m[1]
+            headers = '\r\n'.join([
+                'X-SHA1: %s' % hashlib.sha1(raw).hexdigest(),
+                'X-GM-MSGID: %s' % parts['msgid'],
+                'X-GM-THRID: %s' % parts['thrid'],
+                'X-GM-UID: %s' % parts['uid'],
+                # line break should be in the end, so an empty string here
+                ''
+            ])
+            raw = headers.encode() + raw
+            yield parts['time'], raw
 
     con = imap.Local(box=None)
     return con.multiappend(iter_msgs(res))
