@@ -15,9 +15,10 @@ apk add neovim neovim-doc xauth xclip
 sed -i -e 's|^#*\(X11Forwarding\) .*|\1 yes|' /etc/ssh/sshd_config
 rc-service sshd restart
 
-apk add python3
+apk add python3-dev musl-dev gcc make
 env=/opt/mailur/env
 pip=$env/bin/pip
 python3 -m venv $env
 
-$pip install -U ptpython ptpdb flake8 wheel neovim
+$pip install -U neovim wheel ptpython ptpdb flake8 pytest
+$pip install -U sanic

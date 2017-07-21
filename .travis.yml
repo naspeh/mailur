@@ -1,0 +1,14 @@
+sudo: required
+language: python
+python:
+  - "3.6"
+before_install:
+  - echo "deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+  - sudo apt-get update -qq
+  - sudo apt-get -t trusty-backports install -qq lxc
+  - sudo ssh-keygen -f /root/.ssh/id_rsa -t rsa -N ''
+install:
+  - pip install flake8
+script:
+  - flake8 .
+  - sudo ./bin/test.sh
