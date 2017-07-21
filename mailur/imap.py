@@ -1,7 +1,6 @@
 import functools as ft
 import os
 import re
-from concurrent import futures
 from contextlib import contextmanager
 from imaplib import CRLF, IMAP4, IMAP4_SSL
 
@@ -79,8 +78,8 @@ class Local:
         con.debug = IMAP_DEBUG
 
         self.status = check_fn(con.status)
-        self.store = check_fn(con.store)
         self.expunge = check_fn(con.expunge)
+        self.store = check_uid(con, 'STORE')
         self.fetch = check_uid(con, 'FETCH')
         self.sort = check_uid(con, 'SORT')
         self.select = ft.partial(select, con)
@@ -102,6 +101,7 @@ class Local:
 @contextmanager
 def cmd(con, name):
     tag = con._new_tag()
+
     def start(args):
         if isinstance(args, str):
             args = args.encode()

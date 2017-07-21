@@ -103,10 +103,14 @@ def test_fetched_msg(clean_users, gmail):
     uid = msg.get('X-GM-UID')
     assert uid and uid == '101'
 
-    gmail.add_emails(gm, [{'flags': '\\Flagged \\Inbox'}])
+    gmail.add_emails(gm, [
+        {'flags': '\\Flagged', 'labels': '"\\\\Inbox" "\\\\Sent" test'}
+    ])
     flags, msg = get_latest()
     assert '\\Flagged' in flags
     assert '$Inbox' in flags
+    assert '$Sent' in flags
+    assert 'test' not in flags
 
     gmail.add_emails(gm, [{}])
     flags, msg = get_latest('\\Junk')
@@ -115,6 +119,7 @@ def test_fetched_msg(clean_users, gmail):
     gmail.add_emails(gm, [{}])
     flags, msg = get_latest('\\Trash')
     assert '$Trash' in flags
+
 
 def test_parsed_msg(gmail):
     gm = imap.Gmail()

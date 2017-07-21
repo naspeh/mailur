@@ -23,8 +23,14 @@ GM_FLAGS = {
     '\\Deleted': '\\Deleted',
     '\\Seen': '\\Seen',
     '\\Draft': '\\Draft',
-    '\\Inbox': '$Inbox',
+}
+GM_LABELS = {
+    '\\Drafts': '\\Draft',
     '\\Junk': '$Spam',
+    '\\Trash': '$Trash',
+    '\\Inbox': '$Inbox',
+    '\\Sent': '$Sent',
+    '\\Important': '$Important'
 }
 
 
@@ -132,13 +138,24 @@ def parse_folder(criteria=None):
 
 def fetch_batch(uids, folder):
     gm = imap.Gmail(folder)
-    fields = '(UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID BODY.PEEK[])'
+    fields = (
+        '('
+        'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
+        ')'
+    )
     res = gm.fetch(b','.join(uids), fields)
 
     def flag(m):
         flag = m.group()
         if flag:
             return GM_FLAGS.get(flag, '')
+        return ''
+
+    def label(m):
+        label = m.group()
+        if label:
+            label = label.strip('"').replace('\\\\', '\\')
+            return GM_LABELS.get(label, '')
         return ''
 
     def iter_msgs(res):
@@ -173,12 +190,9 @@ def fetch_batch(uids, folder):
 
             flags = re.sub(r'([^ ])*', flag, parts['flags'])
             flags = ' '.join([
-                {
-                    '\\All': '',
-                    '\\Junk': '$Spam',
-                    '\\Trash': '$Trash'
-                }.get(folder),
-                flags
+                flags,
+                re.sub(r'("[^"]*"|[^" ]*)', label, parts['labels']),
+                dict({'\\All': ''}, **GM_LABELS).get(folder),
             ]).strip()
             yield parts['time'], flags, raw
 
@@ -239,6 +253,7 @@ if __name__ == '__main__':
         fetch_folder()
         fetch_folder('\\Junk')
         fetch_folder('\\Trash')
+        fetch_folder('\\Drafts')
         parse_folder(sys.argv[-1] if len(sys.argv) > 1 else None)
     except KeyboardInterrupt:
         raise SystemExit('^C')
