@@ -33,11 +33,7 @@ def check_uid(con, name):
 
 
 class Gmail:
-    ALL = '\\All'
-    SPAM = '\\Junk'
-    DEL = '\\Trash'
-
-    def __init__(self, tag=ALL):
+    def __init__(self, tag='\\All'):
         con = self.login()
         con.debug = IMAP_DEBUG
 
