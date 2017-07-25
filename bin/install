@@ -101,7 +101,7 @@ namespace {
     prefix = V/
     separator = /
     inbox = yes
-    location = virtual:/home/vmail/%u/V
+    location = virtual:%h/V
 
     mailbox Spam {
         auto = subscribe
@@ -130,7 +130,7 @@ EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr
 Test owner lrwstipe
-All owner lrst
+Parsed owner lrst
 V/* owner lrst
 * user=root lrwstipe
 EOF

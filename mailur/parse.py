@@ -84,16 +84,18 @@ def create_msg(raw, uid, time):
 
 def parse_batch(uids):
     con = imap.Local()
-    res = con.fetch(b','.join(uids), '(UID INTERNALDATE BINARY.PEEK[])')
+    res = con.fetch(b','.join(uids), '(UID INTERNALDATE FLAGS BINARY.PEEK[])')
 
     def iter_msgs(res):
         for i in range(0, len(res), 2):
             m = res[i]
-            uid, time = re.search(
-                r'UID (\d+) INTERNALDATE ("[^"]+")', m[0].decode()
+            uid, time, flags = re.search(
+                r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
+                m[0].decode()
             ).groups()
             msg = create_msg(m[1], uid, time)
-            yield time, '', msg.as_bytes()
+            flags = flags.replace('\\Recent', '').strip()
+            yield time, flags, msg.as_bytes()
 
     return con.multiappend(iter_msgs(res), box=con.PARSED)
 
