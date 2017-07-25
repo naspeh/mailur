@@ -179,10 +179,10 @@ def fetch_batch(uids, folder):
             ).groupdict()
             raw = m[1]
             headers = '\r\n'.join([
-                'X-SHA1: %s' % hashlib.sha1(raw).hexdigest(),
-                'X-GM-MSGID: %s' % parts['msgid'],
-                'X-GM-THRID: %s' % parts['thrid'],
-                'X-GM-UID: %s' % parts['uid'],
+                'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),
+                'X-GM-MSGID: <%s>' % parts['msgid'],
+                'X-GM-THRID: <%s>' % parts['thrid'],
+                'X-GM-UID: <%s>' % parts['uid'],
                 # line break should be in the end, so an empty string here
                 ''
             ])

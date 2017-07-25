@@ -95,13 +95,14 @@ def test_fetched_msg(clean_users, gmail):
     gmail.add_emails(gm)
     _, msg = get_latest()
     # headers
-    assert 'X-SHA1' in msg
-    msgid = msg.get('X-GM-MSGID')
-    assert msgid and msgid == '10100'
-    thrid = msg.get('X-GM-THRID')
-    assert thrid and thrid == '10100'
+    sha256 = msg.get('X-SHA256')
+    assert sha256 and (sha256[0], sha256[-1]) == ('<', '>')
     uid = msg.get('X-GM-UID')
-    assert uid and uid == '101'
+    assert uid and uid == '<101>'
+    msgid = msg.get('X-GM-MSGID')
+    assert msgid and msgid == '<10100>'
+    thrid = msg.get('X-GM-THRID')
+    assert thrid and thrid == '<10100>'
 
     gmail.add_emails(gm, [
         {'flags': '\\Flagged', 'labels': '"\\\\Inbox" "\\\\Sent" test'}
