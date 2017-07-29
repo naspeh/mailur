@@ -131,7 +131,7 @@ def parse_folder(criteria=None):
             puids = b','.join(parsed_uids(con, uids))
         if puids:
             count = count or puids.count(b',') + 1
-            print('## delete %s parsed messages' % count)
+            print('## delete %s messages from %r' % (count, con.PARSED))
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
@@ -230,8 +230,15 @@ def fetch_folder(folder='\\All'):
     uidnext = gmfolder['uidnext']
     print('## folder(%s): %s new uids' % (gm.current_folder, len(uids)))
     process_batches(fetch_batch, uids, folder)
+    con = imap.Local()
     con.setmetadata(metakey, '%s,%s' % (uidvalidity, uidnext))
     return uids
+
+
+def process_batch(num, func, uids, *args):
+    res = func(uids, *args)
+    print('## %s#%s: %s' % (func.__name__, num, res))
+    return res
 
 
 def process_batches(func, uids, *args, size=1000):
@@ -241,14 +248,15 @@ def process_batches(func, uids, *args, size=1000):
         print('##', func(uids, *args))
         return
 
-    jobs = {}
+    jobs = []
     with futures.ProcessPoolExecutor(max(os.cpu_count(), 2)) as pool:
-        jobs = {
-            pool.submit(func, uids[i:i+size], *args): i
-            for i in range(0, len(uids), size)
-        }
+        for i in range(0, len(uids), size):
+            num = '%02d' % (i // size + 1)
+            few_uids = uids[i:i+size]
+            jobs.append(pool.submit(process_batch, num, func, few_uids, *args))
+            print('## %s#%s: %s uids' % (func.__name__, num, len(few_uids)))
     for f in futures.as_completed(jobs):
-        print('##', f.result())
+        pass
 
 
 if __name__ == '__main__':

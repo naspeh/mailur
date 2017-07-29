@@ -107,8 +107,6 @@ def cmd(con, name):
 
 
 def multiappend(con, msgs, box=Local.ALL):
-    msgs = list(msgs)
-    print('## append %s messages to "%s"' % (len(msgs), box))
     with cmd(con, 'APPEND') as (tag, start, complete):
         send = start
         for time, flags, msg in msgs:
