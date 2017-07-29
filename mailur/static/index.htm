@@ -9,6 +9,8 @@
     <input v-model.lazy.trim="query" @keyup.enter="get">
     <input type="checkbox" id="show_bodies" v-model="show_bodies">
     <label for="show_bodies">bodies</label>
+    <input type="checkbox" id="show_threads" v-model="show_threads">
+    <label for="show_threads">treads</label>
     <button v-on:click="get">go!</button>
     <div v-for="uid in uids">
       <a v-bind:href="origin_url(msgs[uid])" target="_blank">{{ uid }}</a>
@@ -28,11 +30,13 @@
       msgs: {},
       flags: {},
       query: 'all',
+      show_threads: false,
       show_bodies: false,
     },
     methods: {
       get: function() {
-        fetch('/emails?q=' + app.query).then(function(response) {
+        var base_url = app.show_threads && '/threads?q=' || '/emails?q=';
+        fetch(base_url + app.query).then(function(response) {
           return response.json();
         }).then(function(res) {
           app.uids = res.uids;

@@ -123,14 +123,16 @@ def parse_folder(criteria=None):
     print('## criteria: %r; %s uids' % (criteria, len(uids)))
     count = con.select(con.PARSED, readonly=False)
     if count[0] != b'0':
-        if criteria.lower() != 'all':
-            puids = list(parsed_uids(con, uids))
+        count = None
+        if criteria.lower() == 'all':
+            puids = '1:*'
+            count = 'all'
         else:
-            res = con.search(criteria)
-            puids = res[0].split(b' ')
+            puids = b','.join(parsed_uids(con, uids))
         if puids:
-            print('## delete %s parsed messages' % len(puids))
-            con.store(b','.join(puids), '+FLAGS.SILENT', '\Deleted')
+            count = count or puids.count(b',') + 1
+            print('## delete %s parsed messages' % count)
+            con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
     process_batches(parse_batch, uids)
@@ -240,7 +242,7 @@ def process_batches(func, uids, *args, size=1000):
         return
 
     jobs = {}
-    with futures.ProcessPoolExecutor(os.cpu_count() * 2) as pool:
+    with futures.ProcessPoolExecutor(max(os.cpu_count(), 2)) as pool:
         jobs = {
             pool.submit(func, uids[i:i+size], *args): i
             for i in range(0, len(uids), size)
@@ -251,10 +253,12 @@ def process_batches(func, uids, *args, size=1000):
 
 if __name__ == '__main__':
     try:
-        fetch_folder()
-        fetch_folder('\\Junk')
-        fetch_folder('\\Trash')
-        fetch_folder('\\Drafts')
+        if imap.GM_USER:
+            fetch_folder()
+            fetch_folder('\\Junk')
+            fetch_folder('\\Trash')
+            fetch_folder('\\Drafts')
+
         parse_folder(sys.argv[-1] if len(sys.argv) > 1 else None)
     except KeyboardInterrupt:
         raise SystemExit('^C')

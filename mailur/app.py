@@ -16,6 +16,47 @@ LOGGING['loggers']['mailur'] = {
 }
 
 
+async def threads(request):
+    query = request.raw_args['q']
+    con = imap.Local(None)
+    con.select(con.PARSED)
+    res = con.search('INTHREAD REFS %s' % query)
+    log.debug('query: %r; uids: %s', query, res[0])
+    uids = res[0].strip().decode().split()
+    if not uids:
+        return response.text('{}')
+
+    msgs = {}
+    flags = {}
+    processed = []
+    for uid in uids:
+        if uid in processed:
+            continue
+        res = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uid)
+        thr_uids = [i for i in re.split('[)( ]*', res[0].decode()) if i]
+        processed.extend(thr_uids)
+        res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thr_uids))
+        latest = res[0].decode().rsplit(' ', 1)[-1]
+        if latest in msgs:
+            continue
+        res = con.fetch(','.join(thr_uids), 'FLAGS')
+        thr_flags = set(sum((
+            re.search(r'FLAGS \(([^)]*)\)', i.decode()).group(1).split()
+            for i in res
+        ), []))
+        flags[latest] = thr_flags
+        log.debug(
+            'thrid=%s flags=%r uids=%r',
+            latest,
+            ' '.join(thr_flags),
+            ','.join(thr_uids),
+        )
+        res = con.fetch(uid, '(BINARY.PEEK[2])')
+        msgs[latest] = json.loads(res[0][1].decode())
+    txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': flags.keys()})
+    return response.text(txt)
+
+
 async def emails(request):
     query = request.raw_args['q']
     con = imap.Local()
@@ -54,6 +95,7 @@ def get_app():
     app = Sanic()
     r = app.add_route
     r(emails, '/emails')
+    r(threads, '/threads')
     r(origin, '/origin/<uid>')
 
     static = str(pathlib.Path(__file__).parent / 'static')

@@ -78,6 +78,7 @@ class Local:
         self.store = check_uid(con, 'STORE')
         self.fetch = check_uid(con, 'FETCH')
         self.sort = check_uid(con, 'SORT')
+        self.thread = check_uid(con, 'THREAD')
         self.select = ft.partial(select, con)
         self.search = ft.partial(search, con)
         self.getmetadata = ft.partial(getmetadata, con)
@@ -106,7 +107,8 @@ def cmd(con, name):
 
 
 def multiappend(con, msgs, box=Local.ALL):
-    print('## append messages to "%s"' % box)
+    msgs = list(msgs)
+    print('## append %s messages to "%s"' % (len(msgs), box))
     with cmd(con, 'APPEND') as (tag, start, complete):
         send = start
         for time, flags, msg in msgs:
