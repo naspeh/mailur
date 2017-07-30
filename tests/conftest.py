@@ -10,6 +10,14 @@ root = (Path(__file__).parent / '..').resolve()
 sys.path.insert(0, str(root))
 
 
+@pytest.fixture(scope='session')
+def init():
+    call('''
+    rm -rf /home/vmail/test*
+    bin/users
+    ''', shell=True, cwd=root)
+
+
 @pytest.fixture
 def setup(gmail):
     with patch('mailur.imap.USER', 'test1'):
@@ -19,9 +27,7 @@ def setup(gmail):
 @pytest.fixture
 def clean_users():
     call('''
-    rm -rf /home/vmail/test*
-    ls -l /home/vmail
-    bin/users
+    rm -rf /home/vmail/test*/mails/mailboxes/*
     ''', shell=True, cwd=root)
 
 
@@ -65,9 +71,10 @@ def mock_gmail(self):
 
 @pytest.fixture
 def gmail():
-    from mailur import parse
+    from mailur import parse, imap
 
-    def add_emails(con, items=None):
+    def add_emails(items=None):
+        con = imap.Gmail()
         if items is None:
             items = [{}]
         gmail.fetch = [('OK', [])]
@@ -78,7 +85,16 @@ def gmail():
             txt = item.get('txt', '42')
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
-            msg = parse.binary_msg(txt).as_bytes()
+            msg = parse.binary_msg(txt)
+            msg.add_header('Message-ID', '<%s@mlr>' % uid)
+            in_reply_to = item.get('in_reply_to', '')
+            if in_reply_to:
+                msg.add_header('In-Reply-To', in_reply_to)
+            refs = item.get('refs')
+            if refs:
+                msg.add_header('References', refs)
+
+            msg = msg.as_bytes()
             con.append('All', None, None, msg)
             gmail.fetch[0][1].extend([
                 (

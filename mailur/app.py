@@ -20,40 +20,35 @@ async def threads(request):
     query = request.raw_args['q']
     con = imap.Local(None)
     con.select(con.PARSED)
-    res = con.search('INTHREAD REFS %s' % query)
+    res = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
     log.debug('query: %r; uids: %s', query, res[0])
-    uids = res[0].strip().decode().split()
+    uids = [i for i in re.split('[)( ]+', res[0].decode()) if i]
     if not uids:
         return response.text('{}')
 
     msgs = {}
     flags = {}
-    processed = []
-    for uid in uids:
-        if uid in processed:
+    res = con.fetch(','.join(uids), 'FLAGS')
+    for line in res:
+        fs = re.search(r'FLAGS \(([^)]*)\)', line.decode()).group(1).split()
+        thrid = [f for f in fs if f.startswith('T:')]
+        if not thrid:
             continue
-        res = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uid)
-        thr_uids = [i for i in re.split('[)( ]*', res[0].decode()) if i]
-        processed.extend(thr_uids)
-        res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thr_uids))
-        latest = res[0].decode().rsplit(' ', 1)[-1]
-        if latest in msgs:
-            continue
-        res = con.fetch(','.join(thr_uids), 'FLAGS')
-        thr_flags = set(sum((
-            re.search(r'FLAGS \(([^)]*)\)', i.decode()).group(1).split()
-            for i in res
-        ), []))
-        flags[latest] = thr_flags
-        log.debug(
-            'thrid=%s flags=%r uids=%r',
-            latest,
-            ' '.join(thr_flags),
-            ','.join(thr_uids),
-        )
-        res = con.fetch(uid, '(BINARY.PEEK[2])')
-        msgs[latest] = json.loads(res[0][1].decode())
-    txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': flags.keys()})
+        thrid = thrid[0][2:].encode()
+        flags.setdefault(thrid, set())
+        flags[thrid].update(fs)
+
+    puids_map = parsed_uids(flags)
+    puids = b','.join(puids_map)
+    res = con.sort('(REVERSE DATE)', 'UTF-8', b'UID %s' % puids)
+    uids = [puids_map[i] for i in res[0].strip().split()]
+    res = con.fetch(puids, '(BINARY.PEEK[2])')
+    msgs = {}
+    for i in range(0, len(res), 2):
+        data = json.loads(res[i][1].decode())
+        msgs[data['uid']] = data
+
+    txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
     return response.text(txt)
 
 
@@ -71,7 +66,7 @@ async def emails(request):
         for i in res
     )
     con.select(con.PARSED)
-    puids = b','.join(parsed_uids(con, uids))
+    puids = b','.join(parsed_uids(uids))
     log.debug('parsed uids: %s', puids)
     res = con.fetch(puids, '(BINARY.PEEK[2])')
     msgs = {}

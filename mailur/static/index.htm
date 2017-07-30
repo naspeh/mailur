@@ -12,7 +12,7 @@
     <input type="checkbox" id="show_threads" v-model="show_threads">
     <label for="show_threads">treads</label>
     <button v-on:click="get">go!</button>
-    <div v-for="uid in uids">
+    <div v-for="uid in uids" v-if="msgs[uid]">
       <a v-bind:href="origin_url(msgs[uid])" target="_blank">{{ uid }}</a>
       <i>{{ flags[uid] }}</i>
       <b>{{ msgs[uid].subject }}</b>

@@ -34,7 +34,6 @@ def test_basic_gmail():
 
 
 def test_fetch_and_parse(clean_users, gmail, some):
-    gm = imap.Gmail()
     lm = imap.Local()
     parse.fetch_folder()
     parse.parse_folder()
@@ -52,7 +51,7 @@ def test_fetch_and_parse(clean_users, gmail, some):
     assert gmail_uidnext().endswith(b',1')
     assert lm.getmetadata('mlr/uidnext') == [b'All (/private/mlr/uidnext NIL)']
 
-    gmail.add_emails(gm)
+    gmail.add_emails()
     parse.fetch_folder()
     parse.parse_folder()
     assert gmail_uidnext().endswith(b',2')
@@ -60,7 +59,7 @@ def test_fetch_and_parse(clean_users, gmail, some):
     assert lm.select(lm.ALL) == [b'1']
     assert lm.select(lm.PARSED) == [b'1']
 
-    gmail.add_emails(gm, [{'txt': '1'}, {'txt': '2'}])
+    gmail.add_emails([{'txt': '1'}, {'txt': '2'}])
     parse.fetch_folder()
     parse.parse_folder()
     assert gmail_uidnext().endswith(b',4')
@@ -89,9 +88,17 @@ def get_latest(box='All'):
     return flags, msg
 
 
+def get_msgs(box='All', uids='1:*'):
+    lm = imap.Local(box)
+    res = lm.fetch(uids, '(flags body[])')
+    return [(
+        re.search('FLAGS \(([^)]*)\)', res[i][0].decode()).group(1),
+        email.message_from_bytes(res[i][1])
+    ) for i in range(0, len(res), 2)]
+
+
 def test_fetched_msg(gmail):
-    gm = imap.Gmail()
-    gmail.add_emails(gm)
+    gmail.add_emails()
     parse.fetch_folder('\\All')
     _, msg = get_latest()
     # headers
@@ -104,7 +111,7 @@ def test_fetched_msg(gmail):
     thrid = msg.get('X-GM-THRID')
     assert thrid and thrid == '<10100>'
 
-    gmail.add_emails(gm, [
+    gmail.add_emails([
         {'flags': '\\Flagged', 'labels': '"\\\\Inbox" "\\\\Sent" test'}
     ])
     parse.fetch_folder('\\All')
@@ -114,21 +121,48 @@ def test_fetched_msg(gmail):
     assert '$Sent' in flags
     assert 'test' not in flags
 
-    gmail.add_emails(gm, [{}])
+    gmail.add_emails([{}])
     parse.fetch_folder('\\Junk')
     flags, msg = get_latest()
     assert '$Spam' in flags
 
-    gmail.add_emails(gm, [{}])
+    gmail.add_emails([{}])
     parse.fetch_folder('\\Trash')
     flags, msg = get_latest()
     assert '$Trash' in flags
 
 
-def test_parsed_msg(gmail):
-    gm = imap.Gmail()
+def test_thrids(clean_users, gmail):
+    gmail.add_emails([{}])
+    parse.fetch_folder()
+    parse.parse_folder()
+    flags, msg = get_latest('Parsed')
+    assert 'T:1' == flags
+    gmail.add_emails([{}])
+    parse.fetch_folder()
+    parse.parse_folder()
+    flags, msg = get_latest('Parsed')
+    assert 'T:2' == flags
 
-    gmail.add_emails(gm, [{'flags': '\\Flagged'}])
+    gmail.add_emails([{'in_reply_to': '<101@mlr>'}])
+    parse.fetch_folder()
+    parse.parse_folder()
+    msgs = get_msgs('Parsed')
+    assert ['T:3', 'T:2', 'T:3'] == [i[0] for i in msgs]
+
+    gmail.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
+    parse.fetch_folder()
+    parse.parse_folder()
+    msgs = get_msgs('Parsed')
+    assert ['T:4', 'T:4', 'T:4', 'T:4'] == [i[0] for i in msgs]
+
+    parse.parse_folder('all')
+    msgs = get_msgs('Parsed')
+    assert ['T:4', 'T:4', 'T:4', 'T:4'] == [i[0] for i in msgs]
+
+
+def test_parsed_msg(gmail):
+    gmail.add_emails([{'flags': '\\Flagged'}])
     parse.fetch_folder()
     parse.parse_folder()
     flags, msg = get_latest('Parsed')

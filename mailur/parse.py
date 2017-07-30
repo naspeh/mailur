@@ -1,7 +1,6 @@
 import datetime as dt
 import hashlib
 import json
-import os
 import re
 import sys
 from concurrent import futures
@@ -41,14 +40,15 @@ def binary_msg(txt, mimetype='text/plain'):
     return msg
 
 
-def parsed_uids(con, uids):
+def parsed_uids(uids):
+    con = imap.Local(None)
+    con.select(con.PARSED)
     res = con.fetch('1:*', 'BINARY.PEEK[1]')
-    for i in range(0, len(res), 2):
-        m = res[i]
-        uid = m[1]
-        puid = m[0].split()[2]
-        if uid in uids:
-            yield puid
+    return {
+        res[i][0].split()[2]: res[i][1]
+        for i in range(0, len(res), 2)
+        if res[i][1] in uids
+    }
 
 
 def create_msg(raw, uid, time):
@@ -96,8 +96,38 @@ def parse_batch(uids):
             msg = create_msg(m[1], uid, time)
             flags = flags.replace('\\Recent', '').strip()
             yield time, flags, msg.as_bytes()
-
     return con.multiappend(iter_msgs(res), box=con.PARSED)
+
+
+def thrids_batch(uids):
+    con = imap.Local()
+    con.select(con.PARSED)
+    processed = set()
+    threads = {}
+    pids = parsed_uids(uids)
+    for pid, uid in pids.items():
+        if pid in processed:
+            continue
+        res = con.thread(b'REFS UTF-8 INTHREAD REFS UID %s' % pid)
+        thrids = [i for i in re.split('[)( ]+', res[0].decode()) if i]
+        processed.update(thrids)
+        res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thrids))
+        latest = res[0].rsplit(b' ', 1)[-1]
+        threads[pids[latest]] = thrids
+
+    con.select(con.PARSED, readonly=False)
+    res = con.fetch(','.join(processed), 'FLAGS')
+    flags = set()
+    for i in res:
+        flag = re.search(r'FLAGS \(.*(T:\d+).*\)', i.decode())
+        if not flag:
+            continue
+        flags.add(flag.group(1))
+    if flags:
+        con.store(','.join(processed), '-FLAGS.SILENT', ' '.join(flags))
+    for thrid, uids in threads.items():
+        con.store(','.join(uids), '+FLAGS.SILENT', b'T:%s' % thrid)
+    return list(threads.keys())
 
 
 def parse_folder(criteria=None):
@@ -128,7 +158,7 @@ def parse_folder(criteria=None):
             puids = '1:*'
             count = 'all'
         else:
-            puids = b','.join(parsed_uids(con, uids))
+            puids = b','.join(parsed_uids(uids))
         if puids:
             count = count or puids.count(b',') + 1
             print('## delete %s messages from %r' % (count, con.PARSED))
@@ -136,6 +166,7 @@ def parse_folder(criteria=None):
             con.expunge()
 
     process_batches(parse_batch, uids)
+    process_batches(thrids_batch, uids)
     con.setmetadata('mlr/uidnext', str(uidnext))
 
 
@@ -241,7 +272,7 @@ def process_batch(num, func, uids, *args):
     return res
 
 
-def process_batches(func, uids, *args, size=1000):
+def process_batches(func, uids, *args, size=1000, cpu=None):
     if not uids:
         return
     elif len(uids) < size:
@@ -249,7 +280,7 @@ def process_batches(func, uids, *args, size=1000):
         return
 
     jobs = []
-    with futures.ProcessPoolExecutor(max(os.cpu_count(), 2)) as pool:
+    with futures.ProcessPoolExecutor(cpu) as pool:
         for i in range(0, len(uids), size):
             num = '%02d' % (i // size + 1)
             few_uids = uids[i:i+size]
