@@ -28,7 +28,7 @@ async def threads(request):
 
     msgs = {}
     flags = {}
-    res = con.fetch(','.join(uids), 'FLAGS')
+    res = con.fetch(uids, 'FLAGS')
     for line in res:
         fs = re.search(r'FLAGS \(([^)]*)\)', line.decode()).group(1).split()
         thrid = [f for f in fs if f.startswith('T:')]
@@ -42,7 +42,7 @@ async def threads(request):
     puids = b','.join(puids_map)
     res = con.sort('(REVERSE DATE)', 'UTF-8', b'UID %s' % puids)
     uids = [puids_map[i] for i in res[0].strip().split()]
-    res = con.fetch(puids, '(BINARY.PEEK[2])')
+    res = con.fetch(puids_map, '(BINARY.PEEK[2])')
     msgs = {}
     for i in range(0, len(res), 2):
         data = json.loads(res[i][1].decode())
@@ -60,7 +60,7 @@ async def emails(request):
     uids = res[0].strip().split()
     if not uids:
         return response.text('{}')
-    res = con.fetch(b','.join(uids), '(UID FLAGS)')
+    res = con.fetch(uids, '(UID FLAGS)')
     flags = dict(
         re.search(r'UID (\d+) FLAGS \(([^)]*)\)', i.decode()).groups()
         for i in res
@@ -73,9 +73,9 @@ async def emails(request):
     for i in range(0, len(res), 2):
         data = json.loads(res[i][1].decode())
         msgs[data['uid']] = data
-    missing = set(i.decode() for i in uids) - set(msgs)
-    if missing:
-        raise ValueError('Missing parsed emails: %s', missing)
+    # missing = set(i.decode() for i in uids) - set(msgs)
+    # if missing:
+    #     raise ValueError('Missing parsed emails: %s', missing)
     txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
     return response.text(txt)
 

@@ -14,7 +14,7 @@ sys.path.insert(0, str(root))
 def init():
     call('''
     rm -rf /home/vmail/test*
-    bin/users
+    bin/install
     ''', shell=True, cwd=root)
 
 
@@ -66,6 +66,7 @@ def mock_gmail(self):
     con.select_origin = con.select
     con.select = lambda n, readonly: con.select_origin('All', readonly)
     self.append = con.append
+    gmail.con = con
     return con
 
 
@@ -107,6 +108,9 @@ def gmail():
             ])
     gmail.add_emails = add_emails
     gmail.uid = 100
+    gmail.con = None
 
     with patch('mailur.imap.Gmail.login', mock_gmail):
         yield gmail
+        if gmail.con and not gmail.con.file.closed:
+            gmail.con.logout()

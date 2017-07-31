@@ -1,5 +1,6 @@
 import email
 import re
+from unittest.mock import patch, call, ANY
 
 from mailur import imap, parse
 
@@ -22,15 +23,16 @@ def test_binary_msg():
     ])
 
 
-def test_basic_gmail():
+@patch('mailur.imap.select')
+def test_basic_gmail(select):
     gm = imap.Gmail()
-    assert gm.current_folder == 'All'
+    assert select.call_args == call(ANY, b'All', True)
 
     gm.select_tag('\\Junk')
-    assert gm.current_folder == 'V/Spam'
+    assert select.call_args == call(ANY, b'V/Spam', True)
 
     gm.select_tag('\\Trash')
-    assert gm.current_folder == 'V/Trash'
+    assert select.call_args == call(ANY, b'V/Trash', True)
 
 
 def test_fetch_and_parse(clean_users, gmail, some):

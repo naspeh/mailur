@@ -99,8 +99,8 @@ def parse_batch(uids):
     return con.multiappend(iter_msgs(res), box=con.PARSED)
 
 
-def thrids_batch(uids):
-    con = imap.Local()
+def update_thrids(uids):
+    con = imap.Local(None)
     con.select(con.PARSED)
     processed = set()
     threads = {}
@@ -113,10 +113,11 @@ def thrids_batch(uids):
         processed.update(thrids)
         res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thrids))
         latest = res[0].rsplit(b' ', 1)[-1]
-        threads[pids[latest]] = thrids
+        if latest in pids:
+            threads[pids[latest]] = thrids
 
     con.select(con.PARSED, readonly=False)
-    res = con.fetch(','.join(processed), 'FLAGS')
+    res = con.fetch(processed, 'FLAGS')
     flags = set()
     for i in res:
         flag = re.search(r'FLAGS \(.*(T:\d+).*\)', i.decode())
@@ -127,7 +128,7 @@ def thrids_batch(uids):
         con.store(','.join(processed), '-FLAGS.SILENT', ' '.join(flags))
     for thrid, uids in threads.items():
         con.store(','.join(uids), '+FLAGS.SILENT', b'T:%s' % thrid)
-    return list(threads.keys())
+    return '%s threads' % len(threads)
 
 
 def parse_folder(criteria=None):
@@ -165,8 +166,8 @@ def parse_folder(criteria=None):
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
-    process_batches(parse_batch, uids)
-    process_batches(thrids_batch, uids)
+    process_batches(parse_batch, uids, pool=futures.ProcessPoolExecutor())
+    update_thrids(uids)
     con.setmetadata('mlr/uidnext', str(uidnext))
 
 
@@ -246,7 +247,7 @@ def fetch_folder(folder='\\All'):
         uidvalidity = uidnext = None
     print('## saved: uidvalidity=%s uidnext=%s' % (uidvalidity, uidnext))
     gm = imap.Gmail(folder)
-    res = gm.status(gm.current_folder, '(UIDNEXT UIDVALIDITY)')
+    res = gm.status(None, '(UIDNEXT UIDVALIDITY)')
     gmfolder = re.search(
         r'(UIDNEXT (?P<uidnext>\d+) ?|UIDVALIDITY (?P<uid>\d+)){2}',
         res[0].decode()
@@ -259,7 +260,7 @@ def fetch_folder(folder='\\All'):
     gm.logout()
     uids = [i for i in res[0].split() if int(i) >= uidnext]
     uidnext = gmfolder['uidnext']
-    print('## folder(%s): %s new uids' % (gm.current_folder, len(uids)))
+    print('## folder(%s): %s new uids' % (folder, len(uids)))
     process_batches(fetch_batch, uids, folder)
     con = imap.Local()
     con.setmetadata(metakey, '%s,%s' % (uidvalidity, uidnext))
@@ -272,22 +273,24 @@ def process_batch(num, func, uids, *args):
     return res
 
 
-def process_batches(func, uids, *args, size=1000, cpu=None):
+def process_batches(func, uids, *args, size=1000, pool=None):
     if not uids:
         return
     elif len(uids) < size:
         print('##', func(uids, *args))
         return
 
+    if pool is None:
+        pool = futures.ThreadPoolExecutor()
+
     jobs = []
-    with futures.ProcessPoolExecutor(cpu) as pool:
+    with pool as pool:
         for i in range(0, len(uids), size):
             num = '%02d' % (i // size + 1)
-            few_uids = uids[i:i+size]
-            jobs.append(pool.submit(process_batch, num, func, few_uids, *args))
-            print('## %s#%s: %s uids' % (func.__name__, num, len(few_uids)))
-    for f in futures.as_completed(jobs):
-        pass
+            few = uids[i:i+size]
+            jobs.append(pool.submit(process_batch, num, func, few, *args))
+            print('## %s#%s: %s uids' % (func.__name__, num, len(few)))
+    return [f.result() for f in futures.as_completed(jobs)]
 
 
 if __name__ == '__main__':

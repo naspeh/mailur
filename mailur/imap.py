@@ -1,6 +1,7 @@
 import functools as ft
 import os
 import re
+from concurrent import futures
 from contextlib import contextmanager
 from imaplib import CRLF, IMAP4, IMAP4_SSL
 
@@ -36,15 +37,17 @@ class Gmail:
     def __init__(self, tag='\\All'):
         con = self.login()
         con.debug = IMAP_DEBUG
+        con.recreate = ft.partial(recreate, con, self.login)
 
         self.logout = con.logout
         self.list = check_fn(con.list)
-        self.status = check_fn(con.status)
         self.fetch = check_uid(con, 'FETCH')
         self.select = ft.partial(select, con)
+        self.status = ft.partial(status, con)
         self.search = ft.partial(search, con)
 
-        self.select_tag(tag)
+        if tag is not None:
+            self.select_tag(tag)
 
     def select_tag(self, tag, readonly=True):
         if isinstance(tag, str):
@@ -55,7 +58,6 @@ class Gmail:
                 continue
             folder = f.rsplit(b' "/" ', 1)[1]
             break
-        self.current_folder = folder.decode()
         return self.select(folder, readonly)
 
     @staticmethod
@@ -72,14 +74,15 @@ class Local:
     def __init__(self, box=ALL):
         con = self.login()
         con.debug = IMAP_DEBUG
+        con.recreate = ft.partial(recreate, con, self.login)
 
-        self.status = check_fn(con.status)
         self.expunge = check_fn(con.expunge)
         self.store = check_uid(con, 'STORE')
-        self.fetch = check_uid(con, 'FETCH')
         self.sort = check_uid(con, 'SORT')
         self.thread = check_uid(con, 'THREAD')
+        self.fetch = ft.partial(fetch, con)
         self.select = ft.partial(select, con)
+        self.status = ft.partial(status, con)
         self.search = ft.partial(search, con)
         self.getmetadata = ft.partial(getmetadata, con)
         self.setmetadata = ft.partial(setmetadata, con)
@@ -93,6 +96,14 @@ class Local:
         con = IMAP4('localhost', 143)
         check(con.login('%s*root' % USER, 'root'))
         return con
+
+
+def recreate(con, login):
+    box = getattr(con, 'current_box', None)
+    con = login()
+    if box:
+        con.select(box)
+    return con
 
 
 @contextmanager
@@ -147,8 +158,51 @@ def getmetadata(con, key):
 
 
 def select(con, box, readonly=True):
-    return check(con.select(box, readonly))
+    res = check(con.select(box, readonly))
+    con.current_box = box
+    return res
+
+
+def status(con, box, fields):
+    box = con.current_box if box is None else box
+    return check(con.status(box, fields))
 
 
 def search(con, *criteria):
     return check(con.uid('SEARCH', None, *criteria))
+
+
+def fetch(con, uids, fields):
+    if not isinstance(uids, (str, bytes)):
+        @ft.wraps(fetch)
+        def fn(uids, once=False):
+            c = con if once else con.recreate()
+            uids = ','.join(
+                i if isinstance(i, str) else i.decode() for i in uids
+            )
+            return fetch(c, uids, fields)
+        res = partial_uids(list(uids), fn)
+        return sum(res, [])
+    return check(con.uid('FETCH', uids, fields))
+
+
+def partial_uids(uids, func, size=5000, threads=10):
+    if not uids:
+        return []
+    elif len(uids) < size:
+        res = func(uids, once=True)
+        return [res]
+
+    def inner(num, uids):
+        res = func(uids)
+        print('## %s#%s: done' % (func.__name__, num))
+        return res
+
+    jobs = []
+    with futures.ThreadPoolExecutor(threads) as pool:
+        for i in range(0, len(uids), size):
+            num = '%02d' % (i // size + 1)
+            few = uids[i:i+size]
+            jobs.append(pool.submit(inner, num, few))
+            print('## %s#%s: %s uids' % (func.__name__, num, len(few)))
+    return [f.result() for f in futures.as_completed(jobs)]
