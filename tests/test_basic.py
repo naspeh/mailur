@@ -23,6 +23,16 @@ def test_binary_msg():
     ])
 
 
+def test_thread_response():
+    assert imap.parse_thread('(1)(2 3)') == [['1'], ['2', '3']]
+    assert imap.parse_thread('(11)(21 31)') == [['11'], ['21', '31']]
+    assert imap.parse_thread('(1)(2 3 (4 5))') == [['1'], '2 3 4 5'.split()]
+    assert imap.parse_thread('(130 131 (132 133 134 (138)(139)(140)))') == [
+        '130 131 132 133 134 138 139 140'.split()
+    ]
+    assert imap.parse_thread(b'(1)(2)(3)') == [['1'], ['2'], ['3']]
+
+
 @patch('mailur.imap.select')
 def test_basic_gmail(select):
     gm = imap.Gmail()
@@ -41,17 +51,19 @@ def test_fetch_and_parse(clean_users, gmail, some):
     parse.parse_folder()
 
     def gmail_uidnext():
-        res = lm.getmetadata('gmail/uidnext/all')
+        res = lm.getmetadata(lm.ALL, 'gmail/uidnext/all')
         assert res == [(b'All (/private/gmail/uidnext/all {12}', some), b')']
         return some.value
 
     def mlr_uidnext():
-        res = lm.getmetadata('mlr/uidnext')
-        assert res == [(b'All (/private/mlr/uidnext {1}', some), b')']
+        res = lm.getmetadata(lm.PARSED, 'uidnext')
+        assert res == [(b'Parsed (/private/uidnext {1}', some), b')']
         return some.value
 
     assert gmail_uidnext().endswith(b',1')
-    assert lm.getmetadata('mlr/uidnext') == [b'All (/private/mlr/uidnext NIL)']
+    assert lm.getmetadata(lm.PARSED, 'uidnext') == [
+        b'Parsed (/private/uidnext NIL)'
+    ]
 
     gmail.add_emails()
     parse.fetch_folder()
@@ -76,6 +88,12 @@ def test_fetch_and_parse(clean_users, gmail, some):
     assert lm.select(lm.ALL) == [b'3']
     assert lm.select(lm.PARSED) == [b'3']
     assert lm.status(lm.PARSED, '(UIDNEXT)') == [b'Parsed (UIDNEXT 7)']
+    assert lm.getmetadata(lm.PARSED, 'uidmap') == [
+        (b'Parsed (/private/uidmap {30}', b'{"4": "1", "5": "2", "6": "3"}'),
+        b')'
+    ]
+    assert parse.parsed_uids(lm, [b'1']) == {b'4': b'1'}
+    assert parse.parsed_uids(lm) == {b'4': b'1', b'5': b'2', b'6': b'3'}
 
 
 def get_latest(box='All'):

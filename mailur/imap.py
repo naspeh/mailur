@@ -1,4 +1,5 @@
 import functools as ft
+import json
 import os
 import re
 from concurrent import futures
@@ -140,18 +141,18 @@ def _mdkey(key):
     return key
 
 
-def setmetadata(con, key, value):
+def setmetadata(con, box, key, value):
     key = _mdkey(key)
     with cmd(con, 'SETMETADATA') as (tag, start, complete):
-        args = '%s (%s %s)' % (Local.ALL, key, value)
+        args = '%s (%s %s)' % (box, key, json.dumps(value))
         start(args.encode() + CRLF)
         return check(complete())
 
 
-def getmetadata(con, key):
+def getmetadata(con, box, key):
     key = _mdkey(key)
     with cmd(con, 'GETMETADATA') as (tag, start, complete):
-        args = '%s (%s)' % (Local.ALL, key)
+        args = '%s (%s)' % (box, key)
         start(args.encode() + CRLF)
         typ, data = complete()
         return check(con._untagged_response(typ, data, 'METADATA'))
@@ -184,6 +185,34 @@ def fetch(con, uids, fields):
         res = partial_uids(list(uids), fn)
         return sum(res, [])
     return check(con.uid('FETCH', uids, fields))
+
+
+def parse_thread(line):
+    if isinstance(line, bytes):
+        line = line.decode()
+
+    threads = []
+    uids = []
+    uid = ''
+    opening = 0
+    for i in line:
+        if i == '(':
+            opening += 1
+        elif i == ')':
+            if uid:
+                uids.append(uid)
+                uid = ''
+
+            opening -= 1
+            if opening == 0:
+                threads.append(uids)
+                uids = []
+        elif i == ' ':
+            uids.append(uid)
+            uid = ''
+        else:
+            uid += i
+    return threads
 
 
 def partial_uids(uids, func, size=5000, threads=10):

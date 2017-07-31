@@ -38,7 +38,7 @@ async def threads(request):
         flags.setdefault(thrid, set())
         flags[thrid].update(fs)
 
-    puids_map = parsed_uids(flags)
+    puids_map = parsed_uids(con, flags)
     puids = b','.join(puids_map)
     res = con.sort('(REVERSE DATE)', 'UTF-8', b'UID %s' % puids)
     uids = [puids_map[i] for i in res[0].strip().split()]
@@ -66,7 +66,7 @@ async def emails(request):
         for i in res
     )
     con.select(con.PARSED)
-    puids = b','.join(parsed_uids(uids))
+    puids = b','.join(parsed_uids(con, uids))
     log.debug('parsed uids: %s', puids)
     res = con.fetch(puids, '(BINARY.PEEK[2])')
     msgs = {}
@@ -86,12 +86,20 @@ async def origin(request, uid):
     return response.text(res[0][1].decode())
 
 
+async def parsed(request, uid):
+    con = imap.Local(None)
+    con.select(con.PARSED)
+    res = con.fetch(uid, 'body[]')
+    return response.text(res[0][1].decode())
+
+
 def get_app():
     app = Sanic()
     r = app.add_route
     r(emails, '/emails')
     r(threads, '/threads')
     r(origin, '/origin/<uid>')
+    r(parsed, '/parsed/<uid>')
 
     static = str(pathlib.Path(__file__).parent / 'static')
     app.static('/', static + '/index.htm')

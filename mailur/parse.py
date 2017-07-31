@@ -11,10 +11,6 @@ from email.utils import parsedate_to_datetime
 
 from . import imap
 
-HEADERS = (
-    'from to date message-id in-reply-to references cc bcc'
-    .split()
-)
 GM_FLAGS = {
     '\\Answered': '\\Answered',
     '\\Flagged': '\\Flagged',
@@ -40,14 +36,33 @@ def binary_msg(txt, mimetype='text/plain'):
     return msg
 
 
-def parsed_uids(uids):
-    con = imap.Local(None)
+def parsed_uids(con, uids=None):
     con.select(con.PARSED)
     res = con.fetch('1:*', 'BINARY.PEEK[1]')
     return {
         res[i][0].split()[2]: res[i][1]
         for i in range(0, len(res), 2)
-        if res[i][1] in uids
+        if uids is None or res[i][1] in uids
+    }
+
+    # res = con.getmetadata(con.PARSED, 'uidmap')
+    # if len(res) == 1:
+    #     # means NIL
+    #     return {}
+    # puids = json.loads(res[0][1])
+    # return {
+    #     p.encode(): u.encode()
+    #     for p, u in puids.items()
+    #     if uids is None or u.encode() in uids
+    # }
+
+
+def fetch_parsed_uids(con):
+    con.select(con.PARSED)
+    res = con.fetch('1:*', 'BINARY.PEEK[1]')
+    return {
+        res[i][0].split()[2].decode(): res[i][1].decode()
+        for i in range(0, len(res), 2)
     }
 
 
@@ -68,10 +83,13 @@ def create_msg(raw, uid, time):
     body = txt.get_content()
 
     msg = MIMEPart()
-    for n, v in orig.items():
-        if n.lower() not in HEADERS:
+    headers = 'from to date message-id cc bcc in-reply-to references'.split()
+    for n in headers:
+        v = orig.get(n)
+        if not v:
             continue
         msg.add_header(n, v)
+
     msg.add_header('X-UID', '<%s>' % uid)
     msg.make_mixed()
 
@@ -104,7 +122,7 @@ def update_thrids(uids):
     con.select(con.PARSED)
     processed = set()
     threads = {}
-    pids = parsed_uids(uids)
+    pids = parsed_uids(con, uids)
     for pid, uid in pids.items():
         if pid in processed:
             continue
@@ -135,7 +153,7 @@ def parse_folder(criteria=None):
     con = imap.Local()
     uidnext = 1
     if criteria is None:
-        res = con.getmetadata('mlr/uidnext')
+        res = con.getmetadata(con.PARSED, 'uidnext')
         if len(res) > 1:
             uidnext = int(res[0][1].decode())
             print('## saved: uidnext=%s' % uidnext)
@@ -159,7 +177,7 @@ def parse_folder(criteria=None):
             puids = '1:*'
             count = 'all'
         else:
-            puids = b','.join(parsed_uids(uids))
+            puids = b','.join(parsed_uids(con, uids))
         if puids:
             count = count or puids.count(b',') + 1
             print('## delete %s messages from %r' % (count, con.PARSED))
@@ -167,8 +185,10 @@ def parse_folder(criteria=None):
             con.expunge()
 
     process_batches(parse_batch, uids, pool=futures.ProcessPoolExecutor())
+    con = imap.Local(None)
+    con.setmetadata(con.PARSED, 'uidnext', str(uidnext))
+    con.setmetadata(con.PARSED, 'uidmap', json.dumps(fetch_parsed_uids(con)))
     update_thrids(uids)
-    con.setmetadata('mlr/uidnext', str(uidnext))
 
 
 def fetch_batch(uids, folder):
@@ -239,7 +259,7 @@ def fetch_folder(folder='\\All'):
     print('## process "%s"' % folder)
     con = imap.Local()
     metakey = 'gmail/uidnext/%s' % folder.strip('\\').lower()
-    res = con.getmetadata(metakey)
+    res = con.getmetadata(con.ALL, metakey)
     if len(res) != 1:
         uidvalidity, uidnext = res[0][1].decode().split(',')
         uidnext = int(uidnext)
@@ -263,7 +283,7 @@ def fetch_folder(folder='\\All'):
     print('## folder(%s): %s new uids' % (folder, len(uids)))
     process_batches(fetch_batch, uids, folder)
     con = imap.Local()
-    con.setmetadata(metakey, '%s,%s' % (uidvalidity, uidnext))
+    res = con.setmetadata(con.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
     return uids
 
 
