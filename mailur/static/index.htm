@@ -36,7 +36,7 @@
     methods: {
       get: function() {
         var base_url = app.show_threads && '/threads?q=' || '/emails?q=';
-        fetch(base_url + app.query).then(function(response) {
+        fetch(base_url + encodeURIComponent(app.query)).then(function(response) {
           return response.json();
         }).then(function(res) {
           app.uids = res.uids;

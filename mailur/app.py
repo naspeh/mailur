@@ -20,25 +20,29 @@ async def threads(request):
     con.select(con.PARSED)
     res = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
     log.debug('query: %r; uids: %s', query, res[0])
-    uids = [i for i in re.split('[)( ]+', res[0].decode()) if i]
-    if not uids:
+    thrs = imap.parse_thread(res[0].decode())
+    if not thrs:
         return response.text('{}')
 
     msgs = {}
-    flags = {}
-    res = con.fetch(uids, 'FLAGS')
+    thrids = []
+    all_flags = {}
+    res = con.fetch(sum(thrs, []), 'FLAGS')
     for line in res:
-        fs = re.search(r'FLAGS \(([^)]*)\)', line.decode()).group(1).split()
-        thrid = [f for f in fs if f.startswith('T:')]
-        if not thrid:
-            continue
-        thrid = thrid[0][2:].encode()
-        flags.setdefault(thrid, set())
-        flags[thrid].update(fs)
+        uid, flags = (
+            re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode()).groups()
+        )
+        flags = flags.split()
+        if '#latest' in flags:
+            thrids.append(uid)
+        all_flags[uid] = flags
+    flags = {}
+    for uids in thrs:
+        thrid = set(uids).intersection(thrids).pop()
+        flags[thrid] = set(sum((all_flags[uid] for uid in uids), []))
 
     puids_map = parsed_uids(con, flags)
-    puids = b','.join(puids_map)
-    res = con.sort('(REVERSE DATE)', 'UTF-8', b'UID %s' % puids)
+    res = con.sort('(REVERSE DATE)', 'UTF-8', b'UID %s' % b','.join(puids_map))
     uids = [puids_map[i] for i in res[0].strip().split()]
     res = con.fetch(puids_map, '(BINARY.PEEK[2])')
     msgs = {}

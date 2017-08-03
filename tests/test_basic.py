@@ -151,28 +151,28 @@ def test_thrids(clean_users, gmail):
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
-    assert ['T:1'] == [i[0] for i in msgs]
+    assert ['#latest'] == [i[0] for i in msgs]
     gmail.add_emails([{}])
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
-    assert ['T:1', 'T:2'] == [i[0] for i in msgs]
+    assert ['#latest', '#latest'] == [i[0] for i in msgs]
 
     gmail.add_emails([{'in_reply_to': '<101@mlr>'}])
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
-    assert ['T:3', 'T:2', 'T:3'] == [i[0] for i in msgs]
+    assert ['', '#latest', '#latest'] == [i[0] for i in msgs]
 
     gmail.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
-    assert ['T:4', 'T:4', 'T:4', 'T:4'] == [i[0] for i in msgs]
+    assert ['', '', '', '#latest'] == [i[0] for i in msgs]
 
     parse.parse_folder('all')
     msgs = get_msgs('Parsed')
-    assert ['T:4', 'T:4', 'T:4', 'T:4'] == [i[0] for i in msgs]
+    assert ['', '', '', '#latest'] == [i[0] for i in msgs]
 
 
 def test_parsed_msg(gmail):

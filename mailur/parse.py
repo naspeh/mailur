@@ -109,33 +109,27 @@ def parse_batch(uids):
 def update_thrids(uids):
     con = imap.Local(None)
     con.select(con.PARSED)
-    processed = set()
-    threads = {}
+    msgs = set()
+    thrs = {}
     pids_map = parsed_uids(con)
-    pids = parsed_uids(con, uids)
-    res = con.thread(b'REFS UTF-8 INTHREAD REFS UID %s' % b','.join(pids))
+    pids = b','.join(parsed_uids(con, uids))
+    res = con.thread(b'REFS UTF-8 INTHREAD REFS UID %s' % pids)
     for thrids in imap.parse_thread(res[0].decode()):
-        processed.update(thrids)
+        msgs.update(thrids)
         if len(thrids) == 1:
             latest = thrids[0].encode()
         else:
             res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thrids))
             latest = res[0].rsplit(b' ', 1)[-1]
-        threads[pids_map[latest]] = thrids
+        thrs[pids_map[latest]] = thrids
 
     con.select(con.PARSED, readonly=False)
-    res = con.fetch(processed, 'FLAGS')
-    flags = set()
-    for i in res:
-        flag = re.search(r'FLAGS \(.*(T:\d+).*\)', i.decode())
-        if not flag:
-            continue
-        flags.add(flag.group(1))
-    if flags:
-        con.store(','.join(processed), '-FLAGS.SILENT', ' '.join(flags))
-    for thrid, ids in threads.items():
-        con.store(','.join(ids), '+FLAGS.SILENT', b'T:%s' % thrid)
-    print('## updated %s threads' % len(threads))
+    res = con.search('UID %s KEYWORD #latest' % ','.join(msgs))
+    clean = set(res[0].split()) - set(thrs)
+    if clean:
+        con.store(b','.join(clean), '-FLAGS.SILENT', '#latest')
+    con.store(b','.join(parsed_uids(con, thrs)), '+FLAGS.SILENT', '#latest')
+    print('## updated %s threads' % len(thrs))
 
 
 def parse_folder(criteria=None):
