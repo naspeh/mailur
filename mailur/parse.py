@@ -20,11 +20,11 @@ GM_FLAGS = {
 }
 GM_LABELS = {
     '\\Drafts': '\\Draft',
-    '\\Junk': '$Spam',
-    '\\Trash': '$Trash',
-    '\\Inbox': '$Inbox',
-    '\\Sent': '$Sent',
-    '\\Important': '$Important'
+    '\\Junk': '#spam',
+    '\\Trash': '#trash',
+    '\\Inbox': '#inbox',
+    '\\Sent': '#sent',
+    '\\Important': '#important'
 }
 
 
@@ -37,33 +37,22 @@ def binary_msg(txt, mimetype='text/plain'):
 
 
 def parsed_uids(con, uids=None):
-    con.select(con.PARSED)
-    res = con.fetch('1:*', 'BINARY.PEEK[1]')
-    return {
-        res[i][0].split()[2]: res[i][1]
-        for i in range(0, len(res), 2)
-        if uids is None or res[i][1] in uids
-    }
-
-    # res = con.getmetadata(con.PARSED, 'uidmap')
-    # if len(res) == 1:
-    #     # means NIL
-    #     return {}
-    # puids = json.loads(res[0][1])
-    # return {
-    #     p.encode(): u.encode()
-    #     for p, u in puids.items()
-    #     if uids is None or u.encode() in uids
-    # }
+    if uids is None:
+        return fetch_parsed_uids(con)
+    uids = list(i if isinstance(i, bytes) else i.encode() for i in uids)
+    return {k: v for k, v in fetch_parsed_uids(con).items() if v in uids}
 
 
-def fetch_parsed_uids(con):
-    con.select(con.PARSED)
-    res = con.fetch('1:*', 'BINARY.PEEK[1]')
-    return {
-        res[i][0].split()[2].decode(): res[i][1].decode()
-        for i in range(0, len(res), 2)
-    }
+def fetch_parsed_uids(con, *, force=False):
+    if not hasattr(fetch_parsed_uids, 'cache') or force:
+        con.select(con.PARSED)
+        res = con.fetch('1:*', 'BINARY.PEEK[1]')
+        uids = {
+            res[i][0].split()[2]: res[i][1]
+            for i in range(0, len(res), 2)
+        }
+        fetch_parsed_uids.cache = uids
+    return fetch_parsed_uids.cache
 
 
 def create_msg(raw, uid, time):
@@ -122,17 +111,17 @@ def update_thrids(uids):
     con.select(con.PARSED)
     processed = set()
     threads = {}
+    pids_map = parsed_uids(con)
     pids = parsed_uids(con, uids)
-    for pid, uid in pids.items():
-        if pid in processed:
-            continue
-        res = con.thread(b'REFS UTF-8 INTHREAD REFS UID %s' % pid)
-        thrids = [i for i in re.split('[)( ]+', res[0].decode()) if i]
+    res = con.thread(b'REFS UTF-8 INTHREAD REFS UID %s' % b','.join(pids))
+    for thrids in imap.parse_thread(res[0].decode()):
         processed.update(thrids)
-        res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thrids))
-        latest = res[0].rsplit(b' ', 1)[-1]
-        if latest in pids:
-            threads[pids[latest]] = thrids
+        if len(thrids) == 1:
+            latest = thrids[0].encode()
+        else:
+            res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thrids))
+            latest = res[0].rsplit(b' ', 1)[-1]
+        threads[pids_map[latest]] = thrids
 
     con.select(con.PARSED, readonly=False)
     res = con.fetch(processed, 'FLAGS')
@@ -144,9 +133,9 @@ def update_thrids(uids):
         flags.add(flag.group(1))
     if flags:
         con.store(','.join(processed), '-FLAGS.SILENT', ' '.join(flags))
-    for thrid, uids in threads.items():
-        con.store(','.join(uids), '+FLAGS.SILENT', b'T:%s' % thrid)
-    return '%s threads' % len(threads)
+    for thrid, ids in threads.items():
+        con.store(','.join(ids), '+FLAGS.SILENT', b'T:%s' % thrid)
+    print('## updated %s threads' % len(threads))
 
 
 def parse_folder(criteria=None):
@@ -187,7 +176,7 @@ def parse_folder(criteria=None):
     process_batches(parse_batch, uids, pool=futures.ProcessPoolExecutor())
     con = imap.Local(None)
     con.setmetadata(con.PARSED, 'uidnext', str(uidnext))
-    con.setmetadata(con.PARSED, 'uidmap', json.dumps(fetch_parsed_uids(con)))
+    fetch_parsed_uids(con, force=True)
     update_thrids(uids)
 
 

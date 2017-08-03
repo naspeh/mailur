@@ -88,12 +88,6 @@ def test_fetch_and_parse(clean_users, gmail, some):
     assert lm.select(lm.ALL) == [b'3']
     assert lm.select(lm.PARSED) == [b'3']
     assert lm.status(lm.PARSED, '(UIDNEXT)') == [b'Parsed (UIDNEXT 7)']
-    assert lm.getmetadata(lm.PARSED, 'uidmap') == [
-        (b'Parsed (/private/uidmap {30}', b'{"4": "1", "5": "2", "6": "3"}'),
-        b')'
-    ]
-    assert parse.parsed_uids(lm, [b'1']) == {b'4': b'1'}
-    assert parse.parsed_uids(lm) == {b'4': b'1', b'5': b'2', b'6': b'3'}
 
 
 def get_latest(box='All'):
@@ -137,32 +131,32 @@ def test_fetched_msg(gmail):
     parse.fetch_folder('\\All')
     flags, msg = get_latest()
     assert '\\Flagged' in flags
-    assert '$Inbox' in flags
-    assert '$Sent' in flags
+    assert '#inbox' in flags
+    assert '#sent' in flags
     assert 'test' not in flags
 
     gmail.add_emails([{}])
     parse.fetch_folder('\\Junk')
     flags, msg = get_latest()
-    assert '$Spam' in flags
+    assert '#spam' in flags
 
     gmail.add_emails([{}])
     parse.fetch_folder('\\Trash')
     flags, msg = get_latest()
-    assert '$Trash' in flags
+    assert '#trash' in flags
 
 
 def test_thrids(clean_users, gmail):
     gmail.add_emails([{}])
     parse.fetch_folder()
     parse.parse_folder()
-    flags, msg = get_latest('Parsed')
-    assert 'T:1' == flags
+    msgs = get_msgs('Parsed')
+    assert ['T:1'] == [i[0] for i in msgs]
     gmail.add_emails([{}])
     parse.fetch_folder()
     parse.parse_folder()
-    flags, msg = get_latest('Parsed')
-    assert 'T:2' == flags
+    msgs = get_msgs('Parsed')
+    assert ['T:1', 'T:2'] == [i[0] for i in msgs]
 
     gmail.add_emails([{'in_reply_to': '<101@mlr>'}])
     parse.fetch_folder()

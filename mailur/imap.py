@@ -146,7 +146,8 @@ def setmetadata(con, box, key, value):
     with cmd(con, 'SETMETADATA') as (tag, start, complete):
         args = '%s (%s %s)' % (box, key, json.dumps(value))
         start(args.encode() + CRLF)
-        return check(complete())
+        typ, data = complete()
+        return check(con._untagged_response(typ, data, 'METADATA'))
 
 
 def getmetadata(con, box, key):
