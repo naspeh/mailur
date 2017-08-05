@@ -6,7 +6,6 @@ from sanic import Sanic, response
 from sanic.config import LOGGING
 
 from . import log, imap
-from .parse import parsed_uids
 
 LOGGING['loggers']['mailur'] = {
     'level': 'DEBUG',
@@ -19,8 +18,8 @@ async def threads(request):
     con = imap.Local(None)
     con.select(con.PARSED)
     res = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
-    log.debug('query: %r; uids: %s', query, res[0])
     thrs = imap.parse_thread(res[0].decode())
+    log.debug('query: %r; threads: %s', query, len(thrs))
     if not thrs:
         return response.text('{}')
 
@@ -38,17 +37,19 @@ async def threads(request):
         all_flags[uid] = flags
     flags = {}
     for uids in thrs:
-        thrid = set(uids).intersection(thrids).pop()
-        flags[thrid] = set(sum((all_flags[uid] for uid in uids), []))
+        thrid = set(uids).intersection(thrids)
+        if not thrid:
+            continue
+        flags[thrid.pop()] = set(sum((all_flags[uid] for uid in uids), []))
 
-    puids_map = parsed_uids(con, flags)
-    res = con.sort('(REVERSE DATE)', 'UTF-8', b'UID %s' % b','.join(puids_map))
-    uids = [puids_map[i] for i in res[0].strip().split()]
-    res = con.fetch(puids_map, '(BINARY.PEEK[2])')
+    res = con.sort('(REVERSE DATE)', 'UTF-8', 'UID %s' % ','.join(flags))
+    uids = res[0].decode().strip().split()
+    res = con.fetch(uids, '(BINARY.PEEK[2])')
     msgs = {}
     for i in range(0, len(res), 2):
+        uid = res[i][0].decode().split()[2]
         data = json.loads(res[i][1].decode())
-        msgs[data['uid']] = data
+        msgs[uid] = data
 
     txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
     return response.text(txt)
@@ -56,28 +57,25 @@ async def threads(request):
 
 async def emails(request):
     query = request.raw_args['q']
-    con = imap.Local()
+    con = imap.Local(None)
+    con.select(con.PARSED)
     res = con.sort('(REVERSE DATE)', 'UTF-8', query)
-    log.debug('query: %r; uids: %s', query, res[0])
-    uids = res[0].strip().split()
+    uids = res[0].decode().strip().split()
+    log.debug('query: %r; messages: %s', query, len(uids))
     if not uids:
         return response.text('{}')
-    res = con.fetch(uids, '(UID FLAGS)')
-    flags = dict(
-        re.search(r'UID (\d+) FLAGS \(([^)]*)\)', i.decode()).groups()
-        for i in res
-    )
-    con.select(con.PARSED)
-    puids = b','.join(parsed_uids(con, uids))
-    log.debug('parsed uids: %s', puids)
-    res = con.fetch(puids, '(BINARY.PEEK[2])')
+    res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[2])')
     msgs = {}
+    flags = {}
     for i in range(0, len(res), 2):
+        uid, msg_flags = (
+            re.search(r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode())
+            .groups()
+        )
+        flags[uid] = msg_flags
         data = json.loads(res[i][1].decode())
-        msgs[data['uid']] = data
-    # missing = set(i.decode() for i in uids) - set(msgs)
-    # if missing:
-    #     raise ValueError('Missing parsed emails: %s', missing)
+        msgs[uid] = data
+
     txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
     return response.text(txt)
 

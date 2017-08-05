@@ -61,6 +61,10 @@ class Gmail:
             break
         return self.select(folder, readonly)
 
+    def __hash__(self):
+        box = getattr(self, 'current_box', None)
+        return hash((self.__class__, GM_USER, box))
+
     @staticmethod
     def login():
         con = IMAP4_SSL('imap.gmail.com')
@@ -91,6 +95,10 @@ class Local:
 
         if box is not None:
             self.select(box)
+
+    def __hash__(self):
+        box = getattr(self, 'current_box', None)
+        return hash((self.__class__, GM_USER, box))
 
     @staticmethod
     def login():
@@ -216,7 +224,7 @@ def parse_thread(line):
     return threads
 
 
-def partial_uids(uids, func, size=5000, threads=10):
+def partial_uids(uids, func, size=10000, threads=10):
     if not uids:
         return []
     elif len(uids) < size:

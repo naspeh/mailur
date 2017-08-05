@@ -1,4 +1,5 @@
 import datetime as dt
+import functools as ft
 import hashlib
 import json
 import re
@@ -43,16 +44,15 @@ def parsed_uids(con, uids=None):
     return {k: v for k, v in fetch_parsed_uids(con).items() if v in uids}
 
 
-def fetch_parsed_uids(con, *, force=False):
-    if not hasattr(fetch_parsed_uids, 'cache') or force:
-        con.select(con.PARSED)
-        res = con.fetch('1:*', 'BINARY.PEEK[1]')
-        uids = {
-            res[i][0].split()[2]: res[i][1]
-            for i in range(0, len(res), 2)
-        }
-        fetch_parsed_uids.cache = uids
-    return fetch_parsed_uids.cache
+@ft.lru_cache(maxsize=None)
+def fetch_parsed_uids(con):
+    con.select(con.PARSED)
+    res = con.fetch('1:*', 'BINARY.PEEK[1]')
+    uids = {
+        res[i][0].split()[2]: res[i][1]
+        for i in range(0, len(res), 2)
+    }
+    return uids
 
 
 def create_msg(raw, uid, time):
@@ -111,9 +111,7 @@ def update_thrids(uids):
     con.select(con.PARSED)
     msgs = set()
     thrs = {}
-    pids_map = parsed_uids(con)
-    pids = b','.join(parsed_uids(con, uids))
-    res = con.thread(b'REFS UTF-8 INTHREAD REFS UID %s' % pids)
+    res = con.thread(b'REFS UTF-8 INTHREAD REFS UID %s' % b','.join(uids))
     for thrids in imap.parse_thread(res[0].decode()):
         msgs.update(thrids)
         if len(thrids) == 1:
@@ -121,14 +119,14 @@ def update_thrids(uids):
         else:
             res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thrids))
             latest = res[0].rsplit(b' ', 1)[-1]
-        thrs[pids_map[latest]] = thrids
+        thrs[latest] = thrids
 
     con.select(con.PARSED, readonly=False)
     res = con.search('UID %s KEYWORD #latest' % ','.join(msgs))
     clean = set(res[0].split()) - set(thrs)
     if clean:
         con.store(b','.join(clean), '-FLAGS.SILENT', '#latest')
-    con.store(b','.join(parsed_uids(con, thrs)), '+FLAGS.SILENT', '#latest')
+    con.store(b','.join(thrs), '+FLAGS.SILENT', '#latest')
     print('## updated %s threads' % len(thrs))
 
 
@@ -167,11 +165,12 @@ def parse_folder(criteria=None):
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
-    process_batches(parse_batch, uids, pool=futures.ProcessPoolExecutor())
+    process_batches(parse_batch, uids)
     con = imap.Local(None)
     con.setmetadata(con.PARSED, 'uidnext', str(uidnext))
-    fetch_parsed_uids(con, force=True)
-    update_thrids(uids)
+
+    fetch_parsed_uids.cache_clear()
+    process_batches(update_thrids, parsed_uids(con, uids), size=10000)
 
 
 def fetch_batch(uids, folder):
@@ -284,7 +283,7 @@ def process_batches(func, uids, *args, size=1000, pool=None):
         return
 
     if pool is None:
-        pool = futures.ThreadPoolExecutor()
+        pool = futures.ProcessPoolExecutor()
 
     jobs = []
     with pool as pool:
