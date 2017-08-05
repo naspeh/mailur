@@ -47,7 +47,7 @@ def parsed_uids(con, uids=None):
 @ft.lru_cache(maxsize=None)
 def fetch_parsed_uids(con):
     con.select(con.PARSED)
-    res = con.fetch('1:*', 'BINARY.PEEK[1]')
+    res = con.fetch('1:*', 'BODY.PEEK[1]')
     uids = {
         res[i][0].split()[2]: res[i][1]
         for i in range(0, len(res), 2)
@@ -71,7 +71,7 @@ def create_msg(raw, uid, time):
     txt = orig.get_body(preferencelist=('plain', 'html'))
     body = txt.get_content()
 
-    msg = MIMEPart()
+    msg = MIMEPart(SMTPUTF8)
     headers = 'from to date message-id cc bcc in-reply-to references'.split()
     for n in headers:
         v = orig.get(n)
@@ -91,7 +91,7 @@ def create_msg(raw, uid, time):
 
 def parse_batch(uids):
     con = imap.Local()
-    res = con.fetch(b','.join(uids), '(UID INTERNALDATE FLAGS BINARY.PEEK[])')
+    res = con.fetch(b','.join(uids), '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
     def iter_msgs(res):
         for i in range(0, len(res), 2):
@@ -100,10 +100,17 @@ def parse_batch(uids):
                 r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
                 m[0].decode()
             ).groups()
-            msg = create_msg(m[1], uid, time)
             flags = flags.replace('\\Recent', '').strip()
-            yield time, flags, msg.as_bytes()
-    return con.multiappend(iter_msgs(res), box=con.PARSED)
+            try:
+                msg = create_msg(m[1], uid, time)
+                msg = msg.as_bytes()
+            except Exception as e:
+                print('ERROR(%s): %s' % (e, msg.items()))
+                continue
+            yield time, flags, msg
+
+    msgs = list(iter_msgs(res))
+    return con.multiappend(msgs, box=con.PARSED)
 
 
 def update_thrids(uids):
@@ -170,7 +177,7 @@ def parse_folder(criteria=None):
     con.setmetadata(con.PARSED, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
-    process_batches(update_thrids, parsed_uids(con, uids), size=10000)
+    process_batches(update_thrids, parsed_uids(con, uids), size=5000)
 
 
 def fetch_batch(uids, folder):
@@ -233,8 +240,9 @@ def fetch_batch(uids, folder):
             ]).strip()
             yield parts['time'], flags, raw
 
+    msgs = list(iter_msgs(res))
     con = imap.Local(box=None)
-    return con.multiappend(iter_msgs(res))
+    return con.multiappend(msgs)
 
 
 def fetch_folder(folder='\\All'):

@@ -127,6 +127,9 @@ def cmd(con, name):
 
 
 def multiappend(con, msgs, box=Local.ALL):
+    if not msgs:
+        return
+
     with cmd(con, 'APPEND') as (tag, start, complete):
         send = start
         for time, flags, msg in msgs:
