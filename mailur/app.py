@@ -42,7 +42,7 @@ async def threads(request):
             continue
         flags[thrid.pop()] = set(sum((all_flags[uid] for uid in uids), []))
 
-    res = con.sort('(REVERSE DATE)', 'UTF-8', 'UID %s' % ','.join(flags))
+    res = con.sort('(REVERSE DATE)', 'UTF-8', 'UID %s' % imap.pack_uids(flags))
     uids = res[0].decode().strip().split()
     res = con.fetch(uids, '(BINARY.PEEK[2])')
     msgs = {}

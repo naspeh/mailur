@@ -304,5 +304,9 @@ if __name__ == '__main__':
             fetch_folder('\\Drafts')
 
         parse_folder(sys.argv[-1] if len(sys.argv) > 1 else None)
+        # con = imap.Local(None)
+        # con.select(con.PARSED)
+        # uids = con.search('all')[0].split()
+        # process_batches(update_thrids, uids, size=5000)
     except KeyboardInterrupt:
         raise SystemExit('^C')

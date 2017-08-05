@@ -1,6 +1,5 @@
 import email
 import re
-from unittest.mock import patch, call, ANY
 
 from mailur import imap, parse
 
@@ -21,28 +20,6 @@ def test_binary_msg():
         '',
         '0J7RgtCy0LXRgjogNDI=\r\n'
     ])
-
-
-def test_thread_response():
-    assert imap.parse_thread('(1)(2 3)') == [['1'], ['2', '3']]
-    assert imap.parse_thread('(11)(21 31)') == [['11'], ['21', '31']]
-    assert imap.parse_thread('(1)(2 3 (4 5))') == [['1'], '2 3 4 5'.split()]
-    assert imap.parse_thread('(130 131 (132 133 134 (138)(139)(140)))') == [
-        '130 131 132 133 134 138 139 140'.split()
-    ]
-    assert imap.parse_thread(b'(1)(2)(3)') == [['1'], ['2'], ['3']]
-
-
-@patch('mailur.imap.select')
-def test_basic_gmail(select):
-    gm = imap.Gmail()
-    assert select.call_args == call(ANY, b'All', True)
-
-    gm.select_tag('\\Junk')
-    assert select.call_args == call(ANY, b'V/Spam', True)
-
-    gm.select_tag('\\Trash')
-    assert select.call_args == call(ANY, b'V/Trash', True)
 
 
 def test_fetch_and_parse(clean_users, gmail, some):

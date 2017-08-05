@@ -224,6 +224,28 @@ def parse_thread(line):
     return threads
 
 
+def pack_uids(uids):
+    uids = sorted(int(i) for i in uids)
+    result = ''
+    for i, uid in enumerate(uids):
+        if i == 0:
+            result += str(uid)
+        elif uid - uids[i-1] == 1:
+            if len(uids) == (i + 1):
+                if not result.endswith(':'):
+                    result += ':'
+                result += str(uid)
+            elif result.endswith(':'):
+                pass
+            else:
+                result += ':'
+        elif result.endswith(':'):
+            result += '%d,%d' % (uids[i-1], uid)
+        else:
+            result += ',%s' % uid
+    return result
+
+
 def partial_uids(uids, func, size=10000, threads=10):
     if not uids:
         return []
