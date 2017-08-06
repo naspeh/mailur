@@ -18,7 +18,7 @@ async def threads(request):
     con = imap.Local(None)
     con.select(con.PARSED)
     res = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
-    thrs = imap.parse_thread(res[0].decode())
+    thrs = imap.parse_thread(res[0])
     log.debug('query: %r; threads: %s', query, len(thrs))
     if not thrs:
         return response.text('{}')
@@ -43,7 +43,7 @@ async def threads(request):
         flags[thrid.pop()] = set(sum((all_flags[uid] for uid in uids), []))
 
     res = con.sort('(REVERSE DATE)', 'UTF-8', 'UID %s' % imap.pack_uids(flags))
-    uids = res[0].decode().strip().split()
+    uids = res[0].decode().split()
     res = con.fetch(uids, '(BINARY.PEEK[2])')
     msgs = {}
     for i in range(0, len(res), 2):
@@ -60,7 +60,7 @@ async def emails(request):
     con = imap.Local(None)
     con.select(con.PARSED)
     res = con.sort('(REVERSE DATE)', 'UTF-8', query)
-    uids = res[0].decode().strip().split()
+    uids = res[0].decode().split()
     log.debug('query: %r; messages: %s', query, len(uids))
     if not uids:
         return response.text('{}')
