@@ -49,10 +49,8 @@ service imap-login {
   }
 }
 
-# strange behavior in dovecot-2.2.29 when applying flags for mdbox
-# mail_location = mdbox:~/mails
-# mdbox_rotate_size = 100M
-mail_location = sdbox:~/mails
+mail_location = mdbox:~/mails
+mdbox_rotate_size = 100M
 
 auth_master_user_separator = *
 passdb {
