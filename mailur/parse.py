@@ -101,10 +101,12 @@ def parse_batch(uids):
             ).groups()
             flags = flags.replace('\\Recent', '').strip()
             try:
-                msg = create_msg(m[1], uid, time)
-                msg = msg.as_bytes()
+                msg_obj = create_msg(m[1], uid, time)
+                msg = msg_obj.as_bytes()
             except Exception as e:
-                print('ERROR(%s): %s' % (e, msg.items()))
+                print('ERROR(%s): uid=%s\n%s' % (e, uid, '\n'.join(
+                    '  %s: %s' % (n, v) for n, v in msg_obj.raw_items()
+                )))
                 continue
             yield time, flags, msg
 
