@@ -75,12 +75,14 @@ class Gmail:
 class Local:
     ALL = 'All'
     PARSED = 'Parsed'
+    TAGS = 'Tags'
 
     def __init__(self, box=ALL):
         con = self.login()
         con.debug = IMAP_DEBUG
         con.recreate = ft.partial(recreate, con, self.login)
 
+        self.append = check_fn(con.append)
         self.expunge = check_fn(con.expunge)
         self.store = check_uid(con, 'STORE')
         self.sort = check_uid(con, 'SORT')
@@ -190,9 +192,7 @@ def fetch(con, uids, fields):
         @ft.wraps(fetch)
         def fn(uids, once=False):
             c = con if once else con.recreate()
-            uids = ','.join(
-                i if isinstance(i, str) else i.decode() for i in uids
-            )
+            uids = ','.join(uids)
             return fetch(c, uids, fields)
         res = partial_uids(list(uids), fn)
         return sum(res, [])

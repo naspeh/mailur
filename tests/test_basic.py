@@ -102,15 +102,20 @@ def test_fetched_msg(gmail):
     thrid = msg.get('X-GM-THRID')
     assert thrid and thrid == '<10100>'
 
+    lm = imap.Local()
     gmail.add_emails([
-        {'flags': '\\Flagged', 'labels': '"\\\\Inbox" "\\\\Sent" test'}
+        {'flags': '\\Flagged', 'labels': '"\\\\Inbox" "\\\\Sent" label'}
     ])
     parse.fetch_folder('\\All')
     flags, msg = get_latest()
-    assert '\\Flagged' in flags
-    assert '#inbox' in flags
-    assert '#sent' in flags
-    assert 'test' not in flags
+    assert '\\Flagged \\Recent #inbox #sent #t1' == flags
+    assert parse.get_tags(lm) == {'#t1': 'label'}
+
+    gmail.add_emails([{'labels': 'label "another label"'}])
+    parse.fetch_folder('\\All')
+    flags, msg = get_latest()
+    assert '\\Recent #t1 #t2' == flags
+    assert parse.get_tags(lm) == {'#t1': 'label', '#t2': 'another label'}
 
     gmail.add_emails([{}])
     parse.fetch_folder('\\Junk')

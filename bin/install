@@ -95,6 +95,9 @@ namespace {
     mailbox Parsed {
         auto = subscribe
     }
+    mailbox Tags {
+        auto = subscribe
+    }
     mailbox Test {
         auto = subscribe
     }
