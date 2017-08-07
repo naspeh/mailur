@@ -130,7 +130,7 @@ def parse_batch(uids):
                 msg_obj = create_msg(m[1], uid, time)
                 msg = msg_obj.as_bytes()
             except Exception as e:
-                print('ERROR(%s): uid=%s\n%s' % (e, uid, '\n'.join(
+                print('## ERROR(%s): uid=%s\n%s' % (e, uid, '\n'.join(
                     '  %s: %s' % (n, v) for n, v in msg_obj.raw_items()
                 )))
                 continue
@@ -310,7 +310,7 @@ def process_batch(num, func, uids, *args):
     return res
 
 
-def process_batches(func, uids, *args, size=1000, pool=None):
+def process_batches(func, uids, *args, size=1000, pool=None, pool_size=None):
     if not uids:
         return
     elif len(uids) < size:
@@ -318,16 +318,23 @@ def process_batches(func, uids, *args, size=1000, pool=None):
         return
 
     if pool is None:
-        pool = futures.ProcessPoolExecutor()
+        pool = futures.ProcessPoolExecutor(pool_size)
 
-    jobs = []
+    jobs = {}
     with pool as pool:
         for i in range(0, len(uids), size):
             num = '%02d' % (i // size + 1)
             few = uids[i:i+size]
-            jobs.append(pool.submit(process_batch, num, func, few, *args))
+            future = pool.submit(process_batch, num, func, few, *args)
+            jobs[future] = num
             print('## %s#%s: %s uids' % (func.__name__, num, len(few)))
-    return [f.result() for f in futures.as_completed(jobs)]
+    result = []
+    for f in futures.as_completed(jobs):
+        try:
+            result.append(f.result())
+        except Exception as e:
+            print('## %s#%s: ERROR(%s)', func.__name__, jobs[f], e)
+    return result
 
 
 if __name__ == '__main__':
