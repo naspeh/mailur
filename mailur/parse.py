@@ -140,13 +140,17 @@ def parse_batch(uids):
     return con.multiappend(msgs, box=con.PARSED)
 
 
-def update_thrids(uids):
+def update_threads(uids=None):
     con = imap.Local(None)
     con.select(con.PARSED)
+    if uids is None:
+        uids = con.search('all')[0].decode().split()
     msgs = set()
     thrs = {}
-    res = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+    res = con.thread('REFS UTF-8 INTHREAD REFS ALL')
     for thrids in imap.parse_thread(res[0].decode()):
+        if not set(thrids).intersection(uids):
+            continue
         msgs.update(thrids)
         if len(thrids) == 1:
             latest = thrids[0]
@@ -156,11 +160,11 @@ def update_thrids(uids):
         thrs[latest] = thrids
 
     con.select(con.PARSED, readonly=False)
-    res = con.search('UID %s KEYWORD #latest' % ','.join(msgs))
-    clean = set(res[0].decode().split()) - set(thrs)
+    res = con.search('KEYWORD #latest')
+    clean = set(res[0].decode().split()).intersection(msgs) - set(thrs)
     if clean:
-        con.store(','.join(clean), '-FLAGS.SILENT', '#latest')
-    con.store(','.join(thrs), '+FLAGS.SILENT', '#latest')
+        con.store(clean, '-FLAGS.SILENT', '#latest')
+    con.store(thrs, '+FLAGS.SILENT', '#latest')
     print('## updated %s threads' % len(thrs))
 
 
@@ -204,7 +208,7 @@ def parse_folder(criteria=None):
     con.setmetadata(con.PARSED, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
-    process_batches(update_thrids, parsed_uids(con, uids), size=5000)
+    update_threads(parsed_uids(con, uids))
 
 
 def fetch_batch(uids, folder):
@@ -346,9 +350,6 @@ if __name__ == '__main__':
             fetch_folder('\\Drafts')
 
         parse_folder(sys.argv[-1] if len(sys.argv) > 1 else None)
-        # con = imap.Local(None)
-        # con.select(con.PARSED)
-        # uids = con.search('all')[0].decode().split()
-        # process_batches(update_thrids, uids, size=5000)
+        update_threads()
     except KeyboardInterrupt:
         raise SystemExit('^C')

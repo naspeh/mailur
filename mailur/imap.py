@@ -84,10 +84,10 @@ class Local:
 
         self.append = check_fn(con.append)
         self.expunge = check_fn(con.expunge)
-        self.store = check_uid(con, 'STORE')
         self.sort = check_uid(con, 'SORT')
         self.thread = check_uid(con, 'THREAD')
         self.fetch = ft.partial(fetch, con)
+        self.store = ft.partial(store, con)
         self.select = ft.partial(select, con)
         self.status = ft.partial(status, con)
         self.search = ft.partial(search, con)
@@ -197,6 +197,18 @@ def fetch(con, uids, fields):
         res = partial_uids(list(uids), fn)
         return sum(res, [])
     return check(con.uid('FETCH', uids, fields))
+
+
+def store(con, uids, command, flags):
+    if not isinstance(uids, (str, bytes)):
+        @ft.wraps(store)
+        def fn(uids, once=False):
+            c = con if once else con.recreate()
+            uids = ','.join(uids)
+            return store(c, uids, command, flags)
+        res = partial_uids(list(uids), fn)
+        return sum(res, [])
+    return check(con.uid('STORE', uids, command, flags))
 
 
 def parse_thread(line):
