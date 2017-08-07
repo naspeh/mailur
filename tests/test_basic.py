@@ -1,7 +1,7 @@
 import email
 import re
 
-from mailur import imap, parse
+from mailur import local, parse
 
 
 def test_binary_msg():
@@ -22,53 +22,53 @@ def test_binary_msg():
     ])
 
 
-def test_fetch_and_parse(clean_users, gmail, some):
-    lm = imap.Local()
+def test_fetch_and_parse(clean_users, gm_client, some):
+    lm = local.client()
     parse.fetch_folder()
     parse.parse_folder()
 
-    def gmail_uidnext():
-        res = lm.getmetadata(lm.ALL, 'gmail/uidnext/all')
+    def gm_uidnext():
+        res = lm.getmetadata(local.ALL, 'gmail/uidnext/all')
         assert res == [(b'All (/private/gmail/uidnext/all {12}', some), b')']
         return some.value
 
     def mlr_uidnext():
-        res = lm.getmetadata(lm.PARSED, 'uidnext')
+        res = lm.getmetadata(local.PARSED, 'uidnext')
         assert res == [(b'Parsed (/private/uidnext {1}', some), b')']
         return some.value
 
-    assert gmail_uidnext().endswith(b',1')
-    assert lm.getmetadata(lm.PARSED, 'uidnext') == [
+    assert gm_uidnext().endswith(b',1')
+    assert lm.getmetadata(local.PARSED, 'uidnext') == [
         b'Parsed (/private/uidnext NIL)'
     ]
 
-    gmail.add_emails()
+    gm_client.add_emails()
     parse.fetch_folder()
     parse.parse_folder()
-    assert gmail_uidnext().endswith(b',2')
+    assert gm_uidnext().endswith(b',2')
     assert mlr_uidnext() == b'2'
-    assert lm.select(lm.ALL) == [b'1']
-    assert lm.select(lm.PARSED) == [b'1']
+    assert lm.select(local.ALL) == [b'1']
+    assert lm.select(local.PARSED) == [b'1']
 
-    gmail.add_emails([{'txt': '1'}, {'txt': '2'}])
+    gm_client.add_emails([{'txt': '1'}, {'txt': '2'}])
     parse.fetch_folder()
     parse.parse_folder()
-    assert gmail_uidnext().endswith(b',4')
+    assert gm_uidnext().endswith(b',4')
     assert mlr_uidnext() == b'4'
-    assert lm.select(lm.ALL) == [b'3']
-    assert lm.select(lm.PARSED) == [b'3']
+    assert lm.select(local.ALL) == [b'3']
+    assert lm.select(local.PARSED) == [b'3']
 
     parse.fetch_folder()
     parse.parse_folder('all')
-    assert gmail_uidnext().endswith(b',4')
+    assert gm_uidnext().endswith(b',4')
     assert mlr_uidnext() == b'4'
-    assert lm.select(lm.ALL) == [b'3']
-    assert lm.select(lm.PARSED) == [b'3']
-    assert lm.status(lm.PARSED, '(UIDNEXT)') == [b'Parsed (UIDNEXT 7)']
+    assert lm.select(local.ALL) == [b'3']
+    assert lm.select(local.PARSED) == [b'3']
+    assert lm.status(local.PARSED, '(UIDNEXT)') == [b'Parsed (UIDNEXT 7)']
 
 
 def get_latest(box='All'):
-    lm = imap.Local(box)
+    lm = local.client(box)
     res = lm.fetch('*', '(flags body[])')
     msg = res[0][1]
     print(msg.decode())
@@ -80,7 +80,7 @@ def get_latest(box='All'):
 
 
 def get_msgs(box='All', uids='1:*'):
-    lm = imap.Local(box)
+    lm = local.client(box)
     res = lm.fetch(uids, '(flags body[])')
     return [(
         re.search('FLAGS \(([^)]*)\)', res[i][0].decode()).group(1),
@@ -88,8 +88,8 @@ def get_msgs(box='All', uids='1:*'):
     ) for i in range(0, len(res), 2)]
 
 
-def test_fetched_msg(gmail):
-    gmail.add_emails()
+def test_fetched_msg(gm_client):
+    gm_client.add_emails()
     parse.fetch_folder('\\All')
     _, msg = get_latest()
     # headers
@@ -102,8 +102,8 @@ def test_fetched_msg(gmail):
     thrid = msg.get('X-GM-THRID')
     assert thrid and thrid == '<10100>'
 
-    lm = imap.Local()
-    gmail.add_emails([
+    lm = local.client()
+    gm_client.add_emails([
         {'flags': '\\Flagged', 'labels': '"\\\\Inbox" "\\\\Sent" label'}
     ])
     parse.fetch_folder('\\All')
@@ -111,42 +111,42 @@ def test_fetched_msg(gmail):
     assert '\\Flagged \\Recent #inbox #sent #t1' == flags
     assert parse.get_tags(lm) == {'#t1': 'label'}
 
-    gmail.add_emails([{'labels': 'label "another label"'}])
+    gm_client.add_emails([{'labels': 'label "another label"'}])
     parse.fetch_folder('\\All')
     flags, msg = get_latest()
     assert '\\Recent #t1 #t2' == flags
     assert parse.get_tags(lm) == {'#t1': 'label', '#t2': 'another label'}
 
-    gmail.add_emails([{}])
+    gm_client.add_emails([{}])
     parse.fetch_folder('\\Junk')
     flags, msg = get_latest()
     assert '#spam' in flags
 
-    gmail.add_emails([{}])
+    gm_client.add_emails([{}])
     parse.fetch_folder('\\Trash')
     flags, msg = get_latest()
     assert '#trash' in flags
 
 
-def test_thrids(clean_users, gmail):
-    gmail.add_emails([{}])
+def test_thrids(clean_users, gm_client):
+    gm_client.add_emails([{}])
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
     assert ['#latest'] == [i[0] for i in msgs]
-    gmail.add_emails([{}])
+    gm_client.add_emails([{}])
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
     assert ['#latest', '#latest'] == [i[0] for i in msgs]
 
-    gmail.add_emails([{'in_reply_to': '<101@mlr>'}])
+    gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
     assert ['', '#latest', '#latest'] == [i[0] for i in msgs]
 
-    gmail.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
+    gm_client.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
     parse.fetch_folder()
     parse.parse_folder()
     msgs = get_msgs('Parsed')
@@ -157,8 +157,8 @@ def test_thrids(clean_users, gmail):
     assert ['', '', '', '#latest'] == [i[0] for i in msgs]
 
 
-def test_parsed_msg(gmail):
-    gmail.add_emails([{'flags': '\\Flagged'}])
+def test_parsed_msg(gm_client):
+    gm_client.add_emails([{'flags': '\\Flagged'}])
     parse.fetch_folder()
     parse.parse_folder()
     flags, msg = get_latest('Parsed')

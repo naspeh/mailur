@@ -4,11 +4,8 @@ import os
 import re
 from concurrent import futures
 from contextlib import contextmanager
-from imaplib import CRLF, IMAP4, IMAP4_SSL
+from imaplib import CRLF
 
-USER = os.environ.get('MLR_USER', 'user')
-GM_USER = os.environ.get('GM_USER')
-GM_PASS = os.environ.get('GM_PASS')
 IMAP_DEBUG = int(os.environ.get('IMAP_DEBUG', 1))
 
 
@@ -34,86 +31,39 @@ def check_uid(con, name):
     return check_fn(ft.partial(con.uid, name))
 
 
-class Gmail:
-    def __init__(self, tag='\\All'):
-        con = self.login()
-        con.debug = IMAP_DEBUG
-        con.recreate = ft.partial(recreate, con, self.login)
+def client_readonly(ctx, connect, debug=IMAP_DEBUG):
+    con = connect()
+    con.debug = debug
+    con.recreate = ft.partial(recreate, con, connect)
 
-        self.logout = con.logout
-        self.list = check_fn(con.list)
-        self.fetch = check_uid(con, 'FETCH')
-        self.select = ft.partial(select, con)
-        self.status = ft.partial(status, con)
-        self.search = ft.partial(search, con)
-
-        if tag is not None:
-            self.select_tag(tag)
-
-    def select_tag(self, tag, readonly=True):
-        if isinstance(tag, str):
-            tag = tag.encode()
-        folders = self.list()
-        for f in folders:
-            if not re.search(br'^\([^)]*?%s' % re.escape(tag), f):
-                continue
-            folder = f.rsplit(b' "/" ', 1)[1]
-            break
-        return self.select(folder, readonly)
-
-    def __hash__(self):
-        box = getattr(self, 'current_box', None)
-        return hash((self.__class__, GM_USER, box))
-
-    @staticmethod
-    def login():
-        con = IMAP4_SSL('imap.gmail.com')
-        con.login(GM_USER, GM_PASS)
-        return con
+    ctx.logout = con.logout
+    ctx.list = check_fn(con.list)
+    ctx.fetch = check_uid(con, 'FETCH')
+    ctx.status = ft.partial(status, con)
+    ctx.search = ft.partial(search, con)
+    ctx.select = ft.partial(select, con)
+    ctx.select_tag = ft.partial(select_tag, con)
+    return con
 
 
-class Local:
-    ALL = 'All'
-    PARSED = 'Parsed'
-    TAGS = 'Tags'
-
-    def __init__(self, box=ALL):
-        con = self.login()
-        con.debug = IMAP_DEBUG
-        con.recreate = ft.partial(recreate, con, self.login)
-
-        self.append = check_fn(con.append)
-        self.expunge = check_fn(con.expunge)
-        self.sort = check_uid(con, 'SORT')
-        self.thread = check_uid(con, 'THREAD')
-        self.fetch = ft.partial(fetch, con)
-        self.store = ft.partial(store, con)
-        self.select = ft.partial(select, con)
-        self.status = ft.partial(status, con)
-        self.search = ft.partial(search, con)
-        self.getmetadata = ft.partial(getmetadata, con)
-        self.setmetadata = ft.partial(setmetadata, con)
-        self.multiappend = ft.partial(multiappend, con)
-
-        if box is not None:
-            self.select(box)
-
-    def __hash__(self):
-        box = getattr(self, 'current_box', None)
-        return hash((self.__class__, GM_USER, box))
-
-    @staticmethod
-    def login():
-        con = IMAP4('localhost', 143)
-        check(con.login('%s*root' % USER, 'root'))
-        return con
+def client_full(ctx, connect, debug=IMAP_DEBUG):
+    con = client_readonly(ctx, connect, debug=debug)
+    ctx.append = check_fn(con.append)
+    ctx.expunge = check_fn(con.expunge)
+    ctx.sort = check_uid(con, 'SORT')
+    ctx.thread = ft.partial(thread, con)
+    ctx.fetch = ft.partial(fetch, con)
+    ctx.store = ft.partial(store, con)
+    ctx.getmetadata = ft.partial(getmetadata, con)
+    ctx.setmetadata = ft.partial(setmetadata, con)
+    ctx.multiappend = ft.partial(multiappend, con)
 
 
-def recreate(con, login):
+def recreate(con, connect):
     box = getattr(con, 'current_box', None)
-    con = login()
+    con = connect()
     if box:
-        con.select(box)
+        select(con, box)
     return con
 
 
@@ -128,7 +78,7 @@ def cmd(con, name):
     yield tag, start, lambda: con._command_complete(name, tag)
 
 
-def multiappend(con, msgs, box=Local.ALL):
+def multiappend(con, box, msgs):
     if not msgs:
         return
 
@@ -178,6 +128,18 @@ def select(con, box, readonly=True):
     return res
 
 
+def select_tag(con, tag, readonly=True):
+    if isinstance(tag, str):
+        tag = tag.encode()
+    folders = check(con.list())
+    for f in folders:
+        if not re.search(br'^\([^)]*?%s' % re.escape(tag), f):
+            continue
+        folder = f.rsplit(b' "/" ', 1)[1]
+        break
+    return select(con, folder, readonly)
+
+
 def status(con, box, fields):
     box = con.current_box if box is None else box
     return check(con.status(box, fields))
@@ -185,6 +147,11 @@ def status(con, box, fields):
 
 def search(con, *criteria):
     return check(con.uid('SEARCH', None, *criteria))
+
+
+def thread(con, *criteria):
+    res = check(con.uid('THREAD', *criteria))
+    return parse_thread(res[0].decode())
 
 
 def fetch(con, uids, fields):

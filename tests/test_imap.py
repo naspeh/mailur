@@ -1,11 +1,11 @@
 from unittest.mock import patch, call, ANY
 
-from mailur import imap
+from mailur import imap, gmail
 
 
 @patch('mailur.imap.select')
 def test_basic_gmail(select):
-    gm = imap.Gmail()
+    gm = gmail.client()
     assert select.call_args == call(ANY, b'All', True)
 
     gm.select_tag('\\Junk')

@@ -19,8 +19,8 @@ def init():
 
 
 @pytest.fixture
-def setup(gmail):
-    with patch('mailur.imap.USER', 'test1'):
+def setup(gm_client):
+    with patch('mailur.local.USER', 'test1'):
         yield
 
 
@@ -51,37 +51,36 @@ def some():
     return Some()
 
 
-def mock_gmail(self):
+def gm_fake():
     def uid(name, *a, **kw):
-        responces = getattr(gmail, name.lower(), None)
+        responces = getattr(gm_client, name.lower(), None)
         if responces:
             return responces.pop()
-        return con.uid_origin(name, *a, **kw)
+        return gm_client._uid(name, *a, **kw)
 
     con = imaplib.IMAP4('localhost', 143)
     con.login('test2*root', 'root')
 
-    con.uid_origin = con.uid
+    gm_client.con = con
+    gm_client._uid = con.uid
+    gm_client._select = con.select
     con.uid = uid
-    con.select_origin = con.select
-    con.select = lambda n, readonly: con.select_origin('All', readonly)
-    self.append = con.append
-    gmail.con = con
+    con.select = lambda n, readonly: gm_client._select('All', readonly)
     return con
 
 
 @pytest.fixture
-def gmail():
-    from mailur import parse, imap
+def gm_client():
+    from mailur import parse, gmail
 
     def add_emails(items=None):
-        con = imap.Gmail()
+        gmail.client()
         if items is None:
             items = [{}]
-        gmail.fetch = [('OK', [])]
+        gm_client.fetch = [('OK', [])]
         for item in items:
-            gmail.uid += 1
-            uid = gmail.uid
+            gm_client.uid += 1
+            uid = gm_client.uid
             gid = 100 * uid
             txt = item.get('txt', '42')
             flags = item.get('flags', '').encode()
@@ -96,8 +95,8 @@ def gmail():
                 msg.add_header('References', refs)
 
             msg = msg.as_bytes()
-            con.append('All', None, None, msg)
-            gmail.fetch[0][1].extend([
+            gm_client.con.append('All', None, None, msg)
+            gm_client.fetch[0][1].extend([
                 (
                     b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '
                     b'INTERNALDATE "08-Jul-2017 09:08:30 +0000" FLAGS (%s) '
@@ -106,11 +105,8 @@ def gmail():
                 ),
                 b')'
             ])
-    gmail.add_emails = add_emails
-    gmail.uid = 100
-    gmail.con = None
+    gm_client.add_emails = add_emails
+    gm_client.uid = 100
 
-    with patch('mailur.imap.Gmail.login', mock_gmail):
-        yield gmail
-        if gmail.con and not gmail.con.file.closed:
-            gmail.con.logout()
+    with patch('mailur.gmail.connect', gm_fake):
+        yield gm_client

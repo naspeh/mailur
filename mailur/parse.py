@@ -10,7 +10,7 @@ from email.parser import BytesParser
 from email.policy import SMTPUTF8
 from email.utils import parsedate_to_datetime
 
-from . import imap
+from . import local, gmail
 
 GM_FLAGS = {
     '\\Answered': '\\Answered',
@@ -39,15 +39,9 @@ def binary_msg(txt, mimetype='text/plain'):
     return msg
 
 
-def parsed_uids(con, uids=None):
-    if uids is None:
-        return fetch_parsed_uids(con)
-    return {k: v for k, v in fetch_parsed_uids(con).items() if v in uids}
-
-
 @ft.lru_cache(maxsize=None)
 def get_tags(con, reverse=False):
-    count = con.select(con.TAGS)
+    count = con.select(local.TAGS)
     if count == [b'0']:
         return {}
     res = con.fetch('1:*', 'BODY.PEEK[1]')
@@ -64,15 +58,21 @@ def get_tag(con, name):
         return tag
     msg = binary_msg(name)
     msg.add_header('Subject', name)
-    res = con.append(con.TAGS, '', None, msg.as_bytes())
+    res = con.append(local.TAGS, '', None, msg.as_bytes())
     get_tags.cache_clear()
     tag = re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
     return '#t' + tag
 
 
+def parsed_uids(con, uids=None):
+    if uids is None:
+        return fetch_parsed_uids(con)
+    return {k: v for k, v in fetch_parsed_uids(con).items() if v in uids}
+
+
 @ft.lru_cache(maxsize=None)
 def fetch_parsed_uids(con):
-    con.select(con.PARSED)
+    con.select(local.PARSED)
     res = con.fetch('1:*', 'BODY.PEEK[1]')
     return {
         res[i][0].split()[2].decode(): res[i][1].decode()
@@ -115,7 +115,7 @@ def create_msg(raw, uid, time):
 
 
 def parse_batch(uids):
-    con = imap.Local()
+    con = local.client(local.ALL)
     res = con.fetch(uids, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
     def iter_msgs(res):
@@ -137,18 +137,17 @@ def parse_batch(uids):
             yield time, flags, msg
 
     msgs = list(iter_msgs(res))
-    return con.multiappend(msgs, box=con.PARSED)
+    return con.multiappend(local.PARSED, msgs)
 
 
 def update_threads(uids=None):
-    con = imap.Local(None)
-    con.select(con.PARSED)
+    con = local.client()
     if uids is None:
         uids = con.search('all')[0].decode().split()
     msgs = set()
     thrs = {}
     res = con.thread('REFS UTF-8 INTHREAD REFS ALL')
-    for thrids in imap.parse_thread(res[0].decode()):
+    for thrids in res:
         if not set(thrids).intersection(uids):
             continue
         msgs.update(thrids)
@@ -159,7 +158,7 @@ def update_threads(uids=None):
             latest = res[0].decode().rsplit(' ', 1)[-1]
         thrs[latest] = thrids
 
-    con.select(con.PARSED, readonly=False)
+    con.select(local.PARSED, readonly=False)
     res = con.search('KEYWORD #latest')
     clean = set(res[0].decode().split()).intersection(msgs) - set(thrs)
     if clean:
@@ -169,10 +168,10 @@ def update_threads(uids=None):
 
 
 def parse_folder(criteria=None):
-    con = imap.Local()
+    con = local.client(local.ALL)
     uidnext = 1
     if criteria is None:
-        res = con.getmetadata(con.PARSED, 'uidnext')
+        res = con.getmetadata(local.PARSED, 'uidnext')
         if len(res) > 1:
             uidnext = int(res[0][1].decode())
             print('## saved: uidnext=%s' % uidnext)
@@ -184,12 +183,12 @@ def parse_folder(criteria=None):
         print('## all parsed already')
         return
 
-    res = con.status(con.ALL, '(UIDNEXT)')
+    res = con.status(local.ALL, '(UIDNEXT)')
     uidnext = re.search(r'UIDNEXT (?P<next>\d+)', res[0].decode()).group(1)
     print('## new: uidnext: %s' % uidnext)
 
     print('## criteria: %r; %s uids' % (criteria, len(uids)))
-    count = con.select(con.PARSED, readonly=False)
+    count = con.select(local.PARSED, readonly=False)
     if count[0] != b'0':
         count = None
         if criteria.lower() == 'all':
@@ -199,27 +198,27 @@ def parse_folder(criteria=None):
             puids = ','.join(parsed_uids(con, uids))
         if puids:
             count = count or puids.count(',') + 1
-            print('## delete %s messages from %r' % (count, con.PARSED))
+            print('## delete %s messages from %r' % (count, local.PARSED))
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
     process_batches(parse_batch, uids)
-    con = imap.Local(None)
-    con.setmetadata(con.PARSED, 'uidnext', str(uidnext))
+    con = local.client(None)
+    con.setmetadata(local.PARSED, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
     update_threads(parsed_uids(con, uids))
 
 
 def fetch_batch(uids, folder):
-    gm = imap.Gmail(folder)
+    gm = gmail.client(folder)
     fields = (
         '('
         'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
         ')'
     )
     res = gm.fetch(','.join(uids), fields)
-    con = imap.Local(box=None)
+    con = local.client(None)
 
     def flag(m):
         flag = m.group()
@@ -273,21 +272,21 @@ def fetch_batch(uids, folder):
             yield parts['time'], flags, raw
 
     msgs = list(iter_msgs(res))
-    return con.multiappend(msgs)
+    return con.multiappend(local.ALL, msgs)
 
 
 def fetch_folder(folder='\\All'):
     print('## process "%s"' % folder)
-    con = imap.Local()
+    con = local.client()
     metakey = 'gmail/uidnext/%s' % folder.strip('\\').lower()
-    res = con.getmetadata(con.ALL, metakey)
+    res = con.getmetadata(local.ALL, metakey)
     if len(res) != 1:
         uidvalidity, uidnext = res[0][1].decode().split(',')
         uidnext = int(uidnext)
     else:
         uidvalidity = uidnext = None
     print('## saved: uidvalidity=%s uidnext=%s' % (uidvalidity, uidnext))
-    gm = imap.Gmail(folder)
+    gm = gmail.client(folder)
     res = gm.status(None, '(UIDNEXT UIDVALIDITY)')
     gmfolder = re.search(
         r'(UIDNEXT (?P<uidnext>\d+) ?|UIDVALIDITY (?P<uid>\d+)){2}',
@@ -303,8 +302,8 @@ def fetch_folder(folder='\\All'):
     uidnext = gmfolder['uidnext']
     print('## folder(%s): %s new uids' % (folder, len(uids)))
     process_batches(fetch_batch, uids, folder)
-    con = imap.Local()
-    res = con.setmetadata(con.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
+    con = local.client(None)
+    res = con.setmetadata(local.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
     return uids
 
 
@@ -343,13 +342,13 @@ def process_batches(func, uids, *args, size=1000, pool=None, pool_size=None):
 
 if __name__ == '__main__':
     try:
-        if imap.GM_USER:
+        if gmail.USER:
             fetch_folder()
             fetch_folder('\\Junk')
             fetch_folder('\\Trash')
             fetch_folder('\\Drafts')
 
         parse_folder(sys.argv[-1] if len(sys.argv) > 1 else None)
-        update_threads()
+        # update_threads()
     except KeyboardInterrupt:
         raise SystemExit('^C')

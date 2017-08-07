@@ -5,7 +5,7 @@ import ujson as json
 from sanic import Sanic, response
 from sanic.config import LOGGING
 
-from . import log, imap
+from . import log, local
 
 LOGGING['loggers']['mailur'] = {
     'level': 'DEBUG',
@@ -15,10 +15,8 @@ LOGGING['loggers']['mailur'] = {
 
 async def threads(request):
     query = request.raw_args['q']
-    con = imap.Local(None)
-    con.select(con.PARSED)
-    res = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
-    thrs = imap.parse_thread(res[0])
+    con = local.client()
+    thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
     log.debug('query: %r; threads: %s', query, len(thrs))
     if not thrs:
         return response.text('{}')
@@ -42,8 +40,8 @@ async def threads(request):
             continue
         flags[thrid.pop()] = set(sum((all_flags[uid] for uid in uids), []))
 
-    res = con.sort('(REVERSE DATE)', 'UTF-8', 'UID %s' % imap.pack_uids(flags))
-    uids = res[0].decode().split()
+    res = con.sort('(REVERSE DATE)', 'UTF-8', 'KEYWORD #latest')
+    uids = [i for i in res[0].decode().split() if i in flags]
     res = con.fetch(uids, '(BINARY.PEEK[2])')
     msgs = {}
     for i in range(0, len(res), 2):
@@ -57,8 +55,7 @@ async def threads(request):
 
 async def emails(request):
     query = request.raw_args['q']
-    con = imap.Local(None)
-    con.select(con.PARSED)
+    con = local.client()
     res = con.sort('(REVERSE DATE)', 'UTF-8', query)
     uids = res[0].decode().split()
     log.debug('query: %r; messages: %s', query, len(uids))
@@ -81,14 +78,13 @@ async def emails(request):
 
 
 async def origin(request, uid):
-    con = imap.Local()
+    con = local.client(local.ALL)
     res = con.fetch(uid, 'body[]')
     return response.text(res[0][1].decode())
 
 
 async def parsed(request, uid):
-    con = imap.Local(None)
-    con.select(con.PARSED)
+    con = local.client()
     res = con.fetch(uid, 'body[]')
     return response.text(res[0][1].decode())
 
