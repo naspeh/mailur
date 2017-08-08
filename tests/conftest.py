@@ -71,7 +71,7 @@ def gm_fake():
 
 @pytest.fixture
 def gm_client():
-    from mailur import parse, gmail
+    from mailur import local, gmail
 
     def add_emails(items=None):
         gmail.client()
@@ -85,7 +85,7 @@ def gm_client():
             txt = item.get('txt', '42')
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
-            msg = parse.binary_msg(txt)
+            msg = local.binary_msg(txt)
             msg.add_header('Message-ID', '<%s@mlr>' % uid)
             in_reply_to = item.get('in_reply_to', '')
             if in_reply_to:

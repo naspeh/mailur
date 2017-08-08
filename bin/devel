@@ -20,5 +20,5 @@ env=/opt/mailur/env
 pip=$env/bin/pip
 python3 -m venv $env
 
-$pip install -U neovim wheel ptpython ptpdb flake8 pytest
-$pip install -U sanic
+$pip install -U neovim wheel ptpdb flake8 pytest
+$pip install -Ur requirements.txt

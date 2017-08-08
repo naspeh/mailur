@@ -44,6 +44,7 @@ def client_readonly(ctx, connect, debug=IMAP_DEBUG):
     ctx.select = ft.partial(select, con)
     ctx.select_tag = ft.partial(select_tag, con)
     ctx.box = lambda: getattr(con, 'current_box', None)
+    ctx.str = lambda: '%s[%r]' % (ctx.__class__.__name__, ctx.box())
     return con
 
 
@@ -64,7 +65,7 @@ def recreate(con, connect):
     box = getattr(con, 'current_box', None)
     con = connect()
     if box:
-        select(con, box)
+        select(con, box, con.is_readonly)
     return con
 
 
@@ -125,7 +126,7 @@ def getmetadata(con, box, key):
 
 def select(con, box, readonly=True):
     res = check(con.select(box, readonly))
-    con.current_box = box
+    con.current_box = box.decode() if isinstance(box, bytes) else box
     return res
 
 
@@ -157,8 +158,11 @@ def thread(con, *criteria):
 
 def fetch(con, uids, fields):
     if not isinstance(uids, (str, bytes)):
-        uids = list(uids)
-        res = partial_uids(delayed_uids(fetch, con, uids, fields))
+        @ft.wraps(fetch)
+        def inner(uids):
+            return fetch(con, ','.join(uids), fields)
+
+        res = partial_uids(delayed_uids(inner, uids))
         res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
     return check(con.uid('FETCH', uids, fields))
@@ -166,8 +170,11 @@ def fetch(con, uids, fields):
 
 def store(con, uids, command, flags):
     if not isinstance(uids, (str, bytes)):
-        uids = list(uids)
-        res = partial_uids(delayed_uids(store, con, uids, command, flags))
+        @ft.wraps(store)
+        def inner(uids):
+            return store(con, ','.join(uids), command, flags)
+
+        res = partial_uids(delayed_uids(inner, uids))
         res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
     return check(con.uid('STORE', uids, command, flags))
@@ -223,29 +230,30 @@ def pack_uids(uids):
     return result
 
 
-def delayed_uids(func, con, uids, *a, **kw):
+def delayed_uids(func, uids, *a, **kw):
     @ft.wraps(func)
     def inner(uids, num=None):
-        c = con if num is None else con.recreate()
-        uids = ','.join(uids)
         num = '#%s' % num if num else ''
         try:
-            res = func(con, uids, *a, **kw)
+            res = func(uids, *a, **kw)
             print('## %s: done%s' % (inner.desc, num))
         except Exception as e:
+            import logging
+            logging.exception(e)
             print('## %s: ERROR%s %r' % (inner.desc, num, e))
             raise
-        finally:
-            if num:
-                c.logout()
         return res
 
-    inner.uids = uids
-    inner.desc = '%s(con, uids, *%r, **%r)' % (func.__name__, a, kw)
+    inner.uids = list(uids)
+    inner.desc = '%s(%s)' % (func.__name__, ', '.join(
+        ['uids'] +
+        [repr(i) for i in a] +
+        (['**%r'] % kw if kw else [])
+    ))
     return inner
 
 
-def partial_uids(delayed, size=5000, threads=10):
+def partial_uids(delayed, size=5000, threads=1):
     uids = delayed.uids
     if not uids:
         return []

@@ -1,6 +1,6 @@
 from unittest.mock import patch, call, ANY
 
-from mailur import imap, local, gmail, parse
+from mailur import imap, local, gmail
 
 
 @patch('mailur.imap.select')
@@ -15,27 +15,37 @@ def test_basic_gmail(select):
     assert select.call_args == call(ANY, b'V/Trash', True)
 
 
-def test_fn_partial_uids(clean_users):
+def test_fn_partial_uids(clean_users, gm_client):
     con = local.client()
     bsize = 20000
+    assert [] == con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
+    assert [] == con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS')
+
     con.select(local.PARSED, readonly=False)
-    assert con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS') == []
-    assert con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS') == []
-    assert con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#') == []
-    assert con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#') == []
-    con.append(local.PARSED, None, None, parse.binary_msg('42').as_bytes())
-    assert con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS') == [
-        b'1 (UID 1 FLAGS (\\Recent))'
-    ]
-    assert con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS') == [
-        b'1 (UID 1 FLAGS (\\Recent))'
-    ]
-    assert con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#1') == [
-        b'1 (UID 1 FLAGS (\\Recent #1))'
-    ]
-    assert con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#2') == [
-        b'1 (UID 1 FLAGS (\\Recent #1 #2))'
-    ]
+    assert [] == con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#')
+    assert [] == con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#')
+
+    # with one message
+    con.append(local.PARSED, None, None, local.binary_msg('42').as_bytes())
+    con.select(local.PARSED, readonly=True)
+    assert [b'1 (UID 1 FLAGS ())'] == (
+        con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
+    )
+    assert [b'1 (UID 1 FLAGS ())'] == (
+        con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS')
+    )
+
+    con.select(local.PARSED, readonly=False)
+    assert [b'1 (UID 1 FLAGS (#1))'] == (
+        con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#1')
+    )
+    assert [b'1 (UID 1 FLAGS (#1 #2))'] == (
+        con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#2')
+    )
+
+    gm_client.add_emails([{} for i in range(1, 22)])
+    gmail.fetch_folder()
+    assert local.parse(batch=10) is None
 
 
 def test_fn_parse_thread():
