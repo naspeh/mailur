@@ -38,11 +38,12 @@ def client_readonly(ctx, connect, debug=IMAP_DEBUG):
 
     ctx.logout = con.logout
     ctx.list = check_fn(con.list)
-    ctx.fetch = check_uid(con, 'FETCH')
+    ctx.fetch = ft.partial(fetch, con)
     ctx.status = ft.partial(status, con)
     ctx.search = ft.partial(search, con)
     ctx.select = ft.partial(select, con)
     ctx.select_tag = ft.partial(select_tag, con)
+    ctx.box = lambda: getattr(con, 'current_box', None)
     return con
 
 
@@ -156,24 +157,18 @@ def thread(con, *criteria):
 
 def fetch(con, uids, fields):
     if not isinstance(uids, (str, bytes)):
-        @ft.wraps(fetch)
-        def fn(uids, once=False):
-            c = con if once else con.recreate()
-            uids = ','.join(uids)
-            return fetch(c, uids, fields)
-        res = partial_uids(list(uids), fn)
+        uids = list(uids)
+        res = partial_uids(delayed_uids(fetch, con, uids, fields))
+        res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
     return check(con.uid('FETCH', uids, fields))
 
 
 def store(con, uids, command, flags):
     if not isinstance(uids, (str, bytes)):
-        @ft.wraps(store)
-        def fn(uids, once=False):
-            c = con if once else con.recreate()
-            uids = ','.join(uids)
-            return store(c, uids, command, flags)
-        res = partial_uids(list(uids), fn)
+        uids = list(uids)
+        res = partial_uids(delayed_uids(store, con, uids, command, flags))
+        res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
     return check(con.uid('STORE', uids, command, flags))
 
@@ -228,23 +223,40 @@ def pack_uids(uids):
     return result
 
 
-def partial_uids(uids, func, size=10000, threads=10):
+def delayed_uids(func, con, uids, *a, **kw):
+    @ft.wraps(func)
+    def inner(uids, num=None):
+        c = con if num is None else con.recreate()
+        uids = ','.join(uids)
+        num = '#%s' % num if num else ''
+        try:
+            res = func(con, uids, *a, **kw)
+            print('## %s: done%s' % (inner.desc, num))
+        except Exception as e:
+            print('## %s: ERROR%s %r' % (inner.desc, num, e))
+            raise
+        finally:
+            if num:
+                c.logout()
+        return res
+
+    inner.uids = uids
+    inner.desc = '%s(con, uids, *%r, **%r)' % (func.__name__, a, kw)
+    return inner
+
+
+def partial_uids(delayed, size=5000, threads=10):
+    uids = delayed.uids
     if not uids:
         return []
-    elif len(uids) < size:
-        res = func(uids, once=True)
-        return [res]
-
-    def inner(num, uids):
-        res = func(uids)
-        print('## %s#%s: done' % (func.__name__, num))
-        return res
+    elif len(uids) <= size:
+        return [delayed(uids)]
 
     jobs = []
     with futures.ThreadPoolExecutor(threads) as pool:
         for i in range(0, len(uids), size):
             num = '%02d' % (i // size + 1)
             few = uids[i:i+size]
-            jobs.append(pool.submit(inner, num, few))
-            print('## %s#%s: %s uids' % (func.__name__, num, len(few)))
-    return [f.result() for f in futures.as_completed(jobs)]
+            jobs.append(pool.submit(delayed, few, num))
+            print('## %s#%s: %s uids' % (delayed.desc, num, len(few)))
+    return [f.result() for f in jobs]
