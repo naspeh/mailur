@@ -50,14 +50,13 @@ def client(tag='\\All'):
     return ctx
 
 
-def fetch_uids(uids, gm, tag):
+def fetch_uids(uids, lm, gm, tag):
     fields = (
         '('
         'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
         ')'
     )
     res = gm.fetch(uids, fields)
-    con = local.client(None)
 
     def flag(m):
         flag = m.group()
@@ -69,7 +68,7 @@ def fetch_uids(uids, gm, tag):
         label = m.group()
         if label:
             label = label.strip('"').replace('\\\\', '\\')
-            return MAP_LABELS.get(label, None) or local.get_tag(con, label)
+            return MAP_LABELS.get(label, None) or local.get_tag(lm, label)
         return ''
 
     def iter_msgs(res):
@@ -111,7 +110,7 @@ def fetch_uids(uids, gm, tag):
             yield parts['time'], flags, raw
 
     msgs = list(iter_msgs(res))
-    return con.multiappend(local.ALL, msgs)
+    return lm.multiappend(local.ALL, msgs)
 
 
 def fetch_folder(tag='\\All'):
@@ -139,8 +138,9 @@ def fetch_folder(tag='\\All'):
     uids = [i for i in res[0].decode().split() if int(i) >= uidnext]
     uidnext = folder['uidnext']
     print('## box(%s): %s new uids' % (gm.box(), len(uids)))
-    imap.partial_uids(imap.delayed_uids(fetch_uids, uids, gm, tag), size=1000)
-    con = local.client(None)
+    imap.partial_uids(
+        imap.delayed_uids(fetch_uids, uids, con, gm, tag), size=1000
+    )
     res = con.setmetadata(local.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
     return uids
 

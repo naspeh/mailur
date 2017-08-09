@@ -2,6 +2,7 @@ import functools as ft
 import json
 import os
 import re
+import threading
 from concurrent import futures
 from contextlib import contextmanager
 from imaplib import CRLF
@@ -21,23 +22,27 @@ def check(res):
     return data
 
 
-def check_fn(func):
+def check_fn(con, func, *a, **kw):
+    if isinstance(func, str):
+        func = getattr(con, func)
+    if a or kw:
+        func = ft.partial(func, *a, **kw)
+
+    @ft.wraps(func)
     def inner(*a, **kw):
-        return check(func(*a, **kw))
-    return ft.wraps(func)(inner)
-
-
-def check_uid(con, name):
-    return check_fn(ft.partial(con.uid, name))
+        with con.lock:
+            return check(func(*a, **kw))
+    return inner
 
 
 def client_readonly(ctx, connect, debug=IMAP_DEBUG):
     con = connect()
     con.debug = debug
+    con.lock = threading.RLock()
     con.recreate = ft.partial(recreate, con, connect)
 
     ctx.logout = con.logout
-    ctx.list = check_fn(con.list)
+    ctx.list = check_fn(con, con.list)
     ctx.fetch = ft.partial(fetch, con)
     ctx.status = ft.partial(status, con)
     ctx.search = ft.partial(search, con)
@@ -50,9 +55,9 @@ def client_readonly(ctx, connect, debug=IMAP_DEBUG):
 
 def client_full(ctx, connect, debug=IMAP_DEBUG):
     con = client_readonly(ctx, connect, debug=debug)
-    ctx.append = check_fn(con.append)
-    ctx.expunge = check_fn(con.expunge)
-    ctx.sort = check_uid(con, 'SORT')
+    ctx.append = check_fn(con, con.append)
+    ctx.expunge = check_fn(con, con.expunge)
+    ctx.sort = check_fn(con, con.uid, 'SORT')
     ctx.thread = ft.partial(thread, con)
     ctx.fetch = ft.partial(fetch, con)
     ctx.store = ft.partial(store, con)
@@ -69,6 +74,15 @@ def recreate(con, connect):
     return con
 
 
+def lock(func):
+    @ft.wraps(func)
+    def inner(con, *a, **kw):
+        with con.lock:
+            return func(con, *a, **kw)
+
+    return inner
+
+
 @contextmanager
 def cmd(con, name):
     tag = con._new_tag()
@@ -80,6 +94,7 @@ def cmd(con, name):
     yield tag, start, lambda: con._command_complete(name, tag)
 
 
+@lock
 def multiappend(con, box, msgs):
     if not msgs:
         return
@@ -106,6 +121,7 @@ def _mdkey(key):
     return key
 
 
+@lock
 def setmetadata(con, box, key, value):
     key = _mdkey(key)
     with cmd(con, 'SETMETADATA') as (tag, start, complete):
@@ -115,6 +131,7 @@ def setmetadata(con, box, key, value):
         return check(con._untagged_response(typ, data, 'METADATA'))
 
 
+@lock
 def getmetadata(con, box, key):
     key = _mdkey(key)
     with cmd(con, 'GETMETADATA') as (tag, start, complete):
@@ -124,12 +141,14 @@ def getmetadata(con, box, key):
         return check(con._untagged_response(typ, data, 'METADATA'))
 
 
+@lock
 def select(con, box, readonly=True):
     res = check(con.select(box, readonly))
     con.current_box = box.decode() if isinstance(box, bytes) else box
     return res
 
 
+@lock
 def select_tag(con, tag, readonly=True):
     if isinstance(tag, str):
         tag = tag.encode()
@@ -142,15 +161,18 @@ def select_tag(con, tag, readonly=True):
     return select(con, folder, readonly)
 
 
+@lock
 def status(con, box, fields):
     box = con.current_box if box is None else box
     return check(con.status(box, fields))
 
 
+@lock
 def search(con, *criteria):
     return check(con.uid('SEARCH', None, *criteria))
 
 
+@lock
 def thread(con, *criteria):
     res = check(con.uid('THREAD', *criteria))
     return parse_thread(res[0].decode())
@@ -165,7 +187,8 @@ def fetch(con, uids, fields):
         res = partial_uids(delayed_uids(inner, uids))
         res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
-    return check(con.uid('FETCH', uids, fields))
+    with con.lock:
+        return check(con.uid('FETCH', uids, fields))
 
 
 def store(con, uids, command, flags):
@@ -177,7 +200,8 @@ def store(con, uids, command, flags):
         res = partial_uids(delayed_uids(inner, uids))
         res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
-    return check(con.uid('STORE', uids, command, flags))
+    with con.lock:
+        return check(con.uid('STORE', uids, command, flags))
 
 
 def parse_thread(line):
@@ -253,7 +277,7 @@ def delayed_uids(func, uids, *a, **kw):
     return inner
 
 
-def partial_uids(delayed, size=5000, threads=1):
+def partial_uids(delayed, size=5000, threads=None):
     uids = delayed.uids
     if not uids:
         return []

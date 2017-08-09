@@ -17,7 +17,7 @@ def test_basic_gmail(select):
 
 def test_fn_partial_uids(clean_users, gm_client):
     con = local.client()
-    bsize = 20000
+    bsize = 25000
     assert [] == con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
     assert [] == con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS')
 

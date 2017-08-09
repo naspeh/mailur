@@ -185,7 +185,6 @@ def parse(criteria=None, *, batch=5000):
 
     con.select(ALL)
     imap.partial_uids(imap.delayed_uids(parse_uids, uids, con), size=batch)
-    con = client(None)
     con.setmetadata(PARSED, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()

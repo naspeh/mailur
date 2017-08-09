@@ -79,7 +79,7 @@ plugin {
 
 mail_attribute_dict = file:%h/dovecot-attributes
 protocol imap {
-    mail_max_userip_connections = 50
+    mail_max_userip_connections = 20
     imap_metadata = yes
 }
 
