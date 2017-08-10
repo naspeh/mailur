@@ -2,10 +2,13 @@ import functools as ft
 import json
 import os
 import re
+import time
 import threading
 from concurrent import futures
 from contextlib import contextmanager
 from imaplib import CRLF
+
+from . import log
 
 IMAP_DEBUG = int(os.environ.get('IMAP_DEBUG', 1))
 
@@ -163,10 +166,10 @@ def thread(con, *criteria):
 def fetch(con, uids, fields):
     if not isinstance(uids, (str, bytes)):
         @ft.wraps(fetch)
-        def inner(uids):
-            return fetch(con, ','.join(uids), fields)
+        def inner(uids, *args):
+            return fetch(con, ','.join(uids), *args)
 
-        res = partial_uids(delayed_uids(inner, uids))
+        res = partial_uids(delayed_uids(inner, uids, fields))
         res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
 
@@ -174,18 +177,18 @@ def fetch(con, uids, fields):
         return check(con.uid('FETCH', uids, fields))
 
 
-def store(con, uids, command, flags):
+def store(con, uids, cmd, flags):
     if not isinstance(uids, (str, bytes)):
         @ft.wraps(store)
-        def inner(uids):
-            return store(con, ','.join(uids), command, flags)
+        def inner(uids, *args):
+            return store(con, ','.join(uids), *args)
 
-        res = partial_uids(delayed_uids(inner, uids))
+        res = partial_uids(delayed_uids(inner, uids, cmd, flags))
         res = ([] if len(i) == 1 and i[0] is None else i for i in res)
         return sum(res, [])
 
     with con.lock:
-        return check(con.uid('STORE', uids, command, flags))
+        return check(con.uid('STORE', uids, cmd, flags))
 
 
 def parse_thread(line):
@@ -241,14 +244,17 @@ def pack_uids(uids):
 def delayed_uids(func, uids, *a, **kw):
     @ft.wraps(func)
     def inner(uids, num=None):
-        num = '#%s' % num if num else ''
+        num = '%s#' % num if num else ''
+        log.info('## %s%s: %s uids', num, inner.desc, len(uids))
+        start = time.time()
         try:
             res = func(uids, *a, **kw)
-            print('## %s: done%s' % (inner.desc, num))
+            log.info(
+                '## %s%s: done for %.2fs',
+                num, inner.desc, time.time() - start
+            )
         except Exception as e:
-            import logging
-            logging.exception(e)
-            print('## %s: ERROR%s %r' % (inner.desc, num, e))
+            log.exception('## %s%s: %r' % (num, inner.desc, e))
             raise
         return res
 
@@ -274,5 +280,4 @@ def partial_uids(delayed, size=5000, threads=None):
             num = '%02d' % (i // size + 1)
             few = uids[i:i+size]
             jobs.append(pool.submit(delayed, few, num))
-            print('## %s#%s: %s uids' % (delayed.desc, num, len(few)))
     return [f.result() for f in jobs]

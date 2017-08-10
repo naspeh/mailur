@@ -9,7 +9,7 @@ from email.parser import BytesParser
 from email.policy import SMTPUTF8
 from email.utils import parsedate_to_datetime
 
-from . import imap
+from . import log, imap
 
 USER = os.environ.get('MLR_USER', 'user')
 
@@ -138,9 +138,9 @@ def parse_uids(uids, con):
                 msg_obj = create_msg(m[1], uid, time)
                 msg = msg_obj.as_bytes()
             except Exception as e:
-                print('## ERROR(%s): uid=%s\n%s' % (e, uid, '\n'.join(
+                log.error('## %r uid=%s\n%s', e, uid, '\n'.join(
                     '  %s: %s' % (n, v) for n, v in msg_obj.raw_items()
-                )))
+                ))
                 continue
             yield time, flags, msg
 
@@ -155,20 +155,20 @@ def parse(criteria=None, *, batch=5000):
         res = con.getmetadata(PARSED, 'uidnext')
         if len(res) > 1:
             uidnext = int(res[0][1].decode())
-            print('## saved: uidnext=%s' % uidnext)
+            log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
     res = con.search(criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
-        print('## all parsed already')
+        log.info('## all parsed already')
         return
 
     res = con.status(ALL, '(UIDNEXT)')
     uidnext = re.search(r'UIDNEXT (?P<next>\d+)', res[0].decode()).group(1)
-    print('## new: uidnext: %s' % uidnext)
+    log.info('## new: uidnext: %s', uidnext)
 
-    print('## criteria: %r; %s uids' % (criteria, len(uids)))
+    log.info('## criteria: %r; %s uids', criteria, len(uids))
     count = con.select(PARSED, readonly=False)
     if count[0] != b'0':
         count = None
@@ -179,7 +179,7 @@ def parse(criteria=None, *, batch=5000):
             puids = ','.join(parsed_uids(con, uids))
         if puids:
             count = count or puids.count(',') + 1
-            print('## delete %s messages from %r' % (count, PARSED))
+            log.info('## delete %s messages from %r', count, PARSED)
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
@@ -216,4 +216,4 @@ def update_threads(uids=None, criteria=None):
     if clean:
         con.store(clean, '-FLAGS.SILENT', '#latest')
     con.store(thrs, '+FLAGS.SILENT', '#latest')
-    print('## updated %s threads' % len(thrs))
+    log.info('## updated %s threads', len(thrs))

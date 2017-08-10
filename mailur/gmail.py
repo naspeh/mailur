@@ -3,7 +3,7 @@ import imaplib
 import os
 import re
 
-from . import imap, local
+from . import log, imap, local
 
 MAP_FLAGS = {
     '\\Answered': '\\Answered',
@@ -50,13 +50,15 @@ def client(tag='\\All'):
     return ctx
 
 
-def fetch_uids(uids, lm, gm, tag):
+def fetch_uids(uids, tag):
+    gm = client(tag)
     fields = (
         '('
         'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
         ')'
     )
     res = gm.fetch(uids, fields)
+    gm.logout()
 
     def flag(m):
         flag = m.group()
@@ -109,12 +111,15 @@ def fetch_uids(uids, lm, gm, tag):
             ]).strip()
             yield parts['time'], flags, raw
 
+    lm = local.client(local.ALL)
     msgs = list(iter_msgs(res))
-    return lm.multiappend(local.ALL, msgs)
+    res = lm.multiappend(local.ALL, msgs)
+    lm.logout()
+    return res
 
 
 def fetch_folder(tag='\\All'):
-    print('## process "%s"' % tag)
+    log.info('## process %r', tag)
     con = local.client()
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
     res = con.getmetadata(local.ALL, metakey)
@@ -123,24 +128,26 @@ def fetch_folder(tag='\\All'):
         uidnext = int(uidnext)
     else:
         uidvalidity = uidnext = None
-    print('## saved: uidvalidity=%s uidnext=%s' % (uidvalidity, uidnext))
+    log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
     gm = client(tag)
     res = gm.status(None, '(UIDNEXT UIDVALIDITY)')
     folder = re.search(
         r'(UIDNEXT (?P<uidnext>\d+) ?|UIDVALIDITY (?P<uid>\d+)){2}',
         res[0].decode()
     ).groupdict()
-    print('## gmail: uidvalidity=%(uid)s uidnext=%(uidnext)s' % folder)
+    log.info('## gmail: uidvalidity=%(uid)s uidnext=%(uidnext)s', folder)
     if folder['uid'] != uidvalidity:
         uidvalidity = folder['uid']
         uidnext = 1
     res = gm.search('UID %s:*' % uidnext)
     uids = [i for i in res[0].decode().split() if int(i) >= uidnext]
     uidnext = folder['uidnext']
-    print('## box(%s): %s new uids' % (gm.box(), len(uids)))
-    imap.partial_uids(
-        imap.delayed_uids(fetch_uids, uids, con, gm, tag), size=1000
-    )
+    log.info('## box(%s): %s new uids', gm.box(), len(uids))
+    gm.logout()
+    con.logout()
+    delayed = imap.delayed_uids(fetch_uids, uids, tag)
+    imap.partial_uids(delayed, size=1000, threads=8)
+    con = local.client(None)
     res = con.setmetadata(local.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
     return uids
 
