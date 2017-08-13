@@ -93,8 +93,8 @@ def multiappend(con, box, msgs):
 
     with cmd(con, 'APPEND') as (tag, start, complete):
         send = start
-        for time, flags, msg in msgs:
-            args = (' (%s) %s %s' % (flags, time, '{%s}' % len(msg)))
+        for date_time, flags, msg in msgs:
+            args = (' (%s) %s %s' % (flags, date_time, '{%s}' % len(msg)))
             if send == start:
                 args = '%s %s' % (box, args)
             send(args.encode() + CRLF)
