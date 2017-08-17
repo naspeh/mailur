@@ -5,7 +5,7 @@ from mailur import local, gmail
 
 
 def test_binary_msg():
-    assert local.binary_msg('Ответ: 42').as_bytes() == '\r\n'.join([
+    assert local.binary_msg('Ответ: 42').as_bytes() == '\n'.join([
         'MIME-Version: 1.0',
         'Content-Transfer-Encoding: binary',
         'Content-Type: text/plain; charset="utf-8"',
@@ -13,12 +13,12 @@ def test_binary_msg():
         'Ответ: 42'
     ]).encode()
 
-    assert local.binary_msg('Ответ: 42').as_string() == '\r\n'.join([
+    assert local.binary_msg('Ответ: 42').as_string() == '\n'.join([
         'MIME-Version: 1.0',
         'Content-Transfer-Encoding: base64',
         'Content-Type: text/plain; charset="utf-8"',
         '',
-        '0J7RgtCy0LXRgjogNDI=\r\n'
+        '0J7RgtCy0LXRgjogNDI=\n'
     ])
 
 
@@ -157,7 +157,7 @@ def test_thrids(clean_users, gm_client):
     assert ['', '', '', '#latest'] == [i[0] for i in msgs]
 
 
-def test_parsed_msg(gm_client):
+def test_parsed_msg(gm_client, load_file):
     gm_client.add_emails([{'flags': '\\Flagged'}])
     gmail.fetch_folder()
     local.parse()
@@ -165,3 +165,16 @@ def test_parsed_msg(gm_client):
     assert 'X-UID' in msg
     assert re.match('<\d+>', msg['X-UID'])
     assert '\\Flagged' in flags
+
+    # `email.policy.default` is not working
+    # with some badly formated addresses.
+    # Exits with: "segmentation fault (core dumped)"
+    # when running in threads.
+    gm_client.add_emails([
+        {'txt': 'some text'},
+        {'raw': load_file('msg-header-with-whitespaces.txt')}
+    ])
+
+    gmail.fetch_folder()
+    local.parse(batch=1)
+    flags, msg = get_latest('Parsed')

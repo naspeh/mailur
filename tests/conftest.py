@@ -31,6 +31,13 @@ def clean_users():
     ''', shell=True, cwd=root)
 
 
+@pytest.fixture
+def load_file():
+    def inner(name):
+        return (root / 'tests/files' / name).read_bytes()
+    return inner
+
+
 class Some(object):
     "A helper object that compares equal to everything."
 
@@ -82,19 +89,22 @@ def gm_client():
             gm_client.uid += 1
             uid = gm_client.uid
             gid = 100 * uid
-            txt = item.get('txt', '42')
+            raw = item.get('raw')
+            if raw:
+                msg = raw
+            else:
+                txt = item.get('txt', '42')
+                msg = local.binary_msg(txt)
+                msg.add_header('Message-ID', '<%s@mlr>' % uid)
+                in_reply_to = item.get('in_reply_to', '')
+                if in_reply_to:
+                    msg.add_header('In-Reply-To', in_reply_to)
+                refs = item.get('refs')
+                if refs:
+                    msg.add_header('References', refs)
+                msg = msg.as_bytes()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
-            msg = local.binary_msg(txt)
-            msg.add_header('Message-ID', '<%s@mlr>' % uid)
-            in_reply_to = item.get('in_reply_to', '')
-            if in_reply_to:
-                msg.add_header('In-Reply-To', in_reply_to)
-            refs = item.get('refs')
-            if refs:
-                msg.add_header('References', refs)
-
-            msg = msg.as_bytes()
             gm_client.con.append('All', None, None, msg)
             gm_client.fetch[0][1].extend([
                 (

@@ -1,4 +1,5 @@
 import datetime as dt
+import email.policy
 import functools as ft
 import imaplib
 import json
@@ -6,7 +7,6 @@ import os
 import re
 from email.message import MIMEPart
 from email.parser import BytesParser
-from email.policy import SMTPUTF8
 from email.utils import parsedate_to_datetime
 
 from . import log, imap
@@ -41,7 +41,7 @@ def client(box=PARSED):
 
 
 def binary_msg(txt, mimetype='text/plain'):
-    msg = MIMEPart(SMTPUTF8)
+    msg = MIMEPart()
     msg.set_type(mimetype)
     msg.add_header('Content-Transfer-Encoding', 'binary')
     msg.set_payload(txt, 'utf-8')
@@ -90,10 +90,11 @@ def fetch_parsed_uids(con):
 
 
 def create_msg(raw, uid, time):
-    orig = BytesParser(policy=SMTPUTF8).parsebytes(raw)
+    orig = BytesParser().parsebytes(raw)
     meta = {k.replace('-', '_'): orig[k] for k in ('message-id',)}
 
-    meta['subject'] = orig['subject']
+    subj = orig['subject']
+    meta['subject'] = str(subj) if subj else subj
     meta['uid'] = uid
 
     date = orig['date']
@@ -102,10 +103,10 @@ def create_msg(raw, uid, time):
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
     meta['arrived'] = arrived.isoformat()
 
-    txt = orig.get_body(preferencelist=('plain', 'html'))
-    body = txt.get_content()
+    txt = [p for p in orig.walk() if p.get_content_maintype() == 'text']
+    body = b'<hr>'.join(i.get_payload(decode=True) for i in txt)
 
-    msg = MIMEPart(SMTPUTF8)
+    msg = MIMEPart(email.policy.compat32)
     headers = 'from to date message-id cc bcc in-reply-to references'.split()
     for n, v in orig.items():
         if n.lower() not in headers:
@@ -113,7 +114,7 @@ def create_msg(raw, uid, time):
         msg.add_header(n, v)
 
     msg.add_header('X-UID', '<%s>' % uid)
-    msg.add_header('X-Subject', orig.get('subject'))
+    msg.add_header('X-Subject', meta['subject'])
     msg.make_mixed()
 
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
