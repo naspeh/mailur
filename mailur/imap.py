@@ -267,7 +267,7 @@ def delayed_uids(func, uids, *a, **kw):
     return inner
 
 
-def partial_uids(delayed, size=5000, threads=None):
+def partial_uids(delayed, size=5000, threads=10):
     uids = delayed.uids
     if not uids:
         return []

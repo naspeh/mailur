@@ -113,12 +113,13 @@ def fetch_uids(uids, tag):
 
     lm = local.client(local.ALL)
     msgs = list(iter_msgs(res))
-    res = lm.multiappend(local.ALL, msgs)
-    lm.logout()
-    return res
+    try:
+        return lm.multiappend(local.ALL, msgs)
+    finally:
+        lm.logout()
 
 
-def fetch_folder(tag='\\All'):
+def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     log.info('## process %r', tag)
     con = local.client()
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
@@ -146,14 +147,14 @@ def fetch_folder(tag='\\All'):
     gm.logout()
     con.logout()
     delayed = imap.delayed_uids(fetch_uids, uids, tag)
-    imap.partial_uids(delayed, size=1000, threads=8)
+    res = imap.partial_uids(delayed, size=batch, threads=threads)
     con = local.client(None)
-    res = con.setmetadata(local.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
-    return uids
+    con.setmetadata(local.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
+    return res
 
 
-def fetch():
-    fetch_folder()
-    fetch_folder('\\Junk')
-    fetch_folder('\\Trash')
-    fetch_folder('\\Drafts')
+def fetch(**kw):
+    fetch_folder(**kw)
+    fetch_folder('\\Junk', **kw)
+    fetch_folder('\\Trash', **kw)
+    fetch_folder('\\Drafts', **kw)

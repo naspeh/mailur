@@ -123,7 +123,8 @@ def create_msg(raw, uid, time):
     return msg
 
 
-def parse_uids(uids, con):
+def parse_uids(uids):
+    con = client(ALL)
     res = con.fetch(uids, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
     def iter_msgs(res):
@@ -134,8 +135,8 @@ def parse_uids(uids, con):
                 m[0].decode()
             ).groups()
             flags = flags.replace('\\Recent', '').strip()
+            msg_obj = create_msg(m[1], uid, time)
             try:
-                msg_obj = create_msg(m[1], uid, time)
                 msg = msg_obj.as_bytes()
             except Exception as e:
                 log.error('## %r uid=%s\n%s', e, uid, '\n'.join(
@@ -145,10 +146,13 @@ def parse_uids(uids, con):
             yield time, flags, msg
 
     msgs = list(iter_msgs(res))
-    return con.multiappend(PARSED, msgs)
+    try:
+        return con.multiappend(PARSED, msgs)
+    finally:
+        con.logout()
 
 
-def parse(criteria=None, *, batch=5000):
+def parse(criteria=None, *, batch=1000, threads=4):
     con = client(ALL)
     uidnext = 1
     if criteria is None:
@@ -183,8 +187,11 @@ def parse(criteria=None, *, batch=5000):
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
-    con.select(ALL)
-    imap.partial_uids(imap.delayed_uids(parse_uids, uids, con), size=batch)
+    con.logout()
+    delayed = imap.delayed_uids(parse_uids, uids)
+    imap.partial_uids(delayed, size=batch, threads=threads)
+
+    con = client(None)
     con.setmetadata(PARSED, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
