@@ -214,7 +214,7 @@ def update_threads(uids=None, criteria=None):
         if len(thrids) == 1:
             latest = thrids[0]
         else:
-            res = con.sort('(DATE)', 'UTF-8', 'UID %s' % ','.join(thrids))
+            res = con.sort('(DATE)', 'UID %s' % ','.join(thrids))
             latest = res[0].decode().rsplit(' ', 1)[-1]
         thrs[latest] = thrids
 

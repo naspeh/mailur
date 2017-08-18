@@ -18,6 +18,25 @@ class Error(Exception):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
 
 
+def func_desc(func, *a, **kw):
+    args = ', '.join(
+        [repr(i) for i in a] +
+        (['**%r' % kw] if kw else [])
+    )
+    maxlen = 80
+    if len(args) > maxlen:
+        args = '%s...' % args[:maxlen]
+    return '%s(%s)' % (func.__name__, args)
+
+
+@contextmanager
+def log_time(func, *a, **kw):
+    start = time.time()
+    yield
+    desc = func_desc(func, *a, **kw)
+    log.info('## %s: done for %.2fs', desc, time.time() - start)
+
+
 def check(res):
     typ, data = res
     if typ != 'OK':
@@ -25,24 +44,12 @@ def check(res):
     return data
 
 
-def check_fn(con, func, *a, **kw):
-    if a or kw:
-        func = ft.partial(func, *a, **kw)
-
+def lock_fn(func):
     @ft.wraps(func)
-    def inner(*a, **kw):
+    def inner(con, *a, **kw):
         with con.lock:
-            return check(func(*a, **kw))
-    return inner
-
-
-def lock_fn(con, func):
-    func = ft.partial(func, con)
-
-    @ft.wraps(func)
-    def inner(*a, **kw):
-        with con.lock:
-            return func(*a, **kw)
+            with log_time(func, *a, **kw):
+                return func(con, *a, **kw)
     return inner
 
 
@@ -52,12 +59,12 @@ def client_readonly(ctx, connect, debug=IMAP_DEBUG):
     con.lock = threading.RLock()
 
     ctx.logout = con.logout
-    ctx.list = check_fn(con, con.list)
-    ctx.fetch = lock_fn(con, fetch)
-    ctx.status = lock_fn(con, status)
-    ctx.search = lock_fn(con, search)
-    ctx.select = lock_fn(con, select)
-    ctx.select_tag = lock_fn(con, select_tag)
+    ctx.list = ft.partial(list_folders, con)
+    ctx.fetch = ft.partial(fetch, con)
+    ctx.status = ft.partial(status, con)
+    ctx.search = ft.partial(search, con)
+    ctx.select = ft.partial(select, con)
+    ctx.select_tag = ft.partial(select_tag, con)
     ctx.box = lambda: getattr(con, 'current_box', None)
     ctx.str = lambda: '%s[%r]' % (ctx.__class__.__name__, ctx.box())
     return con
@@ -65,15 +72,14 @@ def client_readonly(ctx, connect, debug=IMAP_DEBUG):
 
 def client_full(ctx, connect, debug=IMAP_DEBUG):
     con = client_readonly(ctx, connect, debug=debug)
-    ctx.append = check_fn(con, con.append)
-    ctx.expunge = check_fn(con, con.expunge)
-    ctx.sort = check_fn(con, con.uid, 'SORT')
-    ctx.thread = lock_fn(con, thread)
-    ctx.fetch = ft.partial(fetch, con)
+    ctx.append = ft.partial(append, con)
+    ctx.expunge = ft.partial(expunge, con)
+    ctx.sort = ft.partial(sort, con)
+    ctx.thread = ft.partial(thread, con)
     ctx.store = ft.partial(store, con)
-    ctx.getmetadata = lock_fn(con, getmetadata)
-    ctx.setmetadata = lock_fn(con, setmetadata)
-    ctx.multiappend = lock_fn(con, multiappend)
+    ctx.getmetadata = ft.partial(getmetadata, con)
+    ctx.setmetadata = ft.partial(setmetadata, con)
+    ctx.multiappend = ft.partial(multiappend, con)
 
 
 @contextmanager
@@ -87,6 +93,7 @@ def cmd(con, name):
     yield tag, start, lambda: con._command_complete(name, tag)
 
 
+@lock_fn
 def multiappend(con, box, msgs):
     if not msgs:
         return
@@ -113,6 +120,7 @@ def _mdkey(key):
     return key
 
 
+@lock_fn
 def setmetadata(con, box, key, value):
     key = _mdkey(key)
     with cmd(con, 'SETMETADATA') as (tag, start, complete):
@@ -122,6 +130,7 @@ def setmetadata(con, box, key, value):
         return check(con._untagged_response(typ, data, 'METADATA'))
 
 
+@lock_fn
 def getmetadata(con, box, key):
     key = _mdkey(key)
     with cmd(con, 'GETMETADATA') as (tag, start, complete):
@@ -131,6 +140,22 @@ def getmetadata(con, box, key):
         return check(con._untagged_response(typ, data, 'METADATA'))
 
 
+@lock_fn
+def list_folders(con, directory='""', pattern='*'):
+    return check(con.list(directory, pattern))
+
+
+@lock_fn
+def append(con, box, flags, date_time, msg):
+    return check(con.append(box, flags, date_time, msg))
+
+
+@lock_fn
+def expunge(con):
+    return check(con.expunge())
+
+
+@lock_fn
 def select(con, box, readonly=True):
     res = check(con.select(box, readonly))
     con.current_box = box.decode() if isinstance(box, bytes) else box
@@ -140,7 +165,7 @@ def select(con, box, readonly=True):
 def select_tag(con, tag, readonly=True):
     if isinstance(tag, str):
         tag = tag.encode()
-    folders = check(con.list())
+    folders = list_folders(con)
     for f in folders:
         if not re.search(br'^\([^)]*?%s' % re.escape(tag), f):
             continue
@@ -149,18 +174,26 @@ def select_tag(con, tag, readonly=True):
     return select(con, folder, readonly)
 
 
+@lock_fn
 def status(con, box, fields):
     box = con.current_box if box is None else box
     return check(con.status(box, fields))
 
 
+@lock_fn
 def search(con, *criteria):
     return check(con.uid('SEARCH', None, *criteria))
 
 
+@lock_fn
 def thread(con, *criteria):
     res = check(con.uid('THREAD', *criteria))
     return parse_thread(res[0].decode())
+
+
+@lock_fn
+def sort(con, sort_criteria, *search_criteria, charset='UTF-8'):
+    return check(con.uid('SORT', sort_criteria, charset, *search_criteria))
 
 
 def fetch(con, uids, fields):
@@ -259,11 +292,7 @@ def delayed_uids(func, uids, *a, **kw):
         return res
 
     inner.uids = list(uids)
-    inner.desc = '%s(%s)' % (func.__name__, ', '.join(
-        ['uids'] +
-        [repr(i) for i in a] +
-        (['**%r'] % kw if kw else [])
-    ))
+    inner.desc = func_desc(func, 'uids', *a, **kw)
     return inner
 
 
