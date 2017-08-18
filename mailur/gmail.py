@@ -43,7 +43,7 @@ def client(tag='\\All'):
             return self.str()
 
     ctx = Gmail()
-    imap.client_readonly(ctx, connect)
+    imap.client(ctx, connect)
 
     if tag:
         ctx.select_tag(tag)

@@ -7,12 +7,20 @@ from mailur import imap, local, gmail
 def test_basic_gmail(select):
     con = gmail.client()
     assert select.call_args == call(ANY, b'All', True)
+    assert set(con.__dict__.keys()) == set(
+        'logout box str list select select_tag status search fetch'
+        .split()
+    )
 
     con.select_tag('\\Junk')
     assert select.call_args == call(ANY, b'V/Spam', True)
 
     con.select_tag('\\Trash')
     assert select.call_args == call(ANY, b'V/Trash', True)
+
+    with patch('mailur.imap.log_time') as m:
+        con.list()
+        assert m.called
 
 
 def test_fn_partial_uids(clean_users, gm_client):

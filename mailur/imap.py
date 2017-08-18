@@ -10,7 +10,8 @@ from imaplib import CRLF
 
 from . import log
 
-IMAP_DEBUG = int(os.environ.get('IMAP_DEBUG', 1))
+DEBUG = int(os.environ.get('IMAP_DEBUG', 1))
+commands = {}
 
 
 class Error(Exception):
@@ -18,7 +19,7 @@ class Error(Exception):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
 
 
-def func_desc(func, *a, **kw):
+def fn_desc(func, *a, **kw):
     args = ', '.join(
         [repr(i) for i in a] +
         (['**%r' % kw] if kw else [])
@@ -26,15 +27,25 @@ def func_desc(func, *a, **kw):
     maxlen = 80
     if len(args) > maxlen:
         args = '%s...' % args[:maxlen]
-    return '%s(%s)' % (func.__name__, args)
+    name = getattr(func, 'name', func.__name__)
+    return '%s(%s)' % (name, args)
 
 
 @contextmanager
 def log_time(func, *a, **kw):
     start = time.time()
     yield
-    desc = func_desc(func, *a, **kw)
-    log.info('## %s: done for %.2fs', desc, time.time() - start)
+    desc = fn_desc(func, *a, **kw)
+    log.debug('## %s: done for %.2fs', desc, time.time() - start)
+
+
+def fn_lock(func):
+    @ft.wraps(func)
+    def inner(con, *a, **kw):
+        with con.lock:
+            with log_time(func, *a, **kw):
+                return func(con, *a, **kw)
+    return inner
 
 
 def check(res):
@@ -44,46 +55,41 @@ def check(res):
     return data
 
 
-def lock_fn(func):
-    @ft.wraps(func)
-    def inner(con, *a, **kw):
-        with con.lock:
-            with log_time(func, *a, **kw):
-                return func(con, *a, **kw)
+def command(*, name=None, lock=True, writable=False, dovecot=False):
+    def inner(func):
+        if name:
+            func.name = name
+        else:
+            func.name = func.__name__
+
+        if lock:
+            func = fn_lock(func)
+
+        commands[func] = {'writable': writable, 'dovecot': dovecot}
+        return func
     return inner
 
 
-def client_readonly(ctx, connect, debug=IMAP_DEBUG):
+def client(ctx, connect, writable=False, dovecot=False, debug=DEBUG):
     con = connect()
     con.debug = debug
     con.lock = threading.RLock()
 
     ctx.logout = con.logout
-    ctx.list = ft.partial(list_folders, con)
-    ctx.fetch = ft.partial(fetch, con)
-    ctx.status = ft.partial(status, con)
-    ctx.search = ft.partial(search, con)
-    ctx.select = ft.partial(select, con)
-    ctx.select_tag = ft.partial(select_tag, con)
     ctx.box = lambda: getattr(con, 'current_box', None)
     ctx.str = lambda: '%s[%r]' % (ctx.__class__.__name__, ctx.box())
+
+    for cmd, opts in commands.items():
+        if not dovecot and opts['dovecot']:
+            continue
+        elif not writable and opts['writable']:
+            continue
+        setattr(ctx, cmd.name, ft.partial(cmd, con))
     return con
 
 
-def client_full(ctx, connect, debug=IMAP_DEBUG):
-    con = client_readonly(ctx, connect, debug=debug)
-    ctx.append = ft.partial(append, con)
-    ctx.expunge = ft.partial(expunge, con)
-    ctx.sort = ft.partial(sort, con)
-    ctx.thread = ft.partial(thread, con)
-    ctx.store = ft.partial(store, con)
-    ctx.getmetadata = ft.partial(getmetadata, con)
-    ctx.setmetadata = ft.partial(setmetadata, con)
-    ctx.multiappend = ft.partial(multiappend, con)
-
-
 @contextmanager
-def cmd(con, name):
+def _cmd(con, name):
     tag = con._new_tag()
 
     def start(args):
@@ -93,12 +99,38 @@ def cmd(con, name):
     yield tag, start, lambda: con._command_complete(name, tag)
 
 
-@lock_fn
+def _mdkey(key):
+    if not key.startswith('/private'):
+        key = '/private/%s' % key
+    return key
+
+
+@command(dovecot=True, writable=True)
+def setmetadata(con, box, key, value):
+    key = _mdkey(key)
+    with _cmd(con, 'SETMETADATA') as (tag, start, complete):
+        args = '%s (%s %s)' % (box, key, json.dumps(value))
+        start(args.encode() + CRLF)
+        typ, data = complete()
+        return check(con._untagged_response(typ, data, 'METADATA'))
+
+
+@command(dovecot=True)
+def getmetadata(con, box, key):
+    key = _mdkey(key)
+    with _cmd(con, 'GETMETADATA') as (tag, start, complete):
+        args = '%s (%s)' % (box, key)
+        start(args.encode() + CRLF)
+        typ, data = complete()
+        return check(con._untagged_response(typ, data, 'METADATA'))
+
+
+@command(dovecot=True, writable=True)
 def multiappend(con, box, msgs):
     if not msgs:
         return
 
-    with cmd(con, 'APPEND') as (tag, start, complete):
+    with _cmd(con, 'APPEND') as (tag, start, complete):
         send = start
         for date_time, flags, msg in msgs:
             args = (' (%s) %s %s' % (flags, date_time, '{%s}' % len(msg)))
@@ -114,58 +146,34 @@ def multiappend(con, box, msgs):
         return check(complete())
 
 
-def _mdkey(key):
-    if not key.startswith('/private'):
-        key = '/private/%s' % key
-    return key
+@command(dovecot=True)
+def thread(con, *criteria):
+    res = check(con.uid('THREAD', *criteria))
+    return parse_thread(res[0].decode())
 
 
-@lock_fn
-def setmetadata(con, box, key, value):
-    key = _mdkey(key)
-    with cmd(con, 'SETMETADATA') as (tag, start, complete):
-        args = '%s (%s %s)' % (box, key, json.dumps(value))
-        start(args.encode() + CRLF)
-        typ, data = complete()
-        return check(con._untagged_response(typ, data, 'METADATA'))
+@command(dovecot=True)
+def sort(con, fields, *criteria, charset='UTF-8'):
+    return check(con.uid('SORT', fields, charset, *criteria))
 
 
-@lock_fn
-def getmetadata(con, box, key):
-    key = _mdkey(key)
-    with cmd(con, 'GETMETADATA') as (tag, start, complete):
-        args = '%s (%s)' % (box, key)
-        start(args.encode() + CRLF)
-        typ, data = complete()
-        return check(con._untagged_response(typ, data, 'METADATA'))
+@command(name='list')
+def xlist(con, folder='""', pattern='*'):
+    return check(con.list(folder, pattern))
 
 
-@lock_fn
-def list_folders(con, directory='""', pattern='*'):
-    return check(con.list(directory, pattern))
-
-
-@lock_fn
-def append(con, box, flags, date_time, msg):
-    return check(con.append(box, flags, date_time, msg))
-
-
-@lock_fn
-def expunge(con):
-    return check(con.expunge())
-
-
-@lock_fn
+@command()
 def select(con, box, readonly=True):
     res = check(con.select(box, readonly))
     con.current_box = box.decode() if isinstance(box, bytes) else box
     return res
 
 
+@command(lock=False)
 def select_tag(con, tag, readonly=True):
     if isinstance(tag, str):
         tag = tag.encode()
-    folders = list_folders(con)
+    folders = xlist(con)
     for f in folders:
         if not re.search(br'^\([^)]*?%s' % re.escape(tag), f):
             continue
@@ -174,28 +182,28 @@ def select_tag(con, tag, readonly=True):
     return select(con, folder, readonly)
 
 
-@lock_fn
+@command()
 def status(con, box, fields):
     box = con.current_box if box is None else box
     return check(con.status(box, fields))
 
 
-@lock_fn
+@command()
 def search(con, *criteria):
     return check(con.uid('SEARCH', None, *criteria))
 
 
-@lock_fn
-def thread(con, *criteria):
-    res = check(con.uid('THREAD', *criteria))
-    return parse_thread(res[0].decode())
+@command(writable=True)
+def append(con, box, flags, date_time, msg):
+    return check(con.append(box, flags, date_time, msg))
 
 
-@lock_fn
-def sort(con, sort_criteria, *search_criteria, charset='UTF-8'):
-    return check(con.uid('SORT', sort_criteria, charset, *search_criteria))
+@command(writable=True)
+def expunge(con):
+    return check(con.expunge())
 
 
+@command(lock=False)
 def fetch(con, uids, fields):
     if not isinstance(uids, (str, bytes)):
         @ft.wraps(fetch)
@@ -210,6 +218,7 @@ def fetch(con, uids, fields):
         return check(con.uid('FETCH', uids, fields))
 
 
+@command(lock=False, writable=True)
 def store(con, uids, cmd, flags):
     if not isinstance(uids, (str, bytes)):
         @ft.wraps(store)
@@ -292,7 +301,7 @@ def delayed_uids(func, uids, *a, **kw):
         return res
 
     inner.uids = list(uids)
-    inner.desc = func_desc(func, 'uids', *a, **kw)
+    inner.desc = fn_desc(func, 'uids', *a, **kw)
     return inner
 
 

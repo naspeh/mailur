@@ -33,7 +33,7 @@ def client(box=PARSED):
             return self.str()
 
     ctx = Local()
-    imap.client_full(ctx, connect)
+    imap.client(ctx, connect, dovecot=True, writable=True)
 
     if box:
         ctx.select(box)
