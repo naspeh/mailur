@@ -35,16 +35,7 @@ def connect():
 
 
 def client(tag='\\All'):
-    class Gmail:
-        def __repr__(self):
-            return self.str()
-
-        def __str__(self):
-            return self.str()
-
-    ctx = Gmail()
-    imap.client(ctx, connect)
-
+    ctx = imap.client('Gmail', connect)
     if tag:
         ctx.select_tag(tag)
     return ctx
@@ -111,7 +102,7 @@ def fetch_uids(uids, tag):
             ]).strip()
             yield parts['time'], flags, raw
 
-    lm = local.client(local.ALL)
+    lm = local.client(None)
     msgs = list(iter_msgs(res))
     try:
         return lm.multiappend(local.ALL, msgs)

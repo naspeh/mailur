@@ -25,16 +25,7 @@ def connect():
 
 
 def client(box=PARSED):
-    class Local:
-        def __repr__(self):
-            return self.str()
-
-        def __str__(self):
-            return self.str()
-
-    ctx = Local()
-    imap.client(ctx, connect, dovecot=True, writable=True)
-
+    ctx = imap.client('Local', connect, dovecot=True, writable=True)
     if box:
         ctx.select(box)
     return ctx
@@ -223,5 +214,5 @@ def update_threads(uids=None, criteria=None):
     clean = set(res[0].decode().split()).intersection(msgs) - set(thrs)
     if clean:
         con.store(clean, '-FLAGS.SILENT', '#latest')
-    con.store(thrs, '+FLAGS.SILENT', '#latest')
+    con.store(list(thrs), '+FLAGS.SILENT', '#latest')
     log.info('## updated %s threads', len(thrs))

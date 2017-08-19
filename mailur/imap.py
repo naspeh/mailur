@@ -31,20 +31,23 @@ def fn_desc(func, *a, **kw):
     return '%s(%s)' % (name, args)
 
 
-@contextmanager
-def log_time(func, *a, **kw):
-    start = time.time()
-    yield
-    desc = fn_desc(func, *a, **kw)
-    log.debug('## %s: done for %.2fs', desc, time.time() - start)
+def log_time(func):
+    @ft.wraps(func)
+    def inner(*a, **kw):
+        start = time.time()
+        try:
+            return func(*a, **kw)
+        finally:
+            desc = fn_desc(func, *a, **kw)
+            log.debug('## %s: done for %.2fs', desc, time.time() - start)
+    return inner
 
 
 def fn_lock(func):
     @ft.wraps(func)
     def inner(con, *a, **kw):
         with con.lock:
-            with log_time(func, *a, **kw):
-                return func(con, *a, **kw)
+            return log_time(func)(con, *a, **kw)
     return inner
 
 
@@ -70,11 +73,34 @@ def command(*, name=None, lock=True, writable=False, dovecot=False):
     return inner
 
 
-def client(ctx, connect, writable=False, dovecot=False, debug=DEBUG):
-    con = connect()
-    con.debug = debug
-    con.lock = threading.RLock()
+class Ctx:
+    def __init__(self, name):
+        self.name = name
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return '%s[%r]' % (self.name, self.box())
+
+
+def client(name, connect, *, writable=False, dovecot=False, debug=DEBUG):
+    def start():
+        con = connect()
+        con.debug = debug
+        con.lock = threading.RLock()
+        con.dovecot = dovecot
+        con.new = new
+        return con
+
+    def new():
+        con = start()
+        if ctx.box():
+            con.select(ctx.box(), con.is_readonly)
+        return con
+
+    con = start()
+    ctx = Ctx(name)
     ctx.logout = con.logout
     ctx.box = lambda: getattr(con, 'current_box', None)
     ctx.str = lambda: '%s[%r]' % (ctx.__class__.__name__, ctx.box())
@@ -85,7 +111,7 @@ def client(ctx, connect, writable=False, dovecot=False, debug=DEBUG):
         elif not writable and opts['writable']:
             continue
         setattr(ctx, cmd.name, ft.partial(cmd, con))
-    return con
+    return ctx
 
 
 @contextmanager
@@ -208,7 +234,11 @@ def fetch(con, uids, fields):
     if not isinstance(uids, (str, bytes)):
         @ft.wraps(fetch)
         def inner(uids, *args):
-            return fetch(con, ','.join(uids), *args)
+            uids = ','.join(uids)
+            new = con.new()
+            with new:
+                return fetch(new, uids, *args)
+            return fetch(con, uids, *args)
 
         res = partial_uids(delayed_uids(inner, uids, fields))
         res = ([] if len(i) == 1 and i[0] is None else i for i in res)

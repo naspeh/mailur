@@ -13,38 +13,45 @@ LOGGING['loggers']['mailur'] = {
 }
 
 
-def get_threads(query):
+def threads_sync(query):
     con = local.client()
     thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
     log.debug('query: %r; threads: %s', query, len(thrs))
     if not thrs:
         return '{}'
 
-    thrids = []
     all_flags = {}
     res = con.fetch(sum(thrs, []), 'FLAGS')
     for line in res:
         uid, flags = (
             re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode()).groups()
         )
-        flags = flags.split()
-        if '#latest' in flags:
-            thrids.append(uid)
         all_flags[uid] = flags
-    flags = {}
-    for uids in thrs:
-        thrid = set(uids).intersection(thrids)
-        if not thrid:
-            continue
-        flags[thrid.pop()] = set(sum((all_flags[uid] for uid in uids), []))
 
-    thrids_int = [int(i) for i in thrids]
-    uid_range = 'UID %s:%s' % (min(thrids_int), max(thrids_int))
+    flags = {}
+    max_uid = min_uid = None
+    for uids in thrs:
+        thr_flags = []
+        for uid in uids:
+            msg_flags = all_flags[uid]
+            if not msg_flags:
+                continue
+            thr_flags.append(msg_flags)
+            if '#latest' in msg_flags:
+                thrid = uid
+        flags[thrid] = set(' '.join(thr_flags).split())
+        thrid_int = int(thrid)
+        if not max_uid or thrid_int > max_uid:
+            max_uid = thrid_int
+        if not min_uid or thrid_int < min_uid:
+            min_uid = thrid_int
+
+    uid_range = 'UID %s:%s' % (min_uid, max_uid)
     res = con.sort('(REVERSE DATE)', '%s KEYWORD #latest' % uid_range)
     uids = [i for i in res[0].decode().split() if i in flags]
-    res = con.fetch(uids, '(BINARY.PEEK[2])')
 
     msgs = {}
+    res = con.fetch(uids, '(BINARY.PEEK[2])')
     for i in range(0, len(res), 2):
         uid = res[i][0].decode().split()[2]
         data = json.loads(res[i][1].decode())
@@ -54,12 +61,11 @@ def get_threads(query):
 
 async def threads(request):
     query = request.raw_args['q']
-    txt = get_threads(query)
+    txt = threads_sync(query)
     return response.text(txt)
 
 
-async def emails(request):
-    query = request.raw_args['q']
+def emails_sync(query):
     con = local.client()
     res = con.sort('(REVERSE DATE)', query)
     uids = res[0].decode().split()
@@ -78,7 +84,12 @@ async def emails(request):
         data = json.loads(res[i][1].decode())
         msgs[uid] = data
 
-    txt = json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
+    return json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
+
+
+async def emails(request):
+    query = request.raw_args['q']
+    txt = emails_sync(query)
     return response.text(txt)
 
 
