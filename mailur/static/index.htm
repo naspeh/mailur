@@ -74,6 +74,13 @@
       },
     }
   });
+  var ws = new WebSocket('ws://' + location.host + '/ws');
+  ws.onopen = function(event) {
+    ws.send('ping');
+  }
+  ws.onmessage = function() {
+    console.log(event.data);
+  }
   </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-#aiohttp
-#aiohttp_session
-sanic
+aiohttp
+aiohttp_session
 docopt
+ujson

@@ -1,16 +1,19 @@
 import pathlib
 import re
+from concurrent import futures
 
 import ujson as json
-from sanic import Sanic, response
-from sanic.config import LOGGING
+from aiohttp import web, WSMsgType
 
 from . import log, local
 
-LOGGING['loggers']['mailur'] = {
-    'level': 'DEBUG',
-    'handlers': ['internal', 'errorStream']
-}
+
+static = pathlib.Path(__file__).parent / 'static'
+pool = futures.ProcessPoolExecutor()
+
+
+async def run_sync(request, *a, **kw):
+    return await request.app.loop.run_in_executor(pool, *a, **kw)
 
 
 def threads_sync(query):
@@ -60,9 +63,9 @@ def threads_sync(query):
 
 
 async def threads(request):
-    query = request.raw_args['q']
-    txt = threads_sync(query)
-    return response.text(txt)
+    query = request.query['q']
+    txt = await run_sync(request, threads_sync, query)
+    return web.Response(text=txt)
 
 
 def emails_sync(query):
@@ -71,7 +74,7 @@ def emails_sync(query):
     uids = res[0].decode().split()
     log.debug('query: %r; messages: %s', query, len(uids))
     if not uids:
-        return response.text('{}')
+        return '{}'
     res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[2])')
     msgs = {}
     flags = {}
@@ -88,36 +91,77 @@ def emails_sync(query):
 
 
 async def emails(request):
-    query = request.raw_args['q']
-    txt = emails_sync(query)
-    return response.text(txt)
+    query = request.query['q']
+    txt = await run_sync(request, emails_sync, query)
+    return web.Response(text=txt)
 
 
 async def origin(request, uid):
-    con = local.client(local.ALL)
-    res = con.fetch(uid, 'body[]')
-    return response.text(res[0][1].decode())
+    def sync(uid):
+        con = local.client(local.ALL)
+        res = con.fetch(uid, 'body[]')
+        return res[0][1].decode()
+
+    return web.Response(text=await run_sync(request, sync, uid))
 
 
 async def parsed(request, uid):
-    con = local.client()
-    res = con.fetch(uid, 'body[]')
-    return response.text(res[0][1].decode())
+    def sync(uid):
+        con = local.client()
+        res = con.fetch(uid, 'body[]')
+        return res[0][1].decode()
+
+    return web.Response(text=await run_sync(request, sync, uid))
+
+
+async def ws_client(request):
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+
+    async for msg in ws:
+        if msg.type == WSMsgType.TEXT:
+            if msg.data == 'close':
+                await ws.close()
+            elif msg.data == 'ping':
+                await ws.send_str('pong')
+            else:
+                await ws.send_str(msg.data + '/answer')
+        elif msg.type == WSMsgType.ERROR:
+            log.error('ws connection closed with exception %s', ws.exception())
+
+    log.info('ws connection closed')
+    return ws
+
+
+async def pass_match_info(app, handler):
+    async def inner(request):
+        if handler in (origin, parsed):
+            return await handler(request, **request.match_info)
+        return await handler(request)
+    return inner
+
+
+def bind_static(router):
+    async def index(request):
+        return web.FileResponse(static / 'index.htm')
+
+    router.add_get('/', index)
+    router.add_static('/', static)
 
 
 def get_app():
-    app = Sanic()
-    r = app.add_route
-    r(emails, '/emails')
-    r(threads, '/threads')
-    r(origin, '/origin/<uid>')
-    r(parsed, '/parsed/<uid>')
+    app = web.Application(middlewares=[pass_match_info])
+    r = app.router.add_route
 
-    static = str(pathlib.Path(__file__).parent / 'static')
-    app.static('/', static + '/index.htm')
-    app.static('/', static)
+    r('GET', '/ws', ws_client)
+    r('GET', '/emails', emails)
+    r('GET', '/threads', threads)
+    r('GET', '/origin/{uid}', origin)
+    r('GET', '/parsed/{uid}', parsed)
+
+    bind_static(app.router)
     return app
 
 
 if __name__ == '__main__':
-    get_app().run(host="0.0.0.0", port=5000, log_config=LOGGING)
+    web.run_app(get_app(), port=5000)
