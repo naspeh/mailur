@@ -69,12 +69,16 @@ userdb {
     default_fields = uid=vmail gid=vmail home=/home/vmail/%u
 }
 
-mail_plugins = $mail_plugins acl notify mail_log virtual
+mail_plugins = $mail_plugins acl notify mail_log virtual fts fts_squat
 plugin {
     acl = vfile:/etc/dovecot/acl
+    acl_globals_only = yes
 
     mail_log_events = delete undelete expunge copy save flag_change
     mail_log_fields = uid box msgid flags
+
+    fts = squat
+    fts_squat = partial=4 full=20
 }
 
 mail_attribute_dict = file:%h/dovecot-attributes
@@ -115,7 +119,9 @@ namespace {
         special_use = \Trash
     }
 }
-
+service indexer-worker {
+    vsz_limit = 2G
+}
 service doveadm {
     inet_listener {
         port = 12345

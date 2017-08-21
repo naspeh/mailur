@@ -7,7 +7,6 @@ from aiohttp import web, WSMsgType
 
 from . import log, local
 
-
 static = pathlib.Path(__file__).parent / 'static'
 pool = futures.ProcessPoolExecutor()
 
@@ -34,6 +33,7 @@ def threads_sync(query):
     flags = {}
     max_uid = min_uid = None
     for uids in thrs:
+        thrid = None
         thr_flags = []
         for uid in uids:
             msg_flags = all_flags[uid]
@@ -42,6 +42,8 @@ def threads_sync(query):
             thr_flags.append(msg_flags)
             if '#latest' in msg_flags:
                 thrid = uid
+        if thrid is None:
+            continue
         flags[thrid] = set(' '.join(thr_flags).split())
         thrid_int = int(thrid)
         if not max_uid or thrid_int > max_uid:
@@ -96,13 +98,15 @@ async def emails(request):
     return web.Response(text=txt)
 
 
-async def origin(request, uid):
-    def sync(uid):
-        con = local.client(local.ALL)
-        res = con.fetch(uid, 'body[]')
-        return res[0][1].decode()
+def msg_sync(uid, box=local.ALL):
+    con = local.client(box)
+    res = con.fetch(uid, 'body[]')
+    return res[0][1].decode()
 
-    return web.Response(text=await run_sync(request, sync, uid))
+
+async def origin(request, uid):
+    txt = await run_sync(request, msg_sync, uid)
+    return web.Response(text=await txt)
 
 
 async def parsed(request, uid):
@@ -111,7 +115,8 @@ async def parsed(request, uid):
         res = con.fetch(uid, 'body[]')
         return res[0][1].decode()
 
-    return web.Response(text=await run_sync(request, sync, uid))
+    txt = await run_sync(request, msg_sync, uid, local.PARSED)
+    return web.Response(text=txt)
 
 
 async def ws_client(request):

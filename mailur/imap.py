@@ -10,7 +10,7 @@ from imaplib import CRLF
 
 from . import log
 
-DEBUG = int(os.environ.get('IMAP_DEBUG', 1))
+DEBUG = int(os.environ.get('IMAP_DEBUG', 0))
 commands = {}
 
 
