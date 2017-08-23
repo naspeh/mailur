@@ -105,7 +105,7 @@ def fetch_uids(uids, tag):
     lm = local.client(None)
     msgs = list(iter_msgs(res))
     try:
-        return lm.multiappend(local.ALL, msgs)
+        return lm.multiappend(local.SRC, msgs)
     finally:
         lm.logout()
 
@@ -114,7 +114,7 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     log.info('## process %r', tag)
     con = local.client()
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
-    res = con.getmetadata(local.ALL, metakey)
+    res = con.getmetadata(local.SRC, metakey)
     if len(res) != 1:
         uidvalidity, uidnext = res[0][1].decode().split(',')
         uidnext = int(uidnext)
@@ -140,7 +140,7 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     delayed = imap.delayed_uids(fetch_uids, uids, tag)
     res = imap.partial_uids(delayed, size=batch, threads=threads)
     con = local.client(None)
-    con.setmetadata(local.ALL, metakey, '%s,%s' % (uidvalidity, uidnext))
+    con.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
     return res
 
 

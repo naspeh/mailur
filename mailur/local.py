@@ -13,8 +13,8 @@ from . import log, imap
 
 USER = os.environ.get('MLR_USER', 'user')
 
+SRC = 'Src'
 ALL = 'All'
-PARSED = 'Parsed'
 TAGS = 'Tags'
 
 
@@ -24,7 +24,7 @@ def connect():
     return con
 
 
-def client(box=PARSED):
+def client(box=ALL):
     ctx = imap.client('Local', connect, dovecot=True, writable=True)
     if box:
         ctx.select(box)
@@ -72,7 +72,7 @@ def parsed_uids(con, uids=None):
 
 @ft.lru_cache(maxsize=None)
 def fetch_parsed_uids(con):
-    con.select(PARSED)
+    con.select(ALL)
     res = con.fetch('1:*', 'BODY.PEEK[1]')
     return {
         res[i][0].split()[2].decode(): res[i][1].decode()
@@ -116,7 +116,7 @@ def create_msg(raw, uid, time):
 
 
 def parse_uids(uids):
-    con = client(ALL)
+    con = client(SRC)
     res = con.fetch(uids, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
     def iter_msgs(res):
@@ -139,16 +139,16 @@ def parse_uids(uids):
 
     msgs = list(iter_msgs(res))
     try:
-        return con.multiappend(PARSED, msgs)
+        return con.multiappend(ALL, msgs)
     finally:
         con.logout()
 
 
 def parse(criteria=None, *, batch=1000, threads=4):
-    con = client(ALL)
+    con = client(SRC)
     uidnext = 1
     if criteria is None:
-        res = con.getmetadata(PARSED, 'uidnext')
+        res = con.getmetadata(ALL, 'uidnext')
         if len(res) > 1:
             uidnext = int(res[0][1].decode())
             log.info('## saved: uidnext=%s', uidnext)
@@ -160,12 +160,12 @@ def parse(criteria=None, *, batch=1000, threads=4):
         log.info('## all parsed already')
         return
 
-    res = con.status(ALL, '(UIDNEXT)')
+    res = con.status(SRC, '(UIDNEXT)')
     uidnext = re.search(r'UIDNEXT (?P<next>\d+)', res[0].decode()).group(1)
     log.info('## new: uidnext: %s', uidnext)
 
     log.info('## criteria: %r; %s uids', criteria, len(uids))
-    count = con.select(PARSED, readonly=False)
+    count = con.select(ALL, readonly=False)
     if count[0] != b'0':
         count = None
         if criteria.lower() == 'all':
@@ -175,7 +175,7 @@ def parse(criteria=None, *, batch=1000, threads=4):
             puids = ','.join(parsed_uids(con, uids))
         if puids:
             count = count or puids.count(',') + 1
-            log.info('## delete %s messages from %r', count, PARSED)
+            log.info('## delete %s messages from %r', count, ALL)
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
@@ -184,7 +184,7 @@ def parse(criteria=None, *, batch=1000, threads=4):
     imap.partial_uids(delayed, size=batch, threads=threads)
 
     con = client(None)
-    con.setmetadata(PARSED, 'uidnext', str(uidnext))
+    con.setmetadata(ALL, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
     update_threads(parsed_uids(con, uids))
@@ -209,7 +209,7 @@ def update_threads(uids=None, criteria=None):
             latest = res[0].decode().rsplit(' ', 1)[-1]
         thrs[latest] = thrids
 
-    con.select(PARSED, readonly=False)
+    con.select(ALL, readonly=False)
     res = con.search('KEYWORD #latest')
     clean = set(res[0].decode().split()).intersection(msgs) - set(thrs)
     if clean:

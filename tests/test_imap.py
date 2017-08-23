@@ -29,13 +29,13 @@ def test_fn_partial_uids(clean_users, gm_client):
     assert [] == con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
     assert [] == con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS')
 
-    con.select(local.PARSED, readonly=False)
+    con.select(local.ALL, readonly=False)
     assert [] == con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#')
     assert [] == con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#')
 
     # with one message
-    con.append(local.PARSED, None, None, local.binary_msg('42').as_bytes())
-    con.select(local.PARSED, readonly=True)
+    con.append(local.ALL, None, None, local.binary_msg('42').as_bytes())
+    con.select(local.ALL, readonly=True)
     assert [b'1 (UID 1 FLAGS ())'] == (
         con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
     )
@@ -43,7 +43,7 @@ def test_fn_partial_uids(clean_users, gm_client):
         con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS')
     )
 
-    con.select(local.PARSED, readonly=False)
+    con.select(local.ALL, readonly=False)
     assert [b'1 (UID 1 FLAGS (#1))'] == (
         con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#1')
     )

@@ -65,6 +65,10 @@ def gm_fake():
             return responces.pop()
         return gm_client._uid(name, *a, **kw)
 
+    def select(box, readonly=True):
+        con.current_box = 'Src'
+        return gm_client._select('Src', readonly)
+
     con = imaplib.IMAP4('localhost', 143)
     con.login('test2*root', 'root')
 
@@ -72,7 +76,7 @@ def gm_fake():
     gm_client._uid = con.uid
     gm_client._select = con.select
     con.uid = uid
-    con.select = lambda n, readonly: gm_client._select('All', readonly)
+    con.select = select
     return con
 
 
@@ -105,7 +109,7 @@ def gm_client():
                 msg = msg.as_bytes()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
-            gm_client.con.append('All', None, None, msg)
+            gm_client.con.append(local.SRC, None, None, msg)
             gm_client.fetch[0][1].extend([
                 (
                     b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '

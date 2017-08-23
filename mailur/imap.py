@@ -190,21 +190,23 @@ def xlist(con, folder='""', pattern='*'):
 
 @command()
 def select(con, box, readonly=True):
-    res = check(con.select(box, readonly))
     con.current_box = box.decode() if isinstance(box, bytes) else box
-    return res
+    return check(con.select(box, readonly))
 
 
 @command(lock=False)
 def select_tag(con, tag, readonly=True):
     if isinstance(tag, str):
         tag = tag.encode()
+    folder = None
     folders = xlist(con)
     for f in folders:
         if not re.search(br'^\([^)]*?%s' % re.escape(tag), f):
             continue
         folder = f.rsplit(b' "/" ', 1)[1]
         break
+    if folder is None:
+        raise ValueError('No folder with tag: %s\n%s' % (tag, folders))
     return select(con, folder, readonly)
 
 

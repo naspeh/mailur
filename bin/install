@@ -94,7 +94,7 @@ namespace {
         auto = subscribe
         special_use = \All
     }
-    mailbox Parsed {
+    mailbox Src {
         auto = subscribe
     }
     mailbox Tags {
@@ -139,7 +139,7 @@ EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr
 Test owner lrwstipe
-Parsed owner lrst
+All owner lrst
 V/* owner lrst
 * user=root lrwstipe
 EOF

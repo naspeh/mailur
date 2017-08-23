@@ -10,15 +10,15 @@ for user in $names; do
     path=/home/vmail/$user/V
     mkdir -p $path/{INBOX,Trash,Spam}
     cat <<"EOF" > $path/INBOX/dovecot-virtual
-Parsed
+All
   NOT KEYWORD $Trash NOT KEYWORD $Junk KEYWORD $Inbox
 EOF
 cat <<"EOF" > $path/Trash/dovecot-virtual
-Parsed
+All
   KEYWORD $Trash
 EOF
 cat <<"EOF" > $path/Spam/dovecot-virtual
-Parsed
+All
   NOT KEYWORD $Trash KEYWORD $Spam
 EOF
 done

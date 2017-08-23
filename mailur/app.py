@@ -98,7 +98,7 @@ async def emails(request):
     return web.Response(text=txt)
 
 
-def msg_sync(uid, box=local.ALL):
+def msg_sync(uid, box=local.SRC):
     con = local.client(box)
     res = con.fetch(uid, 'body[]')
     return res[0][1].decode()
@@ -115,7 +115,7 @@ async def parsed(request, uid):
         res = con.fetch(uid, 'body[]')
         return res[0][1].decode()
 
-    txt = await run_sync(request, msg_sync, uid, local.PARSED)
+    txt = await run_sync(request, msg_sync, uid, local.ALL)
     return web.Response(text=txt)
 
 
