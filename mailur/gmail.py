@@ -16,11 +16,13 @@ MAP_LABELS = {
     '\\Drafts': '\\Draft',
     '\\Draft': '\\Draft',
     '\\Starred': '\\Flagged',
-    '\\Junk': '#spam',
-    '\\Trash': '#trash',
     '\\Inbox': '#inbox',
     '\\Sent': '#sent',
     '\\Important': '#important'
+}
+MAP_FOLDERS = {
+    '\\Junk': local.SPAM,
+    '\\Trash': local.TRASH,
 }
 
 
@@ -48,7 +50,7 @@ def fetch_uids(uids, tag):
         'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
         ')'
     )
-    res = gm.fetch(uids, fields)
+    res = gm.fetch(','.join(uids), fields)
     gm.logout()
 
     def flag(m):
@@ -98,14 +100,14 @@ def fetch_uids(uids, tag):
             flags = ' '.join([
                 flags,
                 re.sub(r'("[^"]*"|[^" ]*)', label, parts['labels']),
-                dict({'\\All': ''}, **MAP_LABELS).get(tag),
+                MAP_LABELS.get(tag, ''),
             ]).strip()
             yield parts['time'], flags, raw
 
     lm = local.client(None)
     msgs = list(iter_msgs(res))
     try:
-        return lm.multiappend(local.SRC, msgs)
+        return lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs)
     finally:
         lm.logout()
 

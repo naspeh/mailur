@@ -13,10 +13,10 @@ def test_basic_gmail(select):
     )
 
     con.select_tag('\\Junk')
-    assert select.call_args == call(ANY, b'V/Spam', True)
+    assert select.call_args == call(ANY, b'Spam', True)
 
     con.select_tag('\\Trash')
-    assert select.call_args == call(ANY, b'V/Trash', True)
+    assert select.call_args == call(ANY, b'Trash', True)
 
     with patch('mailur.imap.log_time') as m:
         con.list()

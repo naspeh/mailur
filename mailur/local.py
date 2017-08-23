@@ -15,6 +15,8 @@ USER = os.environ.get('MLR_USER', 'user')
 
 SRC = 'Src'
 ALL = 'All'
+TRASH = 'Trash'
+SPAM = 'Spam'
 TAGS = 'Tags'
 
 

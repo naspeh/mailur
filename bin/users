@@ -7,19 +7,17 @@ pass='{SHA256-CRYPT}$5$cUrO1/xHQA05WLNB$QeXNNtyNuh/flJZuqhjhDEQz71WvCaSklu6jOTpm
 names="user demo test1 test2"
 for user in $names; do
     echo "$user:$pass::::::" >> $users
-    path=/home/vmail/$user/V
-    mkdir -p $path/{INBOX,Trash,Spam}
+    mkdir -p /home/vmail/$user/mailboxes/{Src,All,Spam,Trash}
+
+    path=/home/vmail/$user/tags
+    mkdir -p $path/{INBOX,Flagged}
     cat <<"EOF" > $path/INBOX/dovecot-virtual
 All
-  NOT KEYWORD $Trash NOT KEYWORD $Junk KEYWORD $Inbox
+  KEYWORD #inbox
 EOF
-cat <<"EOF" > $path/Trash/dovecot-virtual
+    cat <<"EOF" > $path/Flagged/dovecot-virtual
 All
-  KEYWORD $Trash
-EOF
-cat <<"EOF" > $path/Spam/dovecot-virtual
-All
-  NOT KEYWORD $Trash KEYWORD $Spam
+  FLAGGED
 EOF
 done
 

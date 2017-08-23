@@ -49,7 +49,7 @@ service imap-login {
   }
 }
 
-mail_location = mdbox:~/mails
+mail_location = mdbox:~
 mdbox_rotate_size = 100M
 
 auth_master_user_separator = *
@@ -90,34 +90,33 @@ protocol imap {
 namespace {
     prefix =
     separator = /
-    mailbox All {
-        auto = subscribe
-        special_use = \All
-    }
     mailbox Src {
         auto = subscribe
     }
-    mailbox Tags {
+    mailbox All {
         auto = subscribe
-    }
-    mailbox Test {
-        auto = subscribe
-    }
-}
-namespace {
-    prefix = V/
-    separator = /
-    inbox = yes
-    location = virtual:%h/V
-
-    mailbox Spam {
-        auto = subscribe
-        special_use = \Junk
+        special_use = \All
     }
     mailbox Trash {
         auto = subscribe
         special_use = \Trash
     }
+    mailbox Spam {
+        auto = subscribe
+        special_use = \Junk
+    }
+    mailbox Tags {
+        auto = subscribe
+    }
+    mailbox Contacts {
+        auto = subscribe
+    }
+}
+namespace {
+    inbox = yes
+    prefix = tags/
+    separator = /
+    location = virtual:%h/tags
 }
 service indexer-worker {
     vsz_limit = 2G
@@ -138,9 +137,8 @@ root:{SHA256-CRYPT}$5$B9xOinAHt1RAIjzn$KY/xCDl9wu9jkIGpga/kqi1Szz4P9e9BdinItSYSQ
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr
-Test owner lrwstipe
 All owner lrst
-V/* owner lrst
+Src owner lrpi
 * user=root lrwstipe
 EOF
 

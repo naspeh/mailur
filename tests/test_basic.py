@@ -117,15 +117,13 @@ def test_fetched_msg(gm_client):
     assert '\\Recent #t1 #t2' == flags
     assert local.get_tags(lm) == {'#t1': 'label', '#t2': 'another label'}
 
-    gm_client.add_emails([{}])
+    gm_client.add_emails([{}], box=local.SPAM)
     gmail.fetch_folder('\\Junk')
-    flags, msg = get_latest()
-    assert '#spam' in flags
+    assert len(get_msgs(local.SPAM)) == 1
 
-    gm_client.add_emails([{}])
+    gm_client.add_emails([{}], box=local.TRASH)
     gmail.fetch_folder('\\Trash')
-    flags, msg = get_latest()
-    assert '#trash' in flags
+    assert len(get_msgs(local.TRASH)) == 1
 
 
 def test_thrids(clean_users, gm_client):

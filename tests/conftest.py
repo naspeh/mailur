@@ -27,7 +27,8 @@ def setup(gm_client):
 @pytest.fixture
 def clean_users():
     call('''
-    rm -rf /home/vmail/test*/mails/mailboxes/*
+    rm -rf /home/vmail/test*/mailboxes/*
+    bin/users
     ''', shell=True, cwd=root)
 
 
@@ -65,18 +66,12 @@ def gm_fake():
             return responces.pop()
         return gm_client._uid(name, *a, **kw)
 
-    def select(box, readonly=True):
-        con.current_box = 'Src'
-        return gm_client._select('Src', readonly)
-
     con = imaplib.IMAP4('localhost', 143)
     con.login('test2*root', 'root')
 
     gm_client.con = con
     gm_client._uid = con.uid
-    gm_client._select = con.select
     con.uid = uid
-    con.select = select
     return con
 
 
@@ -84,7 +79,7 @@ def gm_fake():
 def gm_client():
     from mailur import local, gmail
 
-    def add_emails(items=None):
+    def add_emails(items=None, box=local.ALL):
         gmail.client()
         if items is None:
             items = [{}]
@@ -109,7 +104,7 @@ def gm_client():
                 msg = msg.as_bytes()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
-            gm_client.con.append(local.SRC, None, None, msg)
+            gm_client.con.append(box, None, None, msg)
             gm_client.fetch[0][1].extend([
                 (
                     b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '
