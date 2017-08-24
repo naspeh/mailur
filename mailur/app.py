@@ -11,6 +11,34 @@ static = pathlib.Path(__file__).parent / 'static'
 pool = futures.ProcessPoolExecutor()
 
 
+def get_app():
+    app = web.Application()
+    r = app.router.add_route
+
+    r('GET', '/ws', ws_client)
+    r('GET', '/emails', emails)
+    r('GET', '/threads', threads)
+    r('GET', '/origin/{uid}', origin)
+    r('GET', '/parsed/{uid}', parsed)
+
+    bind_static(app.router)
+    return app
+
+
+def bind_static(router):
+    async def index(request):
+        return web.FileResponse(static / 'index.htm')
+
+    router.add_get('/', index)
+    router.add_static('/', static)
+
+
+def match_info(handler):
+    def inner(request):
+        return handler(request, **request.match_info)
+    return inner
+
+
 async def run_sync(request, *a, **kw):
     return await request.app.loop.run_in_executor(pool, *a, **kw)
 
@@ -104,17 +132,14 @@ def msg_sync(uid, box=local.SRC):
     return res[0][1].decode()
 
 
+@match_info
 async def origin(request, uid):
     txt = await run_sync(request, msg_sync, uid)
-    return web.Response(text=await txt)
+    return web.Response(text=txt)
 
 
+@match_info
 async def parsed(request, uid):
-    def sync(uid):
-        con = local.client()
-        res = con.fetch(uid, 'body[]')
-        return res[0][1].decode()
-
     txt = await run_sync(request, msg_sync, uid, local.ALL)
     return web.Response(text=txt)
 
@@ -136,36 +161,6 @@ async def ws_client(request):
 
     log.info('ws connection closed')
     return ws
-
-
-async def pass_match_info(app, handler):
-    async def inner(request):
-        if handler in (origin, parsed):
-            return await handler(request, **request.match_info)
-        return await handler(request)
-    return inner
-
-
-def bind_static(router):
-    async def index(request):
-        return web.FileResponse(static / 'index.htm')
-
-    router.add_get('/', index)
-    router.add_static('/', static)
-
-
-def get_app():
-    app = web.Application(middlewares=[pass_match_info])
-    r = app.router.add_route
-
-    r('GET', '/ws', ws_client)
-    r('GET', '/emails', emails)
-    r('GET', '/threads', threads)
-    r('GET', '/origin/{uid}', origin)
-    r('GET', '/parsed/{uid}', parsed)
-
-    bind_static(app.router)
-    return app
 
 
 if __name__ == '__main__':

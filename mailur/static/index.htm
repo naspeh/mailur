@@ -36,7 +36,7 @@
       uids: [],
       msgs: {},
       flags: {},
-      query: location.hash.slice(1)  || 'all',
+      query: decodeURIComponent(location.hash.slice(1))  || 'all',
       show_threads: false,
       show_bodies: false,
     },
@@ -78,8 +78,8 @@
   ws.onopen = function(event) {
     ws.send('ping');
   }
-  ws.onmessage = function() {
-    console.log(event.data);
+  ws.onmessage = function(event) {
+    console.log('ws:' + event.data);
   }
   </script>
 </body>
