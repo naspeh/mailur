@@ -104,11 +104,11 @@ def test_fetched_msg(gm_client):
 
     lm = local.client()
     gm_client.add_emails([
-        {'flags': '\\Flagged', 'labels': '"\\\\Inbox" "\\\\Sent" label'}
+        {'flags': r'\Flagged', 'labels': r'"\\Inbox" "\\Sent" label'}
     ])
     gmail.fetch_folder('\\All')
     flags, msg = get_latest()
-    assert '\\Flagged \\Recent #inbox #sent #t1' == flags
+    assert r'\Flagged \Recent #inbox #sent #t1' == flags
     assert local.get_tags(lm) == {'#t1': 'label'}
 
     gm_client.add_emails([{'labels': 'label "another label"'}])
@@ -116,6 +116,18 @@ def test_fetched_msg(gm_client):
     flags, msg = get_latest()
     assert '\\Recent #t1 #t2' == flags
     assert local.get_tags(lm) == {'#t1': 'label', '#t2': 'another label'}
+
+    gm_client.add_emails([
+        {'labels': r'"\\Important" "\\Sent" "test(&BEIENQRBBEI-)"'}
+    ])
+    gmail.fetch_folder('\\All')
+    flags, msg = get_latest()
+    assert '\Recent #sent #important #t3' == flags
+    assert local.get_tags(lm) == {
+        '#t1': 'label',
+        '#t2': 'another label',
+        '#t3': 'test(&BEIENQRBBEI-)',
+    }
 
     gm_client.add_emails([{}], box=local.SPAM)
     gmail.fetch_folder('\\Junk')

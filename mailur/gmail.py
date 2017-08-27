@@ -77,7 +77,7 @@ def fetch_uids(uids, tag):
                 r' ?|'
                 r'FLAGS \((?P<flags>[^)]*)\)'
                 r' ?|'
-                r'X-GM-LABELS \((?P<labels>[^)]*)\)'
+                r'X-GM-LABELS \((?P<labels>.*)\)'
                 r' ?|'
                 r'X-GM-MSGID (?P<msgid>\d+)'
                 r' ?|'
