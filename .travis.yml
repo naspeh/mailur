@@ -11,4 +11,4 @@ install:
   - pip install flake8
 script:
   - flake8 .
-  - sudo ./bin/test.sh
+  - sudo ./bin/test

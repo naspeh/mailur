@@ -1,0 +1,137 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+apk add dovecot
+
+id -u vmail || (
+addgroup -g 5000 -S vmail
+adduser -h /home/vmail -s /bin/false -u 5000 -DSG vmail vmail
+)
+
+[ -d '/etc/dovecot.bak' ] || (
+    mv /etc/dovecot{,.bak}
+    mkdir /etc/dovecot
+)
+cat <<"EOF" > /etc/dovecot/dovecot.conf
+auth_debug=yes
+auth_debug_passwords=yes
+auth_verbose_passwords=sha1
+mail_debug=yes
+verbose_ssl=yes
+log_path = /var/log/dovecot.log
+
+ssl = required
+ssl_key = </etc/ssl/dovecot/server.key
+ssl_cert = </etc/ssl/dovecot/server.pem
+ssl_client_ca_dir = /etc/ssl/certs/
+
+protocols = imap
+service imap-login {
+  inet_listener imap {
+    port = 143
+    address = localhost
+  }
+  inet_listener imaps {
+    port = 993
+    ssl = yes
+    address = *
+  }
+}
+
+mail_location = mdbox:~
+mdbox_rotate_size = 100M
+
+auth_master_user_separator = *
+passdb {
+    driver = passwd-file
+    args = /etc/dovecot/passwd.masters
+    master = yes
+    pass = yes
+}
+passdb {
+    driver = passwd-file
+    args = /etc/dovecot/passwd.users
+}
+userdb {
+    driver = passwd-file
+    args = /etc/dovecot/passwd.users
+    default_fields = uid=vmail gid=vmail home=/home/vmail/%u
+}
+
+mail_plugins = $mail_plugins acl notify mail_log virtual fts fts_squat
+plugin {
+    acl = vfile:/etc/dovecot/acl
+    acl_globals_only = yes
+
+    mail_log_events = delete undelete expunge copy save flag_change
+    mail_log_fields = uid box msgid flags
+
+    fts = squat
+    fts_squat = partial=4 full=20
+}
+
+mail_attribute_dict = file:%h/dovecot-attributes
+protocol imap {
+    mail_max_userip_connections = 20
+    imap_metadata = yes
+}
+
+namespace {
+    prefix =
+    separator = /
+    mailbox Src {
+        auto = subscribe
+    }
+    mailbox All {
+        auto = subscribe
+        special_use = \All
+    }
+    mailbox Trash {
+        auto = subscribe
+        special_use = \Trash
+    }
+    mailbox Spam {
+        auto = subscribe
+        special_use = \Junk
+    }
+    mailbox Tags {
+        auto = subscribe
+    }
+    mailbox Contacts {
+        auto = subscribe
+    }
+}
+namespace {
+    inbox = yes
+    prefix = tags/
+    separator = /
+    location = virtual:%h/tags
+}
+service indexer-worker {
+    vsz_limit = 2G
+}
+service doveadm {
+    inet_listener {
+        port = 12345
+    }
+    inet_listener http {
+        port = 8080
+    }
+}
+doveadm_port = 12345
+doveadm_password = secret
+EOF
+cat <<"EOF" > /etc/dovecot/passwd.masters
+root:{SHA256-CRYPT}$5$B9xOinAHt1RAIjzn$KY/xCDl9wu9jkIGpga/kqi1Szz4P9e9BdinItSYSQV2
+EOF
+cat <<"EOF" > /etc/dovecot/acl
+* owner lr
+All owner lrst
+Src owner lrpi
+* user=root lrwstipe
+EOF
+
+bin/users
+
+rc-update add dovecot
+rc-service dovecot restart

@@ -14,7 +14,6 @@ set -exuo pipefail
 
 cd /opt/mailur
 bin/install
-bin/devel
 set +ux
 . env/bin/activate
 set -ux
