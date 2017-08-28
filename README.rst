@@ -5,7 +5,7 @@ Mailur
 
 *The first name was Mailr, but it was taken for similar project on Ruby.*
 
-**More information:** http://pusto.org/en/mailr/
+**More information:** http://pusto.org/mailur/
 
 **Public demo:** http://mail.pusto.org
 
@@ -16,9 +16,9 @@ You can send emails to **mailr[at]pusto.org** for them to appear in the Inbox.
 
 Screenshot
 ----------
-.. image:: http://pusto.org/en/mailr/screenshot-one.png
+.. image:: http://pusto.org/mailur/intro/screenshot-one.png
 
-.. image:: http://pusto.org/en/mailr/screenshot-s.png
+.. image:: http://pusto.org/mailur/intro/screenshot-s.png
 
 Installation
 ------------
