@@ -2,9 +2,6 @@
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
 
-# isync to get emails from gmail
-apk add isync
-
 # smtp server for testing with Thunderbird
 apk add opensmtpd
 sed -i 's/^listen.*/listen on 0.0.0.0/' /etc/smtpd/smtpd.conf
