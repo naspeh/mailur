@@ -1,0 +1,9 @@
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"; Format="flowed"
+Date: Wed, 07 Jan 2015 13:23:22 +0000
+From: =?utf-8?b?0JrQsNGC0Y8g0Jou?= <katya@example.com>
+To: Grisha <grrr@example.com>
+Subject: =?utf-8?b?UmU6INC90LUg0L/QvtGA0LAg0LvQuCDQv9C+0LTQutGA0LXQv9C40YLRjNGB0Y8/?=
+
+42

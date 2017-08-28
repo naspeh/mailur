@@ -67,12 +67,13 @@ def test_fetch_and_parse(clean_users, gm_client, some):
     assert lm.status(local.ALL, '(UIDNEXT)') == [b'All (UIDNEXT 7)']
 
 
-def get_latest(box=local.SRC):
+def get_latest(box=local.SRC, raw=False):
     lm = local.client(box)
     res = lm.fetch('*', '(flags body[])')
     msg = res[0][1]
     print(msg.decode())
-    msg = email.message_from_bytes(msg)
+    if not raw:
+        msg = email.message_from_bytes(msg)
     line = res[0][0].decode()
     print(line)
     flags = re.search('FLAGS \(([^)]*)\)', line).group(1)
@@ -167,7 +168,7 @@ def test_thrids(clean_users, gm_client):
     assert ['', '', '', '#latest'] == [i[0] for i in msgs]
 
 
-def test_parsed_msg(gm_client, load_file):
+def test_parsed_msg(clean_users, gm_client, load_file):
     gm_client.add_emails([{'flags': '\\Flagged'}])
     gmail.fetch_folder()
     local.parse()
@@ -176,15 +177,48 @@ def test_parsed_msg(gm_client, load_file):
     assert re.match('<\d+>', msg['X-UID'])
     assert '\\Flagged' in flags
 
-    # `email.policy.default` is not working
-    # with some badly formated addresses.
+    # `email.policy.default` is not working with long addresses.
     # Exits with: "segmentation fault (core dumped)"
     # when running in threads.
     gm_client.add_emails([
         {'txt': 'some text'},
-        {'raw': load_file('msg-header-with-whitespaces.txt')}
+        {'raw': load_file('msg-header-with-long-addresses.txt')}
+    ])
+
+    gmail.fetch_folder()
+    local.parse()
+    flags, msg = get_latest(local.ALL)
+    assert msg['to'].startswith('primary discussion list')
+
+    # should be decoding of headers during parsing
+    gm_client.add_emails([
+        {'raw': load_file('msg-header-with-encoding.txt')}
     ])
 
     gmail.fetch_folder()
     local.parse(batch=1)
-    flags, msg = get_latest(local.ALL)
+    flags, msg = get_latest(local.ALL, raw=True)
+    expect = '\r\n'.join([
+        'Date: Wed, 07 Jan 2015 13:23:22 +0000',
+        'From: "Катя К." <katya@example.com>',
+        'To: Grisha <grrr@example.com>',
+        'X-UID: <4>',
+        'X-Subject: Re: не пора ли подкрепиться?'
+    ])
+    assert msg.decode().startswith(expect)
+
+    gm_client.add_emails([
+        {'raw': load_file('msg-header-with-no-encoding.txt')}
+    ])
+
+    gmail.fetch_folder()
+    local.parse(batch=1)
+    flags, msg = get_latest(local.ALL, raw=True)
+    expect = '\r\n'.join([
+        'Date: Wed, 07 Jan 2015 13:23:22 +0000',
+        'From: "Катя К." <katya@example.com>',
+        'To: Гриша <grrr@example.com>',
+        'X-UID: <5>',
+        'X-Subject: Re: не пора ли подкрепиться?'
+    ])
+    assert msg.decode().startswith(expect)

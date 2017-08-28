@@ -45,7 +45,7 @@ async def run_sync(request, *a, **kw):
 
 def threads_sync(query):
     con = local.client()
-    thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % query)
+    thrs = con.thread(b'REFS UTF-8 INTHREAD REFS %s' % query.encode())
     log.debug('query: %r; threads: %s', query, len(thrs))
     if not thrs:
         return '{}'
@@ -100,7 +100,7 @@ async def threads(request):
 
 def emails_sync(query):
     con = local.client()
-    res = con.sort('(REVERSE DATE)', query)
+    res = con.sort('(REVERSE DATE)', query.encode())
     uids = res[0].decode().split()
     log.debug('query: %r; messages: %s', query, len(uids))
     if not uids:

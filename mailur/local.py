@@ -83,7 +83,11 @@ def fetch_parsed_uids(con):
 
 
 def create_msg(raw, uid, time):
-    orig = BytesParser().parsebytes(raw)
+    # TODO: there is a bug with folding mechanism,
+    # like this one https://bugs.python.org/issue30788,
+    # so use `max_line_length=None` by now, not sure if it's needed at all
+    policy = email.policy.SMTPUTF8.clone(max_line_length=None)
+    orig = BytesParser(policy=policy).parsebytes(raw)
     meta = {k.replace('-', '_'): orig[k] for k in ('message-id',)}
 
     subj = orig['subject']
@@ -96,13 +100,13 @@ def create_msg(raw, uid, time):
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
     meta['arrived'] = arrived.isoformat()
 
-    txt = [p for p in orig.walk() if p.get_content_maintype() == 'text']
-    body = b'<hr>'.join(i.get_payload(decode=True) for i in txt)
+    txt = orig.get_body(preferencelist=('plain', 'html'))
+    body = txt.get_content()
 
-    msg = MIMEPart(email.policy.compat32)
+    msg = MIMEPart(policy)
     headers = 'from to date message-id cc bcc in-reply-to references'.split()
     for n, v in orig.items():
-        if n.lower() not in headers:
+        if n.lower() not in headers or n.lower() in msg:
             continue
         msg.add_header(n, v)
 
@@ -129,13 +133,12 @@ def parse_uids(uids):
                 m[0].decode()
             ).groups()
             flags = flags.replace('\\Recent', '').strip()
-            msg_obj = create_msg(m[1], uid, time)
             try:
+                msg_obj = create_msg(m[1], uid, time)
                 msg = msg_obj.as_bytes()
             except Exception as e:
-                log.error('## %r uid=%s\n%s', e, uid, '\n'.join(
-                    '  %s: %s' % (n, v) for n, v in msg_obj.raw_items()
-                ))
+                msgid = re.findall(b'^(?im)message-id:.*', m[1])
+                log.exception('## %r uid=%s %s', e, uid, msgid)
                 continue
             yield time, flags, msg
 
