@@ -10,8 +10,9 @@ adduser -h /home/vmail -s /bin/false -u 5000 -DSG vmail vmail
 
 [ -d '/etc/dovecot.bak' ] || (
     mv /etc/dovecot{,.bak}
-    mkdir /etc/dovecot
 )
+rm -rf /etc/dovecot
+mkdir /etc/dovecot
 cat <<"EOF" > /etc/dovecot/dovecot.conf
 auth_debug=yes
 auth_debug_passwords=yes
@@ -41,13 +42,6 @@ service imap-login {
 mail_location = mdbox:~
 mdbox_rotate_size = 100M
 
-auth_master_user_separator = *
-passdb {
-    driver = passwd-file
-    args = /etc/dovecot/passwd.masters
-    master = yes
-    pass = yes
-}
 passdb {
     driver = passwd-file
     args = /etc/dovecot/passwd.users
@@ -121,14 +115,10 @@ service doveadm {
 doveadm_port = 12345
 doveadm_password = secret
 EOF
-cat <<"EOF" > /etc/dovecot/passwd.masters
-root:{SHA256-CRYPT}$5$B9xOinAHt1RAIjzn$KY/xCDl9wu9jkIGpga/kqi1Szz4P9e9BdinItSYSQV2
-EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr
 All owner lrst
 Src owner lrpi
-* user=root lrwstipe
 EOF
 
 bin/users

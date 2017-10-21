@@ -1,4 +1,3 @@
-import imaplib
 import sys
 from pathlib import Path
 from subprocess import call
@@ -10,7 +9,7 @@ root = (Path(__file__).parent / '..').resolve()
 sys.path.insert(0, str(root))
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session', autouse=True)
 def init():
     call('''
     rm -rf /home/vmail/test*
@@ -18,7 +17,7 @@ def init():
     ''', shell=True, cwd=root)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def setup(gm_client):
     with patch('mailur.local.USER', 'test1'):
         yield
@@ -60,14 +59,15 @@ def some():
 
 
 def gm_fake():
+    from mailur import local
+
     def uid(name, *a, **kw):
         responces = getattr(gm_client, name.lower(), None)
         if responces:
             return responces.pop()
         return gm_client._uid(name, *a, **kw)
 
-    con = imaplib.IMAP4('localhost', 143)
-    con.login('test2*root', 'root')
+    con = local.connect('test2')
 
     gm_client.con = con
     gm_client._uid = con.uid
@@ -104,7 +104,9 @@ def gm_client():
                 msg = msg.as_bytes()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
-            gm_client.con.append(box, None, None, msg)
+            res = gm_client.con.append(box, None, None, msg)
+            if res[0] != 'OK':
+                raise Exception(res)
             gm_client.fetch[0][1].extend([
                 (
                     b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '

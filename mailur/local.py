@@ -20,10 +20,11 @@ SPAM = 'Spam'
 TAGS = 'Tags'
 
 
-def connect():
-    con = imaplib.IMAP4('localhost', 143)
-    imap.check(con.login('%s*root' % USER, 'root'))
-    return con
+def connect(user=None):
+    user = user or USER
+    # disable ACL for getting full access
+    cmd = 'doveadm exec imap -u %s -o plugin/acl=vfile:/dev/null' % user
+    return imaplib.IMAP4_stream(cmd)
 
 
 def client(box=ALL):
