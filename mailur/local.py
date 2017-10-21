@@ -21,10 +21,18 @@ TAGS = 'Tags'
 
 
 def connect(user=None):
-    user = user or USER
-    # disable ACL for getting full access
-    cmd = 'doveadm exec imap -u %s -o plugin/acl=vfile:/dev/null' % user
-    return imaplib.IMAP4_stream(cmd)
+    opts = (
+        ' -u {user}'
+        # disable ACL to get full access
+        ' -o plugin/acl=vfile:/dev/null'
+        # turn on/off debug messages based on imap.DEBUG
+        ' -o debug={debug} -o mail_debug={debug}'
+        .format(
+            user=user or USER,
+            debug='yes' if imap.DEBUG else 'no'
+        )
+    )
+    return imaplib.IMAP4_stream('doveadm exec imap %s' % opts)
 
 
 def client(box=ALL):
