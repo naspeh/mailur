@@ -39,6 +39,7 @@ service imap-login {
   }
 }
 
+mail_home=/home/vmail/%u
 mail_location = mdbox:~
 mdbox_rotate_size = 100M
 
@@ -46,10 +47,13 @@ passdb {
     driver = passwd-file
     args = /etc/dovecot/passwd.users
 }
+passdb {
+    driver = checkpassword
+    args = /etc/dovecot/checkpassword
+}
 userdb {
-    driver = passwd-file
-    args = /etc/dovecot/passwd.users
-    default_fields = uid=vmail gid=vmail home=/home/vmail/%u
+    driver = static
+    default_fields = uid=vmail gid=vmail
 }
 
 mail_plugins = $mail_plugins acl notify mail_log virtual fts fts_squat
@@ -119,7 +123,31 @@ cat <<"EOF" > /etc/dovecot/acl
 * owner lr
 All owner lrst
 Src owner lrpi
+* user=root lrwstipe
 EOF
+cat <<"EOF" > /etc/dovecot/checkpassword
+#!/bin/bash
+# https://www.plesk.com/blog/product-technology/shell-checkpassword-authentication-in-dovecot/
+
+CHECKPASSWORD_REPLY_BINARY="$1"
+
+ERR_NOUSER=3
+
+# User and password will be supplied on file descriptor 3.
+INPUT_FD=3
+read -d $'\0' -r -u $INPUT_FD USER
+read -d $'\0' -r -u $INPUT_FD PASS
+
+# Skip autorization for localhost
+if [ "$TCPREMOTEIP" = "127.0.0.1" ] && grep "^$USER:" /etc/dovecot/passwd.users; then
+    export HOME=/home/vmail/$USER
+    export USER=root
+    exec $CHECKPASSWORD_REPLY_BINARY
+fi
+
+exit $ERR_NOUSER
+EOF
+chmod +x /etc/dovecot/checkpassword
 
 bin/users
 

@@ -6,7 +6,7 @@ pass='{SHA256-CRYPT}$5$cUrO1/xHQA05WLNB$QeXNNtyNuh/flJZuqhjhDEQz71WvCaSklu6jOTpm
 : > $users
 names="user demo test1 test2 grrr"
 for user in $names; do
-    echo "$user:$pass::::::" >> $users
+    echo "$user:$pass" >> $users
     mkdir -p /home/vmail/$user/mailboxes/{Src,All,Spam,Trash}
 
     path=/home/vmail/$user/tags
