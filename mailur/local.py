@@ -35,6 +35,7 @@ class Local(imaplib.IMAP4, imap.Conn):
         return super().login('%s*root' % self.username, 'root')
 
 
+@imap.log_time
 def connect(user=None):
     con = Local(user or USER)
     imap.check(con.login())

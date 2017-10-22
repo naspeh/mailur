@@ -51,6 +51,7 @@ class Gmail(imaplib.IMAP4, imap.Conn):
         return super().login(self.username, self.password)
 
 
+@imap.log_time
 def connect():
     con = Gmail()
     imap.check(con.login())

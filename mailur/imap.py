@@ -248,36 +248,30 @@ def expunge(con):
 
 @command(lock=False)
 def fetch(con, uids, fields):
-    if not isinstance(uids, (str, bytes)):
-        @ft.wraps(fetch)
-        def inner(uids, *args):
-            uids = ','.join(uids)
-            new = con.new()
-            with new:
-                return fetch(new, uids, *args)
-            return fetch(con, uids, *args)
-
-        res = partial_uids(delayed_uids(inner, uids, fields))
-        res = ([] if len(i) == 1 and i[0] is None else i for i in res)
+    uids = Uids(uids)
+    if uids.batches:
+        res = uids.call_async(fetch, con, uids, fields)
         return sum(res, [])
 
     with con.lock:
-        return check(con.uid('FETCH', uids, fields))
+        res = check(con.uid('FETCH', uids.str, fields))
+    if len(res) == 1 and res[0] is None:
+        return []
+    return res
 
 
 @command(lock=False, writable=True)
 def store(con, uids, cmd, flags):
-    if not isinstance(uids, (str, bytes)):
-        @ft.wraps(store)
-        def inner(uids, *args):
-            return store(con, ','.join(uids), *args)
-
-        res = partial_uids(delayed_uids(inner, uids, cmd, flags))
-        res = ([] if len(i) == 1 and i[0] is None else i for i in res)
+    uids = Uids(uids)
+    if uids.batches:
+        res = uids.call_async(store, con, uids, cmd, flags)
         return sum(res, [])
 
     with con.lock:
-        return check(con.uid('STORE', uids, cmd, flags))
+        res = check(con.uid('STORE', uids.str, cmd, flags))
+    if len(res) == 1 and res[0] is None:
+        return []
+    return res
 
 
 def parse_thread(line):
@@ -367,3 +361,59 @@ def partial_uids(delayed, size=5000, threads=10):
         jobs.append(pool.spawn(delayed, few, num))
     pool.join()
     return [f.value for f in jobs]
+
+
+class Uids:
+    __slots__ = ['val', 'batches', 'threads']
+
+    def __init__(self, uids, size=5000, threads=10):
+        if isinstance(uids, Uids):
+            uids = uids.val
+        self.threads = threads
+        self.val = uids
+        self.batches = None
+        if not self.is_str and len(uids) > size:
+            self.batches = tuple(
+                Uids(uids[i:i+size], size)
+                for i in range(0, len(uids), size)
+            )
+
+    @property
+    def str(self):
+        if self.is_str:
+            return self.val
+        return ','.join(self.val)
+
+    @property
+    def is_str(self):
+        return isinstance(self.val, (str, bytes))
+
+    def call(self, fn, *args):
+        uids = [i for i in args if isinstance(i, Uids)][0]
+        result = []
+        for few in uids.batches:
+            uids.val = few.val
+            result.append(log_time(fn)(*args))
+        return result
+
+    def call_async(self, fn, *args):
+        num, uids = [i for i in enumerate(args) if isinstance(i[1], Uids)][0]
+        jobs = []
+        pool = Pool(self.threads)
+        args = list(args)
+        for few in uids.batches:
+            args[num] = few
+            jobs.append(pool.spawn(log_time(fn), *args))
+        pool.join()
+        return [f.value for f in jobs]
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        fmt = '"%s uids"'
+        if self.is_str:
+            uids = self.val
+            uids = uids if isinstance(uids, str) else uids.decode()
+            return uids if ':' in uids else fmt % uids.count(',')
+        return fmt % len(self.val)
