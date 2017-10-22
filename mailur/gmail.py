@@ -30,14 +30,25 @@ USER = os.environ.get('GM_USER')
 PASS = os.environ.get('GM_PASS')
 
 
+class Gmail(imaplib.IMAP4_SSL, imap.Conn):
+    def __init__(self):
+        self.username = USER
+        self.password = PASS
+        self.current_box = None
+        super().__init__('imap.gmail.com')
+
+    def login(self):
+        return super().login(self.username, self.password)
+
+
 def connect():
-    con = imaplib.IMAP4_SSL('imap.gmail.com')
-    imap.check(con.login(USER, PASS))
+    con = Gmail()
+    imap.check(con.login())
     return con
 
 
 def client(tag='\\All'):
-    ctx = imap.client('Gmail', connect)
+    ctx = imap.client('GmailCtx', connect)
     if tag:
         ctx.select_tag(tag)
     return ctx

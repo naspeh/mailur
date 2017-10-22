@@ -73,6 +73,22 @@ def command(*, name=None, lock=True, writable=False, dovecot=False):
     return inner
 
 
+class Conn:
+    def username(self):
+        raise NotImplementedError
+
+    def current_box(self):
+        raise NotImplementedError
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return '%s{%r, %r}' % (
+            self.__class__.__name__, self.username, self.current_box
+        )
+
+
 class Ctx:
     def __init__(self, name):
         self.name = name
@@ -89,7 +105,6 @@ def client(name, connect, *, writable=False, dovecot=False, debug=DEBUG):
         con = connect()
         con.debug = debug
         con.lock = threading.RLock()
-        con.dovecot = dovecot
         con.new = new
         return con
 
@@ -102,8 +117,7 @@ def client(name, connect, *, writable=False, dovecot=False, debug=DEBUG):
     con = start()
     ctx = Ctx(name)
     ctx.logout = con.logout
-    ctx.box = lambda: getattr(con, 'current_box', None)
-    ctx.str = lambda: '%s[%r]' % (ctx.__class__.__name__, ctx.box())
+    ctx.box = lambda: con.current_box
 
     for cmd, opts in commands.items():
         if not dovecot and opts['dovecot']:

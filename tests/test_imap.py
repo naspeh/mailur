@@ -8,7 +8,7 @@ def test_basic_gmail(select):
     con = gmail.client()
     assert select.call_args == call(ANY, b'All', True)
     assert set(con.__dict__.keys()) == set(
-        'name logout box str list select select_tag status search fetch'
+        'name logout box list select select_tag status search fetch'
         .split()
     )
 

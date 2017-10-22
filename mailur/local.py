@@ -20,23 +20,24 @@ SPAM = 'Spam'
 TAGS = 'Tags'
 
 
+class Local(imaplib.IMAP4, imap.Conn):
+    def __init__(self, user):
+        self.username = user
+        self.current_box = None
+        super().__init__('127.0.0.1')
+
+    def login(self):
+        return super().login('%s*root' % self.username, 'root')
+
+
 def connect(user=None):
-    opts = (
-        ' -u {user}'
-        # disable ACL to get full access
-        ' -o plugin/acl=vfile:/dev/null'
-        # turn on/off debug messages based on imap.DEBUG
-        ' -o debug={debug} -o mail_debug={debug}'
-        .format(
-            user=user or USER,
-            debug='yes' if imap.DEBUG else 'no'
-        )
-    )
-    return imaplib.IMAP4_stream('doveadm exec imap %s' % opts)
+    con = Local(user or USER)
+    imap.check(con.login())
+    return con
 
 
 def client(box=ALL):
-    ctx = imap.client('Local', connect, dovecot=True, writable=True)
+    ctx = imap.client('LocalCtx', connect, dovecot=True, writable=True)
     if box:
         ctx.select(box)
     return ctx
