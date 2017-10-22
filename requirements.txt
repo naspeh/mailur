@@ -1,4 +1,4 @@
-aiohttp
-aiohttp_session
 docopt
-ujson
+gevent
+gunicorn
+webob

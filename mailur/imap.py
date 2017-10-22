@@ -3,10 +3,11 @@ import json
 import os
 import re
 import time
-import threading
-from concurrent import futures
 from contextlib import contextmanager
 from imaplib import CRLF
+
+from gevent.lock import RLock
+from gevent.pool import Pool
 
 from . import log
 
@@ -104,7 +105,7 @@ def client(name, connect, *, writable=False, dovecot=False, debug=DEBUG):
     def start():
         con = connect()
         con.debug = debug
-        con.lock = threading.RLock()
+        con.lock = RLock()
         con.new = new
         return con
 
@@ -359,9 +360,10 @@ def partial_uids(delayed, size=5000, threads=10):
         return [delayed(uids)]
 
     jobs = []
-    with futures.ThreadPoolExecutor(threads) as pool:
-        for i in range(0, len(uids), size):
-            num = '%02d' % (i // size + 1)
-            few = uids[i:i+size]
-            jobs.append(pool.submit(delayed, few, num))
-    return [f.result() for f in jobs]
+    pool = Pool(threads)
+    for i in range(0, len(uids), size):
+        num = '%02d' % (i // size + 1)
+        few = uids[i:i+size]
+        jobs.append(pool.spawn(delayed, few, num))
+    pool.join()
+    return [f.value for f in jobs]

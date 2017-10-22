@@ -4,6 +4,7 @@ Usage:
   mailur -l<login> gmail <username> <password> [--parse -t<threads> -b<batch>]
   mailur -l<login> parse [<criteria> -t<threads> -b<batch>]
   mailur -l<login> threads [<criteria>]
+  mailur -l<login> web
 
 Options:
   -h --help     Show this screen.
@@ -34,6 +35,25 @@ def main(args):
         local.parse(args.get('<criteria>'), **opts)
     elif args['threads']:
         local.update_threads(criteria=args.get('<criteria>'))
+    elif args['web']:
+        web()
+
+
+def web():
+    import os
+    import subprocess
+    import time
+
+    cmd = (
+        'gunicorn mailur.app -b :5000 -k gevent'
+        ' --reload --access-logfile=-'
+        ' --access-logformat="%(m)s %(U)s %(s)s time=%(T)ss size=%(B)sb"'
+    )
+    env = dict(os.environ, MLR_USER=local.USER)
+    try:
+        subprocess.run(cmd, env=env, shell=True)
+    except KeyboardInterrupt:
+        time.sleep(1)
 
 
 if __name__ == '__main__':

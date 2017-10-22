@@ -3,6 +3,8 @@ import imaplib
 import os
 import re
 
+from gevent import socket, ssl
+
 from . import log, imap, local
 
 MAP_FLAGS = {
@@ -30,12 +32,20 @@ USER = os.environ.get('GM_USER')
 PASS = os.environ.get('GM_PASS')
 
 
-class Gmail(imaplib.IMAP4_SSL, imap.Conn):
+class Gmail(imaplib.IMAP4, imap.Conn):
     def __init__(self):
         self.username = USER
         self.password = PASS
         self.current_box = None
-        super().__init__('imap.gmail.com')
+        super().__init__('imap.gmail.com', imaplib.IMAP4_SSL_PORT)
+
+    def _create_socket(self):
+        ssl_context = ssl.SSLContext()
+        sock = socket.create_connection((self.host, self.port))
+        return ssl_context.wrap_socket(sock, server_hostname=self.host)
+
+    def open(self, host='', port=imaplib.IMAP4_SSL_PORT):
+        super().open(host, port=imaplib.IMAP4_SSL_PORT)
 
     def login(self):
         return super().login(self.username, self.password)

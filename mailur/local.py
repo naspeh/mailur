@@ -9,6 +9,8 @@ from email.message import MIMEPart
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 
+from gevent import socket
+
 from . import log, imap
 
 USER = os.environ.get('MLR_USER', 'user')
@@ -24,7 +26,10 @@ class Local(imaplib.IMAP4, imap.Conn):
     def __init__(self, user):
         self.username = user
         self.current_box = None
-        super().__init__('127.0.0.1')
+        super().__init__('localhost')
+
+    def _create_socket(self):
+        return socket.create_connection((self.host, self.port))
 
     def login(self):
         return super().login('%s*root' % self.username, 'root')
