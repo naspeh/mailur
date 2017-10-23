@@ -388,23 +388,21 @@ class Uids:
     def is_str(self):
         return isinstance(self.val, (str, bytes))
 
-    def call(self, fn, *args):
-        uids = [i for i in args if isinstance(i, Uids)][0]
-        result = []
-        for few in uids.batches:
-            uids.val = few.val
-            result.append(log_time(fn)(*args))
-        return result
-
-    def call_async(self, fn, *args):
+    def _call(self, fn, *args):
+        fn = log_time(fn)
         num, uids = [i for i in enumerate(args) if isinstance(i[1], Uids)][0]
-        jobs = []
-        pool = Pool(self.threads)
         args = list(args)
         for few in uids.batches:
             args[num] = few
-            jobs.append(pool.spawn(log_time(fn), *args))
-        pool.join()
+            yield ft.partial(fn, *args)
+
+    def call(self, fn, *args):
+        return [f() for f in self._call(fn, *args)]
+
+    def call_async(self, fn, *args):
+        pool = Pool(self.threads)
+        jobs = [pool.spawn(f) for f in self._call(fn, *args)]
+        pool.join(raise_error=True)
         return [f.value for f in jobs]
 
     def __repr__(self):

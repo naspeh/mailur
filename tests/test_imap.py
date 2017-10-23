@@ -23,7 +23,7 @@ def test_basic_gmail(select):
         assert m.called
 
 
-def test_fn_partial_uids(clean_users, gm_client):
+def test_batched_uids(clean_users, gm_client):
     con = local.client()
     bsize = 25000
     assert [] == con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
