@@ -26,19 +26,6 @@ ssl_key = </etc/ssl/dovecot/server.key
 ssl_cert = </etc/ssl/dovecot/server.pem
 ssl_client_ca_dir = /etc/ssl/certs/
 
-protocols = imap
-service imap-login {
-  inet_listener imap {
-    port = 143
-    address = localhost
-  }
-  inet_listener imaps {
-    port = 993
-    ssl = yes
-    address = *
-  }
-}
-
 mail_location = mdbox:~
 mdbox_rotate_size = 100M
 
@@ -105,6 +92,22 @@ namespace {
     prefix = tags/
     separator = /
     location = virtual:%h/tags
+}
+
+protocols = imap
+service imap-login {
+    inet_listener imap {
+        port = 143
+        address = localhost
+    }
+    inet_listener imaps {
+        port = 993
+        ssl = yes
+        address = *
+    }
+}
+service imap {
+    vsz_limit = 1G
 }
 service indexer-worker {
     vsz_limit = 2G
