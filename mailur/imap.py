@@ -91,14 +91,24 @@ class Conn:
 
 
 class Ctx:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, con):
+        self._con = con
 
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        return '%s[%r]' % (self.name, self.box())
+        return 'Ctx:%s' % (self._con)
+
+    @property
+    def box(self):
+        return self._con.current_box
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.logout()
 
 
 def client(name, connect, *, writable=False, dovecot=False, debug=DEBUG):
@@ -110,15 +120,13 @@ def client(name, connect, *, writable=False, dovecot=False, debug=DEBUG):
         return con
 
     def new():
-        con = start()
-        if ctx.box():
-            con.select(ctx.box(), con.is_readonly)
-        return con
+        c = start()
+        if con.current_box:
+            c.select(con.current_box, con.is_readonly)
+        return c
 
     con = start()
-    ctx = Ctx(name)
-    ctx.logout = con.logout
-    ctx.box = lambda: con.current_box
+    ctx = Ctx(con)
 
     for cmd, opts in commands.items():
         if not dovecot and opts['dovecot']:
@@ -196,6 +204,11 @@ def thread(con, *criteria):
 @command(dovecot=True)
 def sort(con, fields, *criteria, charset='UTF-8'):
     return check(con.uid('SORT', fields, charset, *criteria))
+
+
+@command()
+def logout(con):
+    return con.logout()
 
 
 @command(name='list')
@@ -366,7 +379,7 @@ def partial_uids(delayed, size=5000, threads=10):
 class Uids:
     __slots__ = ['val', 'batches', 'threads']
 
-    def __init__(self, uids, size=5000, threads=10):
+    def __init__(self, uids, *, size=5000, threads=10):
         if isinstance(uids, Uids):
             uids = uids.val
         self.threads = threads
@@ -374,7 +387,7 @@ class Uids:
         self.batches = None
         if not self.is_str and len(uids) > size:
             self.batches = tuple(
-                Uids(uids[i:i+size], size)
+                Uids(uids[i:i+size], size=size)
                 for i in range(0, len(uids), size)
             )
 
@@ -390,9 +403,9 @@ class Uids:
 
     def _call(self, fn, *args):
         fn = log_time(fn)
-        num, uids = [i for i in enumerate(args) if isinstance(i[1], Uids)][0]
+        num, uids = [i for i in enumerate(args) if self == i[1]][0]
         args = list(args)
-        for few in uids.batches:
+        for few in uids.batches or ([self] if self.val else []):
             args[num] = few
             yield ft.partial(fn, *args)
 

@@ -66,14 +66,13 @@ def client(tag='\\All'):
 
 
 def fetch_uids(uids, tag):
-    gm = client(tag)
     fields = (
         '('
         'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
         ')'
     )
-    res = gm.fetch(','.join(uids), fields)
-    gm.logout()
+    with client(tag) as gm:
+        res = gm.fetch(','.join(uids), fields)
 
     def flag(m):
         flag = m.group()
@@ -126,19 +125,16 @@ def fetch_uids(uids, tag):
             ]).strip()
             yield parts['time'], flags, raw
 
-    lm = local.client(None)
-    msgs = list(iter_msgs(res))
-    try:
+    with local.client(None) as lm:
+        msgs = list(iter_msgs(res))
         return lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs)
-    finally:
-        lm.logout()
 
 
 def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     log.info('## process %r', tag)
-    con = local.client()
-    metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
-    res = con.getmetadata(local.SRC, metakey)
+    with local.client(None) as con:
+        metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
+        res = con.getmetadata(local.SRC, metakey)
     if len(res) != 1:
         uidvalidity, uidnext = res[0][1].decode().split(',')
         uidnext = int(uidnext)
@@ -158,13 +154,12 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     res = gm.search('UID %s:*' % uidnext)
     uids = [i for i in res[0].decode().split() if int(i) >= uidnext]
     uidnext = folder['uidnext']
-    log.info('## box(%s): %s new uids', gm.box(), len(uids))
+    log.info('## box(%s): %s new uids', gm.box, len(uids))
     gm.logout()
-    con.logout()
     delayed = imap.delayed_uids(fetch_uids, uids, tag)
     res = imap.partial_uids(delayed, size=batch, threads=threads)
-    con = local.client(None)
-    con.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
+    with local.client(None) as con:
+        con.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
     return res
 
 

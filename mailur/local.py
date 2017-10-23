@@ -204,11 +204,11 @@ def parse(criteria=None, *, batch=1000, threads=4):
     delayed = imap.delayed_uids(parse_uids, uids)
     imap.partial_uids(delayed, size=batch, threads=threads)
 
-    con = client(None)
-    con.setmetadata(ALL, 'uidnext', str(uidnext))
+    with client(None) as con:
+        con.setmetadata(ALL, 'uidnext', str(uidnext))
 
-    fetch_parsed_uids.cache_clear()
-    update_threads(parsed_uids(con, uids))
+        fetch_parsed_uids.cache_clear()
+        update_threads(parsed_uids(con, uids))
 
 
 def update_threads(uids=None, criteria=None):
