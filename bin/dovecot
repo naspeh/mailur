@@ -124,7 +124,7 @@ doveadm_port = 12345
 doveadm_password = secret
 EOF
 cat <<"EOF" > /etc/dovecot/passwd.masters
-root:{SHA256-CRYPT}$5$B9xOinAHt1RAIjzn$KY/xCDl9wu9jkIGpga/kqi1Szz4P9e9BdinItSYSQV2
+root:{plain}root
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr
