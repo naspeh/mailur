@@ -337,45 +337,6 @@ def pack_uids(uids):
     return result
 
 
-def delayed_uids(func, uids, *a, **kw):
-    @ft.wraps(func)
-    def inner(uids, num=None):
-        num = '%s#' % num if num else ''
-        log.info('## %s%s: %s uids', num, inner.desc, len(uids))
-        start = time.time()
-        try:
-            res = func(uids, *a, **kw)
-            log.info(
-                '## %s%s: done for %.2fs',
-                num, inner.desc, time.time() - start
-            )
-        except Exception as e:
-            log.exception('## %s%s: %r' % (num, inner.desc, e))
-            raise
-        return res
-
-    inner.uids = list(uids)
-    inner.desc = fn_desc(func, 'uids', *a, **kw)
-    return inner
-
-
-def partial_uids(delayed, size=5000, threads=10):
-    uids = delayed.uids
-    if not uids:
-        return []
-    elif len(uids) <= size:
-        return [delayed(uids)]
-
-    jobs = []
-    pool = Pool(threads)
-    for i in range(0, len(uids), size):
-        num = '%02d' % (i // size + 1)
-        few = uids[i:i+size]
-        jobs.append(pool.spawn(delayed, few, num))
-    pool.join()
-    return [f.value for f in jobs]
-
-
 class Uids:
     __slots__ = ['val', 'batches', 'threads']
 

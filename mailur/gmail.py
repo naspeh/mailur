@@ -72,7 +72,7 @@ def fetch_uids(uids, tag):
         ')'
     )
     with client(tag) as gm:
-        res = gm.fetch(','.join(uids), fields)
+        res = gm.fetch(uids.str, fields)
 
     def flag(m):
         flag = m.group()
@@ -132,8 +132,8 @@ def fetch_uids(uids, tag):
 
 def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     log.info('## process %r', tag)
+    metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
     with local.client(None) as con:
-        metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
         res = con.getmetadata(local.SRC, metakey)
     if len(res) != 1:
         uidvalidity, uidnext = res[0][1].decode().split(',')
@@ -156,8 +156,8 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     uidnext = folder['uidnext']
     log.info('## box(%s): %s new uids', gm.box, len(uids))
     gm.logout()
-    delayed = imap.delayed_uids(fetch_uids, uids, tag)
-    res = imap.partial_uids(delayed, size=batch, threads=threads)
+    uids = imap.Uids(uids, size=batch, threads=threads)
+    res = uids.call_async(fetch_uids, uids, tag)
     with local.client(None) as con:
         con.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
     return res

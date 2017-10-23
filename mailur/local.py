@@ -139,7 +139,7 @@ def create_msg(raw, uid, time):
 
 def parse_uids(uids):
     con = client(SRC)
-    res = con.fetch(uids, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
+    res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
     def iter_msgs(res):
         for i in range(0, len(res), 2):
@@ -199,16 +199,15 @@ def parse(criteria=None, *, batch=1000, threads=4):
             log.info('## delete %s messages from %r', count, ALL)
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
-
     con.logout()
-    delayed = imap.delayed_uids(parse_uids, uids)
-    imap.partial_uids(delayed, size=batch, threads=threads)
+    uids = imap.Uids(uids, size=batch, threads=threads)
+    res = uids.call_async(parse_uids, uids)
 
     with client(None) as con:
         con.setmetadata(ALL, 'uidnext', str(uidnext))
 
         fetch_parsed_uids.cache_clear()
-        update_threads(parsed_uids(con, uids))
+        update_threads(parsed_uids(con, uids.val))
 
 
 def update_threads(uids=None, criteria=None):
