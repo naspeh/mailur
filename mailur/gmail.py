@@ -51,7 +51,7 @@ class Gmail(imaplib.IMAP4, imap.Conn):
         return super().login(self.username, self.password)
 
 
-@imap.log_time
+@imap.fn_time
 def connect():
     con = Gmail()
     imap.check(con.login())
@@ -59,7 +59,7 @@ def connect():
 
 
 def client(tag='\\All'):
-    ctx = imap.client('GmailCtx', connect)
+    ctx = imap.client(connect)
     if tag:
         ctx.select_tag(tag)
     return ctx

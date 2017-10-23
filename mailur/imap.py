@@ -32,7 +32,7 @@ def fn_desc(func, *a, **kw):
     return '%s(%s)' % (name, args)
 
 
-def log_time(func):
+def fn_time(func):
     @ft.wraps(func)
     def inner(*a, **kw):
         start = time.time()
@@ -48,7 +48,7 @@ def fn_lock(func):
     @ft.wraps(func)
     def inner(con, *a, **kw):
         with con.lock:
-            return log_time(func)(con, *a, **kw)
+            return fn_time(func)(con, *a, **kw)
     return inner
 
 
@@ -111,7 +111,7 @@ class Ctx:
         self.logout()
 
 
-def client(name, connect, *, writable=False, dovecot=False, debug=DEBUG):
+def client(connect, *, writable=False, dovecot=False, debug=DEBUG):
     def start():
         con = connect()
         con.debug = debug
@@ -363,7 +363,7 @@ class Uids:
         return isinstance(self.val, (str, bytes))
 
     def _call(self, fn, *args):
-        fn = log_time(fn)
+        fn = fn_time(fn)
         num, uids = [i for i in enumerate(args) if self == i[1]][0]
         args = list(args)
         for few in uids.batches or ([self] if self.val else []):

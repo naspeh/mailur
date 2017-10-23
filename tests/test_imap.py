@@ -18,7 +18,7 @@ def test_basic_gmail(select):
     con.select_tag('\\Trash')
     assert select.call_args == call(ANY, b'Trash', True)
 
-    with patch('mailur.imap.log_time') as m:
+    with patch('mailur.imap.fn_time') as m:
         con.list()
         assert m.called
 
