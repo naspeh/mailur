@@ -81,6 +81,9 @@
   ws.onmessage = function(event) {
     console.log('ws:' + event.data);
   }
+  ws.onclose = function(event) {
+    console.log('ws:closed')
+  }
   </script>
 </body>
 </html>

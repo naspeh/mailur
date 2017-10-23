@@ -2,7 +2,8 @@ import json
 import pathlib
 import re
 
-from webob import Request, Response
+from geventwebsocket import WebSocketError
+from webob import Response, dec, exc
 
 from . import log, local
 
@@ -16,31 +17,30 @@ routes = re.compile('^/(%s)$' % '|'.join((
 )))
 
 
-def application(env, start_response):
-    req = Request(env)
+@dec.wsgify
+def application(req):
+    ws = req.environ.get("wsgi.websocket")
+    if ws:
+        websocket(ws)
+        return
+
     route = routes.match(req.path)
     if not route:
-        res = Response(status=404)
-    else:
-        route = route.groupdict()
-        if route['index'] is not None:
-            res = (static / 'index.htm').read_text()
-        elif route['emails']:
-            res = emails(req.GET.get('q'))
-        elif route['threads']:
-            res = threads(req.GET.get('q'))
-        elif route['origin']:
-            txt = msg(route['oid'])
-            res = Response(txt, content_type='text/plain')
-        elif route['parsed']:
-            txt = msg(route['pid'], local.ALL)
-            res = Response(txt, content_type='text/plain')
-        else:
-            raise ValueError('No handler for %r' % route)
+        raise exc.HTTPNotFound
 
-        if not isinstance(res, Response):
-            res = Response(res)
-    return res(env, start_response)
+    route = route.groupdict()
+    if route['index'] is not None:
+        return (static / 'index.htm').read_text()
+    elif route['origin']:
+        return msg(route['oid'])
+    elif route['parsed']:
+        return msg(route['pid'], local.ALL)
+    elif route['emails']:
+        return emails(req.GET.get('q'))
+    elif route['threads']:
+        return threads(req.GET.get('q'))
+
+    raise ValueError('No handler for %r' % route)
 
 
 def threads(query):
@@ -117,4 +117,15 @@ def emails(query):
 def msg(uid, box=local.SRC):
     con = local.client(box)
     res = con.fetch(uid, 'body[]')
-    return res[0][1].decode()
+    if not res:
+        raise exc.HTTPNotFound
+    txt = res[0][1]
+    return Response(txt, content_type='text/plain')
+
+
+def websocket(ws):
+    try:
+        message = ws.receive()
+        ws.send(message)
+    except WebSocketError as e:
+        log.exception(e)
