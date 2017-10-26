@@ -72,7 +72,7 @@ def threads(query):
                 thrid = uid
         if thrid is None:
             continue
-        flags[thrid] = set(' '.join(thr_flags).split())
+        flags[thrid] = list(set(' '.join(thr_flags).split()))
         thrid_int = int(thrid)
         if not max_uid or thrid_int > max_uid:
             max_uid = thrid_int
@@ -89,7 +89,7 @@ def threads(query):
         uid = res[i][0].decode().split()[2]
         data = json.loads(res[i][1].decode())
         msgs[uid] = data
-    return json.dumps({'msgs': msgs, 'flags': list(flags), 'uids': uids})
+    return json.dumps({'msgs': msgs, 'flags': flags, 'uids': uids})
 
 
 def emails(query):

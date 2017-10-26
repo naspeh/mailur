@@ -2,9 +2,47 @@
 <html>
 <head>
   <title>Mailur</title>
-  <script src="https://vuejs.org/js/vue.js"></script>
 </head>
 <body>
+<script>
+var root = document.body,
+    msgs,
+    flags;
+
+function tpl(uid) {
+    return `<div>
+      <a href="/parsed/${uid}" target="_blank" title="Parsed message" >${uid}</a>
+      <a href="/origin/${msgs[uid].uid}" target="_blank" title="Origin message">[orig]</a>
+      <i>${flags[uid]}</i>
+      <b>${msgs[uid].subject}</b>
+      <div style="border-bottom: 1px solid #ccc">
+        <span>${msgs[uid].date}</span>
+        <span>${msgs[uid].message_id}</span>
+      </div>
+    </div>
+    `;
+};
+function view() {
+    var url = "/threads?q=" + encodeURIComponent(document.location.hash.slice(1) || 'all');
+    fetch(url).then(function(response) {
+        return response.json();
+    }).then(function(data) {
+        msgs = data.msgs;
+        flags = data.flags;
+        for (var uid of data.uids) {
+            if (! data.msgs[uid]) continue;
+            var html = tpl(uid);
+            root.insertAdjacentHTML('beforeend', html);
+        }
+        msgs = null;
+        flags = null;
+    })
+    return '';
+}
+view()
+</script>
+<!--
+  <script src="https://vuejs.org/js/vue.js"></script>
   <div id="app">
     <input v-model.lazy.trim="query" @keyup.enter="get()">
     <input type="checkbox" id="show_bodies" v-model="show_bodies">
@@ -85,5 +123,6 @@
     console.log('ws:closed')
   }
   </script>
+-->
 </body>
 </html>
