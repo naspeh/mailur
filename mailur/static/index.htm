@@ -4,44 +4,6 @@
   <title>Mailur</title>
 </head>
 <body>
-<script>
-var root = document.body,
-    msgs,
-    flags;
-
-function tpl(uid) {
-    return `<div>
-      <a href="/parsed/${uid}" target="_blank" title="Parsed message" >${uid}</a>
-      <a href="/origin/${msgs[uid].uid}" target="_blank" title="Origin message">[orig]</a>
-      <i>${flags[uid]}</i>
-      <b>${msgs[uid].subject}</b>
-      <div style="border-bottom: 1px solid #ccc">
-        <span>${msgs[uid].date}</span>
-        <span>${msgs[uid].message_id}</span>
-      </div>
-    </div>
-    `;
-};
-function view() {
-    var url = "/threads?q=" + encodeURIComponent(document.location.hash.slice(1) || 'all');
-    fetch(url).then(function(response) {
-        return response.json();
-    }).then(function(data) {
-        msgs = data.msgs;
-        flags = data.flags;
-        for (var uid of data.uids) {
-            if (! data.msgs[uid]) continue;
-            var html = tpl(uid);
-            root.insertAdjacentHTML('beforeend', html);
-        }
-        msgs = null;
-        flags = null;
-    })
-    return '';
-}
-view()
-</script>
-<!--
   <script src="https://vuejs.org/js/vue.js"></script>
   <div id="app">
     <input v-model.lazy.trim="query" @keyup.enter="get()">
@@ -50,10 +12,11 @@ view()
     <input type="checkbox" id="show_threads" v-model="show_threads">
     <label for="show_threads">treads</label>
     <button v-on:click="get()">go!</button>
-    <div v-for="uid in uids" v-if="msgs[uid]">
+    <div v-for="uid in uids">
       <a :href="parsed_url(uid)" target="_blank" title="Parsed message" >{{ uid }}</a>
+      <span v-if="state[uid]">
       <a :href="origin_url(uid)" target="_blank" title="Origin message">[orig]</a>
-      <i>{{ flags[uid] }}</i>
+      <i>{{ msgs[uid].flags }}</i>
       <b v-on:click.stop="search_header('x-subject', msgs[uid].subject)">
         {{ msgs[uid].subject }}
       </b>
@@ -64,6 +27,7 @@ view()
         </span>
       </div>
       <div v-if="show_bodies" v-html="msgs[uid].body"></div>
+      </span>
     </div>
   </div>
 
@@ -72,57 +36,76 @@ view()
     el: '#app',
     data: {
       uids: [],
-      msgs: {},
-      flags: {},
+      state: {},
       query: decodeURIComponent(location.hash.slice(1))  || 'all',
       show_threads: false,
       show_bodies: false,
     },
     methods: {
-      base_url: function(params) {
-        var url = app.show_threads && '/threads?q=' || '/emails?q=';
-        return params && url + encodeURIComponent(app.query) || url;
-
-      },
       get: function(query) {
         if (query) {
             app.query = query;
         }
         window.location.hash = app.query;
-        fetch(app.base_url(app.query)).then(function(response) {
-          return response.json();
-        }).then(function(res) {
-          app.uids = res.uids;
-          app.msgs = res.msgs;
-          app.flags = res.flags;
-        });
+        send(app.show_threads ? 'threads' : 'emails', {q: app.query});
       },
       origin_url: function(uid) {
         return '/origin/' + this.msgs[uid].uid;
       },
       parsed_url: function(uid) {
-        return '/parsed/' + uid
+        return '/parsed/' + uid;
       },
       search: function(query) {
-        query = app.show_threads && query || 'inthread refs ' + query
-        return app.get(query)
+        query = app.show_threads && query || 'inthread refs ' + query;
+        return app.get(query);
       },
       search_header: function(name, value) {
         return app.search('header ' + name + ' "' + value + '"');
       },
     }
   });
-  var ws = new WebSocket('ws://' + location.host + '/ws');
+  app.msgs = {};
+  var ws = new WebSocket('ws://' + location.host);
   ws.onopen = function(event) {
-    ws.send('ping');
+    send('ping');
   }
   ws.onmessage = function(event) {
     console.log('ws:' + event.data);
+    var data = JSON.parse(event.data);
+    var target = requests[data.uid];
+    if (target != 'ping') {
+      if (data.body.msgs) {
+        msgs = data.body.msgs;
+        Object.assign(app.msgs, msgs);
+        for (var msg in msgs) {
+          app.state[msg] = 1;
+        }
+      } else {
+        app.uids = data.body;
+        app.state = app.uids.reduce(function(acc, cur, i) {
+          acc[cur] = 0;
+          return acc;
+        }, {});
+      }
+    }
   }
   ws.onclose = function(event) {
-    console.log('ws:closed')
+    console.log('ws:closed');
   }
+  var requests = {};
+  function send(target, params) {
+    var uid = uuidv4();
+    requests[uid] = target;
+    var msg = JSON.stringify({target: target, params: params || {}, uid: uid});
+    ws.send(msg)
+  }
+  function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   </script>
--->
 </body>
 </html>
