@@ -287,11 +287,19 @@ def store(con, uids, cmd, flags):
     return res
 
 
+class Threads(tuple):
+    def __new__(cls, thrs, uids):
+        obj = tuple.__new__(cls, thrs)
+        obj.all_uids = uids
+        return obj
+
+
 def parse_thread(line):
     if isinstance(line, bytes):
         line = line.decode()
 
     threads = []
+    all_uids = []
     uids = []
     uid = ''
     opening = 0
@@ -305,14 +313,15 @@ def parse_thread(line):
 
             opening -= 1
             if opening == 0:
-                threads.append(uids)
+                threads.append(tuple(uids))
+                all_uids.extend(uids)
                 uids = []
         elif i == ' ':
             uids.append(uid)
             uid = ''
         else:
             uid += i
-    return threads
+    return Threads(threads, all_uids)
 
 
 def pack_uids(uids):
@@ -356,7 +365,7 @@ class Uids:
     def str(self):
         if self.is_str:
             return self.val
-        return ','.join(self.val)
+        return ','.join(str(i) for i in self.val)
 
     @property
     def is_str(self):

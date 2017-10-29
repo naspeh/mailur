@@ -45,8 +45,9 @@ def web():
     import time
 
     cmd = (
-        'gunicorn mailur.app -b :5000 --reload --access-logfile=-'
-        ' -k "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"'
+        'gunicorn mailur.app -b :5000 '
+        ' -k gevent --timeout=300 --reload --access-logfile=-'
+        ' --access-logformat="%(m)s %(U)s %(s)s %(L)sms %(b)sb"'
     )
     env = dict(os.environ, MLR_USER=local.USER)
     try:

@@ -1,6 +1,5 @@
 docopt
 gevent
-gevent-websocket
 gunicorn
 webob
 wsaccel

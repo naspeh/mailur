@@ -42,12 +42,41 @@
       show_bodies: false,
     },
     methods: {
+      url: function(url, params) {
+        url = (this.show_threads && '/threads/' || '/msgs/') + url;
+        return params && url + encodeURIComponent(this.query) || url;
+
+      },
       get: function(query) {
         if (query) {
-            app.query = query;
+            this.query = query;
         }
-        window.location.hash = app.query;
-        send(app.show_threads ? 'threads' : 'emails', {q: app.query});
+        window.location.hash = this.query;
+        this.send('id', {q: this.query}).then(this.ids);
+      },
+      ids: function(uids) {
+          this.uids = uids;
+          this.state = this.uids.reduce(function(acc, cur, i) {
+            acc[cur] = 0;
+            return acc;
+          }, {});
+          this.send('info', {uids: this.uids.slice(0, 100)}).then(this.infos);
+      },
+      infos: function(msgs) {
+          Object.assign(this.msgs, msgs);
+          for (var msg in msgs) {
+            this.state[msg] = 1;
+          }
+      },
+      send: function(url, params, callback) {
+        url = this.url(url);
+        return fetch(url, {
+          method: 'post',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(params)
+        }).then(function(response) {
+          return response.json();
+        });
       },
       origin_url: function(uid) {
         return '/origin/' + this.msgs[uid].uid;
@@ -65,47 +94,6 @@
     }
   });
   app.msgs = {};
-  var ws = new WebSocket('ws://' + location.host);
-  ws.onopen = function(event) {
-    send('ping');
-  }
-  ws.onmessage = function(event) {
-    console.log('ws:' + event.data);
-    var data = JSON.parse(event.data);
-    var target = requests[data.uid];
-    if (target != 'ping') {
-      if (data.body.msgs) {
-        msgs = data.body.msgs;
-        Object.assign(app.msgs, msgs);
-        for (var msg in msgs) {
-          app.state[msg] = 1;
-        }
-      } else {
-        app.uids = data.body;
-        app.state = app.uids.reduce(function(acc, cur, i) {
-          acc[cur] = 0;
-          return acc;
-        }, {});
-      }
-    }
-  }
-  ws.onclose = function(event) {
-    console.log('ws:closed');
-  }
-  var requests = {};
-  function send(target, params) {
-    var uid = uuidv4();
-    requests[uid] = target;
-    var msg = JSON.stringify({target: target, params: params || {}, uid: uid});
-    ws.send(msg)
-  }
-  function uuidv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-
   </script>
 </body>
 </html>
