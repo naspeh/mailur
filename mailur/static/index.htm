@@ -12,7 +12,7 @@
     <input type="checkbox" id="show_threads" v-model="show_threads">
     <label for="show_threads">treads</label>
     <button v-on:click="get()">go!</button>
-    <div v-for="uid in uids">
+    <div v-for="uid in uids" :key="uid">
       <a :href="parsed_url(uid)" target="_blank" title="Parsed message" >{{ uid }}</a>
       <span v-if="state[uid]">
       <a :href="origin_url(uid)" target="_blank" title="Origin message">[orig]</a>
@@ -42,31 +42,48 @@
       show_bodies: false,
     },
     methods: {
-      url: function(url, params) {
-        url = (this.show_threads && '/threads/' || '/msgs/') + url;
-        return params && url + encodeURIComponent(this.query) || url;
-
-      },
-      get: function(query) {
+      get: function(query, preloadNum=100) {
         if (query) {
             this.query = query;
         }
         window.location.hash = this.query;
-        this.send('id', {q: this.query}).then(this.ids);
+        this.send('id', {q: this.query}).then(uids => {
+          this.msgs = null;
+          var preload = uids.length > preloadNum ? uids.slice(0, preloadNum) : null;
+          if (preload && !this.msgs) {
+            this.ids(preload);
+            this.send('info', {uids: preload}).then(msgs => {
+              this.infos(msgs);
+              setTimeout(() => this.ids(uids), 0);
+            });
+            return;
+          } else if (!preload) {
+            preload = uids
+          }
+          this.ids(uids);
+          this.send('info', {uids: preload}).then(this.infos);
+        });
       },
       ids: function(uids) {
-          this.uids = uids;
-          this.state = this.uids.reduce(function(acc, cur, i) {
-            acc[cur] = 0;
-            return acc;
-          }, {});
-          this.send('info', {uids: this.uids.slice(0, 100)}).then(this.infos);
+        this.uids = uids;
+        var state = this.uids.reduce((acc, cur) => {
+          acc[cur] = this.msgs && this.msgs[cur] ? 1 : 0;
+          return acc;
+        }, {});
+        this.state = state;
       },
       infos: function(msgs) {
-          Object.assign(this.msgs, msgs);
-          for (var msg in msgs) {
-            this.state[msg] = 1;
-          }
+        this.msgs = Object.assign(this.msgs || {}, msgs);
+        var state = {};
+        for (var msg in msgs) {
+          state[msg] = 1;
+        }
+        this.state = Object.assign(this.state, state);
+      },
+      url: function(url, params) {
+        url = (this.show_threads && '/threads/' || '/msgs/') + url;
+        return params && url + encodeURIComponent(this.query) || url;
+
       },
       send: function(url, params, callback) {
         url = this.url(url);
@@ -74,9 +91,7 @@
           method: 'post',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(params)
-        }).then(function(response) {
-          return response.json();
-        });
+        }).then(response => response.json());
       },
       origin_url: function(uid) {
         return '/origin/' + this.msgs[uid].uid;
@@ -93,7 +108,7 @@
       },
     }
   });
-  app.msgs = {};
+  app.msgs = null;
   </script>
 </body>
 </html>

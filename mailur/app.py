@@ -101,7 +101,7 @@ def threads_info(uids):
             msgs[uid].update(data)
         return msgs
 
-    uids = imap.Uids(uids[:5000], size=1000)
+    uids = imap.Uids(uids, size=1000)
     msgs = {}
     for i in uids.call_async(inner, uids):
         msgs.update(i)

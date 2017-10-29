@@ -47,7 +47,7 @@ def web():
     cmd = (
         'gunicorn mailur.app -b :5000 '
         ' -k gevent --timeout=300 --reload --access-logfile=-'
-        ' --access-logformat="%(m)s %(U)s %(s)s %(L)sms %(b)sb"'
+        ' --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"'
     )
     env = dict(os.environ, MLR_USER=local.USER)
     try:
