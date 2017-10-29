@@ -3,7 +3,6 @@ import json
 import pathlib
 import re
 
-import umsgpack
 from gevent.lock import RLock
 from geventwebsocket import WebSocketError
 from webob import Response, dec, exc
@@ -130,7 +129,7 @@ ws_handlers = {}
 
 
 def ws_send(ws, lock, uid, body):
-    msg = umsgpack.packb({'uid': uid, 'body': body})
+    msg = json.dumps({'uid': uid, 'body': body})
     log.debug(msg)
     with lock:
         return ws.send(msg)
@@ -150,7 +149,7 @@ def websocket(ws):
             if msg is None:
                 break
 
-            msg = umsgpack.unpackb(msg)
+            msg = json.loads(msg)
             target = msg['target']
             handler = ws_handlers['ws_%s' % target]
             send = ft.partial(ws_send, ws, lock, msg['uid'])
