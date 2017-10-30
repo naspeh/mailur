@@ -22,7 +22,7 @@ def test_binary_msg():
     ])
 
 
-def test_fetch_and_parse(clean_users, gm_client, some):
+def test_basic(clean_users, gm_client, some):
     lm = local.client()
     gmail.fetch_folder()
     local.parse()
@@ -68,24 +68,15 @@ def test_fetch_and_parse(clean_users, gm_client, some):
 
 
 def get_latest(box=local.SRC, raw=False):
-    lm = local.client(box)
-    res = lm.fetch('*', '(flags body[])')
-    msg = res[0][1]
-    print(msg.decode())
-    if not raw:
-        msg = email.message_from_bytes(msg)
-    line = res[0][0].decode()
-    print(line)
-    flags = re.search('FLAGS \(([^)]*)\)', line).group(1)
-    return flags, msg
+    return get_msgs(box, '*', raw=raw)[0]
 
 
-def get_msgs(box=local.SRC, uids='1:*'):
+def get_msgs(box=local.SRC, uids='1:*', raw=False):
     lm = local.client(box)
     res = lm.fetch(uids, '(flags body[])')
     return [(
         re.search('FLAGS \(([^)]*)\)', res[i][0].decode()).group(1),
-        email.message_from_bytes(res[i][1])
+        res[i][1] if raw else email.message_from_bytes(res[i][1])
     ) for i in range(0, len(res), 2)]
 
 
