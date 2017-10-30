@@ -42,26 +42,19 @@
       show_bodies: false,
     },
     methods: {
-      get: function(query, preloadNum=100) {
+      get: function(query, preload=100) {
         if (query) {
             this.query = query;
         }
         window.location.hash = this.query;
-        this.send('id', {q: this.query}).then(uids => {
-          this.msgs = null;
-          var preload = uids.length > preloadNum ? uids.slice(0, preloadNum) : null;
-          if (preload && !this.msgs) {
-            this.ids(preload);
-            this.send('info', {uids: preload}).then(msgs => {
-              this.infos(msgs);
-              setTimeout(() => this.ids(uids), 0);
-            });
-            return;
-          } else if (!preload) {
-            preload = uids
+        this.send('', {q: this.query, preload: preload}).then(res => {
+          this.msgs = res.msgs;
+
+          this.ids(res.uids.slice(0, preload));
+          this.infos(res.msgs);
+          if (res.uids.length > preload) {
+            setTimeout(() => this.ids(res.uids), 0);
           }
-          this.ids(uids);
-          this.send('info', {uids: preload}).then(this.infos);
         });
       },
       ids: function(uids) {
@@ -81,7 +74,8 @@
         this.state = Object.assign(this.state, state);
       },
       url: function(url, params) {
-        url = (this.show_threads && '/threads/' || '/msgs/') + url;
+        url = url ? '/' + url : '';
+        url = (this.show_threads ? '/threads' : '/msgs') + url;
         return params && url + encodeURIComponent(this.query) || url;
 
       },

@@ -10,9 +10,9 @@ from . import log, local, imap
 static = pathlib.Path(__file__).parent / 'static'
 routes = re.compile('^/(%s)$' % '|'.join((
     r'(?P<index>)',
-    r'(?P<msgs_id>msgs/id)',
+    r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
-    r'(?P<threads_id>threads/id)',
+    r'(?P<threads>threads)',
     r'(?P<threads_info>threads/info)',
     r'(?P<origin>origin/(?P<oid>\d+))',
     r'(?P<parsed>parsed/(?P<pid>\d+))',
@@ -29,17 +29,17 @@ def application(req):
     if route['index'] is not None:
         return (static / 'index.htm').read_text()
     elif route['origin']:
-        return msg_body(route['oid'])
+        return msg_raw(route['oid'])
     elif route['parsed']:
-        return msg_body(route['pid'], local.ALL)
-    elif route['msgs_id']:
-        return msgs_id(req.json['q'])
+        return msg_raw(route['pid'], local.ALL)
+    elif route['msgs']:
+        return msgs(req.json['q'], req.json['preload'])
     elif route['msgs_info']:
-        return msgs_info(req.json['uids'])
-    elif route['threads_id']:
-        return threads_id(req.json['q'])
+        return jsonify(msgs_info)(req.json['uids'])
+    elif route['threads']:
+        return threads(req.json['q'], req.json['preload'])
     elif route['threads_info']:
-        return threads_info(req.json['uids'])
+        return jsonify(threads_info)(req.json['uids'])
 
     raise ValueError('No handler for %r' % route)
 
@@ -53,23 +53,27 @@ def jsonify(fn):
 
 
 @jsonify
-def threads_id(q):
+def threads(q, preload):
     con = local.client()
     res = con.sort('(REVERSE DATE)', 'INTHREAD REFS %s KEYWORD #latest' % q)
-    thrs = res[0].decode().split()
-    log.debug('query: %r; threads: %s', q, len(thrs))
-    return thrs
+    uids = res[0].decode().split()
+    log.debug('query: %r; threads: %s', q, len(uids))
+    if preload and uids:
+        msgs = threads_info(uids[:preload], con)
+    else:
+        msgs = {}
+    return {'uids': uids, 'msgs': msgs}
 
 
-@jsonify
-def threads_info(uids):
+def threads_info(uids, con=None):
     if not uids:
         return {}
 
-    def inner(uids):
-        con = local.client()
-        thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
+    def inner(uids, con):
+        if con is None:
+            con = local.client()
 
+        thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
         all_flags = {}
         res = con.fetch(thrs.all_uids, 'FLAGS')
         for line in res:
@@ -103,21 +107,24 @@ def threads_info(uids):
 
     uids = imap.Uids(uids, size=1000)
     msgs = {}
-    for i in uids.call_async(inner, uids):
+    for i in uids.call_async(inner, uids, con):
         msgs.update(i)
     return msgs
 
 
 @jsonify
-def msgs_id(query):
+def msgs(query, preload):
     con = local.client()
     res = con.sort('(REVERSE DATE)', query.encode())
     uids = res[0].decode().split()
     log.debug('query: %r; messages: %s', query, len(uids))
-    return uids
+    if preload and uids:
+        msgs = msgs_info(uids[:preload])
+    else:
+        msgs = {}
+    return {'uids': uids, 'msgs': msgs}
 
 
-@jsonify
 def msgs_info(uids):
     con = local.client()
     res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[2])')
@@ -133,7 +140,7 @@ def msgs_info(uids):
     return msgs
 
 
-def msg_body(uid, box=local.SRC):
+def msg_raw(uid, box=local.SRC):
     con = local.client(box)
     res = con.fetch(uid, 'body[]')
     if not res:
