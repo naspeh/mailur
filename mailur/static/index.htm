@@ -12,9 +12,9 @@
     <input type="checkbox" id="show_threads" v-model="show_threads">
     <label for="show_threads">treads</label>
     <button v-on:click="get()">go!</button>
-    <div v-for="uid in uids" :key="uid">
+    <div v-for="uid in uidsLoaded" :key="uid">
       <a :href="parsed_url(uid)" target="_blank" title="Parsed message" >{{ uid }}</a>
-      <span v-if="state[uid]">
+      <template v-if="state[uid]">
       <a :href="origin_url(uid)" target="_blank" title="Origin message">[orig]</a>
       <i>{{ msgs[uid].flags }}</i>
       <b v-on:click.stop="search_header('x-subject', msgs[uid].subject)">
@@ -27,8 +27,9 @@
         </span>
       </div>
       <div v-if="show_bodies" v-html="msgs[uid].body"></div>
-      </span>
+      </template>
     </div>
+    <a v-on:click.prevent="loadMore()" href="#" v-if="canLoadMore()">Load more...</a>
   </div>
 
   <script>
@@ -40,22 +41,42 @@
       query: decodeURIComponent(location.hash.slice(1))  || 'all',
       show_threads: false,
       show_bodies: false,
+      per_page: 100,
+    },
+    computed: {
+      uidsLoaded: function() {
+        var uids = [];
+        for (var uid of this.uids) {
+          if (this.state[uid]) {
+            uids.push(uid);
+          }
+        }
+        return uids;
+      }
     },
     methods: {
-      get: function(query, preload=100) {
+      get: function(query) {
         if (query) {
             this.query = query;
         }
         window.location.hash = this.query;
-        this.send('', {q: this.query, preload: preload}).then(res => {
+        this.send('', {q: this.query, preload: this.per_page}).then(res => {
           this.msgs = res.msgs;
 
-          this.ids(res.uids.slice(0, preload));
+          this.ids(res.uids.slice(0, this.per_page));
           this.infos(res.msgs);
-          if (res.uids.length > preload) {
+          if (res.uids.length > this.per_page) {
             setTimeout(() => this.ids(res.uids), 0);
           }
         });
+      },
+      canLoadMore() {
+        return Object.getOwnPropertyNames(this.msgs || {}).length < this.uids.length;
+      },
+      loadMore: function() {
+        var start = Object.getOwnPropertyNames(this.msgs).length,
+            uids = this.uids.slice(start, start + this.per_page);
+        this.send('/info', {uids: uids}).then(this.infos);
       },
       ids: function(uids) {
         this.uids = uids;
@@ -66,7 +87,7 @@
         this.state = state;
       },
       infos: function(msgs) {
-        this.msgs = Object.assign(this.msgs || {}, msgs);
+        this.msgs = Object.assign(this.msgs, msgs);
         var state = {};
         for (var msg in msgs) {
           state[msg] = 1;
@@ -74,7 +95,6 @@
         this.state = Object.assign(this.state, state);
       },
       url: function(url, params) {
-        url = url ? '/' + url : '';
         url = (this.show_threads ? '/threads' : '/msgs') + url;
         return params && url + encodeURIComponent(this.query) || url;
 
@@ -102,7 +122,7 @@
       },
     }
   });
-  app.msgs = null;
+  app.msgs = {};
   </script>
 </body>
 </html>
