@@ -41,17 +41,27 @@ def main(args):
 
 def web():
     import os
-    import subprocess
     import time
+    from gevent.subprocess import run
+    from gevent.pool import Pool
 
-    cmd = (
-        'gunicorn mailur.app -b :5000 '
-        ' -k gevent --timeout=300 --reload --access-logfile=-'
-        ' --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"'
-    )
-    env = dict(os.environ, MLR_USER=local.USER)
+    def api():
+        cmd = (
+            'gunicorn mailur.app -b :5000 '
+            ' -k gevent --timeout=300 --reload --access-logfile=-'
+            ' --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"'
+        )
+        env = dict(os.environ, MLR_USER=local.USER)
+        run(cmd, env=env, shell=True)
+
+    def webpack():
+        run('webpack -w', shell=True)
+
     try:
-        subprocess.run(cmd, env=env, shell=True)
+        pool = Pool()
+        pool.spawn(api)
+        pool.spawn(webpack)
+        pool.join()
     except KeyboardInterrupt:
         time.sleep(1)
 

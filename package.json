@@ -4,19 +4,14 @@
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
     "babel-preset-env": "^1.6.1",
-    "postcss-cssnext": "^3.0.2",
+    "clean-webpack-plugin": "^0.1.17",
+    "html-loader": "^0.5.1",
+    "html-webpack-plugin": "^2.30.1",
     "prettier": "^1.7.4",
-    "rollup": "^0.50.0",
-    "rollup-plugin-alias": "^1.4.0",
-    "rollup-plugin-babel": "^3.0.2",
-    "rollup-plugin-eslint": "^4.0.0",
-    "rollup-plugin-postcss": "^0.5.5",
-    "rollup-plugin-replace": "^2.0.0",
-    "rollup-plugin-string": "^2.0.2"
-  },
-  "jshintConfig": {
-    "esversion": 6
+    "prettier-webpack-plugin": "^0.2.2",
+    "webpack": "^3.8.1"
   },
   "eslintConfig": {
     "extends": "eslint:recommended",
@@ -30,9 +25,12 @@
     }
   },
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "fmt": "prettier --write assets/*.js rollup.config.js",
-    "lint": "eslint assets/*.js"
+    "build": "webpack",
+    "dev": "webpack -w",
+    "fmt": "prettier --write assets/*.js webpack.config.js",
+    "lint": "eslint assets/*.js webpack.config.js"
+  },
+  "prettier": {
+    "singleQuote": true
   }
 }

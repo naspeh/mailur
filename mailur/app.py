@@ -7,7 +7,7 @@ from webob import Response, dec, exc, static
 
 from . import log, local, imap
 
-assets = pathlib.Path(__file__).parent / '../assets'
+assets = pathlib.Path(__file__).parent / '../assets/dist'
 routes = re.compile('^/api/(%s)$' % '|'.join((
     r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
