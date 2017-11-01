@@ -1,0 +1,38 @@
+{
+  "dependencies": {
+    "vue": "^2.5.2"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "postcss-cssnext": "^3.0.2",
+    "prettier": "^1.7.4",
+    "rollup": "^0.50.0",
+    "rollup-plugin-alias": "^1.4.0",
+    "rollup-plugin-babel": "^3.0.2",
+    "rollup-plugin-eslint": "^4.0.0",
+    "rollup-plugin-postcss": "^0.5.5",
+    "rollup-plugin-replace": "^2.0.0",
+    "rollup-plugin-string": "^2.0.2"
+  },
+  "jshintConfig": {
+    "esversion": 6
+  },
+  "eslintConfig": {
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "ecmaVersion": 6,
+      "sourceType": "module"
+    },
+    "env": {
+      "es6": true,
+      "browser": true
+    }
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "fmt": "prettier --write assets/*.js rollup.config.js",
+    "lint": "eslint assets/*.js"
+  }
+}

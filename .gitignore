@@ -2,3 +2,6 @@
 .cache
 
 env
+node_modules
+assets/dist
+yarn.lock

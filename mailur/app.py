@@ -3,13 +3,12 @@ import json
 import pathlib
 import re
 
-from webob import Response, dec, exc
+from webob import Response, dec, exc, static
 
 from . import log, local, imap
 
-static = pathlib.Path(__file__).parent / 'static'
-routes = re.compile('^/(%s)$' % '|'.join((
-    r'(?P<index>)',
+assets = pathlib.Path(__file__).parent / '../assets'
+routes = re.compile('^/api/(%s)$' % '|'.join((
     r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
     r'(?P<threads>threads)',
@@ -23,12 +22,10 @@ routes = re.compile('^/(%s)$' % '|'.join((
 def application(req):
     route = routes.match(req.path)
     if not route:
-        raise exc.HTTPNotFound
+        return static.DirectoryApp(assets)
 
     route = route.groupdict()
-    if route['index'] is not None:
-        return (static / 'index.htm').read_text()
-    elif route['origin']:
+    if route['origin']:
         return msg_raw(route['oid'])
     elif route['parsed']:
         return msg_raw(route['pid'], local.ALL)

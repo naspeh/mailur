@@ -17,3 +17,6 @@ python3 -m venv $env
 
 $pip install -U wheel flake8 pytest ptpdb
 $pip install -Ur requirements.txt
+
+apk add yarn
+yarn
