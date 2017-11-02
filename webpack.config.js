@@ -1,20 +1,23 @@
 const path = require('path');
-const Package = require('./package.json')
+const pkg = require('./package.json');
+const webpack = require('webpack');
+
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const PrettierPlugin = require('prettier-webpack-plugin');
 
-const dist = path.resolve(__dirname, 'assets/dist')
+const dist = path.resolve(__dirname, 'assets/dist');
 
 module.exports = {
   entry: {
     index: './assets/index.js'
   },
   plugins: [
-    new PrettierPlugin(Package.prettier),
+    new PrettierPlugin(pkg.prettier),
     new CleanWebpackPlugin([dist]),
     new HtmlWebpackPlugin({
-      template: 'assets/index.html'
+      template: 'assets/index.html',
+      favicon: 'assets/favicon.png'
     })
   ],
   output: {
@@ -30,12 +33,18 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
+        exclude: /node_modules/,
         loader: 'babel-loader',
-        exclude: /node_modules/
+        options: {
+            presets: ['babel-preset-env']
+        }
       },
       {
-        test: /\.html$/,
-        use: ['html-loader']
+        test: /\.(png|jpg|gif|svg)$/,
+        loader: 'file-loader',
+        options: {
+          name: '[name].[ext]?[hash]'
+        }
       }
     ]
   },

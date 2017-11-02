@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import tpl from './app.html';
+import tpl from 'html-loader!./app.html';
 
 var app = new Vue({
   el: '#app',
