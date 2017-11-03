@@ -1,7 +1,8 @@
 import Vue from 'vue';
+import tpl from 'html-loader!./msgs.html';
 
 Vue.component('Msgs', {
-  template: require('html-loader!./msgs.html'),
+  template: tpl,
   data: function() {
     return {
       uids: [],

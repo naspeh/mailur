@@ -1,9 +1,10 @@
 import Vue from 'vue';
+import tpl from 'html-loader!./app.html';
 
 export default () => {
   window.app = new Vue({
     el: '#app',
-    template: require('html-loader!./app.html'),
+    template: tpl,
     data: {
       query: decodeURIComponent(location.hash.slice(1)) || 'all',
       showBodies: false,

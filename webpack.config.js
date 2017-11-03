@@ -1,10 +1,9 @@
+/* eslint-env node */
 const path = require('path');
-const pkg = require('./package.json');
 const webpack = require('webpack');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-const PrettierPlugin = require('prettier-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'assets/dist');
 
@@ -13,7 +12,6 @@ module.exports = {
     index: './assets/index.js'
   },
   plugins: [
-    new PrettierPlugin(pkg.prettier),
     new CleanWebpackPlugin([dist]),
     new HtmlWebpackPlugin({
       template: 'assets/index.html',

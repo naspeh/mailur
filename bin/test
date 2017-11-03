@@ -14,10 +14,15 @@ set -exuo pipefail
 
 cd /opt/mailur
 bin/install
+
+apk add git
+
 set +ux
 . env/bin/activate
 set -ux
 pytest -v
 python -c 'import mailur.app'
+yarn run lint
+yarn run fmt && git diff --exit-code
 yarn run build
 EOF

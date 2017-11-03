@@ -1,4 +1,4 @@
 import app from './app.js';
-import msgs from './msgs.js';
+import './msgs.js';
 
 app();
