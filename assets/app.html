@@ -1,26 +1,9 @@
 <div>
 <input v-model.lazy.trim="query" @keyup.enter="get()">
-<input type="checkbox" id="show_bodies" v-model="show_bodies">
+<input type="checkbox" id="show_bodies" v-model="showBodies">
 <label for="show_bodies">bodies</label>
-<input type="checkbox" id="show_threads" v-model="show_threads">
+<input type="checkbox" id="show_threads" v-model="showThreads">
 <label for="show_threads">treads</label>
 <button v-on:click="get()">go!</button>
-<div v-for="uid in uidsLoaded" :key="uid">
-  <a :href="parsed_url(uid)" target="_blank" title="Parsed message" >{{ uid }}</a>
-  <template v-if="state[uid]">
-  <a :href="origin_url(uid)" target="_blank" title="Origin message">[orig]</a>
-  <i>{{ msgs[uid].flags }}</i>
-  <b v-on:click.stop="search_header('x-subject', msgs[uid].subject)">
-    {{ msgs[uid].subject }}
-  </b>
-  <div style="border-bottom: 1px solid #ccc">
-    <span>{{ msgs[uid].date }}</span>
-    <span v-on:click.stop="search_header('message-id ', msgs[uid].message_id)">
-        {{ msgs[uid].message_id }}
-    </span>
-  </div>
-  <div v-if="show_bodies" v-html="msgs[uid].body"></div>
-  </template>
-</div>
-<a v-on:click.prevent="loadMore()" href="#" v-if="canLoadMore()">Load more...</a>
+<msgs ref="msgs" />
 </div>

@@ -1,0 +1,20 @@
+<div class="pages">
+  <div v-for="uids of pages">
+    <div v-for="msg in page(uids)" :key="msg.uid">
+      <a :href="msg.parsed_url" target="_blank" title="Parsed message" >{{ msg.uid }}</a>
+      <a :href="msg.origin_url" target="_blank" title="Origin message">[orig]</a>
+      <i>{{ msg.flags }}</i>
+      <b v-on:click.stop="search_header('x-subject', msg.subject)">
+        {{ msg.subject }}
+      </b>
+      <div style="border-bottom: 1px solid #ccc">
+        <span>{{ msg.date }}</span>
+        <span v-on:click.stop="search_header('message-id ', msg.message_id)">
+          {{ msg.message_id }}
+        </span>
+      </div>
+      <div v-if="msg.body" v-html="msg.body"></div>
+    </div>
+  </div>
+  <a v-on:click.prevent="loadMore()" href="#" v-if="canLoadMore()">Load more...</a>
+</div>
