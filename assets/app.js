@@ -7,16 +7,12 @@ export default () => {
     template: tpl,
     data: {
       query: decodeURIComponent(location.hash.slice(1)) || 'all',
-      showBodies: false,
-      showThreads: false
+      threads: false
     },
     methods: {
       get: function() {
         window.location.hash = this.query;
-        this.$refs.msgs.get(
-          this.showThreads ? '/api/threads' : '/api/msgs',
-          this.query
-        );
+        this.$refs.msgs.get();
       }
     }
   });

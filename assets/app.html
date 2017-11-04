@@ -1,9 +1,7 @@
 <div>
 <input v-model.lazy.trim="query" @keyup.enter="get()">
-<input type="checkbox" id="show_bodies" v-model="showBodies">
-<label for="show_bodies">bodies</label>
-<input type="checkbox" id="show_threads" v-model="showThreads">
+<input type="checkbox" id="show_threads" v-model="threads">
 <label for="show_threads">treads</label>
 <button v-on:click="get()">go!</button>
-<msgs ref="msgs" />
+<msgs ref="msgs" :threads="threads" :query="query" />
 </div>
