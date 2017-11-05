@@ -1,6 +1,6 @@
 <div class="pages">
   <div v-for="uids of pages">
-    <div v-for="msg in page(uids)" :key="msg.uid">
+    <div v-for="msg in page(uids)" :key="msg.uid" class="msg">
       <a :href="msg.parsed_url" target="_blank" title="Parsed message" >{{ msg.uid }}</a>
       <a :href="msg.origin_url" target="_blank" title="Origin message">[orig]</a>
       <i>{{ msg.flags }}</i>

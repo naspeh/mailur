@@ -7,11 +7,26 @@
     "babel-loader": "^7.1.2",
     "babel-preset-env": "^1.6.1",
     "clean-webpack-plugin": "^0.1.17",
+    "css-loader": "^0.28.7",
     "eslint": "^4.10.0",
+    "extract-text-webpack-plugin": "^3.0.2",
     "html-loader": "^0.5.1",
     "html-webpack-plugin": "^2.30.1",
+    "postcss-cssnext": "^3.0.2",
+    "postcss-loader": "^2.0.8",
     "prettier": "^1.7.4",
+    "style-loader": "^0.19.0",
+    "stylelint": "^8.2.0",
+    "stylelint-config-standard": "^17.0.0",
     "webpack": "^3.8.1"
+  },
+  "scripts": {
+    "build": "webpack",
+    "dev": "webpack -w",
+    "fmt": "prettier --write assets/*.js webpack.config.js",
+    "eslint": "eslint assets/*.js webpack.config.js",
+    "stylelint": " stylelint assets/*.css",
+    "lint": "sh -xc 'yarn run fmt; yarn run eslint; yarn run stylelint'"
   },
   "eslintConfig": {
     "extends": "eslint:recommended",
@@ -24,13 +39,10 @@
       "browser": true
     }
   },
-  "scripts": {
-    "build": "webpack",
-    "dev": "webpack -w",
-    "fmt": "prettier --write assets/*.js webpack.config.js",
-    "lint": "eslint assets/*.js webpack.config.js"
-  },
   "prettier": {
     "singleQuote": true
+  },
+  "stylelint": {
+    "extends": "stylelint-config-standard"
   }
 }

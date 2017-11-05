@@ -1,0 +1,9 @@
+:root {
+  --colorR: green;
+}
+
+@custom-selector :--msg .pages .msg;
+
+:--msg a {
+  color: var(--colorR);
+}

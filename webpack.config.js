@@ -4,6 +4,7 @@ const webpack = require('webpack');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'assets/dist');
 
@@ -16,7 +17,8 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: 'assets/index.html',
       favicon: 'assets/favicon.png'
-    })
+    }),
+    new ExtractTextPlugin('[name].[hash].css')
   ],
   output: {
     filename: '[name].[hash].js',
@@ -43,6 +45,21 @@ module.exports = {
         options: {
           name: '[name].[ext]?[hash]'
         }
+      },
+      {
+        test: /\.css$/,
+        use: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: [
+            { loader: 'css-loader', options: { importLoaders: 1 } },
+            {
+              loader: 'postcss-loader',
+              options: {
+                plugins: [require('postcss-cssnext')()]
+              }
+            }
+          ]
+        })
       }
     ]
   },
