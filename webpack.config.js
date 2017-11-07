@@ -2,8 +2,8 @@
 const path = require('path');
 const webpack = require('webpack');
 
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const HtmlPlugin = require('html-webpack-plugin');
+const CleanPlugin = require('clean-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'assets/dist');
@@ -13,8 +13,8 @@ module.exports = {
     index: './assets/index.js'
   },
   plugins: [
-    new CleanWebpackPlugin([dist]),
-    new HtmlWebpackPlugin({
+    new CleanPlugin([dist]),
+    new HtmlPlugin({
       template: 'assets/index.html',
       favicon: 'assets/favicon.png'
     }),
@@ -45,6 +45,10 @@ module.exports = {
         options: {
           name: '[name].[ext]?[hash]'
         }
+      },
+      {
+        test: /\.(html)$/,
+        loader: 'html-loader'
       },
       {
         test: /\.css$/,

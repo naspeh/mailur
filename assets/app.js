@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import tpl from 'html-loader!./app.html';
+import tpl from './app.html';
 
 export default () => {
   window.app = new Vue({
@@ -10,9 +10,12 @@ export default () => {
       threads: false
     },
     methods: {
-      get: function() {
+      fetch: function(query) {
+        if (query) {
+          this.query = query;
+        }
         window.location.hash = this.query;
-        this.$refs.msgs.get();
+        this.$nextTick(() => this.$refs.msgs.fetch());
       }
     }
   });
