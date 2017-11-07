@@ -1,4 +1,5 @@
 {
+  "license": "GPL-3.0",
   "dependencies": {
     "vue": "^2.5.2"
   },
