@@ -9,6 +9,9 @@ export default () => {
       query: decodeURIComponent(location.hash.slice(1)) || 'all',
       threads: false
     },
+    created: function() {
+      this.fetch();
+    },
     methods: {
       fetch: function(query) {
         if (query) {

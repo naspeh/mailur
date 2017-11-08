@@ -2,8 +2,28 @@
   --colorR: green;
 }
 
-@custom-selector :--msg .pages .msg;
+.msg-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 -1px;
 
-:--msg a {
-  color: var(--colorR);
+  @nest & > a, & > i, & > span {
+    white-space: nowrap;
+    padding: 0 1px;
+  }
+
+  & a {
+    color: var(--colorR);
+  }
+
+  & .msg-subj {
+    flex-basis: 50%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  & .msg-date {
+    align-self: flex-end;
+  }
 }
