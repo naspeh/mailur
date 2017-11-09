@@ -11,7 +11,7 @@ from email.utils import parsedate_to_datetime
 
 from gevent import socket
 
-from . import log, imap
+from . import log, imap, helpers
 
 USER = os.environ.get('MLR_USER', 'user')
 
@@ -111,10 +111,10 @@ def create_msg(raw, uid, time):
     meta['uid'] = uid
 
     date = orig['date']
-    meta['date'] = date and parsedate_to_datetime(date).isoformat()
+    meta['date'] = date and helpers.to_iso(parsedate_to_datetime(date))
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
-    meta['arrived'] = arrived.isoformat()
+    meta['arrived'] = helpers.to_iso(arrived)
 
     txt = orig.get_body(preferencelist=('plain', 'html'))
     body = txt.get_content()
@@ -158,7 +158,7 @@ def parse_uids(uids):
                 continue
             yield time, flags, msg
 
-    msgs = list(iter_msgs(res))
+    msgs = iter_msgs(res)
     try:
         return con.multiappend(ALL, msgs)
     finally:

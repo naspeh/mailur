@@ -8,7 +8,7 @@
       <b class="msg-subj" @click.stop="search_header('x-subject', msg.subject)">
         {{ msg.subject }}
       </b>
-      <span class="msg-date">{{ msg.date }}</span>
+      <span class="msg-date">{{ msg.time_human }}</span>
       <div v-if="msg.body" v-html="msg.body"></div>
     </div>
   </div>

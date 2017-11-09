@@ -32,15 +32,15 @@ def fn_desc(func, *a, **kw):
     return '%s(%s)' % (name, args)
 
 
-def fn_time(func):
+def fn_time(func, desc=None):
     @ft.wraps(func)
     def inner(*a, **kw):
         start = time.time()
         try:
             return func(*a, **kw)
         finally:
-            desc = fn_desc(func, *a, **kw)
-            log.debug('## %s: done for %.2fs', desc, time.time() - start)
+            d = desc if desc else fn_desc(func, *a, **kw)
+            log.debug('## %s: done for %.2fs', d, time.time() - start)
     return inner
 
 
@@ -372,12 +372,13 @@ class Uids:
         return isinstance(self.val, (str, bytes))
 
     def _call(self, fn, *args):
-        fn = fn_time(fn)
         num, uids = [i for i in enumerate(args) if self == i[1]][0]
         args = list(args)
-        for few in uids.batches or ([self] if self.val else []):
+        for i, few in enumerate(uids.batches or ([self] if self.val else [])):
             args[num] = few
-            yield ft.partial(fn, *args)
+            f = ft.partial(fn, *args)
+            desc = fn_desc(fn, *args)
+            yield fn_time(f, '#%s: %s' % (i, desc))
 
     def call(self, fn, *args):
         return [f() for f in self._call(fn, *args)]

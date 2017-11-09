@@ -126,7 +126,7 @@ def fetch_uids(uids, tag):
             yield parts['time'], flags, raw
 
     with local.client(None) as lm:
-        msgs = list(iter_msgs(res))
+        msgs = iter_msgs(res)
         return lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs)
 
 

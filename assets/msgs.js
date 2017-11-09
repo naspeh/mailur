@@ -29,13 +29,13 @@ Vue.component('Msgs', {
     }
   },
   methods: {
-    setMsgs: function(msgs) {
+    setMsgs: function(msgs, uids) {
       if (!msgs) {
         this.msgs = {};
         this.pages = [];
       } else {
         Object.assign(this.msgs, msgs);
-        this.pages.push(Object.keys(msgs));
+        this.pages.push(uids);
       }
     },
     fetch: function() {
@@ -45,13 +45,14 @@ Vue.component('Msgs', {
         q: this.query,
         preload: this.perPage
       }).then(res => {
-        this.setMsgs(res.msgs);
+        this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });
     },
     send: function(prefix, params) {
       return fetch(this.url + prefix, {
         method: 'post',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params)
       }).then(response => response.json());
@@ -61,7 +62,9 @@ Vue.component('Msgs', {
     },
     loadMore: function() {
       let uids = this.uids.slice(this.length, this.length + this.perPage);
-      return this.send('/info', { uids: uids }).then(res => this.setMsgs(res));
+      return this.send('/info', { uids: uids }).then(res =>
+        this.setMsgs(res, uids)
+      );
     },
     page: function(uids) {
       let msgs = [];

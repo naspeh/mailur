@@ -10,7 +10,12 @@ export default () => {
       threads: false
     },
     created: function() {
-      this.fetch();
+      return fetch('/api/login', {
+        method: 'post',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offset: new Date().getTimezoneOffset() / 60 })
+      }).then(() => this.fetch());
     },
     methods: {
       fetch: function(query) {

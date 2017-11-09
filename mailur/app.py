@@ -5,10 +5,11 @@ import re
 
 from webob import Response, dec, exc, static
 
-from . import log, local, imap
+from . import log, local, imap, helpers
 
 assets = pathlib.Path(__file__).parent / '../assets/dist'
 routes = re.compile('^/api/(%s)$' % '|'.join((
+    r'(?P<login>login)',
     r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
     r'(?P<threads>threads)',
@@ -25,18 +26,20 @@ def application(req):
         return static.DirectoryApp(assets)
 
     route = route.groupdict()
-    if route['origin']:
+    if route['login']:
+        return login(req)
+    elif route['origin']:
         return msg_raw(route['oid'])
     elif route['parsed']:
         return msg_raw(route['pid'], local.ALL)
     elif route['msgs']:
-        return msgs(req.json['q'], req.json['preload'])
+        return msgs(req, req.json['q'], req.json['preload'])
     elif route['msgs_info']:
-        return jsonify(msgs_info)(req.json['uids'])
+        return jsonify(msgs_info)(req, req.json['uids'])
     elif route['threads']:
-        return threads(req.json['q'], req.json['preload'])
+        return threads(req, req.json['q'], req.json['preload'])
     elif route['threads_info']:
-        return jsonify(threads_info)(req.json['uids'])
+        return jsonify(threads_info)(req, req.json['uids'])
 
     raise ValueError('No handler for %r' % route)
 
@@ -49,20 +52,27 @@ def jsonify(fn):
     return inner
 
 
+def login(req):
+    if req.method == 'POST':
+        res = Response()
+        res.set_cookie('offset', str(req.json['offset']))
+        return res
+
+
 @jsonify
-def threads(q, preload):
+def threads(req, q, preload):
     con = local.client()
     res = con.sort('(REVERSE DATE)', 'INTHREAD REFS %s KEYWORD #latest' % q)
     uids = res[0].decode().split()
     log.debug('query: %r; threads: %s', q, len(uids))
     if preload and uids:
-        msgs = threads_info(uids[:preload], con)
+        msgs = threads_info(req, uids[:preload], con)
     else:
         msgs = {}
     return {'uids': uids, 'msgs': msgs}
 
 
-def threads_info(uids, con=None):
+def threads_info(req, uids, con=None):
     if not uids:
         return {}
 
@@ -98,7 +108,7 @@ def threads_info(uids, con=None):
         res = con.fetch(msgs, '(BINARY.PEEK[2])')
         for i in range(0, len(res), 2):
             uid = res[i][0].decode().split()[2]
-            data = json.loads(res[i][1].decode())
+            data = msg_info(res[i][1], req)
             msgs[uid].update(data)
         return msgs
 
@@ -110,19 +120,19 @@ def threads_info(uids, con=None):
 
 
 @jsonify
-def msgs(query, preload):
+def msgs(req, query, preload):
     con = local.client()
     res = con.sort('(REVERSE DATE)', query.encode())
     uids = res[0].decode().split()
     log.debug('query: %r; messages: %s', query, len(uids))
     if preload and uids:
-        msgs = msgs_info(uids[:preload])
+        msgs = msgs_info(req, uids[:preload])
     else:
         msgs = {}
     return {'uids': uids, 'msgs': msgs}
 
 
-def msgs_info(uids):
+def msgs_info(req, uids):
     con = local.client()
     res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[2])')
     msgs = {}
@@ -131,7 +141,7 @@ def msgs_info(uids):
             re.search(r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode())
             .groups()
         )
-        data = json.loads(res[i][1].decode())
+        data = msg_info(res[i][1], req)
         msgs[uid] = data
         msgs[uid]['flags'] = flags
     return msgs
@@ -144,3 +154,13 @@ def msg_raw(uid, box=local.SRC):
         raise exc.HTTPNotFound
     txt = res[0][1]
     return Response(txt, content_type='text/plain')
+
+
+def msg_info(txt, req=None):
+    offset = int(req.cookies['offset']) if req else 0
+    if isinstance(txt, bytes):
+        txt = txt.decode()
+
+    info = json.loads(txt)
+    info['time_human'] = helpers.humanize_dt(info['date'], offset=offset)
+    return info
