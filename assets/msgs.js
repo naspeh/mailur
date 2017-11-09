@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import { send } from './utils.js';
 import tpl from './msgs.html';
 import './msgs.css';
 
@@ -20,13 +21,14 @@ Vue.component('Msgs', {
   },
   computed: {
     url: function() {
-      return this.threads ? '/api/threads' : '/api/msgs';
+      return this.threads ? '/threads' : '/msgs';
     },
     length: function() {
       return this.pages.length
         ? Object.getOwnPropertyNames(this.msgs).length
         : 0;
-    }
+    },
+    app: () => window.app
   },
   methods: {
     setMsgs: function(msgs, uids) {
@@ -50,12 +52,7 @@ Vue.component('Msgs', {
       });
     },
     send: function(prefix, params) {
-      return fetch(this.url + prefix, {
-        method: 'post',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-      }).then(response => response.json());
+      return send(this.url + prefix, params);
     },
     canLoadMore: function() {
       return this.length < this.uids.length;
@@ -76,9 +73,6 @@ Vue.component('Msgs', {
         msgs.push(msg);
       }
       return msgs;
-    },
-    search_header: function(name, value) {
-      return this.$parent.fetch('header ' + name + ' "' + value + '"');
     }
   }
 });

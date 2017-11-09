@@ -10,6 +10,7 @@ from . import log, local, imap, helpers
 assets = pathlib.Path(__file__).parent / '../assets/dist'
 routes = re.compile('^/api/(%s)$' % '|'.join((
     r'(?P<login>login)',
+    r'(?P<tags>tags)',
     r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
     r'(?P<threads>threads)',
@@ -32,6 +33,8 @@ def application(req):
         return msg_raw(route['oid'])
     elif route['parsed']:
         return msg_raw(route['pid'], local.ALL)
+    elif route['tags']:
+        return tags(req)
     elif route['msgs']:
         return msgs(req, req.json['q'], req.json['preload'])
     elif route['msgs_info']:
@@ -143,7 +146,7 @@ def msgs_info(req, uids):
         )
         data = msg_info(res[i][1], req)
         msgs[uid] = data
-        msgs[uid]['flags'] = flags
+        msgs[uid]['flags'] = flags.split()
     return msgs
 
 
@@ -164,3 +167,12 @@ def msg_info(txt, req=None):
     info = json.loads(txt)
     info['time_human'] = helpers.humanize_dt(info['date'], offset=offset)
     return info
+
+
+@jsonify
+def tags(req):
+    con = local.client(None)
+    try:
+        return local.get_tags(con)
+    finally:
+        con.logout()

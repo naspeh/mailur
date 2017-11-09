@@ -5,11 +5,11 @@
 .msg-line {
   display: flex;
   justify-content: space-between;
-  margin: 0 -1px;
+  margin: 0 -2px;
 
   @nest & > a, & > i, & > span {
     white-space: nowrap;
-    padding: 0 1px;
+    padding: 0 2px;
   }
 
   & a {
@@ -25,5 +25,9 @@
 
   & .msg-date {
     align-self: flex-end;
+  }
+
+  & .tags {
+    font-size: 90%;
   }
 }

@@ -1,0 +1,12 @@
+.tags {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 -2px;
+
+  & .tag {
+    max-width: 10em;
+    padding: 0 2px;
+    color: grey;
+    white-space: nowrap;
+  }
+}
