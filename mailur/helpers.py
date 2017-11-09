@@ -1,21 +1,12 @@
 import datetime as dt
-
-ISO = '%Y-%m-%dT%H:%M:%S.%f%z'
-
-
-def utcnow():
-    return dt.datetime.now(dt.timezone.utc)
+from hashlib import md5
+from urllib.parse import urlencode
 
 
-def to_iso(val):
-    txt = dt.datetime.strftime(val, ISO)
-    if val.tzinfo is None:
-        txt += '+0000'
-    return txt
-
-
-def to_dt(val):
-    return dt.datetime.strptime(val, ISO)
+def get_gravatar(addr, size=75, default='identicon'):
+    params = urlencode((('d', default), ('s', size)))
+    hash = md5(addr.strip().lower().encode()).hexdigest()
+    return '//www.gravatar.com/avatar/%s?%s' % (hash, params)
 
 
 def localize_dt(value, offset=None):
@@ -23,10 +14,10 @@ def localize_dt(value, offset=None):
 
 
 def humanize_dt(val, offset=None, secs=False):
-    if isinstance(val, str):
-        val = to_dt(val)
+    if isinstance(val, (float, int)):
+        val = dt.datetime.fromtimestamp(val)
     val = localize_dt(val, offset)
-    now = localize_dt(utcnow(), offset)
+    now = localize_dt(dt.datetime.utcnow(), offset)
     if (now - val).total_seconds() < 12 * 60 * 60:
         fmt = '%H:%M' + (':%S' if secs else '')
     elif now.year == val.year:

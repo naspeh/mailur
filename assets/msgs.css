@@ -16,6 +16,10 @@
     color: var(--colorR);
   }
 
+  & .msg-from img {
+    height: 1em;
+  }
+
   & .msg-subj {
     flex-basis: 50%;
     white-space: nowrap;

@@ -1,3 +1,4 @@
+import datetime as dt
 import functools as ft
 import json
 import pathlib
@@ -85,18 +86,23 @@ def threads_info(req, uids, con=None):
 
         thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
         all_flags = {}
-        res = con.fetch(thrs.all_uids, 'FLAGS')
-        for line in res:
+        all_msgs = {}
+        res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[2])')
+        for i in range(0, len(res), 2):
             uid, flags = re.search(
-                r'UID (\d+) FLAGS \(([^)]*)\)', line.decode()
+                r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
             ).groups()
             all_flags[uid] = flags
+            all_msgs[uid] = json.loads(res[i][1])
 
         msgs = {}
         for thr in thrs:
             thrid = None
             thr_flags = []
+            thr_from = []
             for uid in thr:
+                info = all_msgs[uid]
+                thr_from.append((info['date'], info.get('from')))
                 msg_flags = all_flags[uid]
                 if not msg_flags:
                     continue
@@ -105,14 +111,15 @@ def threads_info(req, uids, con=None):
                     thrid = uid
             if thrid is None:
                 continue
-            msgs[thrid] = {'flags': list(set(' '.join(thr_flags).split()))}
+            data = msg_info(all_msgs[thrid])
+            data['flags'] = list(set(' '.join(thr_flags).split()))
+            data['from_list'] = [v for k, v in sorted(
+                thr_from, key=lambda i: dt.datetime.fromtimestamp(i[0])
+            )]
+            data['from_pics'] = from_pics(data['from_list'])
+            msgs[thrid] = data
 
         log.debug('%s threads', len(msgs))
-        res = con.fetch(msgs, '(BINARY.PEEK[2])')
-        for i in range(0, len(res), 2):
-            uid = res[i][0].decode().split()[2]
-            data = msg_info(res[i][1], req)
-            msgs[uid].update(data)
         return msgs
 
     uids = imap.Uids(uids, size=1000)
@@ -159,13 +166,35 @@ def msg_raw(uid, box=local.SRC):
     return Response(txt, content_type='text/plain')
 
 
+def from_pics(addrs, max=3):
+    def fmt(addr):
+        return '{} <{}>'.format(*addr)
+
+    def get(addr):
+        return {'src': helpers.get_gravatar(addr[1]), 'title': fmt(addr)}
+
+    if isinstance(addrs, str):
+        addrs = [addrs]
+    pics = [get(addrs[0])]
+    if len(addrs) == 1:
+        return pics
+    if len(addrs) > 3:
+        pics.append({'expander': ','.join(fmt(i) for i in addrs[1:-2])})
+    pics += [get(i) for i in addrs[-2:]]
+    return pics
+
+
 def msg_info(txt, req=None):
     offset = int(req.cookies['offset']) if req else 0
     if isinstance(txt, bytes):
         txt = txt.decode()
+    if isinstance(txt, str):
+        info = json.loads(txt)
+    else:
+        info = txt
 
-    info = json.loads(txt)
     info['time_human'] = helpers.humanize_dt(info['date'], offset=offset)
+    info['from_pics'] = from_pics([info['from']])
     return info
 
 

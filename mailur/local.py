@@ -7,11 +7,11 @@ import os
 import re
 from email.message import MIMEPart
 from email.parser import BytesParser
-from email.utils import parsedate_to_datetime
+from email.utils import parsedate_to_datetime, getaddresses
 
 from gevent import socket
 
-from . import log, imap, helpers
+from . import log, imap
 
 USER = os.environ.get('MLR_USER', 'user')
 
@@ -104,23 +104,44 @@ def create_msg(raw, uid, time):
     # so use `max_line_length=None` by now, not sure if it's needed at all
     policy = email.policy.SMTPUTF8.clone(max_line_length=None)
     orig = BytesParser(policy=policy).parsebytes(raw)
-    meta = {k.replace('-', '_'): orig[k] for k in ('message-id',)}
+    meta = {
+        k.replace('-', '_'): orig[k]
+        for k in ('message-id', 'in-reply-to')
+    }
+
+    for n in ('from', 'sender'):
+        v = orig[n]
+        if not v:
+            continue
+        v = getaddresses([v])[0]
+        meta[n] = v
+
+    for n in ('to', 'cc', 'bcc'):
+        v = orig[n]
+        if not v:
+            continue
+        v = [i for i in getaddresses([v])]
+        meta[n] = v
 
     subj = orig['subject']
     meta['subject'] = str(subj) if subj else subj
     meta['uid'] = uid
 
     date = orig['date']
-    meta['date'] = date and helpers.to_iso(parsedate_to_datetime(date))
+    meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
-    meta['arrived'] = helpers.to_iso(arrived)
+    meta['arrived'] = int(arrived.timestamp())
 
     txt = orig.get_body(preferencelist=('plain', 'html'))
     body = txt.get_content()
 
     msg = MIMEPart(policy)
-    headers = 'from to date message-id cc bcc in-reply-to references'.split()
+    headers = (
+        'message-id', 'in-reply-to', 'references',
+        'from', 'sender', 'to', 'cc', 'bcc',
+        'date'
+    )
     for n, v in orig.items():
         if n.lower() not in headers or n.lower() in msg:
             continue

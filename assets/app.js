@@ -30,10 +30,18 @@ export default () => {
         });
       },
       searchHeader: function(name, value) {
-        return this.fetch('header ' + name + ' "' + value + '"');
+        value = JSON.stringify(value);
+        return this.fetch(`header ${name} ${value}`);
       },
       searchTag: function(tag) {
-        return this.fetch('keyword ' + tag);
+        let q;
+        if (tag[0] == '\\') {
+          q = tag.slice(1);
+        } else {
+          tag = JSON.stringify(tag);
+          q = `keyword ${tag}`;
+        }
+        return this.fetch(q);
       }
     }
   });
