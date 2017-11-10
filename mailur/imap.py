@@ -266,8 +266,9 @@ def fetch(con, uids, fields):
         res = uids.call_async(fetch, con, uids, fields)
         return sum(res, [])
 
+    desc = fn_desc(fetch, con, uids, fields)
     with con.lock:
-        res = check(con.uid('FETCH', uids.str, fields))
+        res = check(fn_time(con.uid, desc)('FETCH', uids.str, fields))
     if len(res) == 1 and res[0] is None:
         return []
     return res
@@ -280,8 +281,9 @@ def store(con, uids, cmd, flags):
         res = uids.call_async(store, con, uids, cmd, flags)
         return sum(res, [])
 
+    desc = fn_desc(store, con, uids, cmd, flags)
     with con.lock:
-        res = check(con.uid('STORE', uids.str, cmd, flags))
+        res = check(fn_time(con.uid, desc)('STORE', uids.str, cmd, flags))
     if len(res) == 1 and res[0] is None:
         return []
     return res
@@ -378,7 +380,7 @@ class Uids:
             args[num] = few
             f = ft.partial(fn, *args)
             desc = fn_desc(fn, *args)
-            yield fn_time(f, '#%s: %s' % (i, desc))
+            yield fn_time(f, '#%s %s' % (i, desc))
 
     def call(self, fn, *args):
         return [f() for f in self._call(fn, *args)]
@@ -397,5 +399,5 @@ class Uids:
         if self.is_str:
             uids = self.val
             uids = uids if isinstance(uids, str) else uids.decode()
-            return uids if ':' in uids else fmt % uids.count(',')
+            return uids if ':' in uids else fmt % (uids.count(',') + 1)
         return fmt % len(self.val)

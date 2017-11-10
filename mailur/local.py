@@ -165,32 +165,27 @@ def create_msg(raw, uid, time):
     return msg
 
 
-def parse_uids(uids):
-    con = client(SRC)
+def parse_uids(uids, con):
+    con.select(SRC)
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
-    def iter_msgs(res):
-        for i in range(0, len(res), 2):
-            m = res[i]
-            uid, time, flags = re.search(
-                r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
-                m[0].decode()
-            ).groups()
-            flags = flags.replace('\\Recent', '').strip()
-            try:
-                msg_obj = create_msg(m[1], uid, time)
-                msg = msg_obj.as_bytes()
-            except Exception as e:
-                msgid = re.findall(b'^(?im)message-id:.*', m[1])
-                log.exception('## %r uid=%s %s', e, uid, msgid)
-                continue
-            yield time, flags, msg
-
-    msgs = iter_msgs(res)
-    try:
-        return con.multiappend(ALL, msgs)
-    finally:
-        con.logout()
+    msgs = []
+    for i in range(0, len(res), 2):
+        m = res[i]
+        uid, time, flags = re.search(
+            r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
+            m[0].decode()
+        ).groups()
+        flags = flags.replace('\\Recent', '').strip()
+        try:
+            msg_obj = create_msg(m[1], uid, time)
+            msg = msg_obj.as_bytes()
+        except Exception as e:
+            msgid = re.findall(b'^(?im)message-id:.*', m[1])
+            log.exception('## %r uid=%s %s', e, uid, msgid)
+            continue
+        msgs.append((time, flags, msg))
+    return msgs
 
 
 def parse(criteria=None, *, batch=1000, threads=4):
@@ -203,7 +198,7 @@ def parse(criteria=None, *, batch=1000, threads=4):
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
-    res = con.search(criteria)
+    res = con.sort('(DATE)', criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
@@ -227,15 +222,19 @@ def parse(criteria=None, *, batch=1000, threads=4):
             log.info('## delete %s messages from %r', count, ALL)
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
-    con.logout()
+
     uids = imap.Uids(uids, size=batch, threads=threads)
-    res = uids.call_async(parse_uids, uids)
+    for msgs in uids.call_async(parse_uids, uids, con):
+        # messages should be inserted in the particular order
+        # for proper working THREAD IMAP extension
+        log.info('## add %s new messages to %r', len(msgs), ALL)
+        con.multiappend(ALL, msgs)
 
-    with client(None) as con:
-        con.setmetadata(ALL, 'uidnext', str(uidnext))
+    con.setmetadata(ALL, 'uidnext', str(uidnext))
 
-        fetch_parsed_uids.cache_clear()
-        update_threads(parsed_uids(con, uids.val))
+    fetch_parsed_uids.cache_clear()
+    update_threads(parsed_uids(con, uids.val))
+    con.logout()
 
 
 def update_threads(uids=None, criteria=None):
@@ -243,18 +242,33 @@ def update_threads(uids=None, criteria=None):
     if uids is None:
         uids = con.search(criteria or 'all')[0].decode().split()
 
+    def inner(uids):
+        return con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
+
+    uids = imap.Uids(uids)
+    thrs_set = set()
     msgs = set()
+    for t in uids.call_async(inner, uids):
+        thrs_set.update(t)
+        msgs.update(t.all_uids)
+
+    if not thrs_set:
+        log.info('## no threads are updated')
+        return
+
+    times = {}
+    msgs = list(msgs)
+    res = con.fetch(msgs, '(BINARY.PEEK[2])')
+    for i in range(0, len(res), 2):
+        uid = res[i][0].split()[2].decode()
+        times[uid] = json.loads(res[i][1])['date']
+
     thrs = {}
-    res = con.thread('REFS UTF-8 INTHREAD REFS ALL')
-    for thrids in res:
-        if not set(thrids).intersection(uids):
-            continue
-        msgs.update(thrids)
+    for thrids in thrs_set:
         if len(thrids) == 1:
             latest = thrids[0]
         else:
-            res = con.sort('(DATE)', 'UID %s' % ','.join(thrids))
-            latest = res[0].decode().rsplit(' ', 1)[-1]
+            latest = sorted(thrids, key=lambda i: times[i])[-1]
         thrs[latest] = thrids
 
     con.select(ALL, readonly=False)
@@ -264,3 +278,4 @@ def update_threads(uids=None, criteria=None):
         con.store(clean, '-FLAGS.SILENT', '#latest')
     con.store(list(thrs), '+FLAGS.SILENT', '#latest')
     log.info('## updated %s threads', len(thrs))
+    con.logout()

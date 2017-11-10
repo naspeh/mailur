@@ -1,4 +1,6 @@
 import sys
+import time
+from email.utils import formatdate
 from pathlib import Path
 from subprocess import call
 from unittest.mock import patch
@@ -95,6 +97,7 @@ def gm_client():
                 txt = item.get('txt', '42')
                 msg = local.binary_msg(txt)
                 msg.add_header('Message-ID', '<%s@mlr>' % uid)
+                msg.add_header('Date', formatdate(gm_client.time + uid))
                 in_reply_to = item.get('in_reply_to', '')
                 if in_reply_to:
                     msg.add_header('In-Reply-To', in_reply_to)
@@ -118,6 +121,7 @@ def gm_client():
             ])
     gm_client.add_emails = add_emails
     gm_client.uid = 100
+    gm_client.time = time.time() - 36000
 
     with patch('mailur.gmail.connect', gm_fake):
         yield gm_client

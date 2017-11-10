@@ -65,7 +65,7 @@ def client(tag='\\All'):
     return ctx
 
 
-def fetch_uids(uids, tag):
+def fetch_uids(uids, tag, lm):
     fields = (
         '('
         'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
@@ -87,47 +87,44 @@ def fetch_uids(uids, tag):
             return MAP_LABELS.get(label, None) or local.get_tag(lm, label)
         return ''
 
-    def iter_msgs(res):
-        for i in range(0, len(res), 2):
-            m = res[i]
-            parts = re.search(
-                r'('
-                r'UID (?P<uid>\d+)'
-                r' ?|'
-                r'INTERNALDATE (?P<time>"[^"]+")'
-                r' ?|'
-                r'FLAGS \((?P<flags>[^)]*)\)'
-                r' ?|'
-                r'X-GM-LABELS \((?P<labels>.*)\)'
-                r' ?|'
-                r'X-GM-MSGID (?P<msgid>\d+)'
-                r' ?|'
-                r'X-GM-THRID (?P<thrid>\d+)'
-                r' ?){6}',
-                m[0].decode()
-            ).groupdict()
-            raw = m[1]
-            headers = '\r\n'.join([
-                'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),
-                'X-GM-MSGID: <%s>' % parts['msgid'],
-                'X-GM-THRID: <%s>' % parts['thrid'],
-                'X-GM-UID: <%s>' % parts['uid'],
-                # line break should be in the end, so an empty string here
-                ''
-            ])
-            raw = headers.encode() + raw
+    msgs = []
+    for i in range(0, len(res), 2):
+        m = res[i]
+        parts = re.search(
+            r'('
+            r'UID (?P<uid>\d+)'
+            r' ?|'
+            r'INTERNALDATE (?P<time>"[^"]+")'
+            r' ?|'
+            r'FLAGS \((?P<flags>[^)]*)\)'
+            r' ?|'
+            r'X-GM-LABELS \((?P<labels>.*)\)'
+            r' ?|'
+            r'X-GM-MSGID (?P<msgid>\d+)'
+            r' ?|'
+            r'X-GM-THRID (?P<thrid>\d+)'
+            r' ?){6}',
+            m[0].decode()
+        ).groupdict()
+        raw = m[1]
+        headers = '\r\n'.join([
+            'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),
+            'X-GM-MSGID: <%s>' % parts['msgid'],
+            'X-GM-THRID: <%s>' % parts['thrid'],
+            'X-GM-UID: <%s>' % parts['uid'],
+            # line break should be in the end, so an empty string here
+            ''
+        ])
+        raw = headers.encode() + raw
 
-            flags = re.sub(r'([^ ])*', flag, parts['flags'])
-            flags = ' '.join([
-                flags,
-                re.sub(r'("[^"]*"|[^" ]*)', label, parts['labels']),
-                MAP_LABELS.get(tag, ''),
-            ]).strip()
-            yield parts['time'], flags, raw
-
-    with local.client(None) as lm:
-        msgs = iter_msgs(res)
-        return lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs)
+        flags = re.sub(r'([^ ])*', flag, parts['flags'])
+        flags = ' '.join([
+            flags,
+            re.sub(r'("[^"]*"|[^" ]*)', label, parts['labels']),
+            MAP_LABELS.get(tag, ''),
+        ]).strip()
+        msgs.append((parts['time'], flags, raw))
+    return msgs
 
 
 def fetch_folder(tag='\\All', *, batch=1000, threads=8):
@@ -156,11 +153,17 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     uidnext = folder['uidnext']
     log.info('## box(%s): %s new uids', gm.box, len(uids))
     gm.logout()
+
     uids = imap.Uids(uids, size=batch, threads=threads)
-    res = uids.call_async(fetch_uids, uids, tag)
-    with local.client(None) as con:
-        con.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
-    return res
+    lm = local.client(None)
+    for msgs in uids.call_async(fetch_uids, uids, tag, lm):
+        # messages should be inserted in the particular order
+        # for proper working THREAD IMAP extension
+        folder = MAP_FOLDERS.get(tag, local.SRC)
+        log.info('## add %s new messages to %r', len(msgs), folder)
+        lm.multiappend(folder, msgs)
+    lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
+    lm.logout()
 
 
 def fetch(**kw):
