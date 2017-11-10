@@ -12,7 +12,7 @@ Vue.component('Msgs', {
   data: function() {
     return {
       uids: [],
-      perPage: 100,
+      perPage: 200,
       pages: []
     };
   },
@@ -41,12 +41,12 @@ Vue.component('Msgs', {
       }
     },
     fetch: function() {
-      this.uids = [];
-      this.setMsgs();
       return this.send('', {
         q: this.query,
         preload: this.perPage
       }).then(res => {
+        this.uids = [];
+        this.setMsgs();
         this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });

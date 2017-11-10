@@ -1,4 +1,3 @@
-import datetime as dt
 import functools as ft
 import json
 import pathlib
@@ -113,10 +112,8 @@ def threads_info(req, uids, con=None):
                 continue
             data = msg_info(all_msgs[thrid])
             data['flags'] = list(set(' '.join(thr_flags).split()))
-            data['from_list'] = [v for k, v in sorted(
-                thr_from, key=lambda i: dt.datetime.fromtimestamp(i[0])
-            )]
-            data['from_pics'] = from_pics(data['from_list'])
+            from_list = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
+            data['from_pics'] = from_pics(from_list)
             msgs[thrid] = data
 
         log.debug('%s threads', len(msgs))
@@ -166,22 +163,10 @@ def msg_raw(uid, box=local.SRC):
     return Response(txt, content_type='text/plain')
 
 
-def from_pics(addrs, max=3):
-    def fmt(addr):
-        return '{} <{}>'.format(*addr)
-
-    def get(addr):
-        return {'src': helpers.get_gravatar(addr[1]), 'title': fmt(addr)}
-
-    if isinstance(addrs, str):
-        addrs = [addrs]
-    pics = [get(addrs[0])]
-    if len(addrs) == 1:
-        return pics
-    if len(addrs) > 3:
-        pics.append({'expander': ','.join(fmt(i) for i in addrs[1:-2])})
-    pics += [get(i) for i in addrs[-2:]]
-    return pics
+@jsonify
+def tags(req):
+    with local.client(None) as con:
+        return local.get_tags(con)
 
 
 def msg_info(txt, req=None):
@@ -198,10 +183,22 @@ def msg_info(txt, req=None):
     return info
 
 
-@jsonify
-def tags(req):
-    con = local.client(None)
-    try:
-        return local.get_tags(con)
-    finally:
-        con.logout()
+def from_pics(addrs, max=3):
+    def fmt(addr):
+        return '{} <{}>'.format(*addr)
+
+    def get(addr):
+        return {'src': helpers.get_gravatar(addr[1]), 'title': fmt(addr)}
+
+    if isinstance(addrs, str):
+        addrs = [addrs]
+    if len(addrs) == 1:
+        return [get(addrs[0])]
+    elif len(addrs) <= 4:
+        return [get(i) for i in addrs]
+
+    pics = [
+        get(addrs[0]),
+        {'expander': '%s more' % len(addrs[1:-2])},
+    ] + [get(i) for i in addrs[-2:]]
+    return pics

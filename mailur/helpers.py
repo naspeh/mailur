@@ -3,7 +3,7 @@ from hashlib import md5
 from urllib.parse import urlencode
 
 
-def get_gravatar(addr, size=75, default='identicon'):
+def get_gravatar(addr, size=20, default='identicon'):
     params = urlencode((('d', default), ('s', size)))
     hash = md5(addr.strip().lower().encode()).hexdigest()
     return '//www.gravatar.com/avatar/%s?%s' % (hash, params)
