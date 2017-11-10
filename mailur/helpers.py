@@ -1,12 +1,32 @@
 import datetime as dt
-from hashlib import md5
-from urllib.parse import urlencode
+import base64
+
+from gevent.pool import Pool
+from geventhttpclient import HTTPClient
 
 
-def get_gravatar(addr, size=20, default='identicon'):
-    params = urlencode((('d', default), ('s', size)))
-    hash = md5(addr.strip().lower().encode()).hexdigest()
-    return '//www.gravatar.com/avatar/%s?%s' % (hash, params)
+def fetch_avatars(hashes, size=20, default='identicon', b64=True):
+    def _avatar(hash):
+        if hash in cache:
+            return cache[hash]
+        res = http.get(
+            '/avatar/{hash}?d={default}&s={size}'
+            .format(hash=hash, size=size, default=default)
+        )
+        result = hash, res.read() if res.status_code == 200 else None
+        cache[hash] = result
+        return result
+
+    if not hasattr(fetch_avatars, 'cache'):
+        fetch_avatars.cache = {}
+    key = (size, default)
+    fetch_avatars.cache.setdefault(key, {})
+    cache = fetch_avatars.cache[key]
+
+    http = HTTPClient.from_url('https://www.gravatar.com/')
+    pool = Pool(20)
+    res = pool.map(_avatar, hashes)
+    return [(i[0], base64.b64encode(i[1]) if b64 else i[1]) for i in res if i]
 
 
 def localize_dt(value, offset=None):

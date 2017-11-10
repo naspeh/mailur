@@ -1,6 +1,7 @@
 import datetime as dt
 import email.policy
 import functools as ft
+import hashlib
 import imaplib
 import json
 import os
@@ -98,6 +99,18 @@ def fetch_parsed_uids(con):
     }
 
 
+def addresses(txt):
+    addrs = [
+        {
+            'addr': a[1],
+            'name': a[0],
+            'title': '{} <{}>'.format(*a) if a[0] else a[1],
+            'hash': hashlib.md5(a[1].strip().lower().encode()).hexdigest(),
+        } for a in getaddresses([txt])
+    ]
+    return addrs
+
+
 def create_msg(raw, uid, time):
     # TODO: there is a bug with folding mechanism,
     # like this one https://bugs.python.org/issue30788,
@@ -109,19 +122,13 @@ def create_msg(raw, uid, time):
         for k in ('message-id', 'in-reply-to')
     }
 
-    for n in ('from', 'sender'):
+    fields = (('from', 1), ('sender', 1), ('to', 0), ('cc', 0), ('bcc', 0))
+    for n, one in fields:
         v = orig[n]
         if not v:
             continue
-        v = getaddresses([v])[0]
-        meta[n] = v
-
-    for n in ('to', 'cc', 'bcc'):
-        v = orig[n]
-        if not v:
-            continue
-        v = [i for i in getaddresses([v])]
-        meta[n] = v
+        v = addresses(v)
+        meta[n] = v[0] if one else v
 
     subj = orig['subject']
     meta['subject'] = str(subj) if subj else subj

@@ -11,6 +11,7 @@ assets = pathlib.Path(__file__).parent / '../assets/dist'
 routes = re.compile('^/api/(%s)$' % '|'.join((
     r'(?P<login>login)',
     r'(?P<tags>tags)',
+    r'(?P<avatars>avatars.css)',
     r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
     r'(?P<threads>threads)',
@@ -35,6 +36,8 @@ def application(req):
         return msg_raw(route['pid'], local.ALL)
     elif route['tags']:
         return tags(req)
+    elif route['avatars']:
+        return avatars(req)
     elif route['msgs']:
         return msgs(req, req.json['q'], req.json['preload'])
     elif route['msgs_info']:
@@ -112,8 +115,9 @@ def threads_info(req, uids, con=None):
                 continue
             data = msg_info(all_msgs[thrid])
             data['flags'] = list(set(' '.join(thr_flags).split()))
-            from_list = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
-            data['from_pics'] = from_pics(from_list)
+            data['from_list'] = from_list([
+                v for k, v in sorted(thr_from, key=lambda i: i[0])
+            ])
             msgs[thrid] = data
 
         log.debug('%s threads', len(msgs))
@@ -169,6 +173,19 @@ def tags(req):
         return local.get_tags(con)
 
 
+def avatars(req):
+    hashes = set(req.GET['hashes'].split(','))
+    size = req.GET.get('size', 20)
+    default = req.GET.get('default', 'identicon')
+    cls = req.GET.get('cls', '.pic-%s')
+
+    css = '\n'.join((
+        '%s {background-image: url(data:image/gif;base64,%s);}'
+        % ((cls % h), i.decode())
+    ) for h, i in helpers.fetch_avatars(hashes, size, default))
+    return Response(css, content_type='text/css')
+
+
 def msg_info(txt, req=None):
     offset = int(req.cookies['offset']) if req else 0
     if isinstance(txt, bytes):
@@ -179,26 +196,17 @@ def msg_info(txt, req=None):
         info = txt
 
     info['time_human'] = helpers.humanize_dt(info['date'], offset=offset)
-    info['from_pics'] = from_pics([info['from']])
+    info['from_list'] = from_list([info['from']])
     return info
 
 
-def from_pics(addrs, max=3):
-    def fmt(addr):
-        return '{} <{}>'.format(*addr)
-
-    def get(addr):
-        return {'src': helpers.get_gravatar(addr[1]), 'title': fmt(addr)}
-
+def from_list(addrs, max=3):
     if isinstance(addrs, str):
         addrs = [addrs]
-    if len(addrs) == 1:
-        return [get(addrs[0])]
     elif len(addrs) <= 4:
-        return [get(i) for i in addrs]
+        return addrs
 
-    pics = [
-        get(addrs[0]),
+    return [
+        addrs[0],
         {'expander': '%s more' % len(addrs[1:-2])},
-    ] + [get(i) for i in addrs[-2:]]
-    return pics
+    ] + addrs[-2:]

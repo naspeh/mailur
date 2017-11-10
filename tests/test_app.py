@@ -1,69 +1,70 @@
 from unittest.mock import ANY
 
-from mailur.app import from_pics
+from mailur import app, local
 
 
-def test_from_pics():
-    res = from_pics([('test', 'test@example.com')])
+def test_from_list():
+    res = app.from_list(local.addresses('test <test@example.com>'))
     assert res == [{
-        'src': (
-            '//www.gravatar.com/avatar/55502f40dc8b7c769880b10874abc9d0'
-            '?d=identicon&s=20'
-        ),
+        'name': 'test',
+        'addr': 'test@example.com',
+        'hash': '55502f40dc8b7c769880b10874abc9d0',
         'title': 'test <test@example.com>'
     }]
 
-    res = from_pics([
-        ('test', 'test@example.com'),
-        ('test2', 'test@example.com'),
-    ])
+    res = app.from_list(local.addresses(
+        'test <test@example.com>,'
+        'test2 <test@example.com>,'
+    ))
     assert res == [
-        {'src': ANY, 'title': 'test <test@example.com>'},
-        {'src': ANY, 'title': 'test2 <test@example.com>'},
+        {'name': 'test', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test2', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = from_pics([
-        ('test', 'test@example.com'),
-        ('test2', 'test@example.com'),
-        ('test3', 'test@example.com'),
-    ])
+    res = app.from_list(local.addresses(
+        'test <test@example.com>,'
+        'test2 <test@example.com>,'
+        'test3 <test@example.com>,'
+    ))
     assert res == [
-        {'src': ANY, 'title': 'test <test@example.com>'},
-        {'src': ANY, 'title': 'test2 <test@example.com>'},
-        {'src': ANY, 'title': 'test3 <test@example.com>'},
+        {'name': 'test', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test2', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test3', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = from_pics([
-        ('test', 'test@example.com'),
-        ('test2', 'test@example.com'),
-        ('test3', 'test@example.com'),
-        ('test4', 'test@example.com'),
-    ])
+    res = app.from_list(local.addresses(
+        'test <test@example.com>,'
+        'test2 <test@example.com>,'
+        'test3 <test@example.com>,'
+        'test4 <test@example.com>,'
+    ))
     assert res == [
-        {'src': ANY, 'title': 'test <test@example.com>'},
-        {'src': ANY, 'title': 'test2 <test@example.com>'},
-        {'src': ANY, 'title': 'test3 <test@example.com>'},
-        {'src': ANY, 'title': 'test4 <test@example.com>'},
+        {'name': 'test', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test2', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test3', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test4', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = from_pics([
-        ('test', 'test@example.com'),
-        ('test2', 'test@example.com'),
-        ('test3', 'test@example.com'),
-        ('test4', 'test@example.com'),
-        ('test5', 'test@example.com'),
-    ])
+    res = app.from_list(local.addresses(
+        'test <test@example.com>,'
+        'test2 <test@example.com>,'
+        'test3 <test@example.com>,'
+        'test4 <test@example.com>,'
+        'test5 <test@example.com>,'
+    ))
     assert res == [
-        {'src': ANY, 'title': 'test <test@example.com>'},
+        {'name': 'test', 'addr': ANY, 'hash': ANY, 'title': ANY},
         {'expander': '2 more'},
-        {'src': ANY, 'title': 'test4 <test@example.com>'},
-        {'src': ANY, 'title': 'test5 <test@example.com>'},
+        {'name': 'test4', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test5', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = from_pics([('test', 'test@example.com')] * 10)
+    res = app.from_list(local.addresses(','.join(
+        'test%s <test@example.com>' % i for i in range(10)
+    )))
     assert res == [
-        {'src': ANY, 'title': 'test <test@example.com>'},
+        {'name': 'test0', 'addr': ANY, 'hash': ANY, 'title': ANY},
         {'expander': '7 more'},
-        {'src': ANY, 'title': 'test <test@example.com>'},
-        {'src': ANY, 'title': 'test <test@example.com>'},
+        {'name': 'test8', 'addr': ANY, 'hash': ANY, 'title': ANY},
+        {'name': 'test9', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]

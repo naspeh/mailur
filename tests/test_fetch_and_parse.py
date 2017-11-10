@@ -213,3 +213,45 @@ def test_parsed_msg(clean_users, gm_client, load_file):
         'X-Subject: Re: не пора ли подкрепиться?'
     ])
     assert msg.decode().startswith(expect)
+
+
+def test_addresses():
+    res = local.addresses('test <test@example.com>')
+    assert res == [{
+        'name': 'test',
+        'addr': 'test@example.com',
+        'hash': '55502f40dc8b7c769880b10874abc9d0',
+        'title': 'test <test@example.com>'
+    }]
+
+    res = local.addresses('test <TEST@example.com>')
+    assert res == [{
+        'name': 'test',
+        'addr': 'TEST@example.com',
+        'hash': '55502f40dc8b7c769880b10874abc9d0',
+        'title': 'test <TEST@example.com>'
+    }]
+
+    res = local.addresses('test@example.com')
+    assert res == [{
+        'name': '',
+        'addr': 'test@example.com',
+        'hash': '55502f40dc8b7c769880b10874abc9d0',
+        'title': 'test@example.com'
+    }]
+
+    res = local.addresses('test@example.com, test2 <test2@example.com>')
+    assert res == [
+        {
+            'name': '',
+            'addr': 'test@example.com',
+            'hash': '55502f40dc8b7c769880b10874abc9d0',
+            'title': 'test@example.com'
+        },
+        {
+            'name': 'test2',
+            'addr': 'test2@example.com',
+            'hash': '43b05f394d5611c54a1a9e8e20baee21',
+            'title': 'test2 <test2@example.com>'
+        },
+    ]

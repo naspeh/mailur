@@ -38,6 +38,7 @@ Vue.component('Msgs', {
       } else {
         Object.assign(this.msgs, msgs);
         this.pages.push(uids);
+        this.pics(msgs);
       }
     },
     fetch: function() {
@@ -53,6 +54,26 @@ Vue.component('Msgs', {
     },
     send: function(prefix, params) {
       return send(this.url + prefix, params);
+    },
+    pics: function(msgs) {
+      let hashes = [];
+      for (let m in msgs) {
+        for (let f of msgs[m].from_list) {
+          if (f.hash && hashes.indexOf(f.hash) == -1) {
+            hashes.push(f.hash);
+          }
+        }
+      }
+      if (!hashes.length) {
+        return;
+      }
+      while (hashes.length > 0) {
+        let sheet = document.createElement('link');
+        let few = encodeURIComponent(hashes.splice(0, 50));
+        sheet.href = '/api/avatars.css?size=14&hashes=' + few;
+        sheet.rel = 'stylesheet';
+        document.body.appendChild(sheet);
+      }
     },
     canLoadMore: function() {
       return this.length < this.uids.length;

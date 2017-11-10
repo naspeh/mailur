@@ -16,8 +16,10 @@
     color: var(--colorR);
   }
 
-  & .msg-from img {
-    height: 1em;
+  & .msg-from i {
+    display: inline-block;
+    height: 14px;
+    width: 14px;
   }
 
   & .msg-subj {

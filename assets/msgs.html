@@ -4,9 +4,9 @@
       <a :href="msg.parsed_url" target="_blank" title="Parsed message" >{{ msg.uid }}</a>
       <a :href="msg.origin_url" target="_blank" title="Origin message">[orig]</a>
       <a @click.prevent="app.searchHeader('message-id ', msg.message_id)" href="#">[msg-id]</a>
-      <span v-for="pic in msg.from_pics" class="msg-from">
-        <i v-if="pic.expander" :title="pic.expander">…</i>
-        <img v-if="pic.src" :src="pic.src" :title="pic.title" />
+      <span v-for="from in msg.from_list" class="msg-from">
+        <i v-if="from.expander" :title="from.expander">…</i>
+        <i v-if="from.hash" :class="`pic-${from.hash}`" :title="from.title"></i>
       </span>
       <tags :raw="msg.flags" :trancate="true" />
       <b class="msg-subj" @click.stop="app.searchHeader('x-subject', msg.subject)">
