@@ -44,11 +44,20 @@ def fn_time(func, desc=None):
     return inner
 
 
-def fn_lock(func):
+def cmd_lock(func):
     @ft.wraps(func)
     def inner(con, *a, **kw):
         with con.lock:
             return fn_time(func)(con, *a, **kw)
+    return inner
+
+
+def cmd_writable(func):
+    @ft.wraps(func)
+    def inner(con, *a, **kw):
+        if con.is_readonly:
+            raise ValueError('%s must be writable' % con)
+        return func(con, *a, **kw)
     return inner
 
 
@@ -67,7 +76,7 @@ def command(*, name=None, lock=True, writable=False, dovecot=False):
             func.name = func.__name__
 
         if lock:
-            func = fn_lock(func)
+            func = cmd_lock(func)
 
         commands[func] = {'writable': writable, 'dovecot': dovecot}
         return func
@@ -125,6 +134,7 @@ def client(connect, *, writable=False, dovecot=False, debug=DEBUG):
             c.select(con.current_box, con.is_readonly)
         return c
 
+    connect = fn_time(connect, '{0.__module__}.{0.__name__}'.format(connect))
     con = start()
     ctx = Ctx(con)
 
@@ -255,6 +265,7 @@ def append(con, box, flags, date_time, msg):
 
 
 @command(writable=True)
+@cmd_writable
 def expunge(con):
     return check(con.expunge())
 
@@ -275,6 +286,7 @@ def fetch(con, uids, fields):
 
 
 @command(lock=False, writable=True)
+@cmd_writable
 def store(con, uids, cmd, flags):
     uids = Uids(uids)
     if uids.batches:
@@ -389,7 +401,7 @@ class Uids:
         pool = Pool(self.threads)
         jobs = [pool.spawn(f) for f in self._call(fn, *args)]
         pool.join(raise_error=True)
-        return [f.value for f in jobs]
+        return (f.value for f in jobs)
 
     def __repr__(self):
         return str(self)

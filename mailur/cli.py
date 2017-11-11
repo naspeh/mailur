@@ -10,8 +10,8 @@ Options:
   -h --help     Show this screen.
   --version     Show version.
   -l <login>    Local user (for dovecot).
-  -b <batch>    Batch size [default: 500].
-  -t <threads>  Amount of threads for thread pool [default: 8].
+  -b <batch>    Batch size [default: 1000].
+  -t <threads>  Amount of threads for thread pool [default: 10].
 """
 from docopt import docopt
 
@@ -34,7 +34,8 @@ def main(args):
     elif args['parse']:
         local.parse(args.get('<criteria>'), **opts)
     elif args['threads']:
-        local.update_threads(criteria=args.get('<criteria>'))
+        with local.client() as con:
+            local.update_threads(con, criteria=args.get('<criteria>'))
     elif args['web']:
         web()
 

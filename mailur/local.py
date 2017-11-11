@@ -36,7 +36,6 @@ class Local(imaplib.IMAP4, imap.Conn):
         return super().login('%s*root' % self.username, 'root')
 
 
-@imap.fn_time
 def connect(user=None):
     con = Local(user or USER)
     imap.check(con.login())
@@ -166,29 +165,30 @@ def create_msg(raw, uid, time):
 
 
 def parse_uids(uids, con):
-    con.select(SRC)
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
-    msgs = []
-    for i in range(0, len(res), 2):
-        m = res[i]
-        uid, time, flags = re.search(
-            r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
-            m[0].decode()
-        ).groups()
-        flags = flags.replace('\\Recent', '').strip()
-        try:
-            msg_obj = create_msg(m[1], uid, time)
-            msg = msg_obj.as_bytes()
-        except Exception as e:
-            msgid = re.findall(b'^(?im)message-id:.*', m[1])
-            log.exception('## %r uid=%s %s', e, uid, msgid)
-            continue
-        msgs.append((time, flags, msg))
-    return msgs
+    def msgs():
+        for i in range(0, len(res), 2):
+            m = res[i]
+            uid, time, flags = re.search(
+                r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
+                m[0].decode()
+            ).groups()
+            flags = flags.replace('\\Recent', '').strip()
+            try:
+                msg_obj = create_msg(m[1], uid, time)
+                msg = msg_obj.as_bytes()
+            except Exception as e:
+                msgid = re.findall(b'^(?im)message-id:.*', m[1])
+                log.exception('## %r uid=%s %s', e, uid, msgid)
+                continue
+            yield time, flags, msg
+
+    res = con.multiappend(ALL, msgs())
+    log.debug('## %s', res[0].decode())
 
 
-def parse(criteria=None, *, batch=1000, threads=4):
+def parse(criteria=None, *, batch=1000, threads=10):
     con = client(SRC)
     uidnext = 1
     if criteria is None:
@@ -209,46 +209,44 @@ def parse(criteria=None, *, batch=1000, threads=4):
     log.info('## new: uidnext: %s', uidnext)
 
     log.info('## criteria: %r; %s uids', criteria, len(uids))
-    count = con.select(ALL, readonly=False)
+    count = con.select(ALL)
     if count[0] != b'0':
         count = None
         if criteria.lower() == 'all':
             puids = '1:*'
-            count = 'all'
         else:
-            puids = ','.join(parsed_uids(con, uids))
+            puids = list(parsed_uids(con, uids))
         if puids:
-            count = count or puids.count(',') + 1
-            log.info('## delete %s messages from %r', count, ALL)
-            con.store(puids, '+FLAGS.SILENT', '\Deleted')
+            con.select(ALL, readonly=False)
+            puids = imap.Uids(puids)
+            log.info('## deleting %s from %r', puids, ALL)
+            con.store(imap.Uids(puids), '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
-    uids = imap.Uids(uids, size=batch, threads=threads)
-    for msgs in uids.call_async(parse_uids, uids, con):
-        # messages should be inserted in the particular order
-        # for proper working THREAD IMAP extension
-        log.info('## add %s new messages to %r', len(msgs), ALL)
-        con.multiappend(ALL, msgs)
+    # messages should be inserted in the particular order
+    # for THREAD IMAP extension, so no async here
+    con.select(SRC)
+    uids = imap.Uids(uids, size=batch)
+    uids.call(parse_uids, uids, con)
 
     con.setmetadata(ALL, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
-    update_threads(parsed_uids(con, uids.val))
+    update_threads(con, list(parsed_uids(con, uids.val)))
     con.logout()
 
 
-def update_threads(uids=None, criteria=None):
-    con = client()
+def update_threads(con, uids=None, criteria=None):
     if uids is None:
         uids = con.search(criteria or 'all')[0].decode().split()
 
-    def inner(uids):
+    def threads(uids):
         return con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
 
     uids = imap.Uids(uids)
     thrs_set = set()
     msgs = set()
-    for t in uids.call_async(inner, uids):
+    for t in uids.call_async(threads, uids):
         thrs_set.update(t)
         msgs.update(t.all_uids)
 
@@ -278,4 +276,3 @@ def update_threads(uids=None, criteria=None):
         con.store(clean, '-FLAGS.SILENT', '#latest')
     con.store(list(thrs), '+FLAGS.SILENT', '#latest')
     log.info('## updated %s threads', len(thrs))
-    con.logout()
