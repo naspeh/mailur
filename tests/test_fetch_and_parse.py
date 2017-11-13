@@ -118,7 +118,7 @@ def test_fetched_msg(gm_client):
     assert local.get_tags(lm) == {
         '#t1': 'label',
         '#t2': 'another label',
-        '#t3': 'test(&BEIENQRBBEI-)',
+        '#t3': 'test(тест)',
     }
 
     gm_client.add_emails([{}], box=local.SPAM)

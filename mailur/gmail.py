@@ -5,7 +5,7 @@ import re
 
 from gevent import socket, ssl
 
-from . import log, imap, local
+from . import log, imap, imap_utf7, local
 
 MAP_FLAGS = {
     '\\Answered': '\\Answered',
@@ -82,6 +82,7 @@ def fetch_uids(uids, tag, gm, lm, lm_ma):
         label = m.group()
         if label:
             label = label.strip('"').replace('\\\\', '\\')
+            label = imap_utf7.decode(label)
             return MAP_LABELS.get(label, None) or local.get_tag(lm, label)
         return ''
 
