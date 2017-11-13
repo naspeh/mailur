@@ -53,14 +53,28 @@
 
   & .msg-preview {
     flex-basis: 80%;
+    max-width: 80%;
     margin-left: 3px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    & .msg-preview-from {
+      display: inline-flex;
+      max-width: 30%;
+      overflow: hidden;
+    }
+
+    & .msg-preview-subj {
+      color: #333;
+    }
   }
 
-  & .msg-subj {
-    color: #333;
+  &.msg-unread .msg-preview {
+    & .msg-preview-subj,
+    & .msg-preview-from {
+      font-weight: bold;
+    }
   }
 
   & .msg-date {

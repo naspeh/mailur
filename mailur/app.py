@@ -100,19 +100,25 @@ def threads_info(req, uids, con=None):
             thrid = None
             thr_flags = []
             thr_from = []
+            unseen = False
             for uid in thr:
                 info = all_msgs[uid]
                 thr_from.append((info['date'], info.get('from')))
                 msg_flags = all_flags[uid]
                 if not msg_flags:
                     continue
+                if '\\Seen' not in msg_flags:
+                    unseen = True
                 thr_flags.append(msg_flags)
                 if '#latest' in msg_flags:
                     thrid = uid
             if thrid is None:
                 continue
+            flags = list(set(' '.join(thr_flags).split()))
+            if unseen and '\\Seen' in flags:
+                flags.remove('\\Seen')
             data = msg_info(all_msgs[thrid])
-            data['flags'] = list(set(' '.join(thr_flags).split()))
+            data['flags'] = flags
             data['from_list'] = from_list([
                 v for k, v in sorted(thr_from, key=lambda i: i[0])
             ])
@@ -199,6 +205,7 @@ def msg_info(txt, req=None):
         info = txt
 
     info['time_human'] = helpers.humanize_dt(info['date'], offset=offset)
+    info['time_title'] = helpers.format_dt(info['date'], offset=offset)
     info['from_list'] = from_list([info['from']])
     return info
 

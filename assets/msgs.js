@@ -91,6 +91,8 @@ Vue.component('Msgs', {
         msg.parsed_uid = uid;
         msg.origin_url = '/api/origin/' + msg.uid;
         msg.parsed_url = '/api/parsed/' + uid;
+        msg.unread = msg.flags.indexOf('\\Seen') == -1;
+        msg.pinned = msg.flags.indexOf('\\Flagged') !== -1;
         msgs.push(msg);
       }
       return msgs;

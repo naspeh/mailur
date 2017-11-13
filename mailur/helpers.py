@@ -29,13 +29,17 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
     return [(i[0], base64.b64encode(i[1]) if b64 else i[1]) for i in res if i]
 
 
-def localize_dt(value, offset=None):
-    return value + dt.timedelta(hours=-(offset or 0))
+def localize_dt(val, offset=None):
+    if isinstance(val, (float, int)):
+        val = dt.datetime.fromtimestamp(val)
+    return val + dt.timedelta(hours=-(offset or 0))
+
+
+def format_dt(value, offset=None, fmt='%a, %d %b, %Y at %H:%M'):
+    return localize_dt(value, offset).strftime(fmt)
 
 
 def humanize_dt(val, offset=None, secs=False):
-    if isinstance(val, (float, int)):
-        val = dt.datetime.fromtimestamp(val)
     val = localize_dt(val, offset)
     now = localize_dt(dt.datetime.utcnow(), offset)
     if (now - val).total_seconds() < 12 * 60 * 60:

@@ -1,6 +1,6 @@
 <div class="pages">
   <div v-for="uids of pages">
-    <div v-for="msg in page(uids)" :key="msg.uid" class="msg-line">
+    <div v-for="msg in page(uids)" :key="msg.uid" :class="{'msg-line': 1, 'msg-unread': msg.unread}">
       <a :href="msg.parsed_url" target="_blank" title="Parsed message" >{{ msg.uid }}</a>
       <a :href="msg.origin_url" target="_blank" title="Origin message">[orig]</a>
       <a @click.prevent="app.searchHeader('message-id ', msg.message_id)" href="#">[msg-id]</a>
@@ -14,13 +14,17 @@
       </span>
       <tags :raw="msg.flags" :trancate="true" />
       <span class="msg-preview">
-        <span :title="msg.from.title">{{ msg.from.name }}:</span>
-        <span class="msg-subj" @click.stop="app.searchHeader('x-subject', msg.subject)">
+        <span class="msg-preview-from" :title="msg.from.title">
+          {{ msg.from.name }}
+        </span>
+        <span class="msg-preview-subj" @click.stop="app.searchHeader('x-subject', msg.subject)">
            {{ msg.subject }}
         </span>
-        {{ msg.preview }}
+        <span class="msg-preview-text">
+          {{ msg.preview }}
+        </span>
       </span>
-      <span class="msg-date">{{ msg.time_human }}</span>
+      <span class="msg-date" :title="msg.time_title">{{ msg.time_human }}</span>
       <div v-if="msg.body" v-html="msg.body"></div>
     </div>
   </div>
