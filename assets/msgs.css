@@ -6,6 +6,14 @@
   display: flex;
   justify-content: space-between;
   margin: 0 -2px;
+  box-sizing: border-box;
+  width: 100%;
+  padding-left: 0.3em;
+  background-color: #eee;
+  border-top: 1px solid #fff;
+  border-radius: 0.5em;
+  color: #777;
+  line-height: 1.5em;
 
   @nest & > a, & > i, & > span {
     white-space: nowrap;
@@ -22,11 +30,15 @@
     width: 14px;
   }
 
-  & .msg-subj {
-    flex-basis: 50%;
+  & .msg-preview {
+    flex-basis: 80%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  & .msg-subj {
+    color: #333;
   }
 
   & .msg-date {
@@ -34,6 +46,6 @@
   }
 
   & .tags {
-    font-size: 90%;
+    font-size: 80%;
   }
 }

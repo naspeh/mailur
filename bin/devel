@@ -3,7 +3,7 @@
 set -exuo pipefail
 
 # some useful stuff
-apk add curl htop
+apk add curl htop git less
 
 apk add zsh zsh-vcs coreutils
 sed -i 's|/bin/bash|/bin/zsh|' /etc/passwd

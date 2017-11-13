@@ -1,5 +1,9 @@
-import app from './app.js';
+import Vue from 'vue';
+import './app.js';
 import './msgs.js';
 import './tags.js';
 
-app();
+new Vue({
+  el: '#app',
+  template: '<app/>'
+});

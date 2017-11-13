@@ -9,9 +9,12 @@
         <i v-if="from.hash" :class="`pic-${from.hash}`" :title="from.title"></i>
       </span>
       <tags :raw="msg.flags" :trancate="true" />
-      <b class="msg-subj" @click.stop="app.searchHeader('x-subject', msg.subject)">
-        {{ msg.subject }}
-      </b>
+      <span class="msg-preview">
+        <span class="msg-subj" @click.stop="app.searchHeader('x-subject', msg.subject)">
+          {{ msg.subject }}
+        </span>
+        <span>{{ msg.preview }}</span>
+      </span>
       <span class="msg-date">{{ msg.time_human }}</span>
       <div v-if="msg.body" v-html="msg.body"></div>
     </div>

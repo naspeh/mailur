@@ -10,7 +10,7 @@ rc-service smtpd restart
 
 bin/dovecot
 
-apk add python3-dev musl-dev gcc make
+apk add python3-dev libxml2-dev libxslt-dev musl-dev gcc make
 env=/opt/mailur/env
 pip=$env/bin/pip
 python3 -m venv $env

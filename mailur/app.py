@@ -14,8 +14,8 @@ routes = re.compile('^/api/(%s)$' % '|'.join((
     r'(?P<avatars>avatars.css)',
     r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
-    r'(?P<threads>threads)',
-    r'(?P<threads_info>threads/info)',
+    r'(?P<threads>thrs)',
+    r'(?P<threads_info>thrs/info)',
     r'(?P<origin>origin/(?P<oid>\d+))',
     r'(?P<parsed>parsed/(?P<pid>\d+))',
 )))
@@ -75,6 +75,7 @@ def threads(req, q, preload):
         msgs = threads_info(req, uids[:preload], con)
     else:
         msgs = {}
+    con.logout()
     return {'uids': uids, 'msgs': msgs}
 
 
@@ -83,9 +84,6 @@ def threads_info(req, uids, con=None):
         return {}
 
     def inner(uids, con):
-        if con is None:
-            con = local.client()
-
         thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
         all_flags = {}
         all_msgs = {}
@@ -123,10 +121,12 @@ def threads_info(req, uids, con=None):
         log.debug('%s threads', len(msgs))
         return msgs
 
+    con = local.client()
     uids = imap.Uids(uids, size=1000)
     msgs = {}
     for i in uids.call_async(inner, uids, con):
         msgs.update(i)
+    con.logout()
     return msgs
 
 
@@ -140,6 +140,7 @@ def msgs(req, query, preload):
         msgs = msgs_info(req, uids[:preload])
     else:
         msgs = {}
+    con.logout()
     return {'uids': uids, 'msgs': msgs}
 
 
@@ -155,6 +156,7 @@ def msgs_info(req, uids):
         data = msg_info(res[i][1], req)
         msgs[uid] = data
         msgs[uid]['flags'] = flags.split()
+    con.logout()
     return msgs
 
 
@@ -164,6 +166,7 @@ def msg_raw(uid, box=local.SRC):
     if not res:
         raise exc.HTTPNotFound
     txt = res[0][1]
+    con.logout()
     return Response(txt, content_type='text/plain')
 
 

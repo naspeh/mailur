@@ -110,6 +110,27 @@ def addresses(txt):
     return addrs
 
 
+def clean_html(htm):
+    from lxml import html as lhtml
+    from lxml.html.clean import Cleaner
+
+    htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
+    if not htm:
+        return ''
+
+    cleaner = Cleaner(
+        links=False,
+        safe_attrs_only=False,
+        kill_tags=['head', 'style'],
+        remove_tags=['html', 'base']
+    )
+    htm = lhtml.fromstring(htm)
+    htm = cleaner.clean_html(htm)
+
+    # return lhtml.tostring(htm, encoding='utf-8').decode()
+    return '\n'.join(i.rstrip() for i in htm.xpath('//text()') if i.rstrip())
+
+
 def create_msg(raw, uid, time):
     # TODO: there is a bug with folding mechanism,
     # like this one https://bugs.python.org/issue30788,
@@ -141,6 +162,8 @@ def create_msg(raw, uid, time):
 
     txt = orig.get_body(preferencelist=('plain', 'html'))
     body = txt.get_content()
+    body = clean_html(body)
+    meta['preview'] = re.sub('[\s ]+', ' ', body[:200])
 
     msg = MIMEPart(policy)
     headers = (

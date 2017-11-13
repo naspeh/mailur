@@ -21,7 +21,7 @@ Vue.component('Msgs', {
   },
   computed: {
     url: function() {
-      return this.threads ? '/threads' : '/msgs';
+      return this.threads ? '/thrs' : '/msgs';
     },
     length: function() {
       return this.pages.length
