@@ -70,7 +70,7 @@ Vue.component('Msgs', {
       while (hashes.length > 0) {
         let sheet = document.createElement('link');
         let few = encodeURIComponent(hashes.splice(0, 50));
-        sheet.href = '/api/avatars.css?size=14&hashes=' + few;
+        sheet.href = '/api/avatars.css?size=18&hashes=' + few;
         sheet.rel = 'stylesheet';
         document.body.appendChild(sheet);
       }

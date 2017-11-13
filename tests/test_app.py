@@ -54,7 +54,7 @@ def test_from_list():
     ))
     assert res == [
         {'name': 'test', 'addr': ANY, 'hash': ANY, 'title': ANY},
-        {'expander': '2 more'},
+        {'expander': 2},
         {'name': 'test4', 'addr': ANY, 'hash': ANY, 'title': ANY},
         {'name': 'test5', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
@@ -64,7 +64,7 @@ def test_from_list():
     )))
     assert res == [
         {'name': 'test0', 'addr': ANY, 'hash': ANY, 'title': ANY},
-        {'expander': '7 more'},
+        {'expander': 7},
         {'name': 'test8', 'addr': ANY, 'hash': ANY, 'title': ANY},
         {'name': 'test9', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]

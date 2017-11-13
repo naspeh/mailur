@@ -8,14 +8,14 @@
   margin: 0 -2px;
   box-sizing: border-box;
   width: 100%;
-  padding-left: 0.3em;
+  padding: 0 0.3em;
   background-color: #eee;
   border-top: 1px solid #fff;
   border-radius: 0.5em;
   color: #777;
   line-height: 1.5em;
 
-  @nest & > a, & > i, & > span {
+  @nest & > a, & > span {
     white-space: nowrap;
     padding: 0 2px;
   }
@@ -24,14 +24,36 @@
     color: var(--colorR);
   }
 
-  & .msg-from i {
-    display: inline-block;
-    height: 14px;
-    width: 14px;
+  & .msg-from {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    & .msg-from-pic {
+      display: inline-block;
+      height: 18px;
+      width: 18px;
+      padding: 0 1px;
+      background-position: center center;
+      background-repeat: no-repeat;
+    }
+
+    & .msg-from-more {
+      margin: 0 1px;
+      line-height: 18px;
+      min-width: 18px;
+      box-sizing: border-box;
+      border-radius: 3px;
+      font-size: 90%;
+      color: #777;
+      background-color: #fff;
+      text-align: center;
+    }
   }
 
   & .msg-preview {
     flex-basis: 80%;
+    margin-left: 3px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -234,7 +234,7 @@ def test_addresses():
 
     res = local.addresses('test@example.com')
     assert res == [{
-        'name': '',
+        'name': 'test',
         'addr': 'test@example.com',
         'hash': '55502f40dc8b7c769880b10874abc9d0',
         'title': 'test@example.com'
@@ -243,7 +243,7 @@ def test_addresses():
     res = local.addresses('test@example.com, test2 <test2@example.com>')
     assert res == [
         {
-            'name': '',
+            'name': 'test',
             'addr': 'test@example.com',
             'hash': '55502f40dc8b7c769880b10874abc9d0',
             'title': 'test@example.com'

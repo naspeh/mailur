@@ -211,5 +211,5 @@ def from_list(addrs, max=3):
 
     return [
         addrs[0],
-        {'expander': '%s more' % len(addrs[1:-2])},
+        {'expander': len(addrs[1:-2])},
     ] + addrs[-2:]
