@@ -5,15 +5,14 @@ import './msgs.css';
 
 Vue.component('Msgs', {
   template: tpl,
-  props: {
-    threads: { type: Boolean, default: false },
-    query: { type: String, required: true }
-  },
   data: function() {
     return {
+      query: null,
+      threads: false,
       uids: [],
       perPage: 200,
-      pages: []
+      pages: [],
+      picked: []
     };
   },
   created: function() {
@@ -42,12 +41,14 @@ Vue.component('Msgs', {
       }
     },
     fetch: function() {
+      this.uids = [];
+      this.setMsgs();
+      this.query = this.$parent.query;
+      this.threads = this.$parent.threads;
       return this.send('', {
         q: this.query,
         preload: this.perPage
       }).then(res => {
-        this.uids = [];
-        this.setMsgs();
         this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });
@@ -75,6 +76,13 @@ Vue.component('Msgs', {
         document.body.appendChild(sheet);
       }
     },
+    pickAll: function(e) {
+      if (e.target.checked) {
+        this.picked = Object.keys(this.msgs);
+      } else {
+        this.picked = [];
+      }
+    },
     canLoadMore: function() {
       return this.length < this.uids.length;
     },
@@ -88,8 +96,9 @@ Vue.component('Msgs', {
       let msgs = [];
       for (const uid of uids) {
         let msg = this.msgs[uid];
-        msg.parsed_uid = uid;
-        msg.origin_url = '/api/origin/' + msg.uid;
+        msg.origin_uid = msg.uid;
+        msg.uid = uid;
+        msg.origin_url = '/api/origin/' + msg.origin_uid;
         msg.parsed_url = '/api/parsed/' + uid;
         msg.unread = msg.flags.indexOf('\\Seen') == -1;
         msg.pinned = msg.flags.indexOf('\\Flagged') !== -1;

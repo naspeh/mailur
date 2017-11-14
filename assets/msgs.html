@@ -1,9 +1,22 @@
 <div class="pages">
+  <template v-if="pages.length">
+  <span>
+    {{length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
+  </span>
+  <span class="msg-pick-all">
+    <input  @change="pickAll" type="checkbox" id="pick-all">
+    <label for="pick-all">Select all</label>
+  </span>
+  </template>
+  <span v-if="!pages.length">Loading...</span>
   <div v-for="uids of pages">
     <div v-for="msg in page(uids)" :key="msg.uid" :class="{'msg-line': 1, 'msg-unread': msg.unread}">
       <a :href="msg.parsed_url" target="_blank" title="Parsed message" >{{ msg.uid }}</a>
       <a :href="msg.origin_url" target="_blank" title="Origin message">[orig]</a>
       <a @click.prevent="app.searchHeader('message-id ', msg.message_id)" href="#">[msg-id]</a>
+      <span class="msg-pick">
+        <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
+      </span>
       <span class="msg-from">
       <template v-for="from in msg.from_list">
         <span class="msg-from-more" v-if="from.expander" :title="`${from.expander} more`">
