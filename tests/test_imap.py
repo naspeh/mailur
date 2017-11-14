@@ -1,26 +1,4 @@
-from unittest.mock import patch, call, ANY
-
-from mailur import imap, local, gmail
-
-
-@patch('mailur.imap.select')
-def test_basic_gmail(select):
-    con = gmail.client()
-    assert select.call_args == call(ANY, b'All', True)
-    assert set(con.__dict__.keys()) == set(
-        '_con logout list select select_tag status search fetch'
-        .split()
-    )
-
-    con.select_tag('\\Junk')
-    assert select.call_args == call(ANY, b'Spam', True)
-
-    con.select_tag('\\Trash')
-    assert select.call_args == call(ANY, b'Trash', True)
-
-    with patch('mailur.imap.fn_time') as m:
-        con.list()
-        assert m.called
+from mailur import imap, local
 
 
 def test_batched_uids(clean_users, gm_client):
@@ -52,7 +30,6 @@ def test_batched_uids(clean_users, gm_client):
     )
 
     gm_client.add_emails([{} for i in range(1, 22)])
-    gmail.fetch_folder()
     assert local.parse(batch=10) is None
 
 

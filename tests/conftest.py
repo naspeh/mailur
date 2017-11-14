@@ -1,3 +1,5 @@
+import email
+import re
 import sys
 import time
 from email.utils import formatdate
@@ -15,7 +17,7 @@ sys.path.insert(0, str(root))
 def init():
     call('''
     rm -rf /home/vmail/test*
-    bin/install
+    bin/dovecot
     ''', shell=True, cwd=root)
 
 
@@ -81,7 +83,8 @@ def gm_fake():
 def gm_client():
     from mailur import local, gmail
 
-    def add_emails(items=None, box=local.ALL):
+    def add_emails(items=None, tag='\\All', fetch=True):
+        box = dict(gmail.MAP_FOLDERS, **{'\\All': local.ALL})[tag]
         gmail.client()
         if items is None:
             items = [{}]
@@ -119,9 +122,36 @@ def gm_client():
                 ),
                 b')'
             ])
+
+        if fetch:
+            gmail.fetch_folder(tag)
+
     gm_client.add_emails = add_emails
     gm_client.uid = 100
     gm_client.time = time.time() - 36000
 
     with patch('mailur.gmail.connect', gm_fake):
         yield gm_client
+
+
+def _msgs(box, uids='1:*', raw=False):
+    from mailur import local
+
+    con = local.client(box)
+    res = con.fetch(uids, '(flags body[])')
+    return [(
+        re.search('FLAGS \(([^)]*)\)', res[i][0].decode()).group(1),
+        res[i][1] if raw else email.message_from_bytes(res[i][1])
+    ) for i in range(0, len(res), 2)]
+
+
+@pytest.fixture
+def msgs():
+    return _msgs
+
+
+@pytest.fixture
+def latest():
+    def inner(box, raw=False):
+        return _msgs(box, '*', raw=raw)[0]
+    return inner
