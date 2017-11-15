@@ -61,6 +61,16 @@ def cmd_writable(func):
     return inner
 
 
+def cmd_error(func):
+    @ft.wraps(func)
+    def inner(con, *a, **kw):
+        try:
+            return func(con, *a, **kw)
+        except con.error as e:
+            raise Error(e)
+    return inner
+
+
 def check(res):
     typ, data = res
     if typ != 'OK':
@@ -78,6 +88,7 @@ def command(*, name=None, lock=True, writable=False, dovecot=False):
         if lock:
             func = cmd_lock(func)
 
+        func = cmd_error(func)
         commands[func] = {'writable': writable, 'dovecot': dovecot}
         return func
     return inner

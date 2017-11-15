@@ -26,6 +26,8 @@ ssl_key = </etc/ssl/dovecot/server.key
 ssl_cert = </etc/ssl/dovecot/server.pem
 ssl_client_ca_dir = /etc/ssl/certs/
 
+imap_max_line_length = 5M
+
 mail_location = mdbox:~
 mdbox_rotate_size = 100M
 

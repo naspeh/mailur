@@ -49,3 +49,19 @@ def test_fn_pack_uids():
     assert fn(['1', '2', '3', '4']) == '1:4'
     assert fn(['1', '3', '4']) == '1,3:4'
     assert fn(['100', '1', '4', '3', '10', '9', '8', '7']) == '1,3:4,7:10,100'
+
+
+def test_literal_size_limit(gm_client, raises):
+    gm_client.add_emails([{} for i in range(1, 22)])
+    c = local.client(local.SRC)
+    res = c.search('ALL')
+    uids = res[0].decode().replace(' ', ',')
+
+    uid_mask = '1%.20i0'
+    uids += ',' + ','.join(uid_mask % i for i in range(1, 220000))
+    assert res == c.search('UID %s' % uids)
+
+    uids += ',' + ','.join(uid_mask % i for i in range(1, 10000))
+    with raises(imap.Error) as e:
+        c.search('UID %s' % uids)
+    assert 'Too long argument' in str(e)

@@ -40,7 +40,6 @@ class Local(imaplib.IMAP4, imap.Conn):
 def connect(user=None):
     con = Local(user or USER)
     imap.check(con.login())
-    # imap.check(con.enable('UTF8=ACCEPT'))
     con._encoding = 'utf-8'
     return con
 
@@ -272,34 +271,24 @@ def parse(criteria=None, *, batch=1000, threads=10):
     con.setmetadata(ALL, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
-    # TODO: update threads only for some uids
-    # update_threads(con, list(parsed_uids(uids.val)))
-    update_threads(con)
+    update_threads(con, list(parsed_uids(uids.val)))
     con.logout()
 
 
 def update_threads(con, uids=None, criteria=None):
     con.select(ALL)
-    if uids is None:
-        uids = con.search(criteria or 'all')[0].decode().split()
+    if uids:
+        criteria = 'UID %s' % ','.join(uids)
 
-    def threads(uids):
-        return con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
-
-    uids = imap.Uids(uids)
-    thrs_set = set()
-    msgs = set()
-    for t in uids.call_async(threads, uids):
-        thrs_set.update(t)
-        msgs.update(t.all_uids)
-
+    criteria = criteria or 'ALL'
+    thrs_set = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
     if not thrs_set:
         log.info('## no threads are updated')
         return
 
     times = {}
-    msgs = list(msgs)
-    res = con.fetch(msgs, '(BINARY.PEEK[2])')
+    uids = thrs_set.all_uids
+    res = con.fetch(uids, '(BINARY.PEEK[2])')
     for i in range(0, len(res), 2):
         uid = res[i][0].split()[2].decode()
         times[uid] = json.loads(res[i][1])['date']
@@ -317,7 +306,7 @@ def update_threads(con, uids=None, criteria=None):
 
     con.select(ALL, readonly=False)
     res = con.search('KEYWORD #latest')
-    clean = set(res[0].decode().split()).intersection(msgs) - set(thrs)
+    clean = set(res[0].decode().split()).intersection(uids) - set(thrs)
     if clean:
         con.store(clean, '-FLAGS.SILENT', '#latest')
     con.store(list(thrs), '+FLAGS.SILENT', '#latest')
@@ -325,30 +314,26 @@ def update_threads(con, uids=None, criteria=None):
 
 
 def link_threads(uids, box=ALL):
-    def fetch_msgids(uids):
-        res = con.search('INTHREAD REFS UID %s' % uids.str)
-        uids = res[0].decode().split()
-        res = con.search('KEYWORD #link UID %s' % ','.join(uids))
-        refs = res[0].decode().split()
-        if refs:
-            src_refs = [v for k, v in parsed_uids().items() if k in refs]
-            c = client(None)
-            c.select(SRC, readonly=False)
-            c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
-            c.expunge()
-            c.select(box, readonly=False)
-            c.store(refs, '+FLAGS.SILENT', '\\Deleted')
-            c.expunge()
-
-        res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]')
-        return [
-            res[i][1].decode().strip().split(' ')[1]
-            for i in range(0, len(res), 2)
-        ]
-
     con = client()
-    uids = imap.Uids(uids)
-    msgids = sum(uids.call(fetch_msgids, uids), [])
+    res = con.search('INTHREAD REFS UID %s' % ','.join(uids))
+    uids = res[0].decode().split()
+    res = con.search('KEYWORD #link UID %s' % ','.join(uids))
+    refs = res[0].decode().split()
+    if refs:
+        src_refs = [v for k, v in parsed_uids().items() if k in refs]
+        c = client(None)
+        c.select(SRC, readonly=False)
+        c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
+        c.expunge()
+        c.select(box, readonly=False)
+        c.store(refs, '+FLAGS.SILENT', '\\Deleted')
+        c.expunge()
+
+    res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]')
+    msgids = [
+        res[i][1].decode().strip().split(' ')[1]
+        for i in range(0, len(res), 2)
+    ]
 
     msg = MIMEPart(email.policy.SMTPUTF8)
     msg.add_header('subject', 'Dummy: for linking threads')

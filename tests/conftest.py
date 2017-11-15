@@ -59,6 +59,11 @@ def some():
     return Some()
 
 
+@pytest.fixture
+def raises():
+    return pytest.raises
+
+
 def gm_fake():
     from mailur import local
 

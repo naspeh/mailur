@@ -21,7 +21,7 @@ def test_binary_msg():
     ])
 
 
-def test_thrids(clean_users, gm_client, msgs):
+def test_update_threads(clean_users, gm_client, msgs):
     gm_client.add_emails([{}])
     local.parse()
     res = msgs(local.ALL)
@@ -47,6 +47,19 @@ def test_thrids(clean_users, gm_client, msgs):
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     local.parse('all')
+    res = msgs(local.ALL)
+    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+
+    con = local.client()
+    local.update_threads(con, criteria='all')
+    res = msgs(local.ALL)
+    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+
+    local.update_threads(con, ['1'])
+    res = msgs(local.ALL)
+    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+
+    local.update_threads(con)
     res = msgs(local.ALL)
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 

@@ -5,7 +5,7 @@ import re
 
 from webob import Response, dec, exc, static
 
-from . import log, local, imap, helpers
+from . import log, local, helpers
 
 assets = pathlib.Path(__file__).parent / '../assets/dist'
 routes = re.compile('^/api/(%s)$' % '|'.join((
@@ -86,57 +86,50 @@ def threads_info(req, uids, con=None):
     if not uids:
         return {}
 
-    def inner(uids, con):
-        thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids.str)
-        all_flags = {}
-        all_msgs = {}
-        res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[2])')
-        for i in range(0, len(res), 2):
-            uid, flags = re.search(
-                r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
-            ).groups()
-            all_flags[uid] = flags
-            all_msgs[uid] = json.loads(res[i][1])
-
-        msgs = {}
-        for thr in thrs:
-            thrid = None
-            thr_flags = []
-            thr_from = []
-            unseen = False
-            for uid in thr:
-                info = all_msgs[uid]
-                if info['date']:
-                    thr_from.append((info['date'], info.get('from')))
-                msg_flags = all_flags[uid]
-                if not msg_flags:
-                    continue
-                if '\\Seen' not in msg_flags:
-                    unseen = True
-                thr_flags.append(msg_flags)
-                if '#latest' in msg_flags:
-                    thrid = uid
-            if thrid is None:
-                raise ValueError('No #latest for %s' % thr)
-
-            flags = list(set(' '.join(thr_flags).split()))
-            if unseen and '\\Seen' in flags:
-                flags.remove('\\Seen')
-            data = msg_info(all_msgs[thrid])
-            data['flags'] = flags
-            data['from_list'] = from_list([
-                v for k, v in sorted(thr_from, key=lambda i: i[0])
-            ])
-            msgs[thrid] = data
-
-        log.debug('%s threads', len(msgs))
-        return msgs
-
     con = local.client()
-    uids = imap.Uids(uids, size=1000)
+    thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+    all_flags = {}
+    all_msgs = {}
+    res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[2])')
+    for i in range(0, len(res), 2):
+        uid, flags = re.search(
+            r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
+        ).groups()
+        all_flags[uid] = flags
+        all_msgs[uid] = json.loads(res[i][1])
+
     msgs = {}
-    for i in uids.call_async(inner, uids, con):
-        msgs.update(i)
+    for thr in thrs:
+        thrid = None
+        thr_flags = []
+        thr_from = []
+        unseen = False
+        for uid in thr:
+            info = all_msgs[uid]
+            if info['date']:
+                thr_from.append((info['date'], info.get('from')))
+            msg_flags = all_flags[uid]
+            if not msg_flags:
+                continue
+            if '\\Seen' not in msg_flags:
+                unseen = True
+            thr_flags.append(msg_flags)
+            if '#latest' in msg_flags:
+                thrid = uid
+        if thrid is None:
+            raise ValueError('No #latest for %s' % thr)
+
+        flags = list(set(' '.join(thr_flags).split()))
+        if unseen and '\\Seen' in flags:
+            flags.remove('\\Seen')
+        data = msg_info(all_msgs[thrid])
+        data['flags'] = flags
+        data['from_list'] = from_list([
+            v for k, v in sorted(thr_from, key=lambda i: i[0])
+        ])
+        msgs[thrid] = data
+
+    log.debug('%s threads', len(msgs))
     con.logout()
     return msgs
 
