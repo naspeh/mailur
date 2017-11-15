@@ -15,7 +15,7 @@ Options:
 """
 from docopt import docopt
 
-from . import gmail, local, imap
+from . import gmail, local
 
 
 def main(args):
@@ -27,10 +27,9 @@ def main(args):
     if args['gmail']:
         gmail.USER = args['<username>']
         gmail.PASS = args['<password>']
-        uids = gmail.fetch(**opts)
+        gmail.fetch(**opts)
         if args.get('--parse'):
-            criteria = 'UID %s' % imap.pack_uids(uids) if uids else None
-            local.parse(criteria, **opts)
+            local.parse(**opts)
     elif args['parse']:
         local.parse(args.get('<criteria>'), **opts)
     elif args['threads']:

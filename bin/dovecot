@@ -28,8 +28,11 @@ ssl_client_ca_dir = /etc/ssl/certs/
 
 imap_max_line_length = 5M
 
-mail_location = mdbox:~
-mdbox_rotate_size = 100M
+# strange behavior when applying flags for mdbox,
+# somehow flags are mixed up on messages
+# mail_location = mdbox:~
+# mdbox_rotate_size = 100M
+mail_location = sdbox:~
 
 auth_master_user_separator = *
 passdb {

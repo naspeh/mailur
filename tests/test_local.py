@@ -50,6 +50,10 @@ def test_update_threads(clean_users, gm_client, msgs):
     res = msgs(local.ALL)
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
+    local.parse('uid *')
+    res = msgs(local.ALL)
+    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+
     con = local.client()
     local.update_threads(con, criteria='all')
     res = msgs(local.ALL)
@@ -62,6 +66,19 @@ def test_update_threads(clean_users, gm_client, msgs):
     local.update_threads(con)
     res = msgs(local.ALL)
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+
+    gm_client.add_emails([{'labels': 'test1'}, {'labels': 'test2'}])
+    local.parse('UID 4:*')
+    res = msgs(local.ALL)
+    assert ['', '', '', '#latest', '#latest #t1', '#latest #t2'] == [
+        i['flags'] for i in res
+    ]
+
+    local.update_threads(con, criteria='UID *')
+    res = msgs(local.ALL)
+    assert ['', '', '', '#latest', '#latest #t1', '#latest #t2'] == [
+        i['flags'] for i in res
+    ]
 
 
 def test_link_threads(clean_users, gm_client, msgs):
