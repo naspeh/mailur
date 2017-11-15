@@ -12,20 +12,20 @@ def test_batched_uids(clean_users, gm_client):
     assert [] == con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#')
 
     # with one message
-    con.append(local.ALL, None, None, local.binary_msg('42').as_bytes())
-    con.select(local.ALL, readonly=True)
-    assert [b'1 (UID 1 FLAGS ())'] == (
+    con.append(local.SRC, None, None, local.binary_msg('42').as_bytes())
+    con.select(local.SRC, readonly=True)
+    assert [b'1 (UID 1 FLAGS (\\Recent))'] == (
         con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
     )
-    assert [b'1 (UID 1 FLAGS ())'] == (
+    assert [b'1 (UID 1 FLAGS (\\Recent))'] == (
         con.fetch([str(i) for i in range(1, bsize, 2)], 'FLAGS')
     )
 
-    con.select(local.ALL, readonly=False)
-    assert [b'1 (UID 1 FLAGS (#1))'] == (
+    con.select(local.SRC, readonly=False)
+    assert [b'1 (UID 1 FLAGS (\\Recent #1))'] == (
         con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#1')
     )
-    assert [b'1 (UID 1 FLAGS (#1 #2))'] == (
+    assert [b'1 (UID 1 FLAGS (\\Recent #1 #2))'] == (
         con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#2')
     )
 

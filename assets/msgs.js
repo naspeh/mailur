@@ -30,6 +30,7 @@ Vue.component('Msgs', {
     app: () => window.app
   },
   methods: {
+    send: send,
     setMsgs: function(msgs, uids) {
       if (!msgs) {
         this.msgs = {};
@@ -45,16 +46,13 @@ Vue.component('Msgs', {
       this.setMsgs();
       this.query = this.$parent.query;
       this.threads = this.$parent.threads;
-      return this.send('', {
+      return this.send(this.url, {
         q: this.query,
         preload: this.perPage
       }).then(res => {
         this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });
-    },
-    send: function(prefix, params) {
-      return send(this.url + prefix, params);
     },
     pics: function(msgs) {
       let hashes = [];
@@ -83,12 +81,15 @@ Vue.component('Msgs', {
         this.picked = [];
       }
     },
+    link: function() {
+      this.send('/thrs/link', { uids: this.picked }).then(() => this.fetch());
+    },
     canLoadMore: function() {
       return this.length < this.uids.length;
     },
     loadMore: function() {
       let uids = this.uids.slice(this.length, this.length + this.perPage);
-      return this.send('/info', { uids: uids }).then(res =>
+      return this.send(this.url + '/info', { uids: uids }).then(res =>
         this.setMsgs(res, uids)
       );
     },
@@ -96,7 +97,7 @@ Vue.component('Msgs', {
       let msgs = [];
       for (const uid of uids) {
         let msg = this.msgs[uid];
-        msg.origin_uid = msg.uid;
+        // if (!msg) console.error(`No message for uid=${uid}`);
         msg.uid = uid;
         msg.origin_url = '/api/origin/' + msg.origin_uid;
         msg.parsed_url = '/api/parsed/' + uid;

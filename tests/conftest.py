@@ -15,10 +15,7 @@ sys.path.insert(0, str(root))
 
 @pytest.fixture(scope='session', autouse=True)
 def init():
-    call('''
-    rm -rf /home/vmail/test*
-    bin/dovecot
-    ''', shell=True, cwd=root)
+    clean_users()
 
 
 @pytest.fixture(autouse=True)
@@ -30,8 +27,8 @@ def setup(gm_client):
 @pytest.fixture
 def clean_users():
     call('''
-    rm -rf /home/vmail/test*/mailboxes/*
-    bin/users
+    rm -rf /home/vmail/test*
+    bin/dovecot
     ''', shell=True, cwd=root)
 
 
@@ -137,12 +134,19 @@ def gm_client():
 def _msgs(box, uids='1:*', raw=False):
     from mailur import local
 
+    def flags(m):
+        res = re.search('FLAGS \(([^)]*)\)', m).group(1).split()
+        if '\\Recent' in res:
+            res.remove('\\Recent')
+        return ' '.join(res)
+
     con = local.client(box)
-    res = con.fetch(uids, '(flags body[])')
-    return [(
-        re.search('FLAGS \(([^)]*)\)', res[i][0].decode()).group(1),
-        res[i][1] if raw else email.message_from_bytes(res[i][1])
-    ) for i in range(0, len(res), 2)]
+    res = con.fetch(uids, '(uid flags body[])')
+    return [{
+        'uid': re.search('UID (\d+)', res[i][0].decode()).group(1),
+        'flags': flags(res[i][0].decode()),
+        'body': res[i][1] if raw else email.message_from_bytes(res[i][1])
+    } for i in range(0, len(res), 2)]
 
 
 @pytest.fixture

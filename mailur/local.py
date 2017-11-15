@@ -6,6 +6,7 @@ import imaplib
 import json
 import os
 import re
+import uuid
 from email.message import MIMEPart
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime, getaddresses
@@ -39,6 +40,8 @@ class Local(imaplib.IMAP4, imap.Conn):
 def connect(user=None):
     con = Local(user or USER)
     imap.check(con.login())
+    # imap.check(con.enable('UTF8=ACCEPT'))
+    con._encoding = 'utf-8'
     return con
 
 
@@ -55,6 +58,10 @@ def binary_msg(txt, mimetype='text/plain'):
     msg.add_header('Content-Transfer-Encoding', 'binary')
     msg.set_payload(txt, 'utf-8')
     return msg
+
+
+def gen_msgid():
+    return '%s@mailur' % uuid.uuid4().hex
 
 
 @ft.lru_cache(maxsize=None)
@@ -82,16 +89,16 @@ def get_tag(con, name):
     return '#t' + tag
 
 
-def parsed_uids(con, uids=None):
+def parsed_uids(uids=None):
     if uids is None:
-        return fetch_parsed_uids(con)
-    return {k: v for k, v in fetch_parsed_uids(con).items() if v in uids}
+        return fetch_parsed_uids()
+    return {k: v for k, v in fetch_parsed_uids().items() if v in uids}
 
 
 @ft.lru_cache(maxsize=None)
-def fetch_parsed_uids(con):
-    con.select(ALL)
-    res = con.fetch('1:*', 'BODY.PEEK[1]')
+def fetch_parsed_uids():
+    with client() as con:
+        res = con.fetch('1:*', 'BODY.PEEK[1]')
     return {
         res[i][0].split()[2].decode(): res[i][1].decode()
         for i in range(0, len(res), 2)
@@ -162,13 +169,13 @@ def create_msg(raw, uid, time):
 
     subj = orig['subject']
     meta['subject'] = str(subj) if subj else subj
-    meta['uid'] = uid
-
-    date = orig['date']
-    meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
+    meta['origin_uid'] = uid
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
     meta['arrived'] = int(arrived.timestamp())
+
+    date = orig['date']
+    meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
     txt = orig.get_body(preferencelist=('plain', 'html'))
     body = txt.get_content()
@@ -248,12 +255,12 @@ def parse(criteria=None, *, batch=1000, threads=10):
         if criteria.lower() == 'all':
             puids = '1:*'
         else:
-            puids = list(parsed_uids(con, uids))
+            puids = list(parsed_uids(uids))
         if puids:
             con.select(ALL, readonly=False)
             puids = imap.Uids(puids)
             log.info('## deleting %s from %r', puids, ALL)
-            con.store(imap.Uids(puids), '+FLAGS.SILENT', '\Deleted')
+            con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
     # messages should be inserted in the particular order
@@ -265,11 +272,14 @@ def parse(criteria=None, *, batch=1000, threads=10):
     con.setmetadata(ALL, 'uidnext', str(uidnext))
 
     fetch_parsed_uids.cache_clear()
-    update_threads(con, list(parsed_uids(con, uids.val)))
+    # TODO: update threads only for some uids
+    # update_threads(con, list(parsed_uids(uids.val)))
+    update_threads(con)
     con.logout()
 
 
 def update_threads(con, uids=None, criteria=None):
+    con.select(ALL)
     if uids is None:
         uids = con.search(criteria or 'all')[0].decode().split()
 
@@ -299,7 +309,10 @@ def update_threads(con, uids=None, criteria=None):
         if len(thrids) == 1:
             latest = thrids[0]
         else:
-            latest = sorted(thrids, key=lambda i: times[i])[-1]
+            latest = sorted(
+                (t for t in thrids if times[t]),
+                key=lambda i: times[i]
+            )[-1]
         thrs[latest] = thrids
 
     con.select(ALL, readonly=False)
@@ -309,3 +322,39 @@ def update_threads(con, uids=None, criteria=None):
         con.store(clean, '-FLAGS.SILENT', '#latest')
     con.store(list(thrs), '+FLAGS.SILENT', '#latest')
     log.info('## updated %s threads', len(thrs))
+
+
+def link_threads(uids, box=ALL):
+    def fetch_msgids(uids):
+        res = con.search('INTHREAD REFS UID %s' % uids.str)
+        uids = res[0].decode().split()
+        res = con.search('KEYWORD #link UID %s' % ','.join(uids))
+        refs = res[0].decode().split()
+        if refs:
+            src_refs = [v for k, v in parsed_uids().items() if k in refs]
+            c = client(None)
+            c.select(SRC, readonly=False)
+            c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
+            c.expunge()
+            c.select(box, readonly=False)
+            c.store(refs, '+FLAGS.SILENT', '\\Deleted')
+            c.expunge()
+
+        res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]')
+        return [
+            res[i][1].decode().strip().split(' ')[1]
+            for i in range(0, len(res), 2)
+        ]
+
+    con = client()
+    uids = imap.Uids(uids)
+    msgids = sum(uids.call(fetch_msgids, uids), [])
+
+    msg = MIMEPart(email.policy.SMTPUTF8)
+    msg.add_header('subject', 'Dummy: for linking threads')
+    msg.add_header('references', ' '.join(msgids))
+    msg.add_header('message-id', gen_msgid())
+    res = con.append(SRC, '#link', None, msg.as_bytes())
+    con.logout()
+    parse()
+    return res[0].decode()

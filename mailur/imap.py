@@ -198,8 +198,8 @@ def multiappend(con, box, msgs):
             send(args.encode() + CRLF)
             send = con.send
             while con._get_response():
-                if con.tagged_commands[tag]:   # BAD/NO?
-                    return tag
+                if con.tagged_commands[tag]:
+                    break
             con.send(msg)
         con.send(CRLF)
         return check(complete())

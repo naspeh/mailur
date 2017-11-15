@@ -69,7 +69,7 @@ def test_fetch_and_parse(clean_users, gm_client, some):
 
 def test_origin_msg(gm_client, latest, msgs):
     gm_client.add_emails()
-    _, msg = latest(local.SRC)
+    msg = latest(local.SRC)['body']
     # headers
     sha256 = msg.get('X-SHA256')
     assert sha256 and re.match('<[a-z0-9]{64}>', sha256)
@@ -84,20 +84,20 @@ def test_origin_msg(gm_client, latest, msgs):
     gm_client.add_emails([
         {'flags': r'\Flagged', 'labels': r'"\\Inbox" "\\Sent" label'}
     ])
-    flags, msg = latest(local.SRC)
-    assert r'\Flagged \Recent #inbox #sent #t1' == flags
+    flags = latest(local.SRC)['flags']
+    assert r'\Flagged #inbox #sent #t1' == flags
     assert local.get_tags(lm) == {'#t1': 'label'}
 
     gm_client.add_emails([{'labels': 'label "another label"'}])
-    flags, msg = latest(local.SRC)
-    assert '\\Recent #t1 #t2' == flags
+    flags = latest(local.SRC)['flags']
+    assert '#t1 #t2' == flags
     assert local.get_tags(lm) == {'#t1': 'label', '#t2': 'another label'}
 
     gm_client.add_emails([
         {'labels': r'"\\Important" "\\Sent" "test(&BEIENQRBBEI-)"'}
     ])
-    flags, msg = latest(local.SRC)
-    assert '\Recent #sent #important #t3' == flags
+    flags = latest(local.SRC)['flags']
+    assert '#sent #important #t3' == flags
     assert local.get_tags(lm) == {
         '#t1': 'label',
         '#t2': 'another label',

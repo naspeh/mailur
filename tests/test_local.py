@@ -25,35 +25,81 @@ def test_thrids(clean_users, gm_client, msgs):
     gm_client.add_emails([{}])
     local.parse()
     res = msgs(local.ALL)
-    assert ['#latest'] == [i[0] for i in res]
+    assert ['#latest'] == [i['flags'] for i in res]
+
+    local.parse('all')
+    res = msgs(local.ALL)
+    assert ['#latest'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{}])
     local.parse()
     res = msgs(local.ALL)
-    assert ['#latest', '#latest'] == [i[0] for i in res]
+    assert ['#latest', '#latest'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
     local.parse()
     res = msgs(local.ALL)
-    assert ['', '#latest', '#latest'] == [i[0] for i in res]
+    assert ['', '#latest', '#latest'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
     local.parse()
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i[0] for i in res]
+    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     local.parse('all')
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i[0] for i in res]
+    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+
+
+def test_link_threads(clean_users, gm_client, msgs):
+    gm_client.add_emails([{}, {}])
+    local.parse()
+    res = msgs(local.ALL)
+    assert ['1', '2'] == [i['uid'] for i in res]
+    assert ['#latest', '#latest'] == [i['flags'] for i in res]
+    local.link_threads(['1', '2'])
+    res = msgs(local.SRC)
+    assert ['1', '2', '3'] == [i['uid'] for i in res]
+    assert ['', '', '#link'] == [i['flags'] for i in res]
+    res = msgs(local.ALL)
+    assert ['1', '2', '3'] == [i['uid'] for i in res]
+    assert ['', '#latest', '#link'] == [i['flags'] for i in res]
+
+    local.parse('all')
+    res = msgs(local.SRC)
+    assert ['1', '2', '3'] == [i['uid'] for i in res]
+    assert ['', '', '#link'] == [i['flags'] for i in res]
+    res = msgs(local.ALL)
+    assert ['4', '5', '6'] == [i['uid'] for i in res]
+    assert ['', '#latest', '#link'] == [i['flags'] for i in res]
+
+    gm_client.add_emails([{}])
+    local.parse()
+    local.link_threads(['4', '7'])
+    res = msgs(local.SRC)
+    assert ['1', '2', '4', '5'] == [i['uid'] for i in res]
+    assert ['', '', '', '#link'] == [i['flags'] for i in res]
+    res = msgs(local.ALL)
+    assert ['4', '5', '7', '8'] == [i['uid'] for i in res]
+    assert ['', '', '#latest', '#link'] == [i['flags'] for i in res]
+
+    gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
+    local.parse()
+    res = msgs(local.SRC)
+    assert ['1', '2', '4', '5', '6'] == [i['uid'] for i in res]
+    assert ['', '', '', '#link', ''] == [i['flags'] for i in res]
+    res = msgs(local.ALL)
+    assert ['4', '5', '7', '8', '9'] == [i['uid'] for i in res]
+    assert ['', '', '', '#link', '#latest'] == [i['flags'] for i in res]
 
 
 def test_parsed_msg(clean_users, gm_client, load_file, latest):
     gm_client.add_emails([{'flags': '\\Flagged'}])
     local.parse()
-    flags, msg = latest(local.ALL)
-    assert 'X-UID' in msg
-    assert re.match('<\d+>', msg['X-UID'])
-    assert '\\Flagged' in flags
+    msg = latest(local.ALL)
+    assert 'X-UID' in msg['body']
+    assert re.match('<\d+>', msg['body']['X-UID'])
+    assert '\\Flagged' in msg['flags']
 
     # `email.policy.default` is not working with long addresses.
     # Exits with: "segmentation fault (core dumped)"
@@ -64,7 +110,7 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     ])
 
     local.parse()
-    flags, msg = latest(local.ALL)
+    msg = latest(local.ALL)['body']
     assert msg['to'].startswith('primary discussion list')
 
     # should be decoding of headers during parsing
@@ -73,7 +119,7 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     ])
 
     local.parse(batch=1)
-    flags, msg = latest(local.ALL, raw=True)
+    msg = latest(local.ALL, raw=True)['body']
     expect = '\r\n'.join([
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: "Катя К." <katya@example.com>',
@@ -88,7 +134,7 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     ])
 
     local.parse(batch=1)
-    flags, msg = latest(local.ALL, raw=True)
+    msg = latest(local.ALL, raw=True)['body']
     expect = '\r\n'.join([
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: "Катя К." <katya@example.com>',

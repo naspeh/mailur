@@ -7,6 +7,7 @@
     <input  @change="pickAll" type="checkbox" id="pick-all">
     <label for="pick-all">Select all</label>
   </span>
+  <button @click="link">Link</button>
   </template>
   <span v-if="!pages.length">Loading...</span>
   <div v-for="uids of pages">

@@ -16,6 +16,7 @@ routes = re.compile('^/api/(%s)$' % '|'.join((
     r'(?P<msgs_info>msgs/info)',
     r'(?P<threads>thrs)',
     r'(?P<threads_info>thrs/info)',
+    r'(?P<threads_link>thrs/link)',
     r'(?P<origin>origin/(?P<oid>\d+))',
     r'(?P<parsed>parsed/(?P<pid>\d+))',
 )))
@@ -46,6 +47,8 @@ def application(req):
         return threads(req, req.json['q'], req.json['preload'])
     elif route['threads_info']:
         return jsonify(threads_info)(req, req.json['uids'])
+    elif route['threads_link']:
+        return threads_link(req)
 
     raise ValueError('No handler for %r' % route)
 
@@ -103,7 +106,8 @@ def threads_info(req, uids, con=None):
             unseen = False
             for uid in thr:
                 info = all_msgs[uid]
-                thr_from.append((info['date'], info.get('from')))
+                if info['date']:
+                    thr_from.append((info['date'], info.get('from')))
                 msg_flags = all_flags[uid]
                 if not msg_flags:
                     continue
@@ -113,7 +117,8 @@ def threads_info(req, uids, con=None):
                 if '#latest' in msg_flags:
                     thrid = uid
             if thrid is None:
-                continue
+                raise ValueError('No #latest for %s' % thr)
+
             flags = list(set(' '.join(thr_flags).split()))
             if unseen and '\\Seen' in flags:
                 flags.remove('\\Seen')
@@ -137,9 +142,15 @@ def threads_info(req, uids, con=None):
 
 
 @jsonify
+def threads_link(req):
+    uids = req.json['uids']
+    return local.link_threads(uids)
+
+
+@jsonify
 def msgs(req, query, preload):
     con = local.client()
-    res = con.sort('(REVERSE DATE)', query.encode())
+    res = con.sort('(REVERSE DATE)', 'UNKEYWORD #link %s' % query)
     uids = res[0].decode().split()
     log.debug('query: %r; messages: %s', query, len(uids))
     if preload and uids:
@@ -206,14 +217,16 @@ def msg_info(txt, req=None):
 
     info['time_human'] = helpers.humanize_dt(info['date'], offset=offset)
     info['time_title'] = helpers.format_dt(info['date'], offset=offset)
-    info['from_list'] = from_list([info['from']])
+    info['from_list'] = from_list([info['from']] if 'from' in info else [])
     return info
 
 
 def from_list(addrs, max=3):
     if isinstance(addrs, str):
         addrs = [addrs]
-    elif len(addrs) <= 4:
+
+    addrs = [a for a in addrs if a]
+    if len(addrs) <= 4:
         return addrs
 
     return [
