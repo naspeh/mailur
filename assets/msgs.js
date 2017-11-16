@@ -96,14 +96,8 @@ Vue.component('Msgs', {
     page: function(uids) {
       let msgs = [];
       for (const uid of uids) {
-        let msg = this.msgs[uid];
         // if (!msg) console.error(`No message for uid=${uid}`);
-        msg.uid = uid;
-        msg.origin_url = '/api/origin/' + msg.origin_uid;
-        msg.parsed_url = '/api/parsed/' + uid;
-        msg.unread = msg.flags.indexOf('\\Seen') == -1;
-        msg.pinned = msg.flags.indexOf('\\Flagged') !== -1;
-        msgs.push(msg);
+        msgs.push(this.msgs[uid]);
       }
       return msgs;
     }

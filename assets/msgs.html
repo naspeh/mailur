@@ -11,9 +11,9 @@
   </template>
   <span v-if="!pages.length">Loading...</span>
   <div v-for="uids of pages">
-    <div v-for="msg in page(uids)" :key="msg.uid" :class="{'msg-line': 1, 'msg-unread': msg.unread}">
-      <a :href="msg.parsed_url" target="_blank" title="Parsed message" >{{ msg.uid }}</a>
-      <a :href="msg.origin_url" target="_blank" title="Origin message">[orig]</a>
+    <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg-line', {'msg-unread': msg.is_unread}]">
+      <a :href="msg.url_raw" target="_blank" title="Show raw message" >{{ msg.uid }}</a>
+      <a :href="msg.url_raw_origin" target="_blank" title="Show raw message (origin)">[orig]</a>
       <a @click.prevent="app.searchHeader('message-id ', msg.message_id)" href="#">[msg-id]</a>
       <span class="msg-pick">
         <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">

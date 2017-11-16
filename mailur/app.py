@@ -17,8 +17,8 @@ routes = re.compile('^/api/(%s)$' % '|'.join((
     r'(?P<threads>thrs)',
     r'(?P<threads_info>thrs/info)',
     r'(?P<threads_link>thrs/link)',
-    r'(?P<origin>origin/(?P<oid>\d+))',
-    r'(?P<parsed>parsed/(?P<pid>\d+))',
+    r'(?P<origin>raw/(?P<oid>\d+)/origin)',
+    r'(?P<parsed>raw/(?P<pid>\d+))',
 )))
 
 
@@ -122,12 +122,8 @@ def threads_info(req, uids, con=None):
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
-        data = msg_info(all_msgs[thrid])
-        data['flags'] = flags
-        data['from_list'] = from_list([
-            v for k, v in sorted(thr_from, key=lambda i: i[0])
-        ])
-        msgs[thrid] = data
+        addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
+        msgs[thrid] = msg_info(req, all_msgs[thrid], uid, flags, addrs)
 
     log.debug('%s threads', len(msgs))
     con.logout()
@@ -163,9 +159,7 @@ def msgs_info(req, uids):
             re.search(r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode())
             .groups()
         )
-        data = msg_info(res[i][1], req)
-        msgs[uid] = data
-        msgs[uid]['flags'] = flags.split()
+        msgs[uid] = msg_info(req, res[i][1], uid, flags.split())
     con.logout()
     return msgs
 
@@ -198,8 +192,8 @@ def avatars(req):
     return Response(css, content_type='text/css')
 
 
-def msg_info(txt, req=None):
-    offset = int(req.cookies['offset']) if req else 0
+def msg_info(req, txt, uid, flags, addrs=None):
+    offset = int(req.cookies['offset'])
     if isinstance(txt, bytes):
         txt = txt.decode()
     if isinstance(txt, str):
@@ -207,9 +201,19 @@ def msg_info(txt, req=None):
     else:
         info = txt
 
-    info['time_human'] = helpers.humanize_dt(info['date'], offset=offset)
-    info['time_title'] = helpers.format_dt(info['date'], offset=offset)
-    info['from_list'] = from_list([info['from']] if 'from' in info else [])
+    if addrs is None:
+        addrs = [info['from']] if 'from' in info else []
+    info.update({
+        'uid': uid,
+        'flags': flags,
+        'from_list': from_list(addrs),
+        'url_raw': '/api/raw/%s' % uid,
+        'url_raw_origin': '/api/raw/%s/origin' % info['origin_uid'],
+        'time_human': helpers.humanize_dt(info['date'], offset=offset),
+        'time_title': helpers.format_dt(info['date'], offset=offset),
+        'is_unread': '\\Seen' not in flags,
+        'is_pinned': '\\Flagged' in flags,
+    })
     return info
 
 
