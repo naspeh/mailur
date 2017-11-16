@@ -64,7 +64,8 @@ def gen_msgid():
 
 
 @ft.lru_cache(maxsize=None)
-def get_tags(con, reverse=False):
+def get_tags(reverse=False):
+    con = client()
     count = con.select(TAGS)
     if count == [b'0']:
         return {}
@@ -76,13 +77,14 @@ def get_tags(con, reverse=False):
     return {v: k for k, v in tags} if reverse else dict(tags)
 
 
-def get_tag(con, name):
-    tag = get_tags(con, reverse=True).get(name)
+def get_tag(name):
+    tag = get_tags(reverse=True).get(name)
     if tag is not None:
         return tag
     msg = binary_msg(name)
     msg.add_header('Subject', name)
-    res = con.append(TAGS, '', None, msg.as_bytes())
+    with client(TAGS) as con:
+        res = con.append(TAGS, '', None, msg.as_bytes())
     get_tags.cache_clear()
     tag = re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
     return '#t' + tag

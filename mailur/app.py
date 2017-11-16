@@ -182,8 +182,7 @@ def msg_raw(uid, box=local.SRC):
 
 @jsonify
 def tags(req):
-    with local.client(None) as con:
-        return local.get_tags(con)
+    return local.get_tags()
 
 
 def avatars(req):

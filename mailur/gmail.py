@@ -64,7 +64,7 @@ def client(tag='\\All'):
     return ctx
 
 
-def fetch_uids(uids, tag, gm, lm, lm_ma):
+def fetch_uids(uids, tag, gm, lm):
     fields = (
         '('
         'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
@@ -83,7 +83,7 @@ def fetch_uids(uids, tag, gm, lm, lm_ma):
         if label:
             label = label.strip('"').replace('\\\\', '\\')
             label = imap_utf7.decode(label)
-            return MAP_LABELS.get(label, None) or local.get_tag(lm, label)
+            return MAP_LABELS.get(label, None) or local.get_tag(label)
         return ''
 
     def msgs():
@@ -123,7 +123,7 @@ def fetch_uids(uids, tag, gm, lm, lm_ma):
             ]).strip()
             yield parts['time'], flags, raw
 
-    res = lm_ma.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs())
+    res = lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs())
     log.debug('## %s', res[0].decode())
 
 
@@ -156,9 +156,8 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=10):
     if len(uids):
         # messages should be inserted in the particular order
         # for THREAD IMAP extension, so no async here
-        lm_ma = local.client(None)
         uids = imap.Uids(uids, size=batch)
-        uids.call(fetch_uids, uids, tag, gm, lm, lm_ma)
+        uids.call(fetch_uids, uids, tag, gm, lm)
 
     gm.logout()
     lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))

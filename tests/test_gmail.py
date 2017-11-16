@@ -80,25 +80,24 @@ def test_origin_msg(gm_client, latest, msgs):
     thrid = msg.get('X-GM-THRID')
     assert thrid and thrid == '<10100>'
 
-    lm = local.client()
     gm_client.add_emails([
         {'flags': r'\Flagged', 'labels': r'"\\Inbox" "\\Sent" label'}
     ])
     flags = latest(local.SRC)['flags']
     assert r'\Flagged #inbox #sent #t1' == flags
-    assert local.get_tags(lm) == {'#t1': 'label'}
+    assert local.get_tags() == {'#t1': 'label'}
 
     gm_client.add_emails([{'labels': 'label "another label"'}])
     flags = latest(local.SRC)['flags']
     assert '#t1 #t2' == flags
-    assert local.get_tags(lm) == {'#t1': 'label', '#t2': 'another label'}
+    assert local.get_tags() == {'#t1': 'label', '#t2': 'another label'}
 
     gm_client.add_emails([
         {'labels': r'"\\Important" "\\Sent" "test(&BEIENQRBBEI-)"'}
     ])
     flags = latest(local.SRC)['flags']
     assert '#sent #important #t3' == flags
-    assert local.get_tags(lm) == {
+    assert local.get_tags() == {
         '#t1': 'label',
         '#t2': 'another label',
         '#t3': 'test(тест)',
