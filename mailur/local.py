@@ -9,7 +9,7 @@ import re
 import uuid
 from email.message import MIMEPart
 from email.parser import BytesParser
-from email.utils import parsedate_to_datetime, getaddresses
+from email.utils import parsedate_to_datetime, getaddresses, formatdate
 
 from gevent import socket
 
@@ -40,6 +40,8 @@ class Local(imaplib.IMAP4, imap.Conn):
 def connect(user=None):
     con = Local(user or USER)
     imap.check(con.login())
+
+    # For searching with non ascii symbols (Dovecot understands this)
     con._encoding = 'utf-8'
     return con
 
@@ -59,8 +61,8 @@ def binary_msg(txt, mimetype='text/plain'):
     return msg
 
 
-def gen_msgid():
-    return '%s@mailur' % uuid.uuid4().hex
+def gen_msgid(label):
+    return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
 
 
 @ft.lru_cache(maxsize=None)
@@ -90,18 +92,28 @@ def get_tag(name):
     return '#t' + tag
 
 
-def parsed_uids(uids=None):
-    if uids is None:
-        return fetch_parsed_uids()
-    return {k: v for k, v in fetch_parsed_uids().items() if v in uids}
+def get_xuid(line):
+    return line.replace('X-UID:', '').strip().strip('<>')
 
 
-@ft.lru_cache(maxsize=None)
-def fetch_parsed_uids():
-    with client() as con:
-        res = con.fetch('1:*', 'BODY.PEEK[1]')
+def parsed_uids(con, origin_uids):
+    q = ['OR HEADER X-UID <%s> ' % i for i in origin_uids]
+    q = ''.join(q[:-1]) + q[-1][3:]
+    uids = con.search(q)[0].decode().split()
+    if not uids:
+        return {}
+
+    res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (X-UID)]')
     return {
-        res[i][0].split()[2].decode(): res[i][1].decode()
+        res[i][0].split()[2].decode(): get_xuid(res[i][1].decode())
+        for i in range(0, len(res), 2)
+    }
+
+
+def origin_uids(con, parsed_uids):
+    res = con.fetch(parsed_uids, 'BODY.PEEK[HEADER.FIELDS (X-UID)]')
+    return {
+        get_xuid(res[i][1].decode()): res[i][0].split()[2].decode()
         for i in range(0, len(res), 2)
     }
 
@@ -199,7 +211,6 @@ def create_msg(raw, uid, time):
     msg.make_mixed()
 
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
-    msg.attach(binary_msg(uid, 'application/json'))
     msg.attach(binary_msg(meta_txt, 'application/json'))
     msg.attach(binary_msg(body))
     return msg
@@ -256,7 +267,7 @@ def parse(criteria=None, *, batch=1000, threads=10):
         if criteria.lower() == 'all':
             puids = '1:*'
         else:
-            puids = list(parsed_uids(uids))
+            puids = list(parsed_uids(con, uids))
         if puids:
             con.select(ALL, readonly=False)
             puids = imap.Uids(puids)
@@ -271,29 +282,30 @@ def parse(criteria=None, *, batch=1000, threads=10):
     uids.call(parse_uids, uids, con)
 
     con.setmetadata(ALL, 'uidnext', str(uidnext))
-
-    fetch_parsed_uids.cache_clear()
-    update_threads(con, list(parsed_uids(uids.val)))
+    con.select(ALL)
+    update_threads(con, 'UID %s' % ','.join(parsed_uids(con, uids.val)))
     con.logout()
 
 
-def update_threads(con, uids=None, criteria=None):
+def update_threads(con, criteria=None):
     con.select(ALL)
-    if uids:
-        criteria = 'UID %s' % ','.join(uids)
-
     criteria = criteria or 'ALL'
     thrs_set = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
     if not thrs_set:
         log.info('## no threads are updated')
         return
 
-    times = {}
+    msgs = {}
     uids = thrs_set.all_uids
-    res = con.fetch(uids, '(BINARY.PEEK[2])')
+    res = con.fetch(uids, '(FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
-        uid = res[i][0].split()[2].decode()
-        times[uid] = json.loads(res[i][1])['date']
+        uid, flags = re.search(
+            r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
+        ).groups()
+        msgs[uid] = {
+            'flags': flags.split(),
+            'date': json.loads(res[i][1])['date']
+        }
 
     thrs = {}
     for thrids in thrs_set:
@@ -301,8 +313,8 @@ def update_threads(con, uids=None, criteria=None):
             latest = thrids[0]
         else:
             latest = sorted(
-                (t for t in thrids if times[t]),
-                key=lambda i: times[i]
+                (t for t in thrids if '#link' not in msgs[t]['flags']),
+                key=lambda i: msgs[i]['date']
             )[-1]
         thrs[latest] = thrids
 
@@ -322,8 +334,8 @@ def link_threads(uids, box=ALL):
     res = con.search('KEYWORD #link UID %s' % ','.join(uids))
     refs = res[0].decode().split()
     if refs:
-        src_refs = [v for k, v in parsed_uids().items() if k in refs]
         c = client(None)
+        src_refs = origin_uids(con, refs)
         c.select(SRC, readonly=False)
         c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
         c.expunge()
@@ -337,10 +349,13 @@ def link_threads(uids, box=ALL):
         for i in range(0, len(res), 2)
     ]
 
+    msgid = gen_msgid('link')
     msg = MIMEPart(email.policy.SMTPUTF8)
-    msg.add_header('subject', 'Dummy: for linking threads')
-    msg.add_header('references', ' '.join(msgids))
-    msg.add_header('message-id', gen_msgid())
+    msg.add_header('Subject', 'Dummy: linking threads')
+    msg.add_header('References', ' '.join(msgids))
+    msg.add_header('Message-Id', msgid)
+    msg.add_header('From', msgid)
+    msg.add_header('Date', formatdate())
     res = con.append(SRC, '#link', None, msg.as_bytes())
     con.logout()
     parse()

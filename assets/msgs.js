@@ -35,6 +35,7 @@ Vue.component('Msgs', {
       if (!msgs) {
         this.msgs = {};
         this.pages = [];
+        this.picked = [];
       } else {
         Object.assign(this.msgs, msgs);
         this.pages.push(uids);

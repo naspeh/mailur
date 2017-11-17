@@ -90,7 +90,7 @@ def threads_info(req, uids, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
     all_flags = {}
     all_msgs = {}
-    res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[2])')
+    res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
         uid, flags = re.search(
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
@@ -106,9 +106,9 @@ def threads_info(req, uids, con=None):
         unseen = False
         for uid in thr:
             info = all_msgs[uid]
-            if info['date']:
-                thr_from.append((info['date'], info.get('from')))
             msg_flags = all_flags[uid]
+            if '#link' not in msg_flags:
+                thr_from.append((info['date'], info.get('from')))
             if not msg_flags:
                 continue
             if '\\Seen' not in msg_flags:
@@ -122,8 +122,12 @@ def threads_info(req, uids, con=None):
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
+        if '#link' in flags:
+            flags.remove('#link')
+        if '#latest' in flags:
+            flags.remove('#latest')
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
-        msgs[thrid] = msg_info(req, all_msgs[thrid], uid, flags, addrs)
+        msgs[thrid] = msg_info(req, all_msgs[thrid], thrid, flags, addrs)
 
     log.debug('%s threads', len(msgs))
     con.logout()
@@ -152,7 +156,7 @@ def msgs(req, query, preload):
 
 def msgs_info(req, uids):
     con = local.client()
-    res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[2])')
+    res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[1])')
     msgs = {}
     for i in range(0, len(res), 2):
         uid, flags = (

@@ -21,6 +21,25 @@ def test_binary_msg():
     ])
 
 
+def test_parsed_n_origin_uids(clean_users, gm_client, msgs):
+    gm_client.add_emails([{}, {}])
+    assert ['1', '2'] == [i['uid'] for i in msgs(local.SRC)]
+
+    con = local.client()
+    assert local.parsed_uids(con, ['1', '2']) == {}
+
+    local.parse()
+    con = local.client()
+    assert local.parsed_uids(con, ['1', '2']) == {'1': '1', '2': '2'}
+    assert local.origin_uids(con, ['1', '2']) == {'1': '1', '2': '2'}
+
+    local.parse('all')
+    con = local.client()
+    assert ['3', '4'] == [i['uid'] for i in msgs(local.ALL)]
+    assert local.parsed_uids(con, ['1', '2']) == {'3': '1', '4': '2'}
+    assert local.origin_uids(con, ['3', '4']) == {'1': '3', '2': '4'}
+
+
 def test_update_threads(clean_users, gm_client, msgs):
     gm_client.add_emails([{}])
     local.parse()
@@ -55,11 +74,11 @@ def test_update_threads(clean_users, gm_client, msgs):
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     con = local.client()
-    local.update_threads(con, criteria='all')
+    local.update_threads(con, 'all')
     res = msgs(local.ALL)
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
-    local.update_threads(con, ['1'])
+    local.update_threads(con, 'UID 1')
     res = msgs(local.ALL)
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
@@ -74,7 +93,7 @@ def test_update_threads(clean_users, gm_client, msgs):
         i['flags'] for i in res
     ]
 
-    local.update_threads(con, criteria='UID *')
+    local.update_threads(con, 'UID *')
     res = msgs(local.ALL)
     assert ['', '', '', '#latest', '#latest #t1', '#latest #t2'] == [
         i['flags'] for i in res
