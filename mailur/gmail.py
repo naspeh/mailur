@@ -64,13 +64,15 @@ def client(tag='\\All'):
     return ctx
 
 
-def fetch_uids(uids, tag, gm, lm):
+def fetch_uids(uids, tag):
     fields = (
         '('
-        'UID INTERNALDATE FLAGS X-GM-LABELS X-GM-MSGID X-GM-THRID BODY.PEEK[]'
+        'UID INTERNALDATE FLAGS BODY.PEEK[] '
+        'X-GM-LABELS X-GM-MSGID X-GM-THRID'
         ')'
     )
-    res = gm.fetch(uids.str, fields)
+    with client(tag) as gm:
+        res = gm.fetch(uids.str, fields)
 
     def flag(m):
         flag = m.group()
@@ -123,11 +125,12 @@ def fetch_uids(uids, tag, gm, lm):
             ]).strip()
             yield parts['time'], flags, raw
 
-    res = lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs())
-    log.debug('## %s', res[0].decode())
+    with local.client(None) as lm:
+        res = lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs())
+        log.debug('## %s', res[0].decode())
 
 
-def fetch_folder(tag='\\All', *, batch=1000, threads=10):
+def fetch_folder(tag='\\All', *, batch=1000, threads=4):
     log.info('## process %r', tag)
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
     with local.client(None) as con:
@@ -152,16 +155,13 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=10):
     uids = [i for i in res[0].decode().split() if int(i) >= uidnext]
     uidnext = folder['uidnext']
     log.info('## box(%s): %s new uids', gm.box, len(uids))
-    lm = local.client(None)
-    if len(uids):
-        # messages should be inserted in the particular order
-        # for THREAD IMAP extension, so no async here
-        uids = imap.Uids(uids, size=batch)
-        uids.call(fetch_uids, uids, tag, gm, lm)
-
     gm.logout()
-    lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
-    lm.logout()
+    if len(uids):
+        uids = imap.Uids(uids, size=batch, threads=4)
+        uids.call_async(fetch_uids, uids, tag)
+
+    with local.client(None) as lm:
+        lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
 
 
 def fetch(**kw):
