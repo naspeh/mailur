@@ -197,9 +197,8 @@ def create_msg(raw, uid, time):
 
     msg = MIMEPart(policy)
     headers = (
-        'message-id', 'in-reply-to', 'references',
+        'message-id', 'in-reply-to', 'references', 'date',
         'from', 'sender', 'to', 'cc', 'bcc',
-        'date'
     )
     for n, v in orig.items():
         if n.lower() not in headers or n.lower() in msg:
@@ -334,6 +333,7 @@ def link_threads(uids, box=ALL):
     res = con.search('KEYWORD #link UID %s' % ','.join(uids))
     refs = res[0].decode().split()
     if refs:
+        uids = set(uids) - set(refs)
         c = client(None)
         src_refs = origin_uids(con, refs)
         c.select(SRC, readonly=False)
@@ -343,9 +343,9 @@ def link_threads(uids, box=ALL):
         c.store(refs, '+FLAGS.SILENT', '\\Deleted')
         c.expunge()
 
-    res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]')
+    res = con.fetch(uids, 'BODY.PEEK[1]')
     msgids = [
-        res[i][1].decode().strip().split(' ')[1]
+        json.loads(res[i][1].decode())['message_id']
         for i in range(0, len(res), 2)
     ]
 
@@ -354,7 +354,7 @@ def link_threads(uids, box=ALL):
     msg.add_header('Subject', 'Dummy: linking threads')
     msg.add_header('References', ' '.join(msgids))
     msg.add_header('Message-Id', msgid)
-    msg.add_header('From', msgid)
+    msg.add_header('From', 'mailur@link')
     msg.add_header('Date', formatdate())
     res = con.append(SRC, '#link', None, msg.as_bytes())
     con.logout()
