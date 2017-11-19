@@ -374,7 +374,7 @@ def pack_uids(uids):
 class Uids:
     __slots__ = ['val', 'batches', 'threads']
 
-    def __init__(self, uids, *, size=5000, threads=10):
+    def __init__(self, uids, *, size=10000, threads=10):
         if isinstance(uids, Uids):
             uids = uids.val
         self.threads = threads
