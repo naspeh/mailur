@@ -5,7 +5,7 @@ import time
 from email.utils import formatdate
 from pathlib import Path
 from subprocess import call
-from unittest.mock import patch
+from unittest import mock
 
 import pytest
 
@@ -20,7 +20,7 @@ def init():
 
 @pytest.fixture(autouse=True)
 def setup(gm_client):
-    with patch('mailur.local.USER', 'test1'):
+    with mock.patch('mailur.local.USER', 'test1'):
         yield
 
 
@@ -62,6 +62,11 @@ def some():
 @pytest.fixture
 def raises():
     return pytest.raises
+
+
+@pytest.fixture
+def patch():
+    return mock.patch
 
 
 def gm_fake():
@@ -132,7 +137,7 @@ def gm_client():
     gm_client.uid = 100
     gm_client.time = time.time() - 36000
 
-    with patch('mailur.gmail.connect', gm_fake):
+    with mock.patch('mailur.gmail.connect', gm_fake):
         yield gm_client
 
 

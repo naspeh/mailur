@@ -92,30 +92,37 @@ def get_tag(name):
     return '#t' + tag
 
 
-def get_xuid(line):
-    return line.replace('X-UID:', '').strip().strip('<>')
+def save_uid_pairs(con, uids=None):
+    if uids:
+        pairs = uid_pairs(con)
+    else:
+        uids = '1:*'
+        pairs = {}
+    res = con.fetch(uids, '(UID BODY[1])')
+    pairs = dict(pairs, **{
+        json.loads(res[i][1].decode())['origin_uid']:
+        re.search(r'UID (\d+)', res[i][0].decode()).group(1)
+        for i in range(0, len(res), 2)
+    })
+    con.setmetadata(ALL, 'uidpairs', json.dumps(pairs))
 
 
-def parsed_uids(con, origin_uids):
-    q = ['OR HEADER X-UID <%s> ' % i for i in origin_uids]
-    q = ''.join(q[:-1]) + q[-1][3:]
-    uids = con.search(q)[0].decode().split()
-    if not uids:
+def uid_pairs(con):
+    res = con.getmetadata(ALL, 'uidpairs')
+    if len(res) == 1:
         return {}
 
-    res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (X-UID)]')
-    return {
-        res[i][0].split()[2].decode(): get_xuid(res[i][1].decode())
-        for i in range(0, len(res), 2)
-    }
+    return json.loads(res[0][1].decode())
 
 
-def origin_uids(con, parsed_uids):
-    res = con.fetch(parsed_uids, 'BODY.PEEK[HEADER.FIELDS (X-UID)]')
-    return {
-        get_xuid(res[i][1].decode()): res[i][0].split()[2].decode()
-        for i in range(0, len(res), 2)
-    }
+def pair_origin_uids(con, uids):
+    pairs = uid_pairs(con).items()
+    return tuple(parsed for origin, parsed in pairs if origin in uids)
+
+
+def pair_parsed_uids(con, uids):
+    pairs = uid_pairs(con).items()
+    return tuple(origin for origin, parsed in pairs if parsed in uids)
 
 
 def address_name(a):
@@ -237,6 +244,10 @@ def parse_uids(uids, con):
 
     res = con.multiappend(ALL, msgs())
     log.debug('## %s', res[0].decode())
+    uids = re.search(
+        r'\[APPENDUID \d+ (\d+(:\d+)?)\]', res[0].decode()
+    ).group(1)
+    return uids
 
 
 def parse(criteria=None, *, batch=1000, threads=10):
@@ -260,13 +271,12 @@ def parse(criteria=None, *, batch=1000, threads=10):
     log.info('## new: uidnext: %s', uidnext)
 
     log.info('## criteria: %r; %s uids', criteria, len(uids))
-    count = con.select(ALL)
-    if count[0] != b'0':
-        count = None
+    count = con.select(ALL)[0].decode()
+    if count != '0':
         if criteria.lower() == 'all':
             puids = '1:*'
         else:
-            puids = list(parsed_uids(con, uids))
+            puids = pair_origin_uids(con, uids)
         if puids:
             con.select(ALL, readonly=False)
             puids = imap.Uids(puids)
@@ -278,11 +288,14 @@ def parse(criteria=None, *, batch=1000, threads=10):
     # for THREAD IMAP extension, so no async here
     con.select(SRC)
     uids = imap.Uids(uids, size=batch)
-    uids.call(parse_uids, uids, con)
+    puids = ','.join(uids.call(parse_uids, uids, con))
+    if criteria.lower() == 'all' or count == '0':
+        puids = '1:*'
 
-    con.setmetadata(ALL, 'uidnext', str(uidnext))
     con.select(ALL)
-    update_threads(con, 'UID %s' % ','.join(parsed_uids(con, uids.val)))
+    con.setmetadata(ALL, 'uidnext', str(uidnext))
+    save_uid_pairs(con, puids)
+    update_threads(con, 'UID %s' % puids)
     con.logout()
 
 
@@ -335,7 +348,7 @@ def link_threads(uids, box=ALL):
     if refs:
         uids = set(uids) - set(refs)
         c = client(None)
-        src_refs = origin_uids(con, refs)
+        src_refs = pair_parsed_uids(con, refs)
         c.select(SRC, readonly=False)
         c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
         c.expunge()

@@ -21,23 +21,61 @@ def test_binary_msg():
     ])
 
 
-def test_parsed_n_origin_uids(clean_users, gm_client, msgs):
+def test_uid_pairs(clean_users, gm_client, msgs, patch):
     gm_client.add_emails([{}, {}])
     assert ['1', '2'] == [i['uid'] for i in msgs(local.SRC)]
 
     con = local.client()
-    assert local.parsed_uids(con, ['1', '2']) == {}
+    assert local.pair_origin_uids(con, ['1', '2']) == ()
+    assert local.pair_parsed_uids(con, ['1', '2']) == ()
 
     local.parse()
     con = local.client()
-    assert local.parsed_uids(con, ['1', '2']) == {'1': '1', '2': '2'}
-    assert local.origin_uids(con, ['1', '2']) == {'1': '1', '2': '2'}
+    assert local.uid_pairs(con) == {'1': '1', '2': '2'}
+    assert local.pair_origin_uids(con, ['1', '2']) == ('1', '2')
+    assert local.pair_parsed_uids(con, ['1', '2']) == ('1', '2')
+
+    local.parse('uid 1')
+    con = local.client()
+    assert ['2', '3'] == [i['uid'] for i in msgs(local.ALL)]
+    assert local.uid_pairs(con) == {'1': '3', '2': '2'}
+    assert local.pair_origin_uids(con, ['1', '2']) == ('3', '2')
+    assert local.pair_parsed_uids(con, ['2', '3']) == ('1', '2')
 
     local.parse('all')
     con = local.client()
-    assert ['3', '4'] == [i['uid'] for i in msgs(local.ALL)]
-    assert local.parsed_uids(con, ['1', '2']) == {'3': '1', '4': '2'}
-    assert local.origin_uids(con, ['3', '4']) == {'1': '3', '2': '4'}
+    assert ['4', '5'] == [i['uid'] for i in msgs(local.ALL)]
+    assert local.uid_pairs(con) == {'1': '4', '2': '5'}
+    assert local.pair_origin_uids(con, ['1', '2']) == ('4', '5')
+    assert local.pair_parsed_uids(con, ['4', '5']) == ('1', '2')
+    assert local.pair_origin_uids(con, ['2']) == ('5',)
+    assert local.pair_parsed_uids(con, ['5']) == ('2',)
+
+    with patch.object(con, 'fetch') as m:
+        m.return_value = []
+        local.save_uid_pairs(con, '4')
+        assert m.called
+        assert m.call_args[0][0] == '4'
+
+    with patch.object(local, 'save_uid_pairs') as m:
+        local.parse('uid 1')
+        assert m.called
+        assert m.call_args[0][1] == '6'
+
+        m.reset_mock()
+        local.parse('all')
+        assert m.called
+        assert m.call_args[0][1] == '1:*'
+
+        m.reset_mock()
+        local.parse()
+        assert not m.called
+
+        m.reset_mock()
+        gm_client.add_emails([{}])
+        local.parse()
+        assert m.called
+        assert m.call_args[0][1] == '9'
 
 
 def test_update_threads(clean_users, gm_client, msgs):
