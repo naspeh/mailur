@@ -59,6 +59,8 @@ plugin {
 
     fts = squat
     fts_squat = partial=4 full=20
+    #fts_autoindex=yes
+    #fts_autoindex_max_recent_msgs=100
 }
 
 mail_attribute_dict = file:%h/dovecot-attributes

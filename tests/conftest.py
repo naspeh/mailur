@@ -15,7 +15,9 @@ sys.path.insert(0, str(root))
 
 @pytest.fixture(scope='session', autouse=True)
 def init():
-    clean_users()
+    call('''
+    bin/dovecot
+    ''', shell=True, cwd=root)
 
 
 @pytest.fixture(autouse=True)
@@ -28,7 +30,6 @@ def setup(gm_client):
 def clean_users():
     call('''
     rm -rf /home/vmail/test*
-    bin/dovecot
     ''', shell=True, cwd=root)
 
 

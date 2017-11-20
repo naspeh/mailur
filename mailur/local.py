@@ -355,6 +355,7 @@ def link_threads(uids, box=ALL):
         c.select(box, readonly=False)
         c.store(refs, '+FLAGS.SILENT', '\\Deleted')
         c.expunge()
+        c.logout()
 
     res = con.fetch(uids, 'BODY.PEEK[1]')
     msgids = [
