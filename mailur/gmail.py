@@ -124,8 +124,7 @@ def fetch_uids(uids, tag):
             yield parts['time'], flags, raw
 
     with local.client(None) as lm:
-        res = lm.multiappend(local.SRC, msgs())
-        log.debug('## %s', res[0].decode())
+        return lm.multiappend(local.SRC, msgs())
 
 
 def fetch_folder(tag='\\All', *, batch=1000, threads=4):

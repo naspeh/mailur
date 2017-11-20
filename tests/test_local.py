@@ -57,23 +57,30 @@ def test_uid_pairs(clean_users, gm_client, msgs, patch):
         assert m.called
         assert m.call_args[0][0] == '4'
 
+    def parse(criteria=None):
+        try:
+            local.parse(criteria)
+        except ValueError:
+            pass
+
     with patch.object(local, 'save_uid_pairs') as m:
-        local.parse('uid 1')
+        m.side_effect = ValueError
+        parse('uid 1')
         assert m.called
         assert m.call_args[0][1] == '6'
 
         m.reset_mock()
-        local.parse('all')
+        parse('all')
         assert m.called
         assert m.call_args[0][1] == '1:*'
 
         m.reset_mock()
-        local.parse()
+        parse()
         assert not m.called
 
         m.reset_mock()
         gm_client.add_emails([{}])
-        local.parse()
+        parse()
         assert m.called
         assert m.call_args[0][1] == '9'
 
@@ -96,44 +103,44 @@ def test_update_threads(clean_users, gm_client, msgs):
     gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
     local.parse()
     res = msgs(local.ALL)
-    assert ['', '#latest', '#latest'] == [i['flags'] for i in res]
+    assert ['', '#latest', '#latest', '#link'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
     local.parse()
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+    assert ['', '', '', '#latest', '#link'] == [i['flags'] for i in res]
 
     local.parse('all')
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+    assert ['', '', '', '#latest', '#link'] == [i['flags'] for i in res]
 
     local.parse('uid *')
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+    assert ['', '', '', '#latest', '#link'] == [i['flags'] for i in res]
 
     con = local.client()
     local.update_threads(con, 'all')
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+    assert ['', '', '', '#latest', '#link'] == [i['flags'] for i in res]
 
     local.update_threads(con, 'UID 1')
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+    assert ['', '', '', '#latest', '#link'] == [i['flags'] for i in res]
 
     local.update_threads(con)
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest'] == [i['flags'] for i in res]
+    assert ['', '', '', '#latest', '#link'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{'labels': 'test1'}, {'labels': 'test2'}])
     local.parse('UID 4:*')
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest', '#latest #t1', '#latest #t2'] == [
+    assert ['', '', '', '#latest', '#latest #t1', '#latest #t2', '#link'] == [
         i['flags'] for i in res
     ]
 
     local.update_threads(con, 'UID *')
     res = msgs(local.ALL)
-    assert ['', '', '', '#latest', '#latest #t1', '#latest #t2'] == [
+    assert ['', '', '', '#latest', '#latest #t1', '#latest #t2', '#link'] == [
         i['flags'] for i in res
     ]
 
@@ -149,26 +156,26 @@ def test_link_threads(clean_users, gm_client, msgs):
     assert ['1', '2', '3'] == [i['uid'] for i in res]
     assert ['', '', '#link'] == [i['flags'] for i in res]
     res = msgs(local.ALL)
-    assert ['1', '2', '3'] == [i['uid'] for i in res]
-    assert ['', '#latest', '#link'] == [i['flags'] for i in res]
+    assert ['1', '2', '3', '4'] == [i['uid'] for i in res]
+    assert ['', '#latest', '#link', '#link'] == [i['flags'] for i in res]
 
     local.parse('all')
     res = msgs(local.SRC)
     assert ['1', '2', '3'] == [i['uid'] for i in res]
     assert ['', '', '#link'] == [i['flags'] for i in res]
     res = msgs(local.ALL)
-    assert ['4', '5', '6'] == [i['uid'] for i in res]
-    assert ['', '#latest', '#link'] == [i['flags'] for i in res]
+    assert ['5', '6', '7', '8'] == [i['uid'] for i in res]
+    assert ['', '#latest', '#link', '#link'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{}])
     local.parse()
-    local.link_threads(['4', '7'])
+    local.link_threads(['5', '9'])
     res = msgs(local.SRC)
     assert ['1', '2', '4', '5'] == [i['uid'] for i in res]
     assert ['', '', '', '#link'] == [i['flags'] for i in res]
     res = msgs(local.ALL)
-    assert ['4', '5', '7', '8'] == [i['uid'] for i in res]
-    assert ['', '', '#latest', '#link'] == [i['flags'] for i in res]
+    assert ['5', '6', '9', '10', '11'] == [i['uid'] for i in res]
+    assert ['', '', '#latest', '#link', '#link'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
     local.parse()
@@ -176,8 +183,10 @@ def test_link_threads(clean_users, gm_client, msgs):
     assert ['1', '2', '4', '5', '6'] == [i['uid'] for i in res]
     assert ['', '', '', '#link', ''] == [i['flags'] for i in res]
     res = msgs(local.ALL)
-    assert ['4', '5', '7', '8', '9'] == [i['uid'] for i in res]
-    assert ['', '', '', '#link', '#latest'] == [i['flags'] for i in res]
+    assert ['5', '6', '9', '10', '12', '13'] == [i['uid'] for i in res]
+    assert ['', '', '', '#link', '#latest', '#link'] == [
+        i['flags'] for i in res
+    ]
 
 
 def test_parsed_msg(clean_users, gm_client, load_file, latest):

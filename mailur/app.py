@@ -95,6 +95,9 @@ def threads_info(req, uids, con=None):
         uid, flags = re.search(
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
         ).groups()
+        flags = flags.split()
+        if '#link' in flags:
+            continue
         all_flags[uid] = flags
         all_msgs[uid] = json.loads(res[i][1])
 
@@ -105,15 +108,16 @@ def threads_info(req, uids, con=None):
         thr_from = []
         unseen = False
         for uid in thr:
+            if uid not in all_msgs:
+                continue
             info = all_msgs[uid]
             msg_flags = all_flags[uid]
-            if '#link' not in msg_flags:
-                thr_from.append((info['date'], info.get('from')))
+            thr_from.append((info['date'], info.get('from')))
             if not msg_flags:
                 continue
             if '\\Seen' not in msg_flags:
                 unseen = True
-            thr_flags.append(msg_flags)
+            thr_flags.extend(msg_flags)
             if '#latest' in msg_flags:
                 thrid = uid
         if thrid is None:

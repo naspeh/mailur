@@ -167,15 +167,20 @@ def clean_html(htm):
 
 
 def create_msg(raw, uid, time):
-    # TODO: there is a bug with folding mechanism,
-    # like this one https://bugs.python.org/issue30788,
-    # so use `max_line_length=None` by now, not sure if it's needed at all
-    policy = email.policy.SMTPUTF8.clone(max_line_length=None)
-    orig = BytesParser(policy=policy).parsebytes(raw)
+    if isinstance(raw, bytes):
+        # TODO: there is a bug with folding mechanism,
+        # like this one https://bugs.python.org/issue30788,
+        # so use `max_line_length=None` by now, not sure if it's needed at all
+        policy = email.policy.SMTPUTF8.clone(max_line_length=None)
+        orig = BytesParser(policy=policy).parsebytes(raw)
+    else:
+        orig = raw
+
     meta = {
         k.replace('-', '_'): orig[k]
         for k in ('message-id', 'in-reply-to')
     }
+    meta['origin_uid'] = uid
 
     fields = (('from', 1), ('sender', 1), ('to', 0), ('cc', 0), ('bcc', 0))
     for n, one in fields:
@@ -187,7 +192,6 @@ def create_msg(raw, uid, time):
 
     subj = orig['subject']
     meta['subject'] = str(subj) if subj else subj
-    meta['origin_uid'] = uid
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
     meta['arrived'] = int(arrived.timestamp())
@@ -202,13 +206,16 @@ def create_msg(raw, uid, time):
 
     msg = MIMEPart(policy)
     headers = (
-        'message-id', 'in-reply-to', 'references', 'date',
+        'message-id', 'date',
         'from', 'sender', 'to', 'cc', 'bcc',
     )
     for n, v in orig.items():
         if n.lower() not in headers or n.lower() in msg:
             continue
         msg.add_header(n, v)
+
+    if msg['from'] == 'mailur@link':
+        msg.add_header('References', orig['references'])
 
     msg.add_header('X-UID', '<%s>' % uid)
     msg.add_header('X-Subject', meta['subject'])
@@ -240,12 +247,7 @@ def parse_uids(uids, con):
                 continue
             yield time, flags, msg
 
-    res = con.multiappend(ALL, msgs())
-    log.debug('## %s', res[0].decode())
-    uids = re.search(
-        r'\[APPENDUID \d+ (\d+(:\d+)?)\]', res[0].decode()
-    ).group(1)
-    return uids
+    return con.multiappend(ALL, msgs())
 
 
 def parse(criteria=None, *, batch=1000, threads=10):
@@ -285,56 +287,78 @@ def parse(criteria=None, *, batch=1000, threads=10):
     # messages should be inserted in the particular order
     # for THREAD IMAP extension, so no async here
     con.select(SRC)
-    uids = imap.Uids(uids, size=batch)
-    puids = ','.join(uids.call(parse_uids, uids, con))
+    uids = imap.Uids(uids, size=batch, threads=threads)
+    puids = ','.join(uids.call_async(parse_uids, uids, con))
     if criteria.lower() == 'all' or count == '0':
         puids = '1:*'
 
     con.select(ALL)
     con.setmetadata(ALL, 'uidnext', str(uidnext))
     save_uid_pairs(con, puids)
-    update_threads(con, 'UID %s' % puids)
+    update_threads(con, 'UID %s' % uids.str)
     con.logout()
 
 
 def update_threads(con, criteria=None):
-    con.select(ALL)
+    con.select(SRC)
     criteria = criteria or 'ALL'
-    thrs_set = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
-    if not thrs_set:
+    src_thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
+    if not src_thrs:
         log.info('## no threads are updated')
         return
 
+    con.select(ALL)
     msgs = {}
-    uids = thrs_set.all_uids
+    src_msgids = {}
+    uids = pair_origin_uids(con, src_thrs.all_uids)
     res = con.fetch(uids, '(FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
         uid, flags = re.search(
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
         ).groups()
+        data = json.loads(res[i][1])
         msgs[uid] = {
             'flags': flags.split(),
-            'date': json.loads(res[i][1])['date']
+            'date': data['date'],
         }
+        src_msgids[data['origin_uid']] = data['message_id']
 
-    thrs = {}
+    links = []
+    for thr in src_thrs:
+        if len(thr) == 1:
+            continue
+        link = create_link([src_msgids[i] for i in thr])
+        links.append((None, '#link', link.as_bytes()))
+    new = con.multiappend(ALL, links)
+    if new:
+        res = con.search('UID %s' % new)
+        links = res[0].decode().split()
+
+    thrs_set = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+    all_latest = []
     for thrids in thrs_set:
         if len(thrids) == 1:
             latest = thrids[0]
         else:
+            thrids = set(thrids).intersection(uids)
             latest = sorted(
                 (t for t in thrids if '#link' not in msgs[t]['flags']),
                 key=lambda i: msgs[i]['date']
             )[-1]
-        thrs[latest] = thrids
+        all_latest.append(latest)
 
     con.select(ALL, readonly=False)
+    clean_links = set(thrs_set.all_uids) - set(msgs) - set(links)
+    if clean_links:
+        con.store(clean_links, '+FLAGS', '\\Deleted')
+        con.expunge()
+
     res = con.search('KEYWORD #latest')
-    clean = set(res[0].decode().split()).intersection(uids) - set(thrs)
+    clean = set(res[0].decode().split()).intersection(uids) - set(all_latest)
     if clean:
         con.store(clean, '-FLAGS.SILENT', '#latest')
-    con.store(list(thrs), '+FLAGS.SILENT', '#latest')
-    log.info('## updated %s threads', len(thrs))
+    con.store(all_latest, '+FLAGS.SILENT', '#latest')
+    log.info('## updated %s threads', len(all_latest))
 
 
 def link_threads(uids, box=ALL):
@@ -347,9 +371,10 @@ def link_threads(uids, box=ALL):
         uids = set(uids) - set(refs)
         c = client(None)
         src_refs = pair_parsed_uids(con, refs)
-        c.select(SRC, readonly=False)
-        c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
-        c.expunge()
+        if src_refs:
+            c.select(SRC, readonly=False)
+            c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
+            c.expunge()
         c.select(box, readonly=False)
         c.store(refs, '+FLAGS.SILENT', '\\Deleted')
         c.expunge()
@@ -361,6 +386,14 @@ def link_threads(uids, box=ALL):
         for i in range(0, len(res), 2)
     ]
 
+    msg = create_link(msgids)
+    res = con.append(SRC, '#link', None, msg.as_bytes())
+    con.logout()
+    parse()
+    return res[0].decode()
+
+
+def create_link(msgids):
     msgid = gen_msgid('link')
     msg = MIMEPart(email.policy.SMTPUTF8)
     msg.add_header('Subject', 'Dummy: linking threads')
@@ -368,7 +401,4 @@ def link_threads(uids, box=ALL):
     msg.add_header('Message-Id', msgid)
     msg.add_header('From', 'mailur@link')
     msg.add_header('Date', formatdate())
-    res = con.append(SRC, '#link', None, msg.as_bytes())
-    con.logout()
-    parse()
-    return res[0].decode()
+    return msg

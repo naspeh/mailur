@@ -4,7 +4,7 @@ import os
 import re
 import time
 from contextlib import contextmanager
-from imaplib import CRLF
+from imaplib import CRLF, Time2Internaldate
 
 from gevent.lock import RLock
 from gevent.pool import Pool
@@ -203,17 +203,24 @@ def multiappend(con, box, msgs):
     with _cmd(con, 'APPEND') as (tag, start, complete):
         send = start
         for date_time, flags, msg in msgs:
+            if date_time is None:
+                date_time = Time2Internaldate(time.time())
             args = (' (%s) %s %s' % (flags, date_time, '{%s}' % len(msg)))
             if send == start:
                 args = '%s %s' % (box, args)
             send(args.encode() + CRLF)
             send = con.send
             while con._get_response():
-                if con.tagged_commands[tag]:
-                    break
+                bad = con.tagged_commands[tag]
+                if bad:
+                    raise Error(bad)
             con.send(msg)
         con.send(CRLF)
-        return check(complete())
+        res = check(complete())
+        res = res[0].decode()
+        log.debug('## %s', res)
+        uids = re.search(r'\[APPENDUID \d+ (\d+(:\d+)?)\]', res).group(1)
+        return uids
 
 
 @command(dovecot=True)
