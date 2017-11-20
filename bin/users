@@ -9,19 +9,29 @@ for user in $names; do
     echo "$user:$pass" >> $users
 done
 
-# skip virtual boxes for now
-exit 0
-
+# Virtual mailboxes
 for user in $names; do
     mkdir -p /home/vmail/$user/mailboxes/{Src,All,Spam,Trash}
 
     path=/home/vmail/$user/tags
-    mkdir -p $path/{INBOX,Flagged}
+    mkdir -p $path/{INBOX,Trash,Spam,Drafts,Pinned}
     cat <<"EOF" > $path/INBOX/dovecot-virtual
 All
   KEYWORD #inbox
 EOF
-    cat <<"EOF" > $path/Flagged/dovecot-virtual
+    cat <<"EOF" > $path/Trash/dovecot-virtual
+All
+  KEYWORD #trash
+EOF
+    cat <<"EOF" > $path/Spam/dovecot-virtual
+All
+  KEYWORD #spam
+EOF
+    cat <<"EOF" > $path/Drafts/dovecot-virtual
+All
+  DRAFT
+EOF
+    cat <<"EOF" > $path/Pinned/dovecot-virtual
 All
   FLAGGED
 EOF

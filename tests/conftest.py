@@ -30,6 +30,7 @@ def setup(gm_client):
 def clean_users():
     call('''
     rm -rf /home/vmail/test*
+    bin/users
     ''', shell=True, cwd=root)
 
 
@@ -92,7 +93,6 @@ def gm_client():
     from mailur import local, gmail
 
     def add_emails(items=None, tag='\\All', fetch=True):
-        box = dict(gmail.MAP_FOLDERS, **{'\\All': local.ALL})[tag]
         gmail.client()
         if items is None:
             items = [{}]
@@ -118,7 +118,9 @@ def gm_client():
                 msg = msg.as_bytes()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
-            res = gm_client.con.append(box, None, None, msg)
+            res = gm_client.con.append(
+                local.ALL, gmail.MAP_LABELS.get(tag), None, msg
+            )
             if res[0] != 'OK':
                 raise Exception(res)
             gm_client.fetch[0][1].extend([

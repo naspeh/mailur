@@ -19,12 +19,10 @@ MAP_LABELS = {
     '\\Draft': '\\Draft',
     '\\Starred': '\\Flagged',
     '\\Inbox': '#inbox',
+    '\\Junk': '#spam',
+    '\\Trash': '#trash',
     '\\Sent': '#sent',
-    '\\Important': '#important'
-}
-MAP_FOLDERS = {
-    '\\Junk': local.SPAM,
-    '\\Trash': local.TRASH,
+    '\\Important': '#important',
 }
 
 
@@ -126,7 +124,7 @@ def fetch_uids(uids, tag):
             yield parts['time'], flags, raw
 
     with local.client(None) as lm:
-        res = lm.multiappend(MAP_FOLDERS.get(tag, local.SRC), msgs())
+        res = lm.multiappend(local.SRC, msgs())
         log.debug('## %s', res[0].decode())
 
 
@@ -168,4 +166,3 @@ def fetch(**kw):
     fetch_folder(**kw)
     fetch_folder('\\Junk', **kw)
     fetch_folder('\\Trash', **kw)
-    fetch_folder('\\Drafts', **kw)

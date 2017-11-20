@@ -79,14 +79,6 @@ namespace {
         auto = subscribe
         special_use = \All
     }
-    mailbox Trash {
-        auto = subscribe
-        special_use = \Trash
-    }
-    mailbox Spam {
-        auto = subscribe
-        special_use = \Junk
-    }
     mailbox Tags {
         auto = subscribe
     }
@@ -99,6 +91,22 @@ namespace {
     prefix = tags/
     separator = /
     location = virtual:%h/tags
+    mailbox Trash {
+        auto = subscribe
+        special_use = \Trash
+    }
+    mailbox Spam {
+        auto = subscribe
+        special_use = \Junk
+    }
+    mailbox Drafts {
+        auto = subscribe
+        special_use = \Drafts
+    }
+    mailbox Pinned {
+        auto = subscribe
+        special_use = \Flagged
+    }
 }
 
 protocols = imap

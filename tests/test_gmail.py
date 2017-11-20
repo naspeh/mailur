@@ -14,10 +14,13 @@ def test_client(select):
     )
 
     con.select_tag('\\Junk')
-    assert select.call_args == call(ANY, b'Spam', True)
+    assert select.call_args == call(ANY, b'tags/Spam', True)
 
     con.select_tag('\\Trash')
-    assert select.call_args == call(ANY, b'Trash', True)
+    assert select.call_args == call(ANY, b'tags/Trash', True)
+
+    con.select_tag('\\Drafts')
+    assert select.call_args == call(ANY, b'tags/Drafts', True)
 
     with patch('mailur.imap.fn_time') as m:
         con.list()
@@ -67,7 +70,7 @@ def test_fetch_and_parse(clean_users, gm_client, some):
     assert lm.status(local.ALL, '(UIDNEXT)') == [b'All (UIDNEXT 7)']
 
 
-def test_origin_msg(gm_client, latest, msgs):
+def test_origin_msg(clean_users, gm_client, latest):
     gm_client.add_emails()
     msg = latest(local.SRC)['body']
     # headers
@@ -104,7 +107,10 @@ def test_origin_msg(gm_client, latest, msgs):
     }
 
     gm_client.add_emails([{}], tag='\\Junk')
-    assert len(msgs(local.SPAM)) == 1
+    assert latest(local.SRC)['flags'] == '#spam'
 
     gm_client.add_emails([{}], tag='\\Trash')
-    assert len(msgs(local.TRASH)) == 1
+    assert latest(local.SRC)['flags'] == '#trash'
+
+    gm_client.add_emails([{}], tag='\\Draft')
+    assert latest(local.SRC)['flags'] == '\\Draft'
