@@ -11,7 +11,7 @@ Options:
   --version     Show version.
   -l <login>    Local user (for dovecot).
   -b <batch>    Batch size [default: 1000].
-  -t <threads>  Amount of threads for thread pool [default: 4].
+  -t <threads>  Amount of threads for thread pool [default: 8].
 """
 from docopt import docopt
 

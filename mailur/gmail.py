@@ -127,7 +127,7 @@ def fetch_uids(uids, tag):
         return lm.multiappend(local.SRC, msgs())
 
 
-def fetch_folder(tag='\\All', *, batch=1000, threads=4):
+def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     log.info('## process %r', tag)
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
     with local.client(None) as con:
@@ -154,7 +154,7 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=4):
     log.info('## box(%s): %s new uids', gm.box, len(uids))
     gm.logout()
     if len(uids):
-        uids = imap.Uids(uids, size=batch, threads=4)
+        uids = imap.Uids(uids, size=batch, threads=threads)
         uids.call_async(fetch_uids, uids, tag)
 
     with local.client(None) as lm:

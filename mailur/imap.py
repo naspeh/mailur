@@ -195,11 +195,7 @@ def getmetadata(con, box, key):
         return check(con._untagged_response(typ, data, 'METADATA'))
 
 
-@command(dovecot=True, writable=True)
-def multiappend(con, box, msgs):
-    if not msgs:
-        return
-
+def _multiappend(con, box, msgs):
     with _cmd(con, 'APPEND') as (tag, start, complete):
         send = start
         for date_time, flags, msg in msgs:
@@ -221,6 +217,30 @@ def multiappend(con, box, msgs):
         log.debug('## %s', res)
         uids = re.search(r'\[APPENDUID \d+ (\d+(:\d+)?)\]', res).group(1)
         return uids
+
+
+@command(dovecot=True, writable=True, lock=False)
+def multiappend(con, box, msgs, *, batch=None, threads=10):
+    if not msgs:
+        return
+
+    if batch and len(msgs) > batch:
+        def multiappend_inner(num, few):
+            with con.new() as c:
+                res = multiappend(c, box, few)
+                log.debug('## #%s multiappend %s messages', num, len(few))
+                return res
+
+        pool = Pool(threads)
+        jobs = [
+            pool.spawn(multiappend_inner, num, msgs[i:i+batch])
+            for num, i in enumerate(range(0, len(msgs), batch))
+        ]
+        pool.join(raise_error=True)
+        return ','.join(j.value for j in jobs)
+
+    with con.lock:
+        return _multiappend(con, box, msgs)
 
 
 @command(dovecot=True)

@@ -55,13 +55,44 @@ def test_literal_size_limit(gm_client, raises):
     gm_client.add_emails([{} for i in range(1, 22)])
     c = local.client(local.SRC)
     res = c.search('ALL')
-    uids = res[0].decode().replace(' ', ',')
+    uids = res[0].decode().replace(' ', ',') + ','
 
-    uid_mask = '1%.20i0'
-    uids += ',' + ','.join(uid_mask % i for i in range(1, 220000))
-    assert res == c.search('UID %s' % uids)
+    uid = '1%.20i0,' % 1
+    uids += (uid * 220000)
+    assert res == c.search('UID %s' % uids.strip(','))
 
-    uids += ',' + ','.join(uid_mask % i for i in range(1, 10000))
+    uids += (uid * 10000).strip(',')
     with raises(imap.Error) as e:
         c.search('UID %s' % uids)
     assert 'Too long argument' in str(e)
+
+
+def test_multiappend(clean_users, patch, msgs):
+    new = [
+        (None, None, local.binary_msg(str(i)).as_bytes())
+        for i in range(0, 10)
+    ]
+    con = local.client(None)
+    with patch('gevent.pool.Pool.spawn') as m:
+        m.return_value.value = ''
+        con.multiappend(local.SRC, new)
+        assert not m.called
+        assert len(msgs(local.SRC)) == 10
+
+        con.multiappend(local.SRC, new, batch=3)
+        assert m.called
+        assert m.call_count
+        assert m.call_args_list[0][0][2] == new[0:3]
+        assert m.call_args_list[1][0][2] == new[3:6]
+        assert m.call_args_list[2][0][2] == new[6:9]
+        assert m.call_args_list[3][0][2] == new[9:]
+
+        m.reset_mock()
+        con.multiappend(local.SRC, new, batch=5)
+        assert m.called
+        assert m.call_count
+        assert m.call_args_list[0][0][2] == new[0:5]
+        assert m.call_args_list[1][0][2] == new[5:]
+
+    con.multiappend(local.SRC, new, batch=3)
+    assert len(msgs(local.SRC)) == 20

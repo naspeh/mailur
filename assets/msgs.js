@@ -97,7 +97,7 @@ Vue.component('Msgs', {
     page: function(uids) {
       let msgs = [];
       for (const uid of uids) {
-        // if (!msg) console.error(`No message for uid=${uid}`);
+        // if (!this.msgs[uid]) console.error(`No message for uid=${uid}`);
         msgs.push(this.msgs[uid]);
       }
       return msgs;

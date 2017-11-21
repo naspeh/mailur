@@ -34,6 +34,9 @@ imap_max_line_length = 5M
 # mdbox_rotate_size = 100M
 mail_location = sdbox:~
 
+# TODO: maybe can be used during the import
+# mail_fsync = never
+
 auth_master_user_separator = *
 passdb {
     driver = passwd-file

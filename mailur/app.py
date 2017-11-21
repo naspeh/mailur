@@ -126,8 +126,6 @@ def threads_info(req, uids, con=None):
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
-        if '#link' in flags:
-            flags.remove('#link')
         if '#latest' in flags:
             flags.remove('#latest')
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]

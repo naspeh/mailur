@@ -145,47 +145,124 @@ def test_update_threads(clean_users, gm_client, msgs):
     ]
 
 
-def test_link_threads(clean_users, gm_client, msgs):
+def thread(box=local.SRC):
+    with local.client(box) as con:
+        return con.thread('REFS UTF-8 ALL')
+
+
+def test_link_threads_part1(clean_users, gm_client, msgs, some):
     gm_client.add_emails([{}, {}])
     local.parse()
     res = msgs(local.ALL)
     assert ['1', '2'] == [i['uid'] for i in res]
     assert ['#latest', '#latest'] == [i['flags'] for i in res]
+    assert [i['body']['references'] for i in res] == [None, None]
+
     local.link_threads(['1', '2'])
     res = msgs(local.SRC)
-    assert ['1', '2', '3'] == [i['uid'] for i in res]
+    assert (('1', '2', '3'),) == thread()
     assert ['', '', '#link'] == [i['flags'] for i in res]
+    assert [i['body']['references'] for i in res] == [
+        None, None, '<101@mlr> <102@mlr>'
+    ]
+
     res = msgs(local.ALL)
     assert ['1', '2', '3', '4'] == [i['uid'] for i in res]
     assert ['', '#latest', '#link', '#link'] == [i['flags'] for i in res]
+    assert [i['body'].get('references', '').split() for i in res] == [
+        [], [], ['<101@mlr>', '<102@mlr>'], ['<101@mlr>', '<102@mlr>', some]
+    ]
+    assert some.value.endswith('@mailur.link>')
 
     local.parse('all')
     res = msgs(local.SRC)
-    assert ['1', '2', '3'] == [i['uid'] for i in res]
+    assert (('1', '2', '3'),) == thread()
     assert ['', '', '#link'] == [i['flags'] for i in res]
     res = msgs(local.ALL)
     assert ['5', '6', '7', '8'] == [i['uid'] for i in res]
     assert ['', '#latest', '#link', '#link'] == [i['flags'] for i in res]
+    assert [i['body'].get('references', '').split() for i in res] == [
+        [], [], ['<101@mlr>', '<102@mlr>'], ['<101@mlr>', '<102@mlr>', some]
+    ]
+    assert some.value.endswith('@mailur.link>')
 
     gm_client.add_emails([{}])
     local.parse()
     local.link_threads(['5', '9'])
     res = msgs(local.SRC)
-    assert ['1', '2', '4', '5'] == [i['uid'] for i in res]
+    assert (('1', '2', '4', '5'),) == thread()
     assert ['', '', '', '#link'] == [i['flags'] for i in res]
+    assert [i['body']['references'] for i in res] == [
+        None, None, None, '<101@mlr> <102@mlr> <103@mlr>'
+    ]
     res = msgs(local.ALL)
     assert ['5', '6', '9', '10', '11'] == [i['uid'] for i in res]
     assert ['', '', '#latest', '#link', '#link'] == [i['flags'] for i in res]
+    assert [i['body'].get('references', '').split() for i in res] == [
+        [], [], [], ['<101@mlr>', '<102@mlr>', '<103@mlr>'],
+        ['<101@mlr>', '<102@mlr>', '<103@mlr>', some]
+    ]
+    assert some.value.endswith('@mailur.link>')
 
-    gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
+    gm_client.add_emails([{'refs': '<101@mlr>'}])
     local.parse()
     res = msgs(local.SRC)
-    assert ['1', '2', '4', '5', '6'] == [i['uid'] for i in res]
+    assert (('1', '2', '4', '5', '6'),) == thread()
     assert ['', '', '', '#link', ''] == [i['flags'] for i in res]
+    assert [i['body']['references'] for i in res] == [
+        None, None, None, '<101@mlr> <102@mlr> <103@mlr>', '<101@mlr>'
+    ]
     res = msgs(local.ALL)
     assert ['5', '6', '9', '10', '12', '13'] == [i['uid'] for i in res]
+    assert [i['body'].get('references', '').split() for i in res] == [
+        [], [], [], ['<101@mlr>', '<102@mlr>', '<103@mlr>'], [],
+        ['<101@mlr>', '<102@mlr>', '<103@mlr>', some, '<104@mlr>']
+    ]
     assert ['', '', '', '#link', '#latest', '#link'] == [
         i['flags'] for i in res
+    ]
+
+
+def test_link_threads_part2(clean_users, gm_client, msgs, some):
+    gm_client.add_emails([
+        {}, {'refs': '<101@mlr>'}, {}, {'refs': '<103@mlr>'}]
+    )
+    local.parse()
+    res = msgs(local.SRC)
+    assert thread() == (('1', '2'), ('3', '4'))
+    assert [i['flags'] for i in res] == ['', '', '', '']
+    assert [i['body']['references'] for i in res] == [
+        None, '<101@mlr>', None, '<103@mlr>'
+    ]
+    res = msgs(local.ALL)
+    assert [i['uid'] for i in res] == [
+        '1', '2', '3', '4', '5', '6'
+    ]
+    assert [i['flags'] for i in res] == [
+        '', '#latest', '', '#latest', '#link', '#link'
+    ]
+    assert [i['body'].get('references', '').split() for i in res] == [
+        [], [], [], [], ['<101@mlr>', '<102@mlr>'], ['<103@mlr>', '<104@mlr>']
+    ]
+
+    local.link_threads(['1', '3'])
+    res = msgs(local.SRC)
+    assert thread() == (('1', '2', '3', '4', '5'),)
+    assert [i['flags'] for i in res] == ['', '', '', '', '#link']
+    assert [i['body']['references'] for i in res] == [
+        None, '<101@mlr>', None, '<103@mlr>',
+        '<101@mlr> <102@mlr> <103@mlr> <104@mlr>'
+    ]
+    res = msgs(local.ALL)
+    assert [i['uid'] for i in res] == [
+        '1', '2', '3', '4', '7', '8'
+    ]
+    assert [i['flags'] for i in res] == [
+        '', '', '', '#latest', '#link', '#link'
+    ]
+    assert [i['body'].get('references', '').split() for i in res] == [
+        [], [], [], [], ['<101@mlr>', '<102@mlr>', '<103@mlr>', '<104@mlr>'],
+        ['<101@mlr>', '<102@mlr>', '<103@mlr>', '<104@mlr>', some]
     ]
 
 

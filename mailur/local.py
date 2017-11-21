@@ -1,4 +1,5 @@
 import datetime as dt
+import email
 import email.policy
 import functools as ft
 import hashlib
@@ -105,6 +106,7 @@ def save_uid_pairs(con, uids=None):
     con.setmetadata(ALL, 'uidpairs', json.dumps(pairs))
 
 
+@imap.fn_time
 def uid_pairs(con):
     res = con.getmetadata(ALL, 'uidpairs')
     if len(res) == 1:
@@ -113,14 +115,22 @@ def uid_pairs(con):
     return json.loads(res[0][1].decode())
 
 
+@imap.fn_time
 def pair_origin_uids(con, uids):
-    pairs = uid_pairs(con).items()
-    return tuple(parsed for origin, parsed in pairs if origin in uids)
+    pairs = uid_pairs(con)
+    return tuple(pairs[i] for i in uids if i in pairs)
 
 
+@imap.fn_time
 def pair_parsed_uids(con, uids):
-    pairs = uid_pairs(con).items()
-    return tuple(origin for origin, parsed in pairs if parsed in uids)
+    # pairs = uid_pairs(con).items()
+    # return tuple(origin for origin, parsed in pairs if parsed in uids)
+    res = con.fetch(uids, 'BODY[1]')
+    return tuple(sorted(
+        json.loads(res[i][1].decode())['origin_uid']
+        for i in range(0, len(res), 2)
+        if res[i][1]
+    ))
 
 
 def address_name(a):
@@ -193,6 +203,9 @@ def create_msg(raw, uid, time):
     subj = orig['subject']
     meta['subject'] = str(subj) if subj else subj
 
+    # refs = orig['references']
+    # meta['refs'] = refs.split() if refs else []
+
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
     meta['arrived'] = int(arrived.timestamp())
 
@@ -260,7 +273,8 @@ def parse(criteria=None, *, batch=1000, threads=10):
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
-    res = con.sort('(DATE)', criteria)
+    res = con.search(criteria)
+    # res = con.sort('(DATE)', criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
@@ -284,11 +298,10 @@ def parse(criteria=None, *, batch=1000, threads=10):
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
-    # messages should be inserted in the particular order
-    # for THREAD IMAP extension, so no async here
+    # TODO: check once again, probably flags mixed when "call_async" is used
     con.select(SRC)
     uids = imap.Uids(uids, size=batch, threads=threads)
-    puids = ','.join(uids.call_async(parse_uids, uids, con))
+    puids = ','.join(uids.call(parse_uids, uids, con))
     if criteria.lower() == 'all' or count == '0':
         puids = '1:*'
 
@@ -304,39 +317,66 @@ def update_threads(con, criteria=None):
     criteria = criteria or 'ALL'
     src_thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
     if not src_thrs:
-        log.info('## no threads are updated')
+        log.info('## all threads are updated already')
         return
 
-    con.select(ALL)
-    msgs = {}
-    src_msgids = {}
-    uids = pair_origin_uids(con, src_thrs.all_uids)
-    res = con.fetch(uids, '(FLAGS BINARY.PEEK[1])')
+    src_refs = {}
+    res = con.fetch(
+        src_thrs.all_uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID REFERENCES)]'
+    )
     for i in range(0, len(res), 2):
-        uid, flags = re.search(
-            r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
-        ).groups()
-        data = json.loads(res[i][1])
-        msgs[uid] = {
-            'flags': flags.split(),
-            'date': data['date'],
-        }
-        src_msgids[data['origin_uid']] = data['message_id']
+        uid = res[i][0].decode().split()[2]
+        msg = email.message_from_bytes(res[i][1])
+        refs = msg['references'].split() if msg['references'] else []
+        src_refs[uid] = [msg['message-id']] + refs
+
+    con.select(ALL)
+    uids = pair_origin_uids(con, src_thrs.all_uids)
+    res = con.search('INTHREAD REFS UID %s KEYWORD #link' % ','.join(uids))
+    old_links = list(set(res[0].decode().split()) - set(uids))
+    if old_links:
+        con.select(ALL, readonly=False)
+        con.store(old_links, '+FLAGS', '\\Deleted')
+        con.expunge()
+        con.select(ALL)
 
     links = []
     for thr in src_thrs:
         if len(thr) == 1:
             continue
-        link = create_link([src_msgids[i] for i in thr])
+        refs = []
+        for i in thr:
+            r = src_refs.get(i)
+            if not r:
+                continue
+            new = set(r) - set(refs)
+            if not new:
+                continue
+            refs.extend(new)
+        link = create_link(refs)
         links.append((None, '#link', link.as_bytes()))
-    new = con.multiappend(ALL, links)
+
+    new = con.multiappend(ALL, links, batch=1000)
     if new:
         res = con.search('UID %s' % new)
         links = res[0].decode().split()
 
-    thrs_set = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+    msgs = {}
+    thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+    res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[1])')
+    for i in range(0, len(res), 2):
+        uid, flags = re.search(
+            r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
+        ).groups()
+        if not res[i][1]:
+            continue
+        msgs[uid] = {
+            'flags': flags.split(),
+            'date': json.loads(res[i][1])['date'],
+        }
+
     all_latest = []
-    for thrids in thrs_set:
+    for thrids in thrs:
         if len(thrids) == 1:
             latest = thrids[0]
         else:
@@ -348,13 +388,8 @@ def update_threads(con, criteria=None):
         all_latest.append(latest)
 
     con.select(ALL, readonly=False)
-    clean_links = set(thrs_set.all_uids) - set(msgs) - set(links)
-    if clean_links:
-        con.store(clean_links, '+FLAGS', '\\Deleted')
-        con.expunge()
-
-    res = con.search('KEYWORD #latest')
-    clean = set(res[0].decode().split()).intersection(uids) - set(all_latest)
+    res = con.search('INTHREAD REFS UID %s KEYWORD #latest' % ','.join(uids))
+    clean = set(res[0].decode().split()) - set(all_latest)
     if clean:
         con.store(clean, '-FLAGS.SILENT', '#latest')
     con.store(all_latest, '+FLAGS.SILENT', '#latest')
