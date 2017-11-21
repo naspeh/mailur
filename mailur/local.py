@@ -88,7 +88,9 @@ def get_tag(name):
         res = con.append(TAGS, '', None, msg.as_bytes())
     get_tags.cache_clear()
     tag = re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
-    return '#t' + tag
+    tag = '#t' + tag
+    log.info('## added new tag %s: %r', tag, name)
+    return tag
 
 
 def save_uid_pairs(con, uids=None):
@@ -240,7 +242,8 @@ def create_msg(raw, uid, time):
     return msg
 
 
-def parse_uids(uids, con):
+def parse_uids(uids):
+    con = client(SRC)
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
     def msgs():
@@ -260,7 +263,10 @@ def parse_uids(uids, con):
                 continue
             yield time, flags, msg
 
-    return con.multiappend(ALL, msgs())
+    try:
+        return con.multiappend(ALL, msgs())
+    finally:
+        con.logout()
 
 
 def parse(criteria=None, *, batch=1000, threads=10):
@@ -274,7 +280,6 @@ def parse(criteria=None, *, batch=1000, threads=10):
         criteria = 'UID %s:*' % uidnext
 
     res = con.search(criteria)
-    # res = con.sort('(DATE)', criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
@@ -298,14 +303,13 @@ def parse(criteria=None, *, batch=1000, threads=10):
             con.store(puids, '+FLAGS.SILENT', '\Deleted')
             con.expunge()
 
-    # TODO: check once again, probably flags mixed when "call_async" is used
-    con.select(SRC)
+    con.logout()
     uids = imap.Uids(uids, size=batch, threads=threads)
-    puids = ','.join(uids.call(parse_uids, uids, con))
+    puids = ','.join(uids.call_async(parse_uids, uids))
     if criteria.lower() == 'all' or count == '0':
         puids = '1:*'
 
-    con.select(ALL)
+    con = client(ALL)
     con.setmetadata(ALL, 'uidnext', str(uidnext))
     save_uid_pairs(con, puids)
     update_threads(con, 'UID %s' % uids.str)
