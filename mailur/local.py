@@ -66,15 +66,15 @@ def gen_msgid(label):
 
 @ft.lru_cache(maxsize=None)
 def get_tags(reverse=False):
-    con = client()
-    count = con.select(TAGS)
-    if count == [b'0']:
-        return {}
-    res = con.fetch('1:*', 'BODY.PEEK[1]')
-    tags = (
-        ('#t%s' % res[i][0].split()[2].decode(), res[i][1].decode())
-        for i in range(0, len(res), 2)
-    )
+    with client() as con:
+        count = con.select(TAGS)
+        if count == [b'0']:
+            return {}
+        res = con.fetch('1:*', 'BODY.PEEK[1]')
+        tags = (
+            ('#t%s' % res[i][0].split()[2].decode(), res[i][1].decode())
+            for i in range(0, len(res), 2)
+        )
     return {v: k for k, v in tags} if reverse else dict(tags)
 
 
