@@ -35,6 +35,8 @@ imap_max_line_length = 10M
 # mdbox_rotate_size = 100M
 mail_location = sdbox:~
 
+# mail_always_cache_fields = date.sent date.saved hdr.references
+
 # TODO: maybe can be used during the import
 # mail_fsync = never
 
@@ -129,7 +131,7 @@ service imap-login {
     }
 }
 service imap {
-    vsz_limit = 1G
+    vsz_limit = 2G
 }
 service indexer-worker {
     vsz_limit = 2G

@@ -22,6 +22,12 @@ def init():
 
 @pytest.fixture(autouse=True)
 def setup(gm_client):
+    from mailur import local
+
+    local.uid_pairs.cache_clear()
+    local.msgids.cache_clear()
+    local.get_tags.cache_clear()
+
     with mock.patch('mailur.local.USER', 'test1'):
         yield
 

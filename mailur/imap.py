@@ -28,7 +28,11 @@ def fn_desc(func, *a, **kw):
     maxlen = 80
     if len(args) > maxlen:
         args = '%s...' % args[:maxlen]
-    name = getattr(func, 'name', func.__name__)
+    name = getattr(func, 'name', None)
+    if not name:
+        name = getattr(func, '__name__', None)
+    if not name:
+        name = str(func)
     return '%s(%s)' % (name, args)
 
 
@@ -299,7 +303,8 @@ def search(con, *criteria):
 
 @command(writable=True)
 def append(con, box, flags, date_time, msg):
-    return check(con.append(box, flags, date_time, msg))
+    res = check(con.append(box, flags, date_time, msg))
+    return re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
 
 
 @command(writable=True)
