@@ -12,7 +12,9 @@ def test_batched_uids(clean_users, gm_client):
     assert [] == con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#')
 
     # with one message
-    con.append(local.SRC, None, None, local.binary_msg('42').as_bytes())
+    msg = local.binary_msg('42')
+    msg.add_header('Message-Id', local.gen_msgid('test'))
+    con.append(local.SRC, None, None, msg.as_bytes())
     con.select(local.SRC, readonly=True)
     assert [b'1 (UID 1 FLAGS (\\Recent))'] == (
         con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
@@ -52,16 +54,16 @@ def test_fn_pack_uids():
 
 
 def test_literal_size_limit(gm_client, raises):
-    gm_client.add_emails([{} for i in range(1, 22)])
+    gm_client.add_emails([{} for i in range(0, 20)])
     c = local.client(local.SRC)
     res = c.search('ALL')
-    uids = res[0].decode().replace(' ', ',') + ','
+    uids = res[0].decode().replace(' ', ',')
 
-    uid = '1%.20i0,' % 1
-    uids += (uid * 220000)
-    assert res == c.search('UID %s' % uids.strip(','))
+    uid = ',1%.127i' % 1 * 8
+    uids += (uid * 1024 * 9)
+    assert res == c.search('UID %s' % uids)
 
-    uids += (uid * 10000).strip(',')
+    uids += (uid * 1024)
     with raises(imap.Error) as e:
         c.search('UID %s' % uids)
     assert 'Too long argument' in str(e)

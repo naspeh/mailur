@@ -8,6 +8,7 @@ import json
 import os
 import re
 import uuid
+from collections import defaultdict
 from email.message import MIMEPart
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime, getaddresses, formatdate
@@ -135,6 +136,29 @@ def pair_parsed_uids(con, uids):
     ))
 
 
+@imap.fn_time
+def save_msgids():
+    mids = defaultdict(list)
+    with client(SRC) as con:
+        res = con.fetch('1:*', 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]')
+        for i in range(0, len(res), 2):
+            uid = res[i][0].decode().split()[2]
+            mid = res[i][1].decode().strip().split()[1]
+            mids[mid].append(uid)
+        con.setmetadata(ALL, 'msgids', json.dumps(mids))
+    msgids.cache_clear()
+
+
+@ft.lru_cache(maxsize=None)
+def msgids():
+    with client(None) as con:
+        res = con.getmetadata(ALL, 'msgids')
+        if len(res) == 1:
+            return {}
+
+    return json.loads(res[0][1].decode())
+
+
 def address_name(a):
     if a[0]:
         return a[0]
@@ -188,11 +212,7 @@ def create_msg(raw, uid, time):
     else:
         orig = raw
 
-    meta = {
-        k.replace('-', '_'): orig[k]
-        for k in ('message-id', 'in-reply-to')
-    }
-    meta['origin_uid'] = uid
+    meta = {'origin_uid': uid}
 
     fields = (('from', 1), ('sender', 1), ('to', 0), ('cc', 0), ('bcc', 0))
     for n, one in fields:
@@ -205,8 +225,20 @@ def create_msg(raw, uid, time):
     subj = orig['subject']
     meta['subject'] = str(subj) if subj else subj
 
-    # refs = orig['references']
-    # meta['refs'] = refs.split() if refs else []
+    mids = msgids()
+    refs = orig['references']
+    refs = refs.split() if refs else []
+    if not refs:
+        in_reply_to = orig['in-reply-to']
+        refs = [in_reply_to] if in_reply_to else []
+    meta['parent'] = refs[0] if refs else None
+    refs = [r for r in refs if r in mids]
+
+    mid = orig['message-id'].strip()
+    meta['msgid'] = mid
+    if sorted(mids[mid])[0] != uid:
+        log.info('## %s is duplicate {%r: %r}', uid, mid, mids[mid])
+        mid = gen_msgid('dup')
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
     meta['arrived'] = int(arrived.timestamp())
@@ -220,10 +252,9 @@ def create_msg(raw, uid, time):
     meta['preview'] = re.sub('[\s ]+', ' ', body[:200])
 
     msg = MIMEPart(policy)
-    headers = (
-        'message-id', 'date',
-        'from', 'sender', 'to', 'cc', 'bcc',
-    )
+    msg.add_header('Message-Id', mid)
+
+    headers = ('date', 'from', 'sender', 'to', 'cc', 'bcc',)
     for n, v in orig.items():
         if n.lower() not in headers or n.lower() in msg:
             continue
@@ -231,6 +262,8 @@ def create_msg(raw, uid, time):
 
     if msg['from'] == 'mailur@link':
         msg.add_header('References', orig['references'])
+    elif refs:
+        msg.add_header('References', ' '.join(refs))
 
     msg.add_header('X-UID', '<%s>' % uid)
     msg.add_header('X-Subject', meta['subject'])
@@ -279,6 +312,8 @@ def parse(criteria=None, *, batch=1000, threads=10):
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
+    # uids = con.thread('REFS UTF-8 %s' % criteria).all_uids
+    # uids = [i for i in uids if i and int(i) >= uidnext]
     res = con.search(criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
@@ -319,91 +354,57 @@ def parse(criteria=None, *, batch=1000, threads=10):
 def update_threads(con, criteria=None):
     con.select(SRC)
     criteria = criteria or 'ALL'
-    src_thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
-    if not src_thrs:
+    res = con.search(criteria)
+    src_uids = res[0].decode().split()
+    if not src_uids:
         log.info('## all threads are updated already')
         return
 
-    src_refs = {}
-    res = con.fetch(
-        src_thrs.all_uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID REFERENCES)]'
-    )
-    for i in range(0, len(res), 2):
-        uid = res[i][0].decode().split()[2]
-        msg = email.message_from_bytes(res[i][1])
-        refs = msg['references'].split() if msg['references'] else []
-        src_refs[uid] = [msg['message-id']] + refs
-
     con.select(ALL)
-    uids = pair_origin_uids(con, src_thrs.all_uids)
-    res = con.search('INTHREAD REFS UID %s KEYWORD #link' % ','.join(uids))
-    old_links = list(set(res[0].decode().split()) - set(uids))
-    if old_links:
-        con.select(ALL, readonly=False)
-        con.store(old_links, '+FLAGS', '\\Deleted')
-        con.expunge()
-        con.select(ALL)
+    uids = pair_origin_uids(con, src_uids)
+    criteria = 'UID %s' % ','.join(uids)
 
-    links = []
-    for thr in src_thrs:
-        if len(thr) == 1:
-            continue
-        refs = []
-        for i in thr:
-            r = src_refs.get(i)
-            if not r:
-                continue
-            new = set(r) - set(refs)
-            if not new:
-                continue
-            refs.extend(new)
-        link = create_link(refs)
-        links.append((None, '#link', link.as_bytes()))
-
-    new = con.multiappend(ALL, links, batch=1000)
-    if new:
-        res = con.search('UID %s' % new)
-        links = res[0].decode().split()
+    thrs_set = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
+    if not thrs_set:
+        log.info('## no threads are updated')
+        return
 
     msgs = {}
-    thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
-    res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[1])')
+    uids = thrs_set.all_uids
+    res = con.fetch(uids, '(FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
         uid, flags = re.search(
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
         ).groups()
-        if not res[i][1]:
-            continue
         msgs[uid] = {
             'flags': flags.split(),
-            'date': json.loads(res[i][1])['date'],
+            'date': json.loads(res[i][1])['date']
         }
 
-    all_latest = []
-    for thrids in thrs:
+    thrs = {}
+    for thrids in thrs_set:
         if len(thrids) == 1:
             latest = thrids[0]
         else:
-            thrids = set(thrids).intersection(uids)
             latest = sorted(
                 (t for t in thrids if '#link' not in msgs[t]['flags']),
                 key=lambda i: msgs[i]['date']
             )[-1]
-        all_latest.append(latest)
+        thrs[latest] = thrids
 
     con.select(ALL, readonly=False)
-    res = con.search('INTHREAD REFS UID %s KEYWORD #latest' % ','.join(uids))
-    clean = set(res[0].decode().split()) - set(all_latest)
+    res = con.search('KEYWORD #latest')
+    clean = set(res[0].decode().split()).intersection(uids) - set(thrs)
     if clean:
         con.store(clean, '-FLAGS.SILENT', '#latest')
-    con.store(all_latest, '+FLAGS.SILENT', '#latest')
-    log.info('## updated %s threads', len(all_latest))
+    con.store(list(thrs), '+FLAGS.SILENT', '#latest')
+    log.info('## updated %s threads', len(thrs))
 
 
 def link_threads(uids, box=ALL):
     con = client()
-    res = con.search('INTHREAD REFS UID %s' % ','.join(uids))
-    uids = res[0].decode().split()
+    thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+    uids = thrs.all_uids
     res = con.search('KEYWORD #link UID %s' % ','.join(uids))
     refs = res[0].decode().split()
     if refs:
@@ -421,12 +422,13 @@ def link_threads(uids, box=ALL):
 
     res = con.fetch(uids, 'BODY.PEEK[1]')
     msgids = [
-        json.loads(res[i][1].decode())['message_id']
+        json.loads(res[i][1].decode())['msgid']
         for i in range(0, len(res), 2)
     ]
 
     msg = create_link(msgids)
     res = con.append(SRC, '#link', None, msg.as_bytes())
+    save_msgids()
     con.logout()
     parse()
     return res[0].decode()

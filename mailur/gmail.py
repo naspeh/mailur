@@ -159,6 +159,7 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
 
     with local.client(None) as lm:
         lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
+    local.save_msgids()
 
 
 def fetch(**kw):
