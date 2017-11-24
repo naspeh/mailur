@@ -386,6 +386,33 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     assert msg.startswith(expect)
 
 
+def test_dup_msgids(clean_users, gm_client, msgs, some):
+    gm_client.add_emails([{} for i in range(0, 8)])
+    gm_client.add_emails([
+        {'mid': '<42@mlr>'},
+        {'mid': '<42@mlr>'},
+    ])
+    local.parse()
+    res = msgs(local.SRC)[-2:]
+    assert [i['uid'] for i in res] == ['9', '10']
+    assert [i['body']['message-id'] for i in res] == ['<42@mlr>', '<42@mlr>']
+    assert local.msgids() == {
+        '<101@mlr>': ['1'],
+        '<102@mlr>': ['2'],
+        '<103@mlr>': ['3'],
+        '<104@mlr>': ['4'],
+        '<105@mlr>': ['5'],
+        '<106@mlr>': ['6'],
+        '<107@mlr>': ['7'],
+        '<108@mlr>': ['8'],
+        '<42@mlr>': ['9', '10']
+    }
+    res = msgs(local.ALL)[-2:]
+    assert [i['uid'] for i in res] == ['9', '10']
+    assert [i['body']['message-id'] for i in res] == ['<42@mlr>', some]
+    assert some.value.endswith('@mailur.dup>')
+
+
 def test_addresses():
     res = local.addresses('test <test@example.com>')
     assert res == [{

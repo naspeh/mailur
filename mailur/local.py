@@ -144,8 +144,11 @@ def save_msgids(uids=None):
         for i in range(0, len(res), 2):
             uid = res[i][0].decode().split()[2]
             mid = res[i][1].decode().strip().split()[1]
-            mids.setdefault(mid, [])
-            mids[mid].append(uid)
+            uids = mids.get(mid, [])
+            uids.append(uid)
+            if len(uids) > 1:
+                uids = sorted(uids, key=lambda i: int(i))
+            mids[mid] = uids
         con.setmetadata(ALL, 'msgids', json.dumps(mids))
     msgids.cache_clear()
 
@@ -238,7 +241,7 @@ def create_msg(raw, uid, time):
 
     mid = orig['message-id'].strip()
     meta['msgid'] = mid
-    if sorted(mids[mid])[0] != uid:
+    if mids[mid][0] != uid:
         log.info('## %s is duplicate {%r: %r}', uid, mid, mids[mid])
         mid = gen_msgid('dup')
 
@@ -313,9 +316,7 @@ def parse(criteria=None, *, batch=1000, threads=10):
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
-    # uids = con.thread('REFS UTF-8 %s' % criteria).all_uids
-    # uids = [i for i in uids if i and int(i) >= uidnext]
-    res = con.search(criteria)
+    res = con.sort('(DATE)', criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
