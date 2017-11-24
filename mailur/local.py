@@ -254,7 +254,9 @@ def create_msg(raw, uid, time):
     meta['preview'] = re.sub('[\s ]+', ' ', body[:200])
 
     msg = MIMEPart(policy)
+    msg.add_header('X-UID', '<%s>' % uid)
     msg.add_header('Message-Id', mid)
+    msg.add_header('Subject', meta['subject'])
 
     headers = ('date', 'from', 'sender', 'to', 'cc', 'bcc',)
     for n, v in orig.items():
@@ -267,10 +269,7 @@ def create_msg(raw, uid, time):
     elif refs:
         msg.add_header('References', ' '.join(refs))
 
-    msg.add_header('X-UID', '<%s>' % uid)
-    msg.add_header('X-Subject', meta['subject'])
     msg.make_mixed()
-
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
     msg.attach(binary_msg(meta_txt, 'application/json'))
     msg.attach(binary_msg(body))

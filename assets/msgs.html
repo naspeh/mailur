@@ -31,7 +31,7 @@
         <span class="msg-preview-from" :title="msg.from.title">
           {{ msg.from.name }}
         </span>
-        <span class="msg-preview-subj" @click.stop="app.searchHeader('x-subject', msg.subject)">
+        <span class="msg-preview-subj" @click.stop="app.searchHeader('subject', msg.subject)">
            {{ msg.subject }}
         </span>
         <span class="msg-preview-text">

@@ -360,12 +360,12 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     local.parse(batch=1)
     msg = latest(local.ALL, raw=True)['body'].decode()
     expect = '\r\n'.join([
+        'X-UID: <4>',
         'Message-Id: <with-encoding@test>',
+        'Subject: Re: не пора ли подкрепиться?',
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: "Катя К." <katya@example.com>',
         'To: Grisha <grrr@example.com>',
-        'X-UID: <4>',
-        'X-Subject: Re: не пора ли подкрепиться?'
     ])
     assert msg.startswith(expect)
 
@@ -376,12 +376,12 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     local.parse(batch=1)
     msg = latest(local.ALL, raw=True)['body'].decode()
     expect = '\r\n'.join([
+        'X-UID: <5>',
         'Message-Id: <with-no-encoding@test>',
+        'Subject: Re: не пора ли подкрепиться?',
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: "Катя К." <katya@example.com>',
         'To: Гриша <grrr@example.com>',
-        'X-UID: <5>',
-        'X-Subject: Re: не пора ли подкрепиться?'
     ])
     assert msg.startswith(expect)
 
