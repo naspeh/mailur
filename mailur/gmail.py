@@ -22,7 +22,6 @@ MAP_LABELS = {
     '\\Junk': '#spam',
     '\\Trash': '#trash',
     '\\Sent': '#sent',
-    '\\Important': '#important',
 }
 
 

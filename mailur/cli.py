@@ -31,6 +31,8 @@ def main(args):
         if args.get('--parse'):
             local.parse(**opts)
     elif args['parse']:
+        # local.save_msgids()
+        # local.save_uid_pairs()
         local.parse(args.get('<criteria>'), **opts)
     elif args['threads']:
         with local.client() as con:

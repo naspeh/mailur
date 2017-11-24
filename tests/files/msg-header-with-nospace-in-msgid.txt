@@ -1,0 +1,10 @@
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"; Format="flowed"
+Message-Id:<with-no-space-in-msgid@test>
+Date: Wed, 07 Jan 2015 13:23:22 +0000
+From: "Катя К." <katya@example.com>
+To: Гриша <grrr@example.com>
+Subject: Re: не пора ли подкрепиться?
+
+42

@@ -386,8 +386,8 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     assert msg.startswith(expect)
 
 
-def test_dup_msgids(clean_users, gm_client, msgs, some):
-    gm_client.add_emails([{} for i in range(0, 8)])
+def test_bad_msgids(clean_users, gm_client, msgs, some, load_file, latest):
+    gm_client.add_emails([{'mid': '<zero@mlr>'} for i in range(0, 8)])
     gm_client.add_emails([
         {'mid': '<42@mlr>'},
         {'mid': '<42@mlr>'},
@@ -397,20 +397,41 @@ def test_dup_msgids(clean_users, gm_client, msgs, some):
     assert [i['uid'] for i in res] == ['9', '10']
     assert [i['body']['message-id'] for i in res] == ['<42@mlr>', '<42@mlr>']
     assert local.msgids() == {
-        '<101@mlr>': ['1'],
-        '<102@mlr>': ['2'],
-        '<103@mlr>': ['3'],
-        '<104@mlr>': ['4'],
-        '<105@mlr>': ['5'],
-        '<106@mlr>': ['6'],
-        '<107@mlr>': ['7'],
-        '<108@mlr>': ['8'],
+        '<zero@mlr>': ['1', '2', '3', '4', '5', '6', '7', '8'],
         '<42@mlr>': ['9', '10']
     }
     res = msgs(local.ALL)[-2:]
     assert [i['uid'] for i in res] == ['9', '10']
     assert [i['body']['message-id'] for i in res] == ['<42@mlr>', some]
     assert some.value.endswith('@mailur.dup>')
+
+    res = msgs(local.ALL)
+    assert len(set([i['body']['message-id'] for i in res])) == 10
+
+    gm_client.add_emails([
+        {'raw': load_file('msg-header-with-no-msgid.txt')}
+    ])
+    local.parse()
+    msg = latest(local.SRC)
+    assert msg['body']['message-id'] is None
+    msg = latest(local.ALL)
+    assert msg['body']['message-id'] == '<mailur@noid>'
+
+    gm_client.add_emails([
+        {'raw': load_file('msg-header-with-nospace-in-msgid.txt')}
+    ])
+    local.parse()
+    msg = latest(local.SRC)
+    assert msg['body']['message-id'] == '<with-no-space-in-msgid@test>'
+    msg = latest(local.ALL)
+    assert msg['body']['message-id'] == '<with-no-space-in-msgid@test>'
+
+    assert local.msgids() == {
+        '<zero@mlr>': ['1', '2', '3', '4', '5', '6', '7', '8'],
+        '<42@mlr>': ['9', '10'],
+        '<mailur@noid>': ['11'],
+        '<with-no-space-in-msgid@test>': ['12']
+    }
 
 
 def test_addresses():

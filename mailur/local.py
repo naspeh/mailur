@@ -100,7 +100,7 @@ def save_uid_pairs(uids=None):
         uids = '1:*'
         pairs = {}
     with client() as con:
-        res = con.fetch(uids, '(UID BODY[1])')
+        res = con.fetch(uids, '(UID BODY.PEEK[1])')
         for i in range(0, len(res), 2):
             uid = res[i][0].decode().split()[2]
             origin_uid = json.loads(res[i][1].decode())['origin_uid']
@@ -143,7 +143,11 @@ def save_msgids(uids=None):
         res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]')
         for i in range(0, len(res), 2):
             uid = res[i][0].decode().split()[2]
-            mid = res[i][1].decode().strip().split()[1]
+            line = res[i][1].strip()
+            if line:
+                mid = email.message_from_bytes(line)['message-id'].strip()
+            else:
+                mid = '<mailur@noid>'
             uids = mids.get(mid, [])
             uids.append(uid)
             if len(uids) > 1:
@@ -221,14 +225,19 @@ def create_msg(raw, uid, time):
 
     fields = (('from', 1), ('sender', 1), ('to', 0), ('cc', 0), ('bcc', 0))
     for n, one in fields:
-        v = orig[n]
+        try:
+            v = orig[n]
+        except Exception as e:
+            more = raw[:300].decode()
+            log.error('## UID=%s error on header %r: %r\n%s', uid, n, e, more)
+            continue
         if not v:
             continue
         v = addresses(v)
         meta[n] = v[0] if one else v
 
     subj = orig['subject']
-    meta['subject'] = str(subj) if subj else subj
+    meta['subject'] = str(subj).strip() if subj else subj
 
     mids = msgids()
     refs = orig['references']
@@ -239,10 +248,15 @@ def create_msg(raw, uid, time):
     meta['parent'] = refs[0] if refs else None
     refs = [r for r in refs if r in mids]
 
-    mid = orig['message-id'].strip()
+    mid = orig['message-id']
+    if mid is None:
+        log.info('## UID=%s has no "Message-Id" header', uid)
+        mid = '<mailur@noid>'
+    else:
+        mid = mid.strip()
     meta['msgid'] = mid
     if mids[mid][0] != uid:
-        log.info('## %s is duplicate {%r: %r}', uid, mid, mids[mid])
+        log.info('## UID=%s is a duplicate {%r: %r}', uid, mid, mids[mid])
         mid = gen_msgid('dup')
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
@@ -252,8 +266,14 @@ def create_msg(raw, uid, time):
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
     txt = orig.get_body(preferencelist=('plain', 'html'))
-    body = txt.get_content()
-    body = clean_html(body)
+    body = ''
+    if txt:
+        try:
+            body = txt.get_content()
+            body = clean_html(body)
+        except Exception as e:
+            more = raw[:300].decode()
+            log.error('## UID=%s error on body: %r\n%s', uid, e, more)
     meta['preview'] = re.sub('[\s ]+', ' ', body[:200])
 
     msg = MIMEPart(policy)
@@ -261,9 +281,15 @@ def create_msg(raw, uid, time):
     msg.add_header('Message-Id', mid)
     msg.add_header('Subject', meta['subject'])
 
-    headers = ('date', 'from', 'sender', 'to', 'cc', 'bcc',)
-    for n, v in orig.items():
-        if n.lower() not in headers or n.lower() in msg:
+    headers = ('Date', 'From', 'Sender', 'To', 'CC', 'BCC',)
+    for n in headers:
+        try:
+            v = orig[n]
+        except Exception as e:
+            more = raw[:300].decode()
+            log.error('## UID=%s error on header %r: %r\n%s', uid, n, e, more)
+            continue
+        if v is None:
             continue
         msg.add_header(n, v)
 
@@ -373,7 +399,7 @@ def update_threads(con, criteria=None):
 
     msgs = {}
     uids = thrs.all_uids
-    res = con.fetch(uids, '(FLAGS BINARY.PEEK[1])')
+    res = con.fetch(uids, '(FLAGS BODY.PEEK[1])')
     for i in range(0, len(res), 2):
         uid, flags = re.search(
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
