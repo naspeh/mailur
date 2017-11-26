@@ -211,7 +211,7 @@ def msg_info(req, txt, uid, flags, addrs=None):
         addrs = [info['from']] if 'from' in info else []
     info.update({
         'uid': uid,
-        'flags': flags,
+        'flags': [f for f in flags if not f.startswith('\\')],
         'from_list': from_list(addrs),
         'url_raw': '/api/raw/%s' % uid,
         'url_raw_origin': '/api/raw/%s/origin' % info['origin_uid'],

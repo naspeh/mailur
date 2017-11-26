@@ -36,6 +36,7 @@ Vue.component('Msgs', {
         this.msgs = {};
         this.pages = [];
         this.picked = [];
+        this.addrs = [];
       } else {
         Object.assign(this.msgs, msgs);
         this.pages.push(uids);
@@ -59,14 +60,19 @@ Vue.component('Msgs', {
       let hashes = [];
       for (let m in msgs) {
         for (let f of msgs[m].from_list) {
-          if (f.hash && hashes.indexOf(f.hash) == -1) {
+          if (
+            f.hash &&
+            hashes.indexOf(f.hash) == -1 &&
+            this.addrs.indexOf(f.hash) == -1
+          ) {
             hashes.push(f.hash);
           }
         }
       }
-      if (!hashes.length) {
+      if (hashes.length == 0) {
         return;
       }
+      this.addrs = this.addrs.concat(hashes);
       while (hashes.length > 0) {
         let sheet = document.createElement('link');
         let few = encodeURIComponent(hashes.splice(0, 50));
