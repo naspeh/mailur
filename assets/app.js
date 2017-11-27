@@ -64,7 +64,12 @@ Vue.component('App', {
         tag = JSON.stringify(tag);
         q = `keyword ${tag}`;
       }
+      this.threads = true;
       return this.fetch(q);
+    },
+    thread: function(uid) {
+      this.threads = false;
+      return this.fetch(`inthread refs uid ${uid}`);
     }
   }
 });

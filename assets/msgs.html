@@ -12,9 +12,12 @@
   <span v-if="!pages.length">Loading...</span>
   <div v-for="uids of pages">
     <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg-line', {'msg-unread': msg.is_unread}]">
-      <a :href="msg.url_raw" target="_blank" title="Show raw message" >{{ msg.uid }}</a>
-      <a :href="msg.url_raw_origin" target="_blank" title="Show raw message (origin)">[orig]</a>
-      <a @click.prevent="app.searchHeader('message-id ', msg.message_id)" href="#">[msg-id]</a>
+      <!--
+      <a :href="msg.url_raw_origin" target="_blank" :title="`Show raw message ${msg.origin_uid} (origin)`">{{msg.origin_uid}}</a>
+      <a @click.prevent="app.searchHeader('message-id ', msg.msgid)" href="#" :title="msg.msgid">ID</a>
+      -->
+      <a v-if="threads" @click.prevent="app.thread(msg.uid)" href="#">{{msg.uid}}</a>
+      <a v-if="!threads" :href="msg.url_raw" target="_blank" title="Show raw message" >{{msg.uid}}</a>
       <span class="msg-pick">
         <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
       </span>
@@ -31,10 +34,10 @@
         <span class="msg-preview-from" :title="msg.from.title">
           {{ msg.from.name }}
         </span>
-        <span class="msg-preview-subj" @click.stop="app.searchHeader('subject', msg.subject)">
+        <span class="msg-preview-subj" @click.stop="app.searchHeader('subject', msg.subject)" :title="msg.subject">
            {{ msg.subject }}
         </span>
-        <span class="msg-preview-text">
+        <span class="msg-preview-text" :title="msg.preview">
           {{ msg.preview }}
         </span>
       </span>
