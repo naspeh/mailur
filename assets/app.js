@@ -57,6 +57,9 @@ Vue.component('App', {
       q = ':threads ' + q;
       return this.fetch(q);
     },
+    searchAddr: function(addr) {
+      this.fetch(`:threads from ${addr}`);
+    },
     thread: function(uid) {
       return this.fetch(`inthread refs uid ${uid}`);
     }

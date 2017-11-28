@@ -23,10 +23,10 @@
       </span>
       <span class="msg-from">
       <template v-for="from in msg.from_list">
-        <span class="msg-from-more" v-if="from.expander" :title="`${from.expander} more`">
+        <span v-if="from.expander" class="msg-from-more" :title="`${from.expander} more`">
           {{from.expander}}
         </span>
-        <span class="msg-from-pic" v-if="from.hash" :class="`pic-${from.hash}`" :title="from.title"></span>
+        <span v-if="from.hash" @click.stop="app.searchAddr(from.addr)" :class="`msg-from-pic pic-${from.hash}`" :title="from.title"></span>
       </template>
       </span>
       <tags :raw="msg.flags" :trancate="true" />
