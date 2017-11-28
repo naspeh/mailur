@@ -14,14 +14,12 @@ Vue.component('App', {
   created: function() {
     window.app = this;
     this.setQuery();
-    return this.send('/login', {
+    return this.send('/init', {
       offset: new Date().getTimezoneOffset() / 60
-    }).then(() => this.fetch());
-  },
-  computed: {
-    url: function() {
-      return this.threads ? '/thrs' : '/msgs';
-    }
+    }).then(res => {
+      this.tags = res.tags;
+      this.fetch();
+    });
   },
   methods: {
     send: send,
@@ -32,29 +30,21 @@ Vue.component('App', {
         // pass
       } else {
         let q = decodeURIComponent(location.hash.slice(1));
-        if (q && q.indexOf('/msgs/') == 0) {
-          this.query = q.slice(6);
-          this.threads = false;
-        } else if (q && q.indexOf('/thrs/') == 0) {
-          this.query = q.slice(6);
-          this.threads = true;
+        if (q) {
+          this.query = q;
         } else {
-          this.query = 'all';
+          this.query = ':threads keyword #inbox';
         }
       }
-      window.location.hash = `${this.url}/${this.query}`;
+      window.location.hash = this.query;
     },
     fetch: function(query) {
       this.setQuery(query);
-      this.$nextTick(() => {
-        this.send('/tags')
-          .then(res => (this.tags = res))
-          .then(() => this.$refs.msgs.fetch());
-      });
+      this.$nextTick(() => this.$refs.msgs.fetch());
     },
     searchHeader: function(name, value) {
       value = JSON.stringify(value);
-      return this.fetch(`header ${name} ${value}`);
+      return this.fetch(`:threads header ${name} ${value}`);
     },
     searchTag: function(tag) {
       let q;
@@ -64,11 +54,10 @@ Vue.component('App', {
         tag = JSON.stringify(tag);
         q = `keyword ${tag}`;
       }
-      this.threads = true;
+      q = ':threads ' + q;
       return this.fetch(q);
     },
     thread: function(uid) {
-      this.threads = false;
       return this.fetch(`inthread refs uid ${uid}`);
     }
   }

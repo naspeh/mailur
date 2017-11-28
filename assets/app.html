@@ -1,7 +1,5 @@
 <div>
 <input v-model.lazy.trim="query" @keyup.enter="fetch()">
-<input type="checkbox" id="show-threads" v-model="threads">
-<label for="show-threads">treads</label>
 <button @click="fetch()">go!</button>
 <msgs ref="msgs" />
 </div>

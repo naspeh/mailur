@@ -8,7 +8,6 @@ Vue.component('Msgs', {
   data: function() {
     return {
       query: null,
-      threads: false,
       uids: [],
       perPage: 200,
       pages: [],
@@ -19,13 +18,13 @@ Vue.component('Msgs', {
     this.setMsgs();
   },
   computed: {
-    url: function() {
-      return this.threads ? '/thrs' : '/msgs';
-    },
     length: function() {
       return this.pages.length
         ? Object.getOwnPropertyNames(this.msgs).length
         : 0;
+    },
+    threads: function() {
+      return this.query.indexOf(':threads ') == 0;
     },
     app: () => window.app
   },
@@ -47,11 +46,11 @@ Vue.component('Msgs', {
       this.uids = [];
       this.setMsgs();
       this.query = this.$parent.query;
-      this.threads = this.$parent.threads;
-      return this.send(this.url, {
+      return this.send('/search', {
         q: this.query,
         preload: this.perPage
       }).then(res => {
+        this.url = res.msgs_url;
         this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });
@@ -96,7 +95,7 @@ Vue.component('Msgs', {
     },
     loadMore: function() {
       let uids = this.uids.slice(this.length, this.length + this.perPage);
-      return this.send(this.url + '/info', { uids: uids }).then(res =>
+      return this.send(this.url, { uids: uids }).then(res =>
         this.setMsgs(res, uids)
       );
     },

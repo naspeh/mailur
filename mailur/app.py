@@ -9,12 +9,10 @@ from . import log, local, helpers
 
 assets = pathlib.Path(__file__).parent / '../assets/dist'
 routes = re.compile('^/api/(%s)$' % '|'.join((
-    r'(?P<login>login)',
-    r'(?P<tags>tags)',
+    r'(?P<init>init)',
+    r'(?P<search>search)',
     r'(?P<avatars>avatars.css)',
-    r'(?P<msgs>msgs)',
     r'(?P<msgs_info>msgs/info)',
-    r'(?P<threads>thrs)',
     r'(?P<threads_info>thrs/info)',
     r'(?P<threads_link>thrs/link)',
     r'(?P<origin>raw/(?P<oid>\d+)/origin)',
@@ -29,22 +27,18 @@ def application(req):
         return static.DirectoryApp(assets)
 
     route = route.groupdict()
-    if route['login']:
-        return login(req)
+    if route['init']:
+        return init(req)
     elif route['origin']:
         return msg_raw(route['oid'])
     elif route['parsed']:
         return msg_raw(route['pid'], local.ALL)
-    elif route['tags']:
-        return tags(req)
     elif route['avatars']:
         return avatars(req)
-    elif route['msgs']:
-        return msgs(req, req.json['q'], req.json['preload'])
+    elif route['search']:
+        return search(req)
     elif route['msgs_info']:
         return jsonify(msgs_info)(req, req.json['uids'])
-    elif route['threads']:
-        return threads(req, req.json['q'], req.json['preload'])
     elif route['threads_info']:
         return jsonify(threads_info)(req, req.json['uids'])
     elif route['threads_link']:
@@ -61,14 +55,25 @@ def jsonify(fn):
     return inner
 
 
-def login(req):
+def init(req):
     if req.method == 'POST':
-        res = Response()
+        res = Response(json={'tags': local.get_tags()})
         res.set_cookie('offset', str(req.json['offset']))
         return res
 
+    raise exc.HTTPBadRequest()
+
 
 @jsonify
+def search(req):
+    q = req.json['q']
+    preload = req.json['preload']
+    if q.startswith(':threads'):
+        q = q[8:]
+        return threads(req, q, preload)
+    return msgs(req, q, preload)
+
+
 def threads(req, q, preload):
     con = local.client()
     res = con.sort('(REVERSE DATE)', 'INTHREAD REFS %s KEYWORD #latest' % q)
@@ -79,7 +84,7 @@ def threads(req, q, preload):
     else:
         msgs = {}
     con.logout()
-    return {'uids': uids, 'msgs': msgs}
+    return {'uids': uids, 'msgs': msgs, 'msgs_url': '/thrs/info'}
 
 
 def threads_info(req, uids, con=None):
@@ -142,7 +147,6 @@ def threads_link(req):
     return local.link_threads(uids)
 
 
-@jsonify
 def msgs(req, query, preload):
     con = local.client()
     res = con.sort('(REVERSE DATE)', 'UNKEYWORD #link %s' % query)
@@ -153,7 +157,7 @@ def msgs(req, query, preload):
     else:
         msgs = {}
     con.logout()
-    return {'uids': uids, 'msgs': msgs}
+    return {'uids': uids, 'msgs': msgs, 'msgs_url': '/msgs/info'}
 
 
 def msgs_info(req, uids):
@@ -178,11 +182,6 @@ def msg_raw(uid, box=local.SRC):
     txt = res[0][1]
     con.logout()
     return Response(txt, content_type='text/plain')
-
-
-@jsonify
-def tags(req):
-    return local.get_tags()
 
 
 def avatars(req):
