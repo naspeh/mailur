@@ -24,6 +24,16 @@
     color: var(--colorR);
   }
 
+  & .msg-pin {
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
+  &.msg-pinned .msg-pin {
+    color: #f63;
+  }
+
   & .msg-from {
     display: flex;
     align-items: center;
@@ -36,6 +46,10 @@
       padding: 0 1px;
       background-position: center center;
       background-repeat: no-repeat;
+
+      &:hover {
+        cursor: pointer;
+      }
     }
 
     & .msg-from-more {
