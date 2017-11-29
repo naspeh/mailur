@@ -18,10 +18,10 @@ module.exports = {
       template: 'assets/index.html',
       favicon: 'assets/favicon.png'
     }),
-    new ExtractTextPlugin('[name].[hash].css')
+    new ExtractTextPlugin('[name].css?[hash]')
   ],
   output: {
-    filename: '[name].[hash].js',
+    filename: '[name].js?[hash]',
     path: dist
   },
   resolve: {

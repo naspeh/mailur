@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import { send } from './utils.js';
 import tpl from './app.html';
+import './app.css';
 
 Vue.component('App', {
   template: tpl,
@@ -10,6 +11,17 @@ Vue.component('App', {
       threads: false,
       tags: {}
     };
+  },
+  computed: {
+    allTags: function() {
+      let tags = [];
+      for (let i in this.tags) {
+        if (this.tags[i].unread) {
+          tags.push(i);
+        }
+      }
+      return tags;
+    }
   },
   created: function() {
     window.app = this;

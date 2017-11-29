@@ -56,8 +56,31 @@ def jsonify(fn):
 
 
 def init(req):
+    def tags():
+        with local.client() as con:
+            res = con.search('UNSEEN')
+            uids = res[0].decode().split()
+            res = con.fetch(uids, 'FLAGS')
+            unreed = {}
+            for line in res:
+                flags = re.search(
+                    r'FLAGS \(([^)]*)\)', line.decode()
+                ).group(1)
+                for f in flags.split():
+                    unreed.setdefault(f, 0)
+                    unreed[f] += 1
+        tags = {
+            t: {'name': t, 'unread': unreed.get(t, 0)}
+            for t in ('#inbox',)
+        }
+        tags.update({
+            t: {'name': n, 'unread': unreed.get(t, 0)}
+            for t, n in local.get_tags().items()
+        })
+        return tags
+
     if req.method == 'POST':
-        res = Response(json={'tags': local.get_tags()})
+        res = Response(json={'tags': tags()})
         res.set_cookie('offset', str(req.json['offset']))
         return res
 

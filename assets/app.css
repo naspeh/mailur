@@ -1,0 +1,10 @@
+.all-tags {
+  display: flex;
+  margin-bottom: 5px;
+
+  & .tags .tag {
+    text-decoration: none;
+    background-color: #eee;
+    margin-right: 5px;
+  }
+}

@@ -7,6 +7,7 @@ Vue.component('Tags', {
   template: tpl,
   props: {
     trancate: { type: Boolean, default: false },
+    unread: { type: Boolean, default: false },
     raw: { type: Array, required: true }
   },
   computed: {
@@ -15,8 +16,9 @@ Vue.component('Tags', {
       let tags = [];
       for (let id of this.raw) {
         let val = {
-          title: all[id] ? all[id] : id,
-          id: id
+          title: all[id] ? all[id].name : id,
+          id: id,
+          unread: all[id] ? all[id].unread : null
         };
         val['name'] = this.trancate ? trancate(val.title) : val.title;
         tags.push(val);

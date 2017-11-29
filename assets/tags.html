@@ -7,5 +7,6 @@
     href="#"
   >
     {{tag.name}}
+    <template v-if="unread && tag.unread">(<b>{{tag.unread}}</b>)</template>
   </a>
 </div>
