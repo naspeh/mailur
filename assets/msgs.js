@@ -11,7 +11,8 @@ Vue.component('Msgs', {
       uids: [],
       perPage: 200,
       pages: [],
-      picked: []
+      picked: [],
+      detailed: null
     };
   },
   created: function() {
@@ -106,6 +107,13 @@ Vue.component('Msgs', {
         msgs.push(this.msgs[uid]);
       }
       return msgs;
+    },
+    details: function(uid) {
+      if (this.detailed == uid) {
+        this.detailed = null;
+      } else {
+        this.detailed = uid;
+      }
     }
   }
 });

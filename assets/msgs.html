@@ -9,42 +9,53 @@
   </span>
   </template>
   <template v-if="picked.length">
-  <button @click="link" class="icon-link" title="Link threads together"></button>
+  <button class="icon-archive" title="Archive"></button>
+  <button class="icon-trash" title="Move to Trash"></button>
+  <button v-if="threads && picked.length > 1" @click="link" class="icon-link" title="Link threads together"></button>
   </template>
   <span v-if="!pages.length">Loading...</span>
   <div v-for="uids of pages">
-    <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg-line', {'msg-unread': msg.is_unread, 'msg-pinned': msg.is_pinned}]">
-      <!--
-      <a :href="msg.url_raw_origin" target="_blank" :title="`Show raw message ${msg.origin_uid} (origin)`">{{msg.origin_uid}}</a>
-      <a @click.prevent="app.searchHeader('message-id ', msg.msgid)" href="#" :title="msg.msgid">ID</a>
-      -->
-      <a v-if="threads" @click.prevent="app.thread(msg.uid)" href="#">{{msg.uid}}</a>
-      <a v-if="!threads" :href="msg.url_raw" target="_blank" title="Show raw message" >{{msg.uid}}</a>
-      <span class="msg-pick">
-        <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
-      </span>
-      <span class="msg-pin icon-pin" title="Toggle pin"></span>
-      <span class="msg-from">
-      <template v-for="from in msg.from_list">
-        <span v-if="from.expander" class="msg-from-more" :title="`${from.expander} more`">
-          {{from.expander}}
+    <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg', {'msg-is-unread': msg.is_unread, 'msg-is-pinned': msg.is_pinned, 'msg-detailed': detailed == msg.uid}]">
+      <div class="msg-line">
+        <span class="msg-from">
+        <template v-for="from in msg.from_list">
+          <span v-if="from.expander" class="msg-from-more" :title="`${from.expander} more`">
+            {{from.expander}}
+          </span>
+          <span v-if="from.hash" @click.stop="app.searchAddr(from.addr)" :class="`msg-from-pic pic-${from.hash}`" :title="from.title"></span>
+        </template>
         </span>
-        <span v-if="from.hash" @click.stop="app.searchAddr(from.addr)" :class="`msg-from-pic pic-${from.hash}`" :title="from.title"></span>
-      </template>
-      </span>
-      <tags :raw="msg.flags" :trancate="true" />
-      <span class="msg-preview">
-        <span class="msg-preview-from" :title="msg.from.title">
-          {{ msg.from.name }}
+        <tags :raw="msg.flags" :trancate="true" />
+        <span @click.prevent="threads ? app.thread(msg.uid) : details(msg.uid)" class="msg-preview">
+          <span class="msg-preview-from" :title="msg.from.title">
+            {{ msg.from.name }}
+          </span>
+          <span class="msg-preview-subj" :title="msg.subject">
+             {{ msg.subject }}
+          </span>
+          <span class="msg-preview-text" :title="msg.preview">
+            {{ msg.preview }}
+          </span>
         </span>
-        <span class="msg-preview-subj" @click.stop="app.searchHeader('subject', msg.subject)" :title="msg.subject">
-           {{ msg.subject }}
+        <span class="msg-date" :title="msg.time_title">{{ msg.time_human }}</span>
+        <span class="msg-unread icon-unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></span>
+        <span class="msg-pin icon-pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></span>
+        <span v-if="threads" @click.stop="details(msg.uid)" class="msg-more icon-details" title="More actions"></span>
+        <span class="msg-pick">
+          <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
         </span>
-        <span class="msg-preview-text" :title="msg.preview">
-          {{ msg.preview }}
-        </span>
-      </span>
-      <span class="msg-date" :title="msg.time_title">{{ msg.time_human }}</span>
+      </div>
+      <div class="msg-actions">
+        <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
+        <a href="#" class="icon-archive">Archive</a>
+        <a href="#" class="icon-trash" title="Move to Trash">Delete</a>
+        <a href="#" class="icon-ok">Add to whitelist</a>
+        <a href="#" class="icon-spam">Add to blacklist</a>
+        <a href="#" @click.stop="app.searchHeader('subject', msg.subject)" >Filter by subject</a>
+        <a :href="msg.url_raw" target="_blank">Show raw message</a>
+        <!-- <a :href="msg.url_raw_origin" target="_blank" :title="`Show raw message ${msg.origin_uid} (origin)`">{{msg.origin_uid}}</a> -->
+        <!-- <a @click.prevent="app.searchHeader('message-id ', msg.msgid)" href="#" :title="msg.msgid">ID</a> -->
+      </div>
       <div v-if="msg.body" v-html="msg.body"></div>
     </div>
   </div>

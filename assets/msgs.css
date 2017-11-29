@@ -2,36 +2,64 @@
   --colorR: green;
 }
 
-.msg-line {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 -2px;
+.msg {
   box-sizing: border-box;
   width: 100%;
-  padding: 0 0.3em;
+  padding: 0 0.2em;
   background-color: #eee;
   border-top: 1px solid #fff;
   border-radius: 0.5em;
-  color: #777;
-  line-height: 1.5em;
-
-  @nest & > a, & > span {
-    white-space: nowrap;
-    padding: 0 2px;
-  }
 
   & a {
     color: var(--colorR);
   }
 
-  & .msg-pin {
+  & .msg-line {
+    display: flex;
+    justify-content: space-between;
+    color: #777;
+    line-height: 1.5em;
+
+    @nest & > a, & > span {
+      white-space: nowrap;
+    }
+  }
+
+  & .msg-actions {
+    display: none;
+  }
+
+  &.msg-detailed .msg-actions {
+    display: flex;
+    flex-flow: row-reverse wrap;
+    font-size: 90%;
+    padding: 3px 0;
+
+    & > a {
+      white-space: nowrap;
+      padding: 0 2px;
+      text-decoration: none;
+    }
+  }
+
+  & .msg-pin,
+  & .msg-unread,
+  & .msg-more {
+    font-size: 90%;
+    padding: 0;
+
     &:hover {
       cursor: pointer;
     }
   }
 
-  &.msg-pinned .msg-pin {
+  &.msg-is-pinned .msg-pin {
     color: #f63;
+  }
+
+  &.msg-is-unread .msg-unread,
+  &.msg-detailed .msg-more {
+    color: green;
   }
 
   & .msg-from {
@@ -72,6 +100,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding: 0 2px;
+
+    &:hover {
+      cursor: pointer;
+    }
 
     & .msg-preview-from {
       display: inline-flex;
@@ -84,7 +117,7 @@
     }
   }
 
-  &.msg-unread .msg-preview {
+  &.msg-is-unread .msg-preview {
     & .msg-preview-subj,
     & .msg-preview-from {
       font-weight: bold;
@@ -93,9 +126,11 @@
 
   & .msg-date {
     align-self: flex-end;
+    padding: 0 2px;
   }
 
   & .tags {
     font-size: 80%;
+    padding: 0 2px;
   }
 }
