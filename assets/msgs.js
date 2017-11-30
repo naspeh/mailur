@@ -5,9 +5,11 @@ import './msgs.css';
 
 Vue.component('Msgs', {
   template: tpl,
+  props: {
+    query: { type: String, required: true }
+  },
   data: function() {
     return {
-      query: null,
       uids: [],
       perPage: 200,
       pages: [],
@@ -17,6 +19,7 @@ Vue.component('Msgs', {
   },
   created: function() {
     this.setMsgs();
+    this.fetch(this.query);
   },
   computed: {
     length: function() {
@@ -26,8 +29,7 @@ Vue.component('Msgs', {
     },
     threads: function() {
       return this.query.indexOf(':threads ') == 0;
-    },
-    app: () => window.app
+    }
   },
   methods: {
     send: send,
@@ -43,12 +45,17 @@ Vue.component('Msgs', {
         this.pics(msgs);
       }
     },
-    fetch: function() {
+    fetch: function(query) {
+      if (query) {
+        window.app.query = query;
+      } else {
+        query = this.query;
+      }
+
       this.uids = [];
       this.setMsgs();
-      this.query = this.$parent.query;
       return this.send('/search', {
-        q: this.query,
+        q: query,
         preload: this.perPage
       }).then(res => {
         this.url = res.msgs_url;
@@ -81,12 +88,11 @@ Vue.component('Msgs', {
         document.body.appendChild(sheet);
       }
     },
-    pickAll: function(e) {
-      if (e.target.checked) {
-        this.picked = Object.keys(this.msgs);
-      } else {
-        this.picked = [];
-      }
+    pickAll: function() {
+      this.picked = Object.keys(this.msgs);
+    },
+    pickNone: function() {
+      this.picked = [];
     },
     link: function() {
       this.send('/thrs/link', { uids: this.picked }).then(() => this.fetch());
@@ -114,6 +120,27 @@ Vue.component('Msgs', {
       } else {
         this.detailed = uid;
       }
+    },
+    searchHeader: function(name, value) {
+      value = JSON.stringify(value);
+      return this.fetch(`:threads header ${name} ${value}`);
+    },
+    searchTag: function(tag) {
+      let q;
+      if (tag[0] == '\\') {
+        q = tag.slice(1);
+      } else {
+        tag = JSON.stringify(tag);
+        q = `keyword ${tag}`;
+      }
+      q = ':threads ' + q;
+      return this.fetch(q);
+    },
+    searchAddr: function(addr) {
+      this.fetch(`:threads from ${addr}`);
+    },
+    thread: function(uid) {
+      return this.fetch(`inthread refs uid ${uid}`);
     }
   }
 });

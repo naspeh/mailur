@@ -1,7 +1,7 @@
 <div class="tags">
   <a
     v-for="tag in display"
-    @click.prevent="app.searchTag(tag.id)"
+    @click.prevent="searchTag(tag.id)"
     :title="tag.title"
     class="tag"
     href="#"

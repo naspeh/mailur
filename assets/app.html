@@ -1,8 +1,6 @@
-<div>
-<div class="all-tags">
+<div class="app">
+<div class="app-tags">
   <tags :raw="allTags" :trancate="true" :unread="true" />
 </div>
-<input v-model.lazy.trim="query" @keyup.enter="fetch()">
-<button @click="fetch()" class="icon-search"></button>
-<msgs ref="msgs" />
+<msgs ref="msgs" :query="query" />
 </div>
