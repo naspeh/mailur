@@ -6,10 +6,12 @@ import './msgs.css';
 Vue.component('Msgs', {
   template: tpl,
   props: {
-    query: { type: String, required: true }
+    _query: { type: String, default: null },
+    side: { type: Boolean, default: false }
   },
   data: function() {
     return {
+      query: this._query,
       uids: [],
       perPage: 200,
       pages: [],
@@ -19,7 +21,9 @@ Vue.component('Msgs', {
   },
   created: function() {
     this.setMsgs();
-    this.fetch(this.query);
+    if (this.query) {
+      this.fetch(this.query);
+    }
   },
   computed: {
     length: function() {
@@ -47,15 +51,16 @@ Vue.component('Msgs', {
     },
     fetch: function(query) {
       if (query) {
+        this.query = query;
+      }
+      if (query && !this.side) {
         window.app.query = query;
-      } else {
-        query = this.query;
       }
 
       this.uids = [];
       this.setMsgs();
       return this.send('/search', {
-        q: query,
+        q: this.query,
         preload: this.perPage
       }).then(res => {
         this.url = res.msgs_url;
@@ -139,8 +144,24 @@ Vue.component('Msgs', {
     searchAddr: function(addr) {
       this.fetch(`:threads from ${addr}`);
     },
-    thread: function(uid) {
-      return this.fetch(`inthread refs uid ${uid}`);
+    thread: function(uid, side) {
+      let q = `inthread refs uid ${uid}`;
+      if (side) {
+        return this.openInSide(q);
+      }
+      return this.fetch(q);
+    },
+    canOpenInSide: function() {
+      return this.side && !window.app.$refs.main.threads;
+    },
+    openInSide: function(query) {
+      if (!query) {
+        query = window.app.$refs.main.query;
+      }
+      return window.app.openInSide(query);
+    },
+    hasSide: function() {
+      return !this.side && window.app.side;
     }
   }
 });

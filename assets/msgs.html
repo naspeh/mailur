@@ -1,8 +1,11 @@
 <div class="msgs">
   <div class="msgs-header">
-    <div class="msgs-search">
+    <div v-if="!side" class="msgs-search">
       <input v-model.lazy.trim="query" @keyup.enter="fetch()">
       <button @click="fetch()" class="icon-search"></button>
+    </div>
+    <div v-if="canOpenInSide()">
+      <button @click="openInSide()">Copy from main</button>
     </div>
     <div v-if="picked.length" class="msgs-actions">
       <button class="icon-archive" title="Archive"></button>
@@ -21,8 +24,10 @@
     </span>
     </div>
   </div>
-  <span v-if="!pages.length">Loading...</span>
-  <div v-for="uids of pages">
+  <div v-for="uids of pages" class="msgs-body">
+    <template v-if="!pages.length">
+    <span v-if="query">Loading...</span>
+    </template>
     <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg', {'msg-is-unread': msg.is_unread, 'msg-is-pinned': msg.is_pinned, 'msg-detailed': detailed == msg.uid}]">
       <div class="msg-line">
         <span class="msg-from">
@@ -44,11 +49,12 @@
           <span class="msg-preview-text" :title="msg.preview">
             {{ msg.preview }}
           </span>
+          <span class="msg-date" :title="msg.time_title">{{ msg.time_human }}</span>
         </span>
-        <span class="msg-date" :title="msg.time_title">{{ msg.time_human }}</span>
         <span class="msg-unread icon-unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></span>
         <span class="msg-pin icon-pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></span>
         <span v-if="threads" @click.stop="details(msg.uid)" class="msg-more icon-details" title="More actions"></span>
+        <span v-if="threads && hasSide()" @click.prevent="thread(msg.uid, true)" class="icon-next" title="Open in split pane"></span>
         <span class="msg-pick">
           <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
         </span>

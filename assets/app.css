@@ -1,5 +1,24 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
 .app {
+  display: flex;
+  flex-flow: row nowrap;
+  height: 100%;
   line-height: 1.5em;
+
+  & .app-main,
+  & .app-side {
+    min-width: 600px;
+    box-sizing: border-box;
+    padding: 0 5px;
+    height: 100%;
+    overflow-y: scroll;
+  }
 
   & .app-tags {
     display: flex;

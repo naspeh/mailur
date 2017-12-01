@@ -2,23 +2,20 @@
   --colorR: green;
 }
 
-@custom-media --small (max-width: 800px);
-
-.msgs {
-  min-width: 600px;
-}
+@custom-media --small (max-width: 1200px);
 
 .msgs-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   white-space: nowrap;
 
   & .msgs-search {
     display: flex;
-    flex-basis: 50%;
+    flex-grow: 2;
+    margin-right: 5px;
 
     & input {
-      flex-basis: 100%;
+      flex-grow: 10;
     }
   }
 
@@ -27,7 +24,7 @@
   }
 
   & .msgs-actions {
-    margin: 0 10px;
+    margin-right: 5px;
   }
 }
 
@@ -39,7 +36,7 @@
   border-radius: 0.5em;
 
   &.msg-detailed {
-    border-top: 1px solid #eee;
+    border-top: 1px solid #ccc;
     background-color: #fff;
   }
 
@@ -74,6 +71,7 @@
     }
 
     @media (--small) {
+      & .icon-next,
       & .icon-archive,
       & .icon-reply,
       & .icon-replyall,
@@ -140,13 +138,16 @@
   }
 
   & .msg-preview {
-    flex-basis: 80%;
+    flex-grow: 10;
     max-width: 80%;
     margin-left: 3px;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
     white-space: nowrap;
+    padding: 0 2px;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 0 2px;
 
     &:hover {
       cursor: pointer;
@@ -155,11 +156,25 @@
     & .msg-preview-from {
       display: inline-flex;
       max-width: 30%;
+      margin-right: 5px;
       overflow: hidden;
     }
 
     & .msg-preview-subj {
       color: #333;
+      margin-right: 5px;
+    }
+
+    & .msg-preview-text {
+      flex-grow: 10;
+      margin-right: 5px;
+    }
+
+    & .msg-date {
+      position: absolute;
+      right: 0;
+      background-color: #eee;
+      padding: 0 2px 0 5px;
     }
   }
 
@@ -168,11 +183,6 @@
     & .msg-preview-from {
       font-weight: bold;
     }
-  }
-
-  & .msg-date {
-    align-self: flex-end;
-    padding: 0 2px;
   }
 
   & .tags {

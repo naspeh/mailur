@@ -1,6 +1,12 @@
 <div class="app">
-<div class="app-tags">
-  <tags :raw="allTags" :trancate="true" :unread="true" />
-</div>
-<msgs ref="msgs" :query="query" />
+  <div class="app-main">
+    <button @click="toggleSide" style="float:right">Split pane</button>
+    <div class="app-tags">
+      <tags :raw="allTags" :trancate="true" :unread="true" />
+    </div>
+    <msgs ref="main" :_query="query" />
+  </div>
+  <div v-if="side" class="app-side">
+    <msgs ref="side" :side="true" />
+  </div>
 </div>

@@ -95,16 +95,17 @@ def test_origin_msg(clean_users, gm_client, latest):
     assert '#t1 #t2' == flags
     assert local.get_tags() == {'#t1': 'label', '#t2': 'another label'}
 
+    # - "\Important" must be skiped
+    # - flags must be transformed with imap-utf7
     gm_client.add_emails([
         {'labels': r'"\\Important" "\\Sent" "test(&BEIENQRBBEI-)"'}
     ])
     flags = latest(local.SRC)['flags']
-    assert '#sent #t3 #t4' == flags
+    assert '#sent #t3' == flags
     assert local.get_tags() == {
         '#t1': 'label',
         '#t2': 'another label',
-        '#t3': '\\Important',
-        '#t4': 'test(тест)',
+        '#t3': 'test(тест)',
     }
 
     gm_client.add_emails([{}], tag='\\Junk')

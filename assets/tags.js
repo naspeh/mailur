@@ -27,6 +27,6 @@ Vue.component('Tags', {
     }
   },
   methods: {
-    searchTag: id => window.app.$refs.msgs.searchTag(id)
+    searchTag: id => window.app.searchTag(id)
   }
 });

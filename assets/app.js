@@ -12,7 +12,8 @@ Vue.component('App', {
   data: function() {
     return {
       query: this._query,
-      tags: this._tags
+      tags: this._tags,
+      side: false
     };
   },
   created: function() {
@@ -32,6 +33,26 @@ Vue.component('App', {
   watch: {
     query: function(val) {
       window.location.hash = val;
+    }
+  },
+  methods: {
+    searchTag: function(id) {
+      return this.$refs.main.searchTag(id);
+    },
+    openInSide: function(query) {
+      this.side = true;
+      this.$nextTick(() => {
+        this.$refs.side.fetch(query);
+      });
+      return;
+    },
+    toggleSide: function() {
+      this.side = !this.side;
+      this.$nextTick(() => {
+        if (this.side) {
+          this.$refs.side.fetch(this.query);
+        }
+      });
     }
   }
 });
