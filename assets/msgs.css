@@ -8,6 +8,7 @@
   display: flex;
   justify-content: flex-end;
   white-space: nowrap;
+  margin-bottom: 0.2em;
 
   & .msgs-search {
     display: flex;
@@ -38,6 +39,14 @@
   &.msg-detailed {
     border-top: 1px solid #ccc;
     background-color: #fff;
+
+    & .msg-preview {
+      & .msg-preview-subj,
+      & .msg-preview-text,
+      & .msg-date {
+        background-color: #fff;
+      }
+    }
   }
 
   & a {
@@ -46,12 +55,9 @@
 
   & .msg-line {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap;
     color: #777;
-
-    @nest & > a, & > span {
-      white-space: nowrap;
-    }
   }
 
   & .msg-actions {
@@ -60,28 +66,28 @@
 
   &.msg-detailed .msg-actions {
     display: flex;
-    flex-flow: row-reverse wrap;
+    flex-flow: row-reverse nowrap;
+    white-space: nowrap;
     font-size: 90%;
-    padding: 3px 0;
 
     & > a {
-      white-space: nowrap;
-      padding: 0 2px;
+      margin: 0 0.2em;
       text-decoration: none;
     }
 
-    @media (--small) {
-      & .icon-next,
-      & .icon-archive,
-      & .icon-reply,
-      & .icon-replyall,
-      & .icon-forward,
-      & .icon-trash {
-        font-size: 0;
+    & .icon-next,
+    & .icon-archive,
+    & .icon-reply,
+    & .icon-replyall,
+    & .icon-forward,
+    & .icon-trash,
+    & .icon-ok,
+    & .icon-spam {
+      min-width: 1.2em;
+      overflow: hidden;
 
-        &::before {
-          font-size: 14px;
-        }
+      @nest .only-icons & {
+        width: 1.2em;
       }
     }
   }
@@ -108,14 +114,19 @@
 
   & .msg-from {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: stretch;
+    height: 18px;
+
+    & .msg-from-pic,
+    & .msg-from-more {
+      display: block;
+      margin: 0 1px;
+    }
 
     & .msg-from-pic {
-      display: inline-block;
       height: 18px;
       width: 18px;
-      padding: 0 1px;
       background-position: center center;
       background-repeat: no-repeat;
 
@@ -125,26 +136,20 @@
     }
 
     & .msg-from-more {
-      margin: 0 1px;
-      line-height: 18px;
       min-width: 18px;
-      box-sizing: border-box;
-      border-radius: 3px;
-      font-size: 90%;
-      color: #777;
-      background-color: #fff;
+      line-height: 18px;
       text-align: center;
+      background-color: #fff;
+      font-size: 90%;
     }
   }
 
   & .msg-preview {
-    flex-grow: 10;
-    max-width: 80%;
-    margin-left: 3px;
     position: relative;
     display: flex;
     justify-content: space-between;
-    white-space: nowrap;
+    flex-grow: 20;
+    margin-left: 3px;
     padding: 0 2px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -154,27 +159,26 @@
     }
 
     & .msg-preview-from {
-      display: inline-flex;
       max-width: 30%;
-      margin-right: 5px;
-      overflow: hidden;
     }
 
     & .msg-preview-subj {
+      padding-left: 5px;
       color: #333;
-      margin-right: 5px;
+      background-color: #eee;
     }
 
     & .msg-preview-text {
-      flex-grow: 10;
-      margin-right: 5px;
+      flex-grow: 2;
+      padding-left: 5px;
+      background-color: #eee;
     }
 
     & .msg-date {
       position: absolute;
       right: 0;
       background-color: #eee;
-      padding: 0 2px 0 5px;
+      padding: 0 5px 0 10px;
     }
   }
 

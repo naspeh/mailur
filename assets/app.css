@@ -20,6 +20,21 @@ body {
     overflow-y: scroll;
   }
 
+  & .app-side {
+    display: none;
+  }
+
+  &.side-on {
+    & .app-main,
+    & .app-side {
+      width: 50%;
+    }
+
+    & .app-side {
+      display: block;
+    }
+  }
+
   & .app-tags {
     display: flex;
     margin-bottom: 5px;
