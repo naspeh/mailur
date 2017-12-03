@@ -69,8 +69,7 @@
         <a href="#" class="icon-ok" title="Add address to Whitelist">Whitelist</a>
         <a href="#" class="icon-spam" title="Add address to Blacklist">Blacklist</a>
         <a href="#" class="icon-plus" @click.stop="searchHeader('subject', msg.subject)" >Filter by subject</a>
-        <a :href="msg.url_raw_origin" class="icon-plus" target="_blank">Show original</a>
-        <!-- <a :href="msg.url_raw_origin" target="_blank" :title="`Show raw message ${msg.origin_uid} (origin)`">{{msg.origin_uid}}</a> -->
+        <a :href="msg.url_raw" class="icon-plus" target="_blank">Show original</a>
         <!-- <a @click.prevent="searchHeader('message-id ', msg.msgid)" href="#" :title="msg.msgid">ID</a> -->
       </div>
       <div v-if="msg.body" v-html="msg.body"></div>

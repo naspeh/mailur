@@ -49,7 +49,7 @@ def web():
 
     def api():
         cmd = (
-            'gunicorn mailur.app -b :5000 '
+            'gunicorn mailur.web:app -b :5000 '
             ' -k gevent --timeout=300 --reload --access-logfile=-'
             ' --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"'
         )

@@ -1,10 +1,11 @@
 from unittest.mock import ANY
 
-from mailur import app, local
+from mailur import local
+from mailur.web import from_list
 
 
 def test_from_list():
-    res = app.from_list(local.addresses('test <test@example.com>'))
+    res = from_list(local.addresses('test <test@example.com>'))
     assert res == [{
         'name': 'test',
         'addr': 'test@example.com',
@@ -12,7 +13,7 @@ def test_from_list():
         'title': 'test <test@example.com>'
     }]
 
-    res = app.from_list(local.addresses(
+    res = from_list(local.addresses(
         'test <test@example.com>,'
         'test2 <test@example.com>,'
     ))
@@ -21,7 +22,7 @@ def test_from_list():
         {'name': 'test2', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = app.from_list(local.addresses(
+    res = from_list(local.addresses(
         'test <test@example.com>,'
         'test2 <test@example.com>,'
         'test3 <test@example.com>,'
@@ -32,7 +33,7 @@ def test_from_list():
         {'name': 'test3', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = app.from_list(local.addresses(
+    res = from_list(local.addresses(
         'test <test@example.com>,'
         'test2 <test@example.com>,'
         'test3 <test@example.com>,'
@@ -45,7 +46,7 @@ def test_from_list():
         {'name': 'test4', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = app.from_list(local.addresses(
+    res = from_list(local.addresses(
         'test <test@example.com>,'
         'test2 <test@example.com>,'
         'test3 <test@example.com>,'
@@ -59,7 +60,7 @@ def test_from_list():
         {'name': 'test5', 'addr': ANY, 'hash': ANY, 'title': ANY},
     ]
 
-    res = app.from_list(local.addresses(','.join(
+    res = from_list(local.addresses(','.join(
         'test%s <test@example.com>' % i for i in range(10)
     )))
     assert res == [

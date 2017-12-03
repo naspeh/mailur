@@ -1,5 +1,5 @@
 export function send(url, params) {
-  return fetch('/api' + url, {
+  return fetch(url, {
     method: 'post',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },

@@ -469,3 +469,114 @@ def create_link(msgids):
     msg.add_header('From', 'mailur@link')
     msg.add_header('Date', formatdate())
     return msg
+
+
+def raw_msg(uid, box):
+    with client(box) as con:
+        res = con.fetch(uid, 'body[]')
+        if not res:
+            return
+        return res[0][1]
+
+
+def search_msgs(query):
+    with client() as con:
+        res = con.sort('(REVERSE DATE)', 'UNKEYWORD #link %s' % query)
+        uids = res[0].decode().split()
+        log.debug('query: %r; messages: %s', query, len(uids))
+        return uids
+
+
+def msgs_info(uids):
+    with client() as con:
+        res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[1])')
+        for i in range(0, len(res), 2):
+            uid, flags = (
+                re.search(r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode())
+                .groups()
+            )
+            yield uid, res[i][1], flags.split(), None
+
+
+def search_thrs(query):
+    with client() as con:
+        criteria = 'INTHREAD REFS %s KEYWORD #latest' % query
+        res = con.sort('(REVERSE DATE)', criteria)
+        uids = res[0].decode().split()
+        log.debug('query: %r; threads: %s', query, len(uids))
+        return uids
+
+
+def thrs_info(uids):
+    con = client()
+    thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+    all_flags = {}
+    all_msgs = {}
+    res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[1])')
+    for i in range(0, len(res), 2):
+        uid, flags = re.search(
+            r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
+        ).groups()
+        flags = flags.split()
+        if '#link' in flags:
+            continue
+        all_flags[uid] = flags
+        all_msgs[uid] = json.loads(res[i][1])
+
+    msgs = {}
+    for thr in thrs:
+        thrid = None
+        thr_flags = []
+        thr_from = []
+        unseen = False
+        for uid in thr:
+            if uid not in all_msgs:
+                continue
+            info = all_msgs[uid]
+            msg_flags = all_flags[uid]
+            thr_from.append((info['date'], info.get('from')))
+            if not msg_flags:
+                continue
+            if '\\Seen' not in msg_flags:
+                unseen = True
+            thr_flags.extend(msg_flags)
+            if '#latest' in msg_flags:
+                thrid = uid
+        if thrid is None:
+            raise ValueError('No #latest for %s' % thr)
+
+        flags = list(set(' '.join(thr_flags).split()))
+        if unseen and '\\Seen' in flags:
+            flags.remove('\\Seen')
+        if '#latest' in flags:
+            flags.remove('#latest')
+        addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
+        yield thrid, all_msgs[thrid], flags, addrs
+
+    log.debug('%s threads', len(msgs))
+    con.logout()
+    return msgs
+
+
+def tags_info():
+    with client() as con:
+        res = con.search('UNSEEN')
+        uids = res[0].decode().split()
+        res = con.fetch(uids, 'FLAGS')
+        unreed = {}
+        for line in res:
+            flags = re.search(
+                r'FLAGS \(([^)]*)\)', line.decode()
+            ).group(1)
+            for f in flags.split():
+                unreed.setdefault(f, 0)
+                unreed[f] += 1
+    tags = {
+        t: {'name': t, 'unread': unreed.get(t, 0)}
+        for t in ('#inbox',)
+    }
+    tags.update({
+        t: {'name': n, 'unread': unreed.get(t, 0)}
+        for t, n in get_tags().items()
+    })
+    return tags

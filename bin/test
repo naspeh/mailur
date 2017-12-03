@@ -21,7 +21,7 @@ set +ux
 . env/bin/activate
 set -ux
 pytest -v
-python -c 'import mailur.app'
+python -c 'import mailur.web'
 yarn run lint
 yarn run fmt && git diff --exit-code
 yarn run build
