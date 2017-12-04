@@ -58,6 +58,9 @@ class Some(object):
         self.value = other
         return False
 
+    def __getitem__(self, name):
+        return self.value[name]
+
     def __repr__(self):
         return '<ANY>'
 
@@ -113,17 +116,24 @@ def gm_client():
             else:
                 txt = item.get('txt', '42')
                 msg = local.binary_msg(txt)
-                msg.add_header('Date', formatdate(gm_client.time + uid))
+
+                date = item.get('date')
+                if not date:
+                    date = gm_client.time + uid
+                msg.add_header('Date', formatdate(date))
+
                 mid = item.get('mid')
                 if not mid:
                     mid = '<%s@mlr>' % uid
                 msg.add_header('Message-ID', mid)
+
                 in_reply_to = item.get('in_reply_to')
                 if in_reply_to:
                     msg.add_header('In-Reply-To', in_reply_to)
                 refs = item.get('refs')
                 if refs:
                     msg.add_header('References', refs)
+
                 msg = msg.as_bytes()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
@@ -181,3 +191,12 @@ def latest():
     def inner(box, raw=False):
         return _msgs(box, '*', raw=raw)[0]
     return inner
+
+
+@pytest.fixture
+def web():
+    from webtest import TestApp
+    from mailur.web import app
+
+    app.catchall = False
+    return TestApp(app)

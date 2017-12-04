@@ -13,7 +13,7 @@ cat << EOF | ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $(l
 set -exuo pipefail
 
 cd /opt/mailur
-bin/install
+dev=1 bin/install
 
 apk add git
 
@@ -21,7 +21,6 @@ set +ux
 . env/bin/activate
 set -ux
 pytest -v
-python -c 'import mailur.web'
 yarn run lint
 yarn run fmt && git diff --exit-code
 yarn run build

@@ -32,7 +32,7 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
 def localize_dt(val, offset=None):
     if isinstance(val, (float, int)):
         val = dt.datetime.fromtimestamp(val)
-    return val + dt.timedelta(hours=-(offset or 0))
+    return val + dt.timedelta(hours=(offset or 0))
 
 
 def format_dt(value, offset=None, fmt='%a, %d %b, %Y at %H:%M'):

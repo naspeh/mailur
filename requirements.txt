@@ -1,7 +1,0 @@
-bottle
-docopt
-gevent
-geventhttpclient
-gunicorn
-lxml
-wsaccel

@@ -11,7 +11,8 @@ app = Bottle()
 
 @app.post('/init')
 def init():
-    response.set_cookie('offset', str(request.json['offset']))
+    if request.json:
+        response.set_cookie('offset', str(request.json['offset']))
     return {'tags': local.tags_info()}
 
 
@@ -23,11 +24,11 @@ def search():
     if q.startswith(':threads'):
         q = q[8:]
         uids = local.search_thrs(q)
-        msgs_url = '/thrs/info'
+        msgs_url = app.get_url('thrs_info')
         msgs = local.thrs_info
     else:
         uids = local.search_msgs(q)
-        msgs_url = '/msgs/info'
+        msgs_url = app.get_url('msgs_info')
         msgs = local.msgs_info
 
     if preload and uids:
@@ -37,7 +38,7 @@ def search():
     return {'uids': uids, 'msgs': msgs, 'msgs_info': msgs_url}
 
 
-@app.post('/thrs/info')
+@app.post('/thrs/info', name='thrs_info')
 def thrs_info():
     uids = request.json['uids']
     if not uids:
@@ -45,7 +46,7 @@ def thrs_info():
     return wrap_msgs(local.thrs_info(uids))
 
 
-@app.post('/msgs/info')
+@app.post('/msgs/info', name='msgs_info')
 def msgs_info():
     uids = request.json['uids']
     if not uids:
@@ -61,7 +62,7 @@ def thrs_link():
     return local.link_threads(uids)
 
 
-@app.get('/raw/<uid:int>')
+@app.get('/raw/<uid:int>', name='raw')
 def raw(uid):
     box = request.query.get('box', local.SRC)
     msg = local.raw_msg(str(uid), box)
@@ -109,7 +110,7 @@ def wrap_msgs(items):
             'uid': uid,
             'flags': [f for f in flags if not f.startswith('\\')],
             'from_list': from_list(addrs),
-            'url_raw': '/raw/%s' % info['origin_uid'],
+            'url_raw': app.get_url('raw', uid=info['origin_uid']),
             'time_human': helpers.humanize_dt(info['date'], offset=offset),
             'time_title': helpers.format_dt(info['date'], offset=offset),
             'is_unread': '\\Seen' not in flags,

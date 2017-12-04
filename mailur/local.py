@@ -559,18 +559,19 @@ def thrs_info(uids):
 
 
 def tags_info():
+    unreed = {}
     with client() as con:
         res = con.search('UNSEEN')
         uids = res[0].decode().split()
-        res = con.fetch(uids, 'FLAGS')
-        unreed = {}
-        for line in res:
-            flags = re.search(
-                r'FLAGS \(([^)]*)\)', line.decode()
-            ).group(1)
-            for f in flags.split():
-                unreed.setdefault(f, 0)
-                unreed[f] += 1
+        if uids:
+            res = con.fetch(uids, 'FLAGS')
+            for line in res:
+                flags = re.search(
+                    r'FLAGS \(([^)]*)\)', line.decode()
+                ).group(1)
+                for f in flags.split():
+                    unreed.setdefault(f, 0)
+                    unreed[f] += 1
     tags = {
         t: {'name': t, 'unread': unreed.get(t, 0)}
         for t in ('#inbox',)
