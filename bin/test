@@ -21,7 +21,8 @@ set +ux
 . env/bin/activate
 set -ux
 pytest -v
-yarn run lint
-yarn run fmt && git diff --exit-code
+
+ci=1 bin/lint
+
 yarn run build
 EOF

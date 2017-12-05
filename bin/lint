@@ -1,0 +1,14 @@
+#!/bin/sh
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+PATH=$PATH:./node_modules/.bin
+
+flake8
+
+prettier --write assets/*.js webpack.config.js
+
+eslint assets/*.js webpack.config.js
+stylelint assets/*.css --fix
+htmlhint --rules=doctype-html5=0 assets/*.html
+
+[ ! ${ci-} ] || git diff --exit-code assets/

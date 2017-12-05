@@ -14,6 +14,8 @@
     "file-loader": "^1.1.5",
     "html-loader": "^0.5.1",
     "html-webpack-plugin": "^2.30.1",
+    "htmlhint": "^0.9.13",
+    "node-sass": "^4.7.2",
     "postcss-cssnext": "^3.0.2",
     "postcss-loader": "^2.0.8",
     "prettier": "^1.7.4",
@@ -24,11 +26,7 @@
   },
   "scripts": {
     "build": "webpack",
-    "dev": "webpack -w",
-    "fmt": "prettier --write assets/*.js webpack.config.js",
-    "eslint": "eslint assets/*.js webpack.config.js",
-    "stylelint": " stylelint assets/*.css",
-    "lint": "sh -xc 'yarn run fmt; yarn run eslint; yarn run stylelint'"
+    "dev": "webpack -w"
   },
   "eslintConfig": {
     "extends": "eslint:recommended",
