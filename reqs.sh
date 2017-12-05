@@ -16,6 +16,7 @@ wsaccel
 $deps
 
 flake8
+flake8-import-order
 pytest
 webtest
 ipdb

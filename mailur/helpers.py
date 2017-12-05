@@ -1,7 +1,8 @@
-import datetime as dt
 import base64
+import datetime as dt
 
 from gevent.pool import Pool
+
 from geventhttpclient import HTTPClient
 
 

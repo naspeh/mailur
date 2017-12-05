@@ -10,11 +10,11 @@ import re
 import uuid
 from email.message import MIMEPart
 from email.parser import BytesParser
-from email.utils import parsedate_to_datetime, getaddresses, formatdate
+from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 from gevent import socket
 
-from . import log, imap
+from . import imap, log
 
 USER = os.environ.get('MLR_USER', 'user')
 

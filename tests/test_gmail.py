@@ -1,26 +1,26 @@
 import re
-from unittest.mock import patch, call, ANY
+from unittest.mock import call, patch
 
-from mailur import local, gmail
+from mailur import gmail, local
 
 
 @patch('mailur.imap.select')
-def test_client(select):
+def test_client(select, some):
     con = gmail.client()
-    assert select.call_args == call(ANY, b'All', True)
+    assert select.call_args == call(some, b'All', True)
     assert set(con.__dict__.keys()) == set(
         '_con logout list select select_tag status search fetch'
         .split()
     )
 
     con.select_tag('\\Junk')
-    assert select.call_args == call(ANY, b'tags/Spam', True)
+    assert select.call_args == call(some, b'tags/Spam', True)
 
     con.select_tag('\\Trash')
-    assert select.call_args == call(ANY, b'tags/Trash', True)
+    assert select.call_args == call(some, b'tags/Trash', True)
 
     con.select_tag('\\Drafts')
-    assert select.call_args == call(ANY, b'tags/Drafts', True)
+    assert select.call_args == call(some, b'tags/Drafts', True)
 
     with patch('mailur.imap.fn_time') as m:
         con.list()

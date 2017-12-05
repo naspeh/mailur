@@ -5,7 +5,7 @@ import re
 
 from gevent import socket, ssl
 
-from . import log, imap, imap_utf7, local
+from . import imap, imap_utf7, local, log
 
 MAP_FLAGS = {
     '\\Answered': '\\Answered',

@@ -1,9 +1,9 @@
 import json
 import pathlib
 
-from bottle import Bottle, request, response, static_file, abort
+from bottle import Bottle, abort, request, response, static_file
 
-from . import local, helpers
+from . import helpers, local
 
 assets_path = pathlib.Path(__file__).parent / '../assets/dist'
 app = Bottle()
