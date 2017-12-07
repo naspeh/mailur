@@ -115,8 +115,9 @@ def wrap_msgs(items):
             addrs = [info['from']] if 'from' in info else []
         info.update({
             'uid': uid,
+            'count': len(addrs),
             'flags': [f for f in flags if not f.startswith('\\')],
-            'from_list': from_list(addrs),
+            'from_list': from_list(addrs, max=3),
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
             'time_human': humanize_dt(info['date'], offset=offset),
             'time_title': format_dt(info['date'], offset=offset),
@@ -127,18 +128,39 @@ def wrap_msgs(items):
     return msgs
 
 
-def from_list(addrs, max=3):
+def from_list(addrs, max=4):
     if isinstance(addrs, str):
         addrs = [addrs]
 
-    addrs = [a for a in addrs if a]
-    if len(addrs) <= 4:
-        return addrs
+    addrs_uniq = []
+    addrs_list = []
+    for a in reversed(addrs):
+        if not a or a['addr'] in addrs_uniq:
+            continue
+        addrs_uniq.append(a['addr'])
+        addrs_list.append(a)
 
-    return [
-        addrs[0],
-        {'expander': len(addrs[1:-2])},
-    ] + addrs[-2:]
+    addrs_list = list(reversed(addrs_list))
+    if len(addrs_list) <= max:
+        return addrs_list
+
+    addr_end = addrs[-1]
+    if addr_end and addr_end != addrs_list[-1]:
+        addrs_list.pop(addrs_list.index(addr_end))
+        addrs_list.append(addr_end)
+
+    if addr_end == addrs[0]:
+        expander_index = 0
+        addrs_few = addrs_list[-max+1:]
+    else:
+        expander_index = 1
+        addrs_few = [addrs_list[0]] + addrs_list[-max+2:]
+
+    addrs_few.insert(
+        expander_index,
+        {'expander': len(addrs_list) - len(addrs_few)}
+    )
+    return addrs_few
 
 
 def localize_dt(val, offset=None):

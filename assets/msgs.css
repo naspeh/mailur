@@ -117,6 +117,7 @@
     justify-content: space-between;
     align-items: stretch;
     height: 18px;
+    margin-left: 0.1em;
 
     & .msg-from-pic,
     & .msg-from-more {
@@ -144,12 +145,22 @@
     }
   }
 
+  & .msg-count {
+    display: block;
+    line-height: 18px;
+    padding: 0 0.2em;
+    margin: 0.2em;
+    background-color: #fff;
+    text-align: center;
+    font-size: 90%;
+  }
+
   & .msg-preview {
     position: relative;
     display: flex;
     justify-content: space-between;
     flex-grow: 20;
-    margin-left: 3px;
+    margin-left: 0.1em;
     padding: 0 2px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -163,14 +174,14 @@
     }
 
     & .msg-preview-subj {
-      padding-left: 5px;
+      padding-left: 0.1em;
       color: #333;
       background-color: #eee;
     }
 
     & .msg-preview-text {
       flex-grow: 2;
-      padding-left: 5px;
+      padding-left: 0.1em;
       background-color: #eee;
     }
 

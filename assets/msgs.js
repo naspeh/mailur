@@ -63,7 +63,7 @@ Vue.component('Msgs', {
         q: this.query,
         preload: this.perPage
       }).then(res => {
-        this.url = res.msgs_url;
+        this.url = res.msgs_info;
         this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });

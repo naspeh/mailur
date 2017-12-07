@@ -32,24 +32,25 @@
       <div class="msg-line">
         <span class="msg-from">
         <template v-for="from in msg.from_list">
-          <span v-if="from.expander" class="msg-from-more" :title="`${from.expander} more`">
-            {{from.expander}}
-          </span>
           <span v-if="from.hash" @click.stop="searchAddr(from.addr)" :class="`msg-from-pic pic-${from.hash}`" :title="from.title"></span>
+          <span v-if="from.expander" class="msg-from-more" :title="`${from.expander} more addresses`">…</span>
         </template>
         </span>
         <tags :raw="msg.flags" :trancate="true" />
         <span @click.prevent="threads ? thread(msg.uid) : details(msg.uid)" class="msg-preview">
+          <span v-if="msg.count > 1" class="msg-count" :title="`${msg.count} emails in thread`">
+            {{msg.count}}
+          </span>
           <span class="msg-preview-from" :title="msg.from.title">
-            {{ msg.from.name }}
+            {{msg.from.name}}
           </span>
           <span class="msg-preview-subj" :title="msg.subject">
-             {{ msg.subject }}
+             {{msg.subject}}
           </span>
           <span class="msg-preview-text" :title="msg.preview">
-            {{ msg.preview }}
+            {{msg.preview}}
           </span>
-          <span class="msg-date" :title="msg.time_title">{{ msg.time_human }}</span>
+          <span class="msg-date" :title="msg.time_title">{{msg.time_human}}</span>
         </span>
         <span class="msg-unread icon-unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></span>
         <span class="msg-pin icon-pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></span>

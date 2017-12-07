@@ -52,16 +52,18 @@ def test_init(clean_users, gm_client, web, some):
 
 def test_from_list(some):
     res = from_list(local.addresses('test <test@example.com>'))
-    assert res == [{
-        'name': 'test',
-        'addr': 'test@example.com',
-        'hash': '55502f40dc8b7c769880b10874abc9d0',
-        'title': 'test <test@example.com>'
-    }]
+    assert res == [
+        {
+            'name': 'test',
+            'addr': 'test@example.com',
+            'hash': '55502f40dc8b7c769880b10874abc9d0',
+            'title': 'test <test@example.com>'
+        },
+    ]
 
     res = from_list(local.addresses(
         'test <test@example.com>,'
-        'test2 <test@example.com>,'
+        'test2 <test2@example.com>,'
     ))
     assert res == [
         {'name': 'test', 'addr': some, 'hash': some, 'title': some},
@@ -70,8 +72,8 @@ def test_from_list(some):
 
     res = from_list(local.addresses(
         'test <test@example.com>,'
-        'test2 <test@example.com>,'
-        'test3 <test@example.com>,'
+        'test2 <test2@example.com>,'
+        'test3 <test3@example.com>,'
     ))
     assert res == [
         {'name': 'test', 'addr': some, 'hash': some, 'title': some},
@@ -81,9 +83,9 @@ def test_from_list(some):
 
     res = from_list(local.addresses(
         'test <test@example.com>,'
-        'test2 <test@example.com>,'
-        'test3 <test@example.com>,'
-        'test4 <test@example.com>,'
+        'test2 <test2@example.com>,'
+        'test3 <test3@example.com>,'
+        'test4 <test4@example.com>,'
     ))
     assert res == [
         {'name': 'test', 'addr': some, 'hash': some, 'title': some},
@@ -94,10 +96,10 @@ def test_from_list(some):
 
     res = from_list(local.addresses(
         'test <test@example.com>,'
-        'test2 <test@example.com>,'
-        'test3 <test@example.com>,'
-        'test4 <test@example.com>,'
-        'test5 <test@example.com>,'
+        'test2 <test2@example.com>,'
+        'test3 <test3@example.com>,'
+        'test4 <test4@example.com>,'
+        'test5 <test5@example.com>,'
     ))
     assert res == [
         {'name': 'test', 'addr': some, 'hash': some, 'title': some},
@@ -106,12 +108,59 @@ def test_from_list(some):
         {'name': 'test5', 'addr': some, 'hash': some, 'title': some},
     ]
 
+    res = from_list(local.addresses(
+        'test <test@example.com>,'
+        'test2 <test2@example.com>,'
+        'test3 <test3@example.com>,'
+        'test4 <test4@example.com>,'
+        'test5 <test5@example.com>,'
+        'test <test@example.com>,'
+    ))
+    assert res == [
+        {'expander': 2},
+        {'name': 'test4', 'addr': some, 'hash': some, 'title': some},
+        {'name': 'test5', 'addr': some, 'hash': some, 'title': some},
+        {'name': 'test', 'addr': some, 'hash': some, 'title': some},
+    ]
+
+    res = from_list(local.addresses(
+        'test <test@example.com>,'
+        'test2 <test2@example.com>,'
+        'test3 <test3@example.com>,'
+        'test2 <test2@example.com>,'
+    ))
+    assert res == [
+        {'name': 'test', 'addr': some, 'hash': some, 'title': some},
+        {'name': 'test3', 'addr': some, 'hash': some, 'title': some},
+        {'name': 'test2', 'addr': some, 'hash': some, 'title': some},
+    ]
+
+    res = from_list(local.addresses(
+        'test <test@example.com>,'
+        'test2 <test2@example.com>,'
+        'test <test@example.com>,'
+        'test2 <test2@example.com>,'
+        'test3 <test3@example.com>,'
+    ))
+    assert res == [
+        {'name': 'test', 'addr': some, 'hash': some, 'title': some},
+        {'name': 'test2', 'addr': some, 'hash': some, 'title': some},
+        {'name': 'test3', 'addr': some, 'hash': some, 'title': some},
+    ]
+
     res = from_list(local.addresses(','.join(
-        'test%s <test@example.com>' % i for i in range(10)
+        'test{0} <test{0}@example.com>'.format(i) for i in range(10)
     )))
     assert res == [
         {'name': 'test0', 'addr': some, 'hash': some, 'title': some},
         {'expander': 7},
         {'name': 'test8', 'addr': some, 'hash': some, 'title': some},
         {'name': 'test9', 'addr': some, 'hash': some, 'title': some},
+    ]
+
+    res = from_list(local.addresses(','.join(
+        'test <test@example.com>' for i in range(10)
+    )))
+    assert res == [
+        {'name': 'test', 'addr': some, 'hash': some, 'title': some},
     ]
