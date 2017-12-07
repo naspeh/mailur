@@ -1,9 +1,15 @@
+import base64
+import datetime as dt
 import json
 import pathlib
 
 from bottle import Bottle, abort, request, response, static_file
 
-from . import helpers, local
+from gevent.pool import Pool
+
+from geventhttpclient import HTTPClient
+
+from . import local
 
 assets_path = pathlib.Path(__file__).parent / '../assets/dist'
 app = Bottle()
@@ -84,7 +90,7 @@ def avatars():
     return '\n'.join((
         '%s {background-image: url(data:image/gif;base64,%s);}'
         % ((cls % h), i.decode())
-    ) for h, i in helpers.fetch_avatars(hashes, size, default))
+    ) for h, i in fetch_avatars(hashes, size, default))
 
 
 @app.get('/')
@@ -93,6 +99,7 @@ def assets(filepath='index.html'):
     return static_file(filepath, root=assets_path)
 
 
+# Helpers bellow
 def wrap_msgs(items):
     offset = int(request.cookies['offset'])
     msgs = {}
@@ -111,8 +118,8 @@ def wrap_msgs(items):
             'flags': [f for f in flags if not f.startswith('\\')],
             'from_list': from_list(addrs),
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
-            'time_human': helpers.humanize_dt(info['date'], offset=offset),
-            'time_title': helpers.format_dt(info['date'], offset=offset),
+            'time_human': humanize_dt(info['date'], offset=offset),
+            'time_title': format_dt(info['date'], offset=offset),
             'is_unread': '\\Seen' not in flags,
             'is_pinned': '\\Flagged' in flags,
         })
@@ -132,3 +139,49 @@ def from_list(addrs, max=3):
         addrs[0],
         {'expander': len(addrs[1:-2])},
     ] + addrs[-2:]
+
+
+def localize_dt(val, offset=None):
+    if isinstance(val, (float, int)):
+        val = dt.datetime.fromtimestamp(val)
+    return val + dt.timedelta(hours=(offset or 0))
+
+
+def format_dt(value, offset=None, fmt='%a, %d %b, %Y at %H:%M'):
+    return localize_dt(value, offset).strftime(fmt)
+
+
+def humanize_dt(val, offset=None, secs=False):
+    val = localize_dt(val, offset)
+    now = localize_dt(dt.datetime.utcnow(), offset)
+    if (now - val).total_seconds() < 12 * 60 * 60:
+        fmt = '%H:%M' + (':%S' if secs else '')
+    elif now.year == val.year:
+        fmt = '%b %d'
+    else:
+        fmt = '%b %d, %Y'
+    return val.strftime(fmt)
+
+
+def fetch_avatars(hashes, size=20, default='identicon', b64=True):
+    def _avatar(hash):
+        if hash in cache:
+            return cache[hash]
+        res = http.get(
+            '/avatar/{hash}?d={default}&s={size}'
+            .format(hash=hash, size=size, default=default)
+        )
+        result = hash, res.read() if res.status_code == 200 else None
+        cache[hash] = result
+        return result
+
+    if not hasattr(fetch_avatars, 'cache'):
+        fetch_avatars.cache = {}
+    key = (size, default)
+    fetch_avatars.cache.setdefault(key, {})
+    cache = fetch_avatars.cache[key]
+
+    http = HTTPClient.from_url('https://www.gravatar.com/')
+    pool = Pool(20)
+    res = pool.map(_avatar, hashes)
+    return [(i[0], base64.b64encode(i[1]) if b64 else i[1]) for i in res if i]
