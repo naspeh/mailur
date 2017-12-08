@@ -130,17 +130,17 @@ def test_update_threads(clean_users, gm_client, msgs):
         '', '', '', '', '#latest', '#latest'
     ]
 
-    gm_client.add_emails([{'labels': 'test1'}, {'labels': 'test2'}])
+    gm_client.add_emails([{'labels': 't1'}, {'labels': 't2'}])
     local.parse('UID 6:*')
     res = msgs(local.ALL)
     assert [i['flags'] for i in res] == [
-        '', '', '', '', '#latest', '#latest', '#latest #t1', '#latest #t2'
+        '', '', '', '', '#latest', '#latest', '#latest t1', '#latest t2'
     ]
 
     local.update_threads(con, 'UID *')
     res = msgs(local.ALL)
     assert [i['flags'] for i in res] == [
-        '', '', '', '', '#latest', '#latest', '#latest #t1', '#latest #t2'
+        '', '', '', '', '#latest', '#latest', '#latest t1', '#latest t2'
     ]
 
 

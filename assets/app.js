@@ -23,7 +23,8 @@ Vue.component('App', {
     allTags: function() {
       let tags = [];
       for (let i in this.tags) {
-        if (this.tags[i].unread) {
+        let tag = this.tags[i];
+        if (tag.unread || tag.pinned) {
           tags.push(i);
         }
       }

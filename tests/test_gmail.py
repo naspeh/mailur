@@ -87,13 +87,21 @@ def test_origin_msg(clean_users, gm_client, latest):
         {'flags': r'\Flagged', 'labels': r'"\\Inbox" "\\Sent" label'}
     ])
     flags = latest(local.SRC)['flags']
-    assert r'\Flagged #inbox #sent #t1' == flags
-    assert local.get_tags() == {'#t1': 'label'}
+    assert r'\Flagged #inbox #sent label' == flags
+    assert local.saved_tags() == {}
 
-    gm_client.add_emails([{'labels': 'label "another label"'}])
+    gm_client.add_emails([{'labels': r'test/#-.,:;!?/'}])
     flags = latest(local.SRC)['flags']
-    assert '#t1 #t2' == flags
-    assert local.get_tags() == {'#t1': 'label', '#t2': 'another label'}
+    assert r'test/#-.,:;!?/' == flags
+    assert local.saved_tags() == {}
+
+    gm_client.add_emails([{'labels': 'label "another label" (label)'}])
+    flags = latest(local.SRC)['flags']
+    assert 'label #12ea23fc #40602c03' == flags
+    assert local.saved_tags() == {
+        '#12ea23fc': {'name': 'another label'},
+        '#40602c03': {'name': '(label)'},
+    }
 
     # - "\Important" must be skiped
     # - flags must be transformed with imap-utf7
@@ -101,11 +109,11 @@ def test_origin_msg(clean_users, gm_client, latest):
         {'labels': r'"\\Important" "\\Sent" "test(&BEIENQRBBEI-)"'}
     ])
     flags = latest(local.SRC)['flags']
-    assert '#sent #t3' == flags
-    assert local.get_tags() == {
-        '#t1': 'label',
-        '#t2': 'another label',
-        '#t3': 'test(тест)',
+    assert '#sent #a058c658' == flags
+    assert local.saved_tags() == {
+        '#12ea23fc': {'name': 'another label'},
+        '#40602c03': {'name': '(label)'},
+        '#a058c658': {'name': 'test(тест)'},
     }
 
     gm_client.add_emails([{}], tag='\\Junk')

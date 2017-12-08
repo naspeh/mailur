@@ -12,7 +12,11 @@ def test_init(clean_users, gm_client, web, some):
     res = web.post_json('/init', {'offset': 2})
     assert res.status_code == 200
     assert web.cookies == {'offset': '2'}
-    assert res.json == {'tags': {'#inbox': {'name': '#inbox', 'unread': 0}}}
+    assert res.json == {'tags': {
+        '#inbox': {'id': '#inbox', 'name': '#inbox', 'pinned': 1},
+        '#spam': {'id': '#spam', 'name': '#spam', 'pinned': 1},
+        '#trash': {'id': '#trash', 'name': '#trash', 'pinned': 1},
+    }}
 
     time_dt = dt.datetime.utcnow()
     time = int(time_dt.timestamp())
@@ -22,14 +26,16 @@ def test_init(clean_users, gm_client, web, some):
     res = web.post_json('/init')
     assert res.status_code == 200
     assert web.cookies == {'offset': '2'}
-    assert res.json == {'tags': {'#inbox': {'name': '#inbox', 'unread': 1}}}
+    assert res.json == {'tags': {
+        '#inbox': {'id': '#inbox', 'name': '#inbox', 'unread': 1, 'pinned': 1},
+        '#spam': {'id': '#spam', 'name': '#spam', 'pinned': 1},
+        '#trash': {'id': '#trash', 'name': '#trash', 'pinned': 1},
+    }}
 
     res = web.post_json('/search', {'q': 'all', 'preload': 1})
     assert res.status_code == 200
     assert res.json == {
-        'msgs': {'1': some},
-        'msgs_info': '/msgs/info',
-        'uids': ['1']
+        'uids': ['1'], 'msgs': {'1': some}, 'msgs_info': '/msgs/info',
     }
     time_2h = time_dt + dt.timedelta(hours=2)
     assert some['time_human'] == time_2h.strftime('%H:%M')
@@ -42,9 +48,7 @@ def test_init(clean_users, gm_client, web, some):
     res = web.post_json('/search', {'q': 'all', 'preload': 1})
     assert res.status_code == 200
     assert res.json == {
-        'msgs': {'1': some},
-        'msgs_info': '/msgs/info',
-        'uids': ['1']
+        'uids': ['1'], 'msgs': {'1': some}, 'msgs_info': '/msgs/info',
     }
     assert some['time_human'] == time_dt.strftime('%H:%M')
     assert some['time_title'] == time_dt.strftime('%a, %d %b, %Y at %H:%M')

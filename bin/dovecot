@@ -85,9 +85,6 @@ namespace {
         auto = subscribe
         special_use = \All
     }
-    mailbox Tags {
-        auto = subscribe
-    }
     mailbox Contacts {
         auto = subscribe
     }

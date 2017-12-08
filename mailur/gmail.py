@@ -84,7 +84,7 @@ def fetch_uids(uids, tag):
             label = label.strip('"').replace('\\\\', '\\')
             label = imap_utf7.decode(label)
             flag = MAP_LABELS.get(label, None)
-            return local.get_tag(label) if flag is None else flag
+            return local.get_tag(label)['id'] if flag is None else flag
         return ''
 
     def msgs():

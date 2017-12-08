@@ -26,7 +26,7 @@ def setup(gm_client):
 
     local.uid_pairs.cache_clear()
     local.msgids.cache_clear()
-    local.get_tags.cache_clear()
+    local.saved_tags.cache_clear()
 
     with mock.patch('mailur.local.USER', 'test1'):
         yield

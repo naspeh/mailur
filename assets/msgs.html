@@ -1,27 +1,27 @@
 <div class="msgs">
   <div class="msgs-header">
-    <div v-if="!side" class="msgs-search">
-      <input v-model.lazy.trim="query" @keyup.enter="fetch()">
-      <button @click="fetch()" class="icon-search"></button>
-    </div>
     <div v-if="canOpenInSide()">
       <button @click="openInSide()">Copy from main</button>
+    </div>
+    <div v-if="pages.length" class="msgs-picking">
+      <span>
+        {{length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
+      </span>
+      <span>
+        (Select
+        <a v-if="length > picked.length" @click.prevent="pickAll" href="#">All</a>
+        <a v-if="picked.length > 0" @click.prevent="pickNone" href="#">None</a>
+        )
+      </span>
     </div>
     <div v-if="picked.length" class="msgs-actions">
       <button class="icon-archive" title="Archive"></button>
       <button class="icon-trash" title="Move to Trash"></button>
       <button v-if="threads && picked.length > 1" @click="link" class="icon-link" title="Link threads together"></button>
     </div>
-    <div v-if="pages.length" class="msgs-picking">
-    <span>
-      {{length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
-    </span>
-    <span>
-      (Select
-      <a v-if="length > picked.length" @click.prevent="pickAll" href="#">All</a>
-      <a v-if="picked.length > 0" @click.prevent="pickNone" href="#">None</a>
-      )
-    </span>
+    <div v-if="!side" class="msgs-search">
+      <input v-model.lazy.trim="query" @keyup.enter="fetch()">
+      <button @click="fetch()" class="icon-search"></button>
     </div>
   </div>
   <div v-for="uids of pages" class="msgs-body">

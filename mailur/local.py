@@ -20,7 +20,6 @@ USER = os.environ.get('MLR_USER', 'user')
 
 SRC = 'Src'
 ALL = 'All'
-TAGS = 'Tags'
 
 
 class Local(imaplib.IMAP4, imap.Conn):
@@ -65,31 +64,32 @@ def gen_msgid(label):
 
 
 @ft.lru_cache(maxsize=None)
-def get_tags(reverse=False):
-    with client() as con:
-        count = con.select(TAGS)
-        if count == [b'0']:
+def saved_tags(reverse=False):
+    with client(None) as con:
+        res = con.getmetadata(SRC, 'tags')
+        if len(res) == 1:
             return {}
-        res = con.fetch('1:*', 'BODY.PEEK[1]')
-        tags = (
-            ('#t%s' % res[i][0].split()[2].decode(), res[i][1].decode())
-            for i in range(0, len(res), 2)
-        )
-    return {v: k for k, v in tags} if reverse else dict(tags)
+    return json.loads(res[0][1].decode())
 
 
 def get_tag(name):
-    tag = get_tags(reverse=True).get(name)
-    if tag is not None:
-        return tag
-    msg = binary_msg(name)
-    msg.add_header('Subject', name)
-    with client(TAGS) as con:
-        tag = con.append(TAGS, '', None, msg.as_bytes())
-    get_tags.cache_clear()
-    tag = '#t' + tag
-    log.info('## added new tag %s: %r', tag, name)
-    return tag
+    if re.match(r'(?i)^[a-z0-9/#\-.,:;!?]*$', name):
+        tag = name
+    else:
+        tag = '#' + hashlib.md5(name.lower().encode()).hexdigest()[:8]
+
+    tags = saved_tags()
+    info = tags.get(tag)
+    if info is None:
+        info = {'name': name}
+        if name != tag:
+            tags[tag] = info
+            with client(None) as con:
+                con.setmetadata(SRC, 'tags', json.dumps(tags))
+            log.info('## new tag %s: %r', tag, name)
+            saved_tags.cache_clear()
+    info.update(id=tag)
+    return info
 
 
 @imap.fn_time
@@ -153,7 +153,7 @@ def save_msgids(uids=None):
             if len(uids) > 1:
                 uids = sorted(uids, key=lambda i: int(i))
             mids[mid] = uids
-        con.setmetadata(ALL, 'msgids', json.dumps(mids))
+        con.setmetadata(SRC, 'msgids', json.dumps(mids))
     msgids.cache_clear()
 
 
@@ -161,7 +161,7 @@ def save_msgids(uids=None):
 @imap.fn_time
 def msgids():
     with client(None) as con:
-        res = con.getmetadata(ALL, 'msgids')
+        res = con.getmetadata(SRC, 'msgids')
         if len(res) == 1:
             return {}
 
@@ -559,9 +559,9 @@ def thrs_info(uids):
 
 
 def tags_info():
-    unreed = {}
+    unread = {}
     with client() as con:
-        res = con.search('UNSEEN')
+        res = con.search('ALL')
         uids = res[0].decode().split()
         if uids:
             res = con.fetch(uids, 'FLAGS')
@@ -570,14 +570,15 @@ def tags_info():
                     r'FLAGS \(([^)]*)\)', line.decode()
                 ).group(1)
                 for f in flags.split():
-                    unreed.setdefault(f, 0)
-                    unreed[f] += 1
+                    unread.setdefault(f, 0)
+                    if '\Seen' not in flags:
+                        unread[f] += 1
     tags = {
-        t: {'name': t, 'unread': unreed.get(t, 0)}
-        for t in ('#inbox',)
+        t: dict(get_tag(t), unread=unread.get(t, 0))
+        for t in sorted(unread) if t not in ('#latest', '#link', '#sent')
     }
     tags.update({
-        t: {'name': n, 'unread': unreed.get(t, 0)}
-        for t, n in get_tags().items()
+        t: dict(tags.get(t, get_tag(t)), pinned=1)
+        for t in ('#inbox', '#spam', '#trash')
     })
     return tags
