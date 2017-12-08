@@ -66,7 +66,7 @@
 
   &.msg-detailed .msg-actions {
     display: flex;
-    flex-flow: row-reverse nowrap;
+    flex-flow: reverse nowrap;
     white-space: nowrap;
     font-size: 90%;
 
@@ -92,9 +92,14 @@
     }
   }
 
+  & .msg-pick {
+    line-height: 18px;
+  }
+
   & .msg-pin,
   & .msg-unread,
-  & .msg-more {
+  & .msg-more,
+  & .msg-split {
     font-size: 90%;
     padding: 0;
 
@@ -149,7 +154,7 @@
     display: block;
     line-height: 18px;
     padding: 0 0.2em;
-    margin: 0.2em;
+    margin: 0.2em 0;
     background-color: #fff;
     text-align: center;
     font-size: 90%;
@@ -160,8 +165,7 @@
     display: flex;
     justify-content: space-between;
     flex-grow: 20;
-    margin-left: 0.1em;
-    padding: 0 2px;
+    margin: 0 0.2em;
     overflow: hidden;
     text-overflow: ellipsis;
 
@@ -174,14 +178,14 @@
     }
 
     & .msg-preview-subj {
-      padding-left: 0.1em;
+      padding-left: 0.2em;
       color: #333;
       background-color: #eee;
     }
 
     & .msg-preview-text {
       flex-grow: 2;
-      padding-left: 0.1em;
+      padding-left: 0.2em;
       background-color: #eee;
     }
 
@@ -189,7 +193,7 @@
       position: absolute;
       right: 0;
       background-color: #eee;
-      padding: 0 5px 0 10px;
+      padding-left: 0.5em;
     }
   }
 
