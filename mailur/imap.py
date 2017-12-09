@@ -1,4 +1,5 @@
 import functools as ft
+import inspect
 import json
 import os
 import re
@@ -37,18 +38,52 @@ def fn_desc(func, *a, **kw):
 
 
 def fn_time(func, desc=None):
-    @ft.wraps(func)
-    def inner(*a, **kw):
+    def inner_fn(*a, **kw):
         start = time.time()
         try:
             return func(*a, **kw)
         finally:
             d = desc if desc else fn_desc(func, *a, **kw)
             log.debug('## %s: done for %.2fs', d, time.time() - start)
-    return inner
+
+    def inner_gen(*a, **kw):
+        start = time.time()
+        try:
+            yield from func(*a, **kw)
+        finally:
+            d = desc if desc else fn_desc(func, *a, **kw)
+            log.debug('## %s: done for %.2fs', d, time.time() - start)
+
+    inner = inner_gen if inspect.isgeneratorfunction(func) else inner_fn
+    return ft.wraps(func)(inner)
 
 
-def cmd_lock(func):
+def using(client, box, readonly=True):
+    def inner_gen(*a, **kw):
+        if kw.get('con'):
+            yield from wrapper.fn(*a, **kw)
+            return
+
+        with client(box, readonly) as con:
+            kw['con'] = con
+            yield from wrapper.fn(*a, **kw)
+
+    def inner_fn(*a, **kw):
+        if kw.get('con'):
+            return wrapper.fn(*a, **kw)
+
+        with client(box, readonly) as con:
+            kw['con'] = con
+            return wrapper.fn(*a, **kw)
+
+    def wrapper(fn):
+        wrapper.fn = fn
+        inner = inner_gen if inspect.isgeneratorfunction(fn) else inner_fn
+        return ft.wraps(fn)(inner)
+    return wrapper
+
+
+def cmd_locked(func):
     @ft.wraps(func)
     def inner(con, *a, **kw):
         with con.lock:
@@ -90,7 +125,7 @@ def command(*, name=None, lock=True, writable=False, dovecot=False):
             func.name = func.__name__
 
         if lock:
-            func = cmd_lock(func)
+            func = cmd_locked(func)
 
         func = cmd_error(func)
         commands[func] = {'writable': writable, 'dovecot': dovecot}
