@@ -1,8 +1,4 @@
-:root {
-  --colorR: green;
-}
-
-@custom-media --small (max-width: 1200px);
+@import './root.css';
 
 .msgs-header {
   display: flex;
@@ -32,32 +28,32 @@
 .msg {
   box-sizing: border-box;
   padding: 0 0.2em;
-  background-color: #eee;
-  border-top: 1px solid #fff;
+  background-color: var(--colorLightGrey);
+  border-top: 1px solid var(--colorWhite);
   border-radius: 0.5em;
 
   &.msg-detailed {
-    border-top: 1px solid #ccc;
-    background-color: #fff;
+    border-top: 1px solid var(--colorGrey);
+    background-color: var(--colorWhite);
 
     & .msg-preview {
       & .msg-preview-subj,
       & .msg-preview-text,
       & .msg-date {
-        background-color: #fff;
+        background-color: var(--colorWhite);
       }
     }
   }
 
   & a {
-    color: var(--colorR);
+    color: var(--colorGreen);
   }
 
   & .msg-line {
     display: flex;
     align-items: center;
     white-space: nowrap;
-    color: #777;
+    color: var(--colorDarkGrey);
   }
 
   & .msg-actions {
@@ -92,10 +88,6 @@
     }
   }
 
-  & .msg-pick {
-    line-height: 18px;
-  }
-
   & .msg-pin,
   & .msg-unread,
   & .msg-more,
@@ -109,30 +101,33 @@
   }
 
   &.msg-is-pinned .msg-pin {
-    color: #f63;
+    color: var(--colorOrange);
   }
 
   &.msg-is-unread .msg-unread,
   &.msg-detailed .msg-more {
-    color: green;
+    color: var(--colorGreen);
+  }
+
+  & .msg-pick {
+    display: flex;
   }
 
   & .msg-from {
     display: flex;
     justify-content: space-between;
     align-items: stretch;
-    height: 18px;
     margin-left: 0.1em;
 
     & .msg-from-pic,
     & .msg-from-more {
       display: block;
-      margin: 0 1px;
+      margin: 0 0.1em;
     }
 
     & .msg-from-pic {
-      height: 18px;
-      width: 18px;
+      height: var(--picHeight);
+      width: var(--picHeight);
       background-position: center center;
       background-repeat: no-repeat;
 
@@ -142,20 +137,20 @@
     }
 
     & .msg-from-more {
-      min-width: 18px;
-      line-height: 18px;
+      min-width: var(--picHeight);
+      line-height: var(--picHeight);
       text-align: center;
-      background-color: #fff;
+      background-color: var(--colorWhite);
       font-size: 90%;
     }
   }
 
   & .msg-count {
     display: block;
-    line-height: 18px;
     padding: 0 0.2em;
-    margin: 0.2em 0;
-    background-color: #fff;
+    height: var(--picHeight);
+    line-height: var(--picHeight);
+    background-color: var(--colorWhite);
     text-align: center;
     font-size: 90%;
   }
@@ -163,6 +158,7 @@
   & .msg-preview {
     position: relative;
     display: flex;
+    align-items: center;
     justify-content: space-between;
     flex-grow: 20;
     margin: 0 0.2em;
@@ -179,20 +175,21 @@
 
     & .msg-preview-subj {
       padding-left: 0.2em;
-      color: #333;
-      background-color: #eee;
+      color: var(--colorBlack);
+      background-color: var(--colorLightGrey);
     }
 
     & .msg-preview-text {
       flex-grow: 2;
       padding-left: 0.2em;
-      background-color: #eee;
+      background-color: var(--colorLightGrey);
     }
 
     & .msg-date {
       position: absolute;
+      top: 0;
       right: 0;
-      background-color: #eee;
+      background-color: var(--colorLightGrey);
       padding-left: 0.5em;
     }
   }
@@ -205,7 +202,6 @@
   }
 
   & .tags {
-    font-size: 80%;
-    padding: 0 2px;
+    font-size: 90%;
   }
 }

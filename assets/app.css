@@ -1,3 +1,5 @@
+@import './root.css';
+
 html,
 body {
   padding: 0;
@@ -9,15 +11,16 @@ body {
   display: flex;
   flex-flow: row nowrap;
   height: 100%;
-  line-height: 1.5em;
+  line-height: var(--lineHeight);
+  font-size: var(--fontSize);
 
   & .app-main,
   & .app-side {
     min-width: 600px;
     width: 100%;
-    box-sizing: border-box;
-    padding: 0 5px;
     height: 100%;
+    box-sizing: border-box;
+    padding: 0 0.2em;
     overflow-y: scroll;
   }
 
@@ -38,12 +41,6 @@ body {
 
   & .app-tags {
     display: flex;
-    margin-bottom: 5px;
-
-    & .tags .tag {
-      text-decoration: none;
-      background-color: #eee;
-      margin-right: 5px;
-    }
+    margin-bottom: 0.2em;
   }
 }

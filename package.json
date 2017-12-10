@@ -17,6 +17,7 @@
     "htmlhint": "^0.9.13",
     "node-sass": "^4.7.2",
     "postcss-cssnext": "^3.0.2",
+    "postcss-import": "^11.0.0",
     "postcss-loader": "^2.0.8",
     "prettier": "^1.7.4",
     "style-loader": "^0.19.0",

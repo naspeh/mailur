@@ -1,19 +1,21 @@
+@import './root.css';
+
 .tags {
   display: flex;
   justify-content: space-between;
-  margin: 0 -2px;
+  margin: 0 -0.1em;
 
   & .tag {
     max-width: 10em;
     padding: 0 0.1em;
     margin: 0 0.1em;
-    line-height: 18px;
-    color: green;
+    background-color: var(--colorLightGrey);
+    color: var(--colorGreen);
     white-space: nowrap;
     text-decoration: none;
 
     &:hover {
-      background-color: #fff;
+      background-color: var(--colorWhite);
     }
   }
 }
