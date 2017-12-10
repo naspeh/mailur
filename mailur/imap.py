@@ -10,7 +10,7 @@ from imaplib import CRLF, Time2Internaldate
 from gevent.lock import RLock
 from gevent.pool import Pool
 
-from . import log
+from . import fn_desc, fn_time, log
 
 DEBUG = int(os.environ.get('IMAP_DEBUG', 0))
 commands = {}
@@ -21,59 +21,23 @@ class Error(Exception):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
 
 
-def fn_desc(func, *a, **kw):
-    args = ', '.join(
-        [repr(i) for i in a] +
-        (['**%r' % kw] if kw else [])
-    )
-    maxlen = 80
-    if len(args) > maxlen:
-        args = '%s...' % args[:maxlen]
-    name = getattr(func, 'name', None)
-    if not name:
-        name = getattr(func, '__name__', None)
-    if not name:
-        name = str(func)
-    return '%s(%s)' % (name, args)
-
-
-def fn_time(func, desc=None):
-    def inner_fn(*a, **kw):
-        start = time.time()
-        try:
-            return func(*a, **kw)
-        finally:
-            d = desc if desc else fn_desc(func, *a, **kw)
-            log.debug('## %s: done for %.2fs', d, time.time() - start)
-
-    def inner_gen(*a, **kw):
-        start = time.time()
-        try:
-            yield from func(*a, **kw)
-        finally:
-            d = desc if desc else fn_desc(func, *a, **kw)
-            log.debug('## %s: done for %.2fs', d, time.time() - start)
-
-    inner = inner_gen if inspect.isgeneratorfunction(func) else inner_fn
-    return ft.wraps(func)(inner)
-
-
 def using(client, box, readonly=True):
-    def inner_gen(*a, **kw):
+    @contextmanager
+    def use_or_create(kw):
         if kw.get('con'):
-            yield from wrapper.fn(*a, **kw)
+            yield
             return
 
         with client(box, readonly) as con:
             kw['con'] = con
+            yield
+
+    def inner_gen(*a, **kw):
+        with use_or_create(kw):
             yield from wrapper.fn(*a, **kw)
 
     def inner_fn(*a, **kw):
-        if kw.get('con'):
-            return wrapper.fn(*a, **kw)
-
-        with client(box, readonly) as con:
-            kw['con'] = con
+        with use_or_create(kw):
             return wrapper.fn(*a, **kw)
 
     def wrapper(fn):

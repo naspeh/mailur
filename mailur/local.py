@@ -14,7 +14,7 @@ from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 from gevent import socket
 
-from . import imap, log
+from . import fn_time, imap, log
 
 USER = os.environ.get('MLR_USER', 'user')
 
@@ -96,7 +96,7 @@ def get_tag(name):
     return info
 
 
-@imap.fn_time
+@fn_time
 @using()
 def save_uid_pairs(uids=None, con=None):
     if uids:
@@ -114,7 +114,7 @@ def save_uid_pairs(uids=None, con=None):
 
 
 @ft.lru_cache(maxsize=None)
-@imap.fn_time
+@fn_time
 @using(None)
 def uid_pairs(con=None):
     res = con.getmetadata(ALL, 'uidpairs')
@@ -124,19 +124,19 @@ def uid_pairs(con=None):
     return json.loads(res[0][1].decode())
 
 
-@imap.fn_time
+@fn_time
 def pair_origin_uids(uids):
     pairs = uid_pairs()
     return tuple(pairs[i] for i in uids if i in pairs)
 
 
-@imap.fn_time
+@fn_time
 def pair_parsed_uids(uids):
     pairs = {v: k for k, v in uid_pairs().items()}
     return tuple(pairs[i] for i in uids if i in pairs)
 
 
-@imap.fn_time
+@fn_time
 @using(SRC)
 def save_msgids(uids=None, con=None):
     if uids:
@@ -162,7 +162,7 @@ def save_msgids(uids=None, con=None):
 
 
 @ft.lru_cache(maxsize=None)
-@imap.fn_time
+@fn_time
 @using(None)
 def msgids(con=None):
     res = con.getmetadata(SRC, 'msgids')
@@ -379,7 +379,7 @@ def parse(criteria=None, *, batch=1000, threads=10):
         update_threads(con, 'UID %s' % uids.str)
 
 
-@imap.fn_time
+@fn_time
 def update_threads(con, criteria=None):
     con.select(SRC)
     criteria = criteria or 'ALL'
@@ -430,7 +430,7 @@ def update_threads(con, criteria=None):
     log.info('## updated %s threads', len(thrs))
 
 
-@imap.fn_time
+@fn_time
 @using()
 def link_threads(uids, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
@@ -472,7 +472,7 @@ def create_link(msgids):
     return msg
 
 
-@imap.fn_time
+@fn_time
 @using(None)
 def raw_msg(uid, box, con=None):
     con.select(box)
@@ -482,16 +482,16 @@ def raw_msg(uid, box, con=None):
     return res[0][1]
 
 
-@imap.fn_time
+@fn_time
 @using()
 def search_msgs(query, con=None):
     res = con.sort('(REVERSE DATE)', 'UNKEYWORD #link %s' % query)
     uids = res[0].decode().split()
-    log.debug('query: %r; messages: %s', query, len(uids))
+    log.debug('## query: %r; messages: %s', query, len(uids))
     return uids
 
 
-@imap.fn_time
+@fn_time
 @using()
 def msgs_info(uids, con=None):
     res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[1])')
@@ -503,17 +503,17 @@ def msgs_info(uids, con=None):
         yield uid, res[i][1], flags.split(), None
 
 
-@imap.fn_time
+@fn_time
 @using()
 def search_thrs(query, con=None):
     criteria = 'INTHREAD REFS %s KEYWORD #latest' % query
     res = con.sort('(REVERSE DATE)', criteria)
     uids = res[0].decode().split()
-    log.debug('query: %r; threads: %s', query, len(uids))
+    log.debug('## query: %r; threads: %s', query, len(uids))
     return uids
 
 
-@imap.fn_time
+@fn_time
 @using()
 def thrs_info(uids, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
@@ -560,7 +560,7 @@ def thrs_info(uids, con=None):
         yield thrid, all_msgs[thrid], flags, addrs
 
 
-@imap.fn_time
+@fn_time
 @using()
 def tags_info(con=None):
     unread = {}
