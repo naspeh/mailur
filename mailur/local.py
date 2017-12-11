@@ -578,10 +578,14 @@ def tags_info(con=None):
                     unread[f] += 1
     tags = {
         t: dict(get_tag(t), unread=unread.get(t, 0))
-        for t in sorted(unread) if t not in ('#latest', '#link', '#sent')
+        for t in sorted(unread) if t not in ('#link',)
     }
     tags.update({
         t: dict(tags.get(t, get_tag(t)), pinned=1)
         for t in ('#inbox', '#spam', '#trash')
+    })
+    tags.update({
+        t: dict(tags.get(t, get_tag(t)), unread=0)
+        for t in ('#sent', '#latest')
     })
     return tags

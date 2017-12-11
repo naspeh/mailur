@@ -1,28 +1,33 @@
 @import './root.css';
 
-.msgs-header {
+.msgs__header {
   display: flex;
   justify-content: flex-end;
-  white-space: nowrap;
   margin-bottom: 0.2em;
+  white-space: nowrap;
+}
 
-  & .msgs-search {
-    display: flex;
-    flex-grow: 2;
-    margin-left: 0.2em;
+.msgs__header__search {
+  display: flex;
+  flex-grow: 2;
 
-    & input {
-      flex-grow: 10;
-    }
+  & input {
+    flex-grow: 10;
   }
+}
 
-  & .msgs-picking a {
+.msgs__header__picking {
+  margin-left: 0.2em;
+
+  & a {
     text-transform: lowercase;
   }
+}
 
-  & .msgs-actions {
-    margin-left: 0.2em;
-  }
+.msgs__header__actions {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 0.2em;
 }
 
 .msg {
@@ -32,39 +37,20 @@
   border-top: 1px solid var(--colorWhite);
   border-radius: 0.5em;
 
-  &.msg-detailed {
+  &.msg--detailed {
     border-top: 1px solid var(--colorGrey);
     background-color: var(--colorWhite);
-
-    & .msg-preview {
-      & .msg-preview-subj,
-      & .msg-preview-text,
-      & .msg-date {
-        background-color: var(--colorWhite);
-      }
-    }
   }
+}
 
-  & a {
-    color: var(--colorGreen);
-  }
+.msg__actions {
+  display: none;
 
-  & .msg-line {
-    display: flex;
-    align-items: center;
-    white-space: nowrap;
-    color: var(--colorDarkGrey);
-  }
-
-  & .msg-actions {
-    display: none;
-  }
-
-  &.msg-detailed .msg-actions {
+  @nest .msg--detailed & {
     display: flex;
     flex-flow: reverse nowrap;
     white-space: nowrap;
-    font-size: 90%;
+    font-size: 0.9rem;
 
     & > a {
       margin: 0 0.2em;
@@ -87,124 +73,149 @@
       }
     }
   }
+}
 
-  & .msg-pin,
-  & .msg-unread,
-  & .msg-more,
-  & .msg-split {
-    font-size: 90%;
-    padding: 0;
+.msg__line__pin,
+.msg__line__unread,
+.msg__line__more,
+.msg__line__split {
+  padding: 0;
 
-    &:hover {
-      cursor: pointer;
-    }
+  &:hover {
+    cursor: pointer;
   }
+}
 
-  &.msg-is-pinned .msg-pin {
-    color: var(--colorOrange);
-  }
+.msg__line {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  color: var(--colorDarkGrey);
+  font-size: 0.85rem;
 
-  &.msg-is-unread .msg-unread,
-  &.msg-detailed .msg-more {
-    color: var(--colorGreen);
-  }
-
-  & .msg-pick {
-    display: flex;
-  }
-
-  & .msg-from {
-    display: flex;
-    justify-content: space-between;
-    align-items: stretch;
-    margin-left: 0.1em;
-
-    & .msg-from-pic,
-    & .msg-from-more {
-      display: block;
-      margin: 0 0.1em;
-    }
-
-    & .msg-from-pic {
-      height: var(--picHeight);
-      width: var(--picHeight);
-      background-position: center center;
-      background-repeat: no-repeat;
-      background-size: contain;
-
-      &:hover {
-        cursor: pointer;
-      }
-    }
-
-    & .msg-from-more {
-      min-width: var(--picHeight);
-      line-height: var(--picHeight);
-      text-align: center;
+  @nest .msg--detailed & {
+    & .msg__line__preview__subj,
+    & .msg__line__preview__text,
+    & .msg__line__preview__time {
       background-color: var(--colorWhite);
-      font-size: 90%;
+    }
+
+    & .msg__line__more {
+      color: var(--colorGreen);
+    }
+
+    & .msg__line__preview__count {
+      background-color: var(--colorLightGrey);
+      border-color: var(--colorWhite);
+    }
+
+    & .tags__item {
+      background-color: var(--colorWhite);
     }
   }
 
-  & .msg-count {
-    display: block;
-    padding: 0 0.2em;
-    border: 0.2em solid var(--colorLightGrey);
-    border-right: none;
-    height: var(--picHeight);
-    line-height: var(--picHeight);
-    background-color: var(--colorWhite);
-    text-align: center;
-    font-size: 90%;
-  }
-
-  & .msg-preview {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-grow: 20;
-    margin: 0 0.2em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    &:hover {
-      cursor: pointer;
-    }
-
-    & .msg-preview-from {
-      max-width: 30%;
-    }
-
-    & .msg-preview-subj {
-      padding-left: 0.2em;
-      color: var(--colorBlack);
-      background-color: var(--colorLightGrey);
-    }
-
-    & .msg-preview-text {
-      flex-grow: 2;
-      padding-left: 0.2em;
-      background-color: var(--colorLightGrey);
-    }
-
-    & .msg-date {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background-color: var(--colorLightGrey);
-      padding-left: 0.5em;
-    }
-  }
-
-  &.msg-is-unread .msg-preview {
-    & .msg-preview-subj,
-    & .msg-preview-from {
+  @nest .msg--unread & {
+    & .msg__line__preview__subj,
+    & .msg__line__preview__from {
       font-weight: bold;
     }
-  }
 
-  & .tags {
-    font-size: 90%;
+    & .msg__line__unread {
+      color: var(--colorGreen);
+    }
   }
+}
+
+.msg--pinned .msg__line__pin {
+  color: var(--colorOrange);
+}
+
+.msg__line__pick {
+  display: flex;
+}
+
+.msg__line__from {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  margin-left: 0.1em;
+}
+
+.msg__line__from__pic,
+.msg__line__from__more {
+  display: block;
+  margin: 0 0.1em;
+}
+
+.msg__line__from__pic {
+  height: var(--picHeight);
+  width: var(--picHeight);
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: contain;
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+& .msg__line__from__more {
+  min-width: var(--picHeight);
+  line-height: var(--picHeight);
+  text-align: center;
+  background-color: var(--colorWhite);
+}
+
+.msg__line__preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-grow: 20;
+  margin: 0 0.2em;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+  text-decoration: none;
+  outline: 0;
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.msg__line__preview__from {
+  max-width: 30%;
+}
+
+.msg__line__preview__count {
+  display: block;
+  padding: 0 0.2em;
+  border: 0.2em solid var(--colorLightGrey);
+  border-right: none;
+  height: var(--picHeight);
+  line-height: var(--picHeight);
+  background-color: var(--colorWhite);
+  text-align: center;
+}
+
+.msg__line__preview__subj {
+  padding-left: 0.2em;
+  color: var(--colorBlack);
+  background-color: var(--colorLightGrey);
+}
+
+.msg__line__preview__text {
+  flex-grow: 2;
+  padding-left: 0.2em;
+  background-color: var(--colorLightGrey);
+}
+
+.msg__line__preview__time {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: var(--colorLightGrey);
+  padding-left: 0.5em;
 }

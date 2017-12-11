@@ -24,6 +24,8 @@ def test_init(clean_users, gm_client, web, some):
         '#inbox': tag('#inbox', pinned=1),
         '#spam': tag('#spam', pinned=1),
         '#trash': tag('#trash', pinned=1),
+        '#sent': tag('#sent', unread=0),
+        '#latest': tag('#latest', unread=0),
     }}
 
     time_dt = dt.datetime.utcnow()
@@ -38,6 +40,8 @@ def test_init(clean_users, gm_client, web, some):
         '#inbox': tag('#inbox', pinned=1, unread=1),
         '#spam': tag('#spam', pinned=1),
         '#trash': tag('#trash', pinned=1),
+        '#sent': tag('#sent', unread=0),
+        '#latest': tag('#latest', unread=0),
     }}
 
     res = web.post_json('/search', {'q': 'all', 'preload': 1})

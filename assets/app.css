@@ -6,6 +6,11 @@ body {
   margin: 0;
 }
 
+a {
+  color: var(--colorGreen);
+  outline: 0;
+}
+
 .app {
   display: flex;
   flex-flow: row nowrap;

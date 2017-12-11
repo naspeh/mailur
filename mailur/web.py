@@ -101,7 +101,7 @@ def assets(filepath='index.html'):
 
 
 # Helpers bellow
-def wrap_tags(tags, short=15):
+def wrap_tags(tags):
     def query(tag):
         if tag.startswith('\\'):
             q = tag[1:]
@@ -109,7 +109,7 @@ def wrap_tags(tags, short=15):
             q = 'keyword %s' % json.dumps(tag)
         return ':threads %s' % q
 
-    def trancate(val, max=15, end='…'):
+    def trancate(val, max=14, end='…'):
         return val[:max] + end if len(val) > max else val
 
     return {

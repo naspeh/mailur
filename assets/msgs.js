@@ -134,8 +134,11 @@ Vue.component('Msgs', {
     searchAddr: function(addr) {
       this.fetch(`:threads from ${addr}`);
     },
+    threadQuery: function(uid) {
+      return `inthread refs uid ${uid}`;
+    },
     thread: function(uid, split) {
-      let q = `inthread refs uid ${uid}`;
+      let q = this.threadQuery(uid);
       if (split) {
         return this.openInSplit(q);
       }
