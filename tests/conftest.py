@@ -117,6 +117,11 @@ def gm_client():
                 txt = item.get('txt', '42')
                 msg = local.binary_msg(txt)
 
+                subj = item.get('subj')
+                if not subj:
+                    subj = 'Subj %s' % uid
+                msg.add_header('Subject', subj)
+
                 date = item.get('date')
                 if not date:
                     date = gm_client.time + uid

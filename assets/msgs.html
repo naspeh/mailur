@@ -35,16 +35,16 @@
         </div>
         <div class="msg__line__pin icon-pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
         <div class="msg__line__unread icon-unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
-        <div v-if="threads && hasSplit()" @click.prevent="thread(msg.uid, true)" class="msg__line__split icon-next" title="Open in split pane"></div>
+        <div v-if="threads && hasSplit()" @click.prevent="openInSplit(msg.query_thread)" class="msg__line__split icon-next" title="Open in split pane"></div>
         <div v-if="threads" @click.stop="details(msg.uid)" class="msg__line__more icon-details" title="More actions"></div>
         <tags :raw="msg.flags" :trancated="true" />
         <div class="msg__line__from">
         <template v-for="from in msg.from_list">
-          <div v-if="from.hash" @click.stop="searchAddr(from.addr)" :class="`msg__line__from__pic pic-${from.hash}`" :title="from.title"></div>
+          <div v-if="from.hash" @click.stop="fetch(from.query)" :class="`msg__line__from__pic pic-${from.hash}`" :title="from.title"></div>
           <div v-if="from.expander" class="msg__line__from__more" :title="`${from.expander} more addresses`">…</div>
         </template>
         </div>
-        <a @click.prevent="threads ? thread(msg.uid) : details(msg.uid)" :href="`#${threadQuery(msg.uid)}`" class="msg__line__preview">
+        <a @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`" class="msg__line__preview">
           <div class="msg__line__preview__from" :title="msg.from.title">
             {{msg.from.name}}
           </div>
@@ -69,9 +69,9 @@
         <a href="#" class="icon-trash" title="Move to Trash">Delete</a>
         <a href="#" class="icon-ok" title="Add address to Whitelist">Whitelist</a>
         <a href="#" class="icon-spam" title="Add address to Blacklist">Blacklist</a>
-        <a href="#" class="icon-plus" @click.stop="searchHeader('subject', msg.subject)" >Filter by subject</a>
+        <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="icon-plus" >Filter by subject</a>
         <a :href="msg.url_raw" class="icon-plus" target="_blank">Show original</a>
-        <!-- <a @click.prevent="searchHeader('message-id ', msg.msgid)" href="#" :title="msg.msgid">ID</a> -->
+        <!-- <a @click.prevent="fetch(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
       </div>
       <div v-if="msg.body" v-html="msg.body"></div>
     </div>

@@ -11,11 +11,13 @@ Vue.component('Msgs', {
   },
   data: function() {
     return {
-      query: this._query,
-      uids: [],
       perPage: 200,
       picSize: 20,
+      query: this._query,
+      uids: [],
       pages: [],
+      url: null,
+      threads: null,
       picked: [],
       detailed: null
     };
@@ -31,9 +33,6 @@ Vue.component('Msgs', {
       return this.pages.length
         ? Object.getOwnPropertyNames(this.msgs).length
         : 0;
-    },
-    threads: function() {
-      return this.query.indexOf(':threads ') == 0;
     }
   },
   methods: {
@@ -65,6 +64,7 @@ Vue.component('Msgs', {
         preload: this.perPage
       }).then(res => {
         this.url = res.msgs_info;
+        this.threads = res.threads;
         this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });
@@ -126,23 +126,6 @@ Vue.component('Msgs', {
       } else {
         this.detailed = uid;
       }
-    },
-    searchHeader: function(name, value) {
-      value = JSON.stringify(value);
-      return this.fetch(`:threads header ${name} ${value}`);
-    },
-    searchAddr: function(addr) {
-      this.fetch(`:threads from ${addr}`);
-    },
-    threadQuery: function(uid) {
-      return `inthread refs uid ${uid}`;
-    },
-    thread: function(uid, split) {
-      let q = this.threadQuery(uid);
-      if (split) {
-        return this.openInSplit(q);
-      }
-      return this.fetch(q);
     },
     canOpenInSplit: function() {
       return this.split && !window.app.$refs.main.threads;

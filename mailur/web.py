@@ -31,18 +31,22 @@ def search():
     if q.startswith(':threads'):
         q = q[8:]
         uids = local.search_thrs(q)
-        msgs_url = app.get_url('thrs_info')
-        msgs = local.thrs_info
+        info = 'thrs_info'
     else:
         uids = local.search_msgs(q)
-        msgs_url = app.get_url('msgs_info')
-        msgs = local.msgs_info
+        info = 'msgs_info'
 
     if preload and uids:
+        msgs = getattr(local, info)
         msgs = wrap_msgs(msgs(uids[:preload]))
     else:
         msgs = {}
-    return {'uids': uids, 'msgs': msgs, 'msgs_info': msgs_url}
+    return {
+        'uids': uids,
+        'msgs': msgs,
+        'msgs_info': app.get_url(info),
+        'threads': info == 'thrs_info'
+    }
 
 
 @app.post('/thrs/info', name='thrs_info')
@@ -119,7 +123,11 @@ def wrap_tags(tags):
 
 
 def wrap_msgs(items):
-    offset = int(request.cookies['offset'])
+    def query_header(name, value):
+        value = json.dumps(value, ensure_ascii=False)
+        return ':threads header %s %s' % (name, value)
+
+    offset = int(request.cookies.get('offset', 0))
     msgs = {}
     for uid, txt, flags, addrs in items:
         if isinstance(txt, bytes):
@@ -136,6 +144,9 @@ def wrap_msgs(items):
             'count': len(addrs),
             'flags': [f for f in flags if not f.startswith('\\')],
             'from_list': from_list(addrs, max=3),
+            'query_thread': 'inthread refs uid %s' % uid,
+            'query_subject': query_header('subject', info['subject']),
+            'query_msgid': query_header('message-id', info['msgid']),
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
             'time_human': humanize_dt(info['date'], offset=offset),
             'time_title': format_dt(info['date'], offset=offset),
@@ -156,18 +167,18 @@ def from_list(addrs, max=4):
         if not a or a['addr'] in addrs_uniq:
             continue
         addrs_uniq.append(a['addr'])
-        addrs_list.append(a)
+        addrs_list.append(dict(a, query=':threads from %s' % a['addr']))
 
     addrs_list = list(reversed(addrs_list))
     if len(addrs_list) <= max:
         return addrs_list
 
     addr_end = addrs[-1]
-    if addr_end and addr_end != addrs_list[-1]:
+    if addr_end and addr_end['addr'] != addrs_list[-1]['addr']:
         addrs_list.pop(addrs_list.index(addr_end))
         addrs_list.append(addr_end)
 
-    if addr_end == addrs[0]:
+    if addr_end['addr'] == addrs[0]['addr']:
         expander_index = 0
         addrs_few = addrs_list[-max+1:]
     else:
