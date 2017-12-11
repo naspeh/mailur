@@ -1,0 +1,16 @@
+@import './index.css';
+
+:root {
+  --colorWhite: #fff;
+  --colorBlack: #333;
+  --colorGrey: #ccc;
+  --colorLightGrey: #eee;
+  --colorDarkGrey: #777;
+  --colorGreen: green;
+  --colorOrange: #f63;
+
+  /* Sizes & heights */
+  --fontSize: 100%;
+  --lineHeight: 1.8em;
+  --picHeight: 20px;
+}

@@ -1,5 +1,3 @@
-@import './root.css';
-
 .msgs__header {
   display: flex;
   justify-content: flex-end;

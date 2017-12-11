@@ -1,7 +1,6 @@
 import Vue from 'vue';
 import { send } from './utils.js';
 import tpl from './msgs.html';
-import './msgs.css';
 
 Vue.component('Msgs', {
   template: tpl,

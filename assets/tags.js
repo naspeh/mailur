@@ -1,6 +1,5 @@
 import Vue from 'vue';
 import tpl from './tags.html';
-import './tags.css';
 
 Vue.component('Tags', {
   template: tpl,

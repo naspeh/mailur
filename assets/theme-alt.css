@@ -1,11 +1,13 @@
+@import './index.css';
+
 :root {
   --colorWhite: #fff;
-  --colorBlack: #333;
+  --colorBlack: #40514e;
   --colorGrey: #ccc;
-  --colorLightGrey: #eee;
+  --colorLightGrey: #e4f9f5;
   --colorDarkGrey: #777;
-  --colorGreen: green;
-  --colorOrange: #f63;
+  --colorGreen: #11999e;
+  --colorOrange: #30e3ca;
 
   /* Sizes & heights */
   --fontSize: 100%;

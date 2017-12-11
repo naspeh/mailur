@@ -4,21 +4,28 @@ const webpack = require('webpack');
 
 const HtmlPlugin = require('html-webpack-plugin');
 const CleanPlugin = require('clean-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'assets/dist');
 
 module.exports = {
   entry: {
-    index: './assets/index.js'
+    index: './assets/index.js',
+    theme_base: './assets/theme-base.css',
+    theme_alt: './assets/theme-alt.css'
   },
   plugins: [
     new CleanPlugin([dist]),
     new HtmlPlugin({
       template: 'assets/index.html',
-      favicon: 'assets/favicon.png'
+      favicon: 'assets/favicon.png',
+      chunks: ['index', 'theme_base']
     }),
-    new ExtractTextPlugin('[name].css?[hash]')
+    new HtmlPlugin({
+      filename: 'index-alt.html',
+      template: 'assets/index.html',
+      favicon: 'assets/favicon.png',
+      chunks: ['index', 'theme_alt']
+    })
   ],
   output: {
     filename: '[name].js?[hash]',
@@ -59,21 +66,19 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ExtractTextPlugin.extract({
-          fallback: 'style-loader',
-          use: [
-            { loader: 'css-loader', options: { importLoaders: 1 } },
-            {
-              loader: 'postcss-loader',
-              options: {
-                plugins: [
-                  require('postcss-import')(),
-                  require('postcss-cssnext')()
-                ]
-              }
+        use: [
+          { loader: 'style-loader' },
+          { loader: 'css-loader' },
+          {
+            loader: 'postcss-loader',
+            options: {
+              plugins: [
+                require('postcss-import')(),
+                require('postcss-cssnext')()
+              ]
             }
-          ]
-        })
+          }
+        ]
       }
     ]
   },
