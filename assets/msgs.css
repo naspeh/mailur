@@ -82,7 +82,7 @@
       min-width: 1.2em;
       overflow: hidden;
 
-      @nest .only-icons & {
+      @nest .opt--only-icons & {
         width: 1.2em;
       }
     }
@@ -130,6 +130,7 @@
       width: var(--picHeight);
       background-position: center center;
       background-repeat: no-repeat;
+      background-size: contain;
 
       &:hover {
         cursor: pointer;
@@ -148,6 +149,8 @@
   & .msg-count {
     display: block;
     padding: 0 0.2em;
+    border: 0.2em solid var(--colorLightGrey);
+    border-right: none;
     height: var(--picHeight);
     line-height: var(--picHeight);
     background-color: var(--colorWhite);

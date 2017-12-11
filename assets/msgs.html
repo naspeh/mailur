@@ -1,7 +1,7 @@
 <div class="msgs">
   <div class="msgs-header">
-    <div v-if="canOpenInSide()">
-      <button @click="openInSide()">Copy from main</button>
+    <div v-if="canOpenInSplit()">
+      <button @click="openInSplit()">Copy from main</button>
     </div>
     <div v-if="pages.length" class="msgs-picking">
       <span>
@@ -19,7 +19,7 @@
       <button class="icon-trash" title="Move to Trash"></button>
       <button v-if="threads && picked.length > 1" @click="link" class="icon-link" title="Link threads together"></button>
     </div>
-    <div v-if="!side" class="msgs-search">
+    <div v-if="!split" class="msgs-search">
       <input v-model.lazy.trim="query" @keyup.enter="fetch()">
       <button @click="fetch()" class="icon-search"></button>
     </div>
@@ -35,9 +35,9 @@
         </span>
         <span class="msg-unread icon-unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></span>
         <span class="msg-pin icon-pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></span>
-        <span v-if="threads && hasSide()" @click.prevent="thread(msg.uid, true)" class="msg-split icon-next" title="Open in split pane"></span>
+        <span v-if="threads && hasSplit()" @click.prevent="thread(msg.uid, true)" class="msg-split icon-next" title="Open in split pane"></span>
         <span v-if="threads" @click.stop="details(msg.uid)" class="msg-more icon-details" title="More actions"></span>
-        <tags :raw="msg.flags" :trancate="true" />
+        <tags :raw="msg.flags" :trancated="true" />
         <span class="msg-from">
         <template v-for="from in msg.from_list">
           <span v-if="from.hash" @click.stop="searchAddr(from.addr)" :class="`msg-from-pic pic-${from.hash}`" :title="from.title"></span>

@@ -7,13 +7,14 @@ Vue.component('Msgs', {
   template: tpl,
   props: {
     _query: { type: String, default: null },
-    side: { type: Boolean, default: false }
+    split: { type: Boolean, default: false }
   },
   data: function() {
     return {
       query: this._query,
       uids: [],
       perPage: 200,
+      picSize: 20,
       pages: [],
       picked: [],
       detailed: null
@@ -53,7 +54,7 @@ Vue.component('Msgs', {
       if (query) {
         this.query = query;
       }
-      if (query && !this.side) {
+      if (query && !this.split) {
         window.app.query = query;
       }
 
@@ -88,7 +89,7 @@ Vue.component('Msgs', {
       while (hashes.length > 0) {
         let sheet = document.createElement('link');
         let few = encodeURIComponent(hashes.splice(0, 50));
-        sheet.href = '/avatars.css?size=18&hashes=' + few;
+        sheet.href = `/avatars.css?size=${this.picSize}&hashes=${few}`;
         sheet.rel = 'stylesheet';
         document.body.appendChild(sheet);
       }
@@ -130,38 +131,27 @@ Vue.component('Msgs', {
       value = JSON.stringify(value);
       return this.fetch(`:threads header ${name} ${value}`);
     },
-    searchTag: function(tag) {
-      let q;
-      if (tag[0] == '\\') {
-        q = tag.slice(1);
-      } else {
-        tag = JSON.stringify(tag);
-        q = `keyword ${tag}`;
-      }
-      q = ':threads ' + q;
-      return this.fetch(q);
-    },
     searchAddr: function(addr) {
       this.fetch(`:threads from ${addr}`);
     },
-    thread: function(uid, side) {
+    thread: function(uid, split) {
       let q = `inthread refs uid ${uid}`;
-      if (side) {
-        return this.openInSide(q);
+      if (split) {
+        return this.openInSplit(q);
       }
       return this.fetch(q);
     },
-    canOpenInSide: function() {
-      return this.side && !window.app.$refs.main.threads;
+    canOpenInSplit: function() {
+      return this.split && !window.app.$refs.main.threads;
     },
-    openInSide: function(query) {
+    openInSplit: function(query) {
       if (!query) {
         query = window.app.$refs.main.query;
       }
-      return window.app.openInSide(query);
+      return window.app.openInSplit(query);
     },
-    hasSide: function() {
-      return !this.side && window.app.side;
+    hasSplit: function() {
+      return !this.split && window.app.split;
     }
   }
 });

@@ -13,7 +13,7 @@ Vue.component('App', {
     return {
       query: this._query,
       tags: this._tags,
-      side: false
+      split: false
     };
   },
   created: function() {
@@ -37,21 +37,21 @@ Vue.component('App', {
     }
   },
   methods: {
-    searchTag: function(id) {
-      return this.$refs.main.searchTag(id);
+    fetch: function(q) {
+      return this.$refs.main.fetch(q);
     },
-    openInSide: function(query) {
-      this.side = true;
+    openInSplit: function(query) {
+      this.split = true;
       this.$nextTick(() => {
-        this.$refs.side.fetch(query);
+        this.$refs.split.fetch(query);
       });
       return;
     },
-    toggleSide: function() {
-      this.side = !this.side;
+    toggleSplit: function() {
+      this.split = !this.split;
       this.$nextTick(() => {
-        if (this.side) {
-          this.$refs.side.fetch(this.query);
+        if (this.split) {
+          this.$refs.split.fetch(this.query);
         }
       });
     }

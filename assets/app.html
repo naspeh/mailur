@@ -1,12 +1,12 @@
-<div :class="['app', {'only-icons': false, 'side-on': side}]">
-  <div class="app-main">
-    <button @click="toggleSide" style="float:right">Split pane</button>
-    <div class="app-tags">
-      <tags :raw="allTags" :trancate="true" :unread="true" />
+<div :class="['app', {'opt--only-icons': false, 'opt--split-on': split}]">
+  <div class="app__main">
+    <button @click="toggleSplit" class="app__main__split">Split pane</button>
+    <div class="app__main__tags">
+      <tags :raw="allTags" :trancated="true" :unread="true" />
     </div>
     <msgs ref="main" :_query="query" />
   </div>
-  <div class="app-side">
-    <msgs ref="side" :side="true" />
+  <div class="app__split">
+    <msgs ref="split" :split="true" />
   </div>
 </div>

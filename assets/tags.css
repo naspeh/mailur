@@ -3,19 +3,41 @@
 .tags {
   display: flex;
   justify-content: space-between;
-  margin: 0 -0.1em;
+  margin: 0 -0.1rem;
+}
 
-  & .tag {
-    max-width: 10em;
-    padding: 0 0.1em;
-    margin: 0 0.1em;
-    background-color: var(--colorLightGrey);
-    color: var(--colorGreen);
-    white-space: nowrap;
-    text-decoration: none;
+.tags__item {
+  max-width: 10em;
+  line-height: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.1rem;
+  margin: 0 0.1rem;
+  background-color: var(--colorLightGrey);
+  color: var(--colorGreen);
+  white-space: nowrap;
+  text-decoration: none;
 
-    &:hover {
-      background-color: var(--colorWhite);
-    }
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.tags__item--unread {
+  font-weight: bold;
+}
+
+.tags__item__unread {
+  display: None;
+
+  &::before {
+    content: "(";
+  }
+
+  &::after {
+    content: ")";
+  }
+
+  @nest .tags__item--unread & {
+    display: inline;
   }
 }

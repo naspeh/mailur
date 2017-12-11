@@ -1,12 +1,12 @@
 <div class="tags">
   <a
     v-for="tag in display"
-    @click.prevent="searchTag(tag.id)"
+    @click.prevent="fetch(tag)"
     :title="tag.title"
-    class="tag"
-    href="#"
+    :class="['tags__item', {'tags__item--unread': unread && tag.unread}]"
+    :href="`#${tag.query}`"
   >
-    {{tag.name}}
-    <template v-if="unread && tag.unread">(<b>{{tag.unread}}</b>)</template>
+    {{trancated ? tag.short_name : tag.name}}
+    <span class="tags__item__unread">{{tag.unread}}</span>
   </a>
 </div>

@@ -19,7 +19,8 @@ app = Bottle()
 def init():
     if request.json:
         response.set_cookie('offset', str(request.json['offset']))
-    return {'tags': local.tags_info()}
+
+    return {'tags': wrap_tags(local.tags_info())}
 
 
 @app.post('/search')
@@ -100,6 +101,23 @@ def assets(filepath='index.html'):
 
 
 # Helpers bellow
+def wrap_tags(tags, short=15):
+    def query(tag):
+        if tag.startswith('\\'):
+            q = tag[1:]
+        else:
+            q = 'keyword %s' % json.dumps(tag)
+        return ':threads %s' % q
+
+    def trancate(val, max=15, end='…'):
+        return val[:max] + end if len(val) > max else val
+
+    return {
+        tag: dict(i, query=query(tag), short_name=trancate(i['name']))
+        for tag, i in tags.items()
+    }
+
+
 def wrap_msgs(items):
     offset = int(request.cookies['offset'])
     msgs = {}

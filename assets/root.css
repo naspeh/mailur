@@ -6,7 +6,7 @@
   --colorDarkGrey: #777;
   --colorGreen: green;
   --colorOrange: #f63;
-  --fontSize: 15px;
+  --fontSize: 100%;
   --lineHeight: 1.8em;
-  --picHeight: 18px;
+  --picHeight: 20px;
 }
