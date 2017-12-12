@@ -38,16 +38,16 @@
         <div v-if="threads && hasSplit()" @click.prevent="openInSplit(msg.query_thread)" class="msg__line__split icon-next" title="Open in split pane"></div>
         <div v-if="threads" @click.stop="details(msg.uid)" class="msg__line__more icon-details" title="More actions"></div>
         <tags :raw="msg.flags" :trancated="true" />
-        <div class="msg__line__from">
-        <template v-for="from in msg.from_list">
+        <a class="msg__line__from" @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`">
+          <template v-for="from in msg.from_list">
           <div v-if="from.hash" @click.stop="fetch(from.query)" :class="`msg__line__from__pic pic-${from.hash}`" :title="from.title"></div>
           <div v-if="from.expander" class="msg__line__from__more" :title="`${from.expander} more addresses`">…</div>
-        </template>
-        </div>
-        <a @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`" class="msg__line__preview">
-          <div class="msg__line__preview__from" :title="msg.from.title">
+          </template>
+          <div class="msg__line__from__name" :title="msg.from.title">
             {{msg.from.name}}
           </div>
+        </a>
+        <a @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`" class="msg__line__preview">
           <div v-if="msg.count > 1" class="msg__line__preview__count" :title="`${msg.count} emails in thread`">
             {{msg.count}}
           </div>

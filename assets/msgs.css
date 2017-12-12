@@ -48,7 +48,7 @@
     display: flex;
     flex-flow: reverse nowrap;
     white-space: nowrap;
-    font-size: 0.9rem;
+    font-size: 0.9em;
 
     & > a {
       margin: 0 0.2em;
@@ -84,11 +84,13 @@
 }
 
 .msg__line {
+  position: relative;
   display: flex;
   align-items: center;
   white-space: nowrap;
   color: var(--colorDarkGrey);
-  font-size: 0.85rem;
+  font-size: 0.85em;
+  overflow: hidden;
 
   @nest .msg--detailed & {
     & .msg__line__preview__subj,
@@ -113,12 +115,44 @@
 
   @nest .msg--unread & {
     & .msg__line__preview__subj,
-    & .msg__line__preview__from {
+    & .msg__line__from {
       font-weight: bold;
     }
 
     & .msg__line__unread {
       color: var(--colorGreen);
+    }
+  }
+
+  @nest .opt--split-on & {
+    @media screen and (max-width: 1000px) {
+      flex-wrap: wrap;
+      line-height: 1.5em;
+      padding: 0.3em;
+    }
+  }
+
+  @nest .opt--split-on.opt--bigger & {
+    @media screen and (max-width: 1200px) {
+      flex-wrap: wrap;
+      line-height: 1.5em;
+      padding: 0.3em;
+    }
+  }
+
+  @nest :not(.opt--split-on) & {
+    @media screen and (max-width: 600px) {
+      flex-wrap: wrap;
+      line-height: 1.5em;
+      padding: 0.3em;
+    }
+  }
+
+  @nest :not(.opt--split-on).opt--bigger & {
+    @media screen and (max-width: 800px) {
+      flex-wrap: wrap;
+      line-height: 1.5em;
+      padding: 0.3em;
     }
   }
 }
@@ -133,14 +167,19 @@
 
 .msg__line__from {
   display: flex;
-  justify-content: space-between;
-  align-items: stretch;
+  justify-content: flex-start;
+  align-items: center;
   margin-left: 0.1em;
+  color: inherit;
+
+  &:hover {
+    cursor: pointer;
+    text-decoration: none;
+  }
 }
 
 .msg__line__from__pic,
 .msg__line__from__more {
-  display: block;
   margin: 0 0.1em;
 }
 
@@ -163,16 +202,21 @@
   background-color: var(--colorWhite);
 }
 
-.msg__line__preview {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-grow: 20;
+.msg__line__from__name {
   margin: 0 0.2em;
-  font-size: 1rem;
+  max-width: 7em;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.msg__line__preview {
+  display: flex;
+  align-items: center;
+  flex-grow: 20;
+  margin-right: 0.2em;
+  overflow: hidden;
+  font-size: 1em;
   color: inherit;
 
   &:hover {
@@ -181,15 +225,10 @@
   }
 }
 
-.msg__line__preview__from {
-  max-width: 30%;
-}
-
 .msg__line__preview__count {
-  display: block;
   padding: 0 0.2em;
   border: 0.2em solid var(--colorLightGrey);
-  border-right: none;
+  border-left: none;
   height: var(--picHeight);
   line-height: var(--picHeight);
   background-color: var(--colorWhite);
@@ -197,21 +236,20 @@
 }
 
 .msg__line__preview__subj {
-  padding-left: 0.2em;
+  margin-right: 0.2em;
   color: var(--colorBlack);
   background-color: var(--colorLightGrey);
 }
 
 .msg__line__preview__text {
-  flex-grow: 2;
-  padding-left: 0.2em;
+  margin-right: 0.2em;
   background-color: var(--colorLightGrey);
 }
 
 .msg__line__preview__time {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 0.2em;
   background-color: var(--colorLightGrey);
   padding-left: 0.5em;
 }

@@ -12,7 +12,8 @@ Vue.component('App', {
     return {
       query: this._query,
       tags: this._tags,
-      split: false
+      split: false,
+      bigger: false
     };
   },
   created: function() {
@@ -53,6 +54,9 @@ Vue.component('App', {
           this.$refs.split.fetch(this.query);
         }
       });
+    },
+    toggleBigger: function() {
+      this.bigger = !this.bigger;
     }
   }
 });

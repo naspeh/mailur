@@ -2,6 +2,7 @@ html,
 body {
   padding: 0;
   margin: 0;
+  font-size: var(--fontSize);
 }
 
 a {
@@ -18,8 +19,11 @@ a {
   display: flex;
   flex-flow: row nowrap;
   line-height: var(--lineHeight);
-  font-size: var(--fontSize);
   background-color: var(--colorWhite);
+
+  &.opt--bigger {
+    font-size: 1.5em;
+  }
 }
 
 .app__split {
@@ -33,7 +37,7 @@ a {
 .app__main,
 .app__split {
   box-sizing: border-box;
-  min-width: 600px;
+  min-width: 400px;
   width: 100vw;
   height: 100vh;
   padding: 0 0.2em;
@@ -41,6 +45,10 @@ a {
 
   @nest .opt--split-on & {
     width: 50vw;
+  }
+
+  @nest .opt--bigger & {
+    min-width: 600px;
   }
 }
 
@@ -51,4 +59,17 @@ a {
 
 .app__main__split {
   float: right;
+}
+
+.app__main__bigger {
+  float: right;
+
+  &::before {
+    content: 'A';
+    font-size: 0.7em;
+  }
+
+  &::after {
+    content: '-A';
+  }
 }
