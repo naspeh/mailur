@@ -7,6 +7,11 @@ body {
 a {
   color: var(--colorGreen);
   outline: 0;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .app {
@@ -14,6 +19,7 @@ a {
   flex-flow: row nowrap;
   line-height: var(--lineHeight);
   font-size: var(--fontSize);
+  background-color: var(--colorWhite);
 }
 
 .app__split {

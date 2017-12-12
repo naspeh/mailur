@@ -12,11 +12,6 @@
   background-color: var(--colorLightGrey);
   color: var(--colorGreen);
   white-space: nowrap;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
 
 .tags__item--unread {

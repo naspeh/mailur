@@ -1,0 +1,41 @@
+@import './index.css';
+
+/* http://ethanschoonover.com/solarized
+Background tones (dark)
+$base03:    #002b36;
+$base02:    #073642;
+
+Content tones
+$base01:    #586e75;
+$base00:    #657b83;
+$base0:     #839496;
+$base1:     #93a1a1;
+
+Background tones (light)
+$base2:     #eee8d5;
+$base3:     #fdf6e3;
+
+Accent colors
+$yellow:    #b58900;
+$orange:    #cb4b16;
+$red:       #dc322f;
+$magenta:   #d33682;
+$violet:    #6c71c4;
+$blue:      #268bd2;
+$cyan:      #2aa198;
+$green:     #859900;
+*/
+:root {
+  --colorWhite: #fdf6e3;
+  --colorLightGrey: #eee8d5;
+  --colorGrey: #93a1a1;
+  --colorDarkGrey: #839496;
+  --colorBlack: #586e75;
+  --colorGreen: #2aa198;
+  --colorOrange: #cb4b16;
+
+  /* Sizes & heights */
+  --fontSize: 100%;
+  --lineHeight: 1.8em;
+  --picHeight: 20px;
+}

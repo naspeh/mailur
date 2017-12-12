@@ -2,6 +2,7 @@ import base64
 import datetime as dt
 import json
 import pathlib
+import re
 
 from bottle import Bottle, abort, request, response, static_file
 
@@ -101,6 +102,11 @@ def avatars():
 @app.get('/')
 @app.get('/<filepath:path>')
 def assets(filepath='index.html'):
+    themes = [t.name for t in assets_path.glob('*') if t.is_dir()]
+    themes = '|'.join('%s/' % t for t in themes)
+    theme, filepath = re.match('^(%s|)(.*)' % themes, filepath).groups()
+    if theme and not filepath:
+        filepath = theme + 'index.html'
     return static_file(filepath, root=assets_path)
 
 

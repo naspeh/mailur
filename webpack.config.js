@@ -5,26 +5,48 @@ const webpack = require('webpack');
 const HtmlPlugin = require('html-webpack-plugin');
 const CleanPlugin = require('clean-webpack-plugin');
 
-const dist = path.resolve(__dirname, 'assets/dist');
+const src = path.resolve(__dirname, 'assets');
+const dist = path.resolve(src, 'dist');
 
 module.exports = {
   entry: {
     index: './assets/index.js',
-    theme_base: './assets/theme-base.css',
-    theme_alt: './assets/theme-alt.css'
+    'theme-base': './assets/theme-base.css',
+    'theme-amber': './assets/theme-amber.css',
+    'theme-teal': './assets/theme-teal.css',
+    'theme-indigo': './assets/theme-indigo.css',
+    'theme-solarized': './assets/theme-solarized.css'
   },
   plugins: [
     new CleanPlugin([dist]),
     new HtmlPlugin({
       template: 'assets/index.html',
       favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme_base']
+      chunks: ['index', 'theme-base']
     }),
     new HtmlPlugin({
-      filename: 'index-alt.html',
+      filename: 'amber/index.html',
       template: 'assets/index.html',
       favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme_alt']
+      chunks: ['index', 'theme-amber']
+    }),
+    new HtmlPlugin({
+      filename: 'indigo/index.html',
+      template: 'assets/index.html',
+      favicon: 'assets/favicon.png',
+      chunks: ['index', 'theme-indigo']
+    }),
+    new HtmlPlugin({
+      filename: 'teal/index.html',
+      template: 'assets/index.html',
+      favicon: 'assets/favicon.png',
+      chunks: ['index', 'theme-teal']
+    }),
+    new HtmlPlugin({
+      filename: 'solarized/index.html',
+      template: 'assets/index.html',
+      favicon: 'assets/favicon.png',
+      chunks: ['index', 'theme-solarized']
     })
   ],
   output: {

@@ -52,7 +52,6 @@
 
     & > a {
       margin: 0 0.2em;
-      text-decoration: none;
     }
 
     & .icon-next,
@@ -157,7 +156,7 @@
   }
 }
 
-& .msg__line__from__more {
+.msg__line__from__more {
   min-width: var(--picHeight);
   line-height: var(--picHeight);
   text-align: center;
@@ -175,11 +174,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: inherit;
-  text-decoration: none;
-  outline: 0;
 
   &:hover {
     cursor: pointer;
+    text-decoration: none;
   }
 }
 
