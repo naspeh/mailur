@@ -37,10 +37,10 @@ a {
 .app__main,
 .app__split {
   box-sizing: border-box;
-  min-width: 400px;
+  min-width: 600px;
   width: 100vw;
   height: 100vh;
-  padding: 0 0.2em;
+  padding: 0.2em;
   overflow-y: auto;
 
   @nest .opt--split-on & {
@@ -48,7 +48,7 @@ a {
   }
 
   @nest .opt--bigger & {
-    min-width: 600px;
+    min-width: 800px;
   }
 }
 

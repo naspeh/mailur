@@ -72,19 +72,7 @@
   }
 }
 
-.msg__line__pin,
-.msg__line__unread,
-.msg__line__more,
-.msg__line__split {
-  padding: 0;
-
-  &:hover {
-    cursor: pointer;
-  }
-}
-
 .msg__line {
-  position: relative;
   display: flex;
   align-items: center;
   white-space: nowrap;
@@ -93,23 +81,19 @@
   overflow: hidden;
 
   @nest .msg--detailed & {
-    & .msg__line__preview__subj,
-    & .msg__line__preview__text,
-    & .msg__line__preview__time {
+    & .msg__line__preview__time,
+    & .tags__item {
       background-color: var(--colorWhite);
     }
 
-    & .msg__line__more {
-      color: var(--colorGreen);
-    }
-
-    & .msg__line__preview__count {
+    & .msg__line__preview__count,
+    & .msg__line__from__more {
       background-color: var(--colorLightGrey);
       border-color: var(--colorWhite);
     }
 
-    & .tags__item {
-      background-color: var(--colorWhite);
+    & .msg__line__more {
+      color: var(--colorGreen);
     }
   }
 
@@ -120,45 +104,28 @@
     }
 
     & .msg__line__unread {
-      color: var(--colorGreen);
+      color: var(--colorBlack);
     }
   }
 
-  @nest .opt--split-on & {
-    @media screen and (max-width: 1000px) {
-      flex-wrap: wrap;
-      line-height: 1.5em;
-      padding: 0.3em;
-    }
-  }
-
-  @nest .opt--split-on.opt--bigger & {
-    @media screen and (max-width: 1200px) {
-      flex-wrap: wrap;
-      line-height: 1.5em;
-      padding: 0.3em;
-    }
-  }
-
-  @nest :not(.opt--split-on) & {
-    @media screen and (max-width: 600px) {
-      flex-wrap: wrap;
-      line-height: 1.5em;
-      padding: 0.3em;
-    }
-  }
-
-  @nest :not(.opt--split-on).opt--bigger & {
-    @media screen and (max-width: 800px) {
-      flex-wrap: wrap;
-      line-height: 1.5em;
-      padding: 0.3em;
+  @nest .msg--pinned & {
+    & .msg__line__pin {
+      color: var(--colorOrange);
     }
   }
 }
 
-.msg--pinned .msg__line__pin {
-  color: var(--colorOrange);
+.msg__line__pin,
+.msg__line__unread,
+.msg__line__more,
+.msg__line__split {
+  display: flex;
+  padding: 0;
+  color: var(--colorGrey);
+
+  &:hover {
+    cursor: pointer;
+  }
 }
 
 .msg__line__pick {
@@ -211,6 +178,7 @@
 }
 
 .msg__line__preview {
+  position: relative;
   display: flex;
   align-items: center;
   flex-grow: 20;
@@ -238,18 +206,16 @@
 .msg__line__preview__subj {
   margin-right: 0.2em;
   color: var(--colorBlack);
-  background-color: var(--colorLightGrey);
 }
 
 .msg__line__preview__text {
   margin-right: 0.2em;
-  background-color: var(--colorLightGrey);
 }
 
 .msg__line__preview__time {
   position: absolute;
   top: 0;
-  right: 0.2em;
+  right: 0;
   background-color: var(--colorLightGrey);
   padding-left: 0.5em;
 }

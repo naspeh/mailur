@@ -30,12 +30,8 @@
     </template>
     <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg', {'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed == msg.uid}]">
       <div class="msg__line">
-        <div class="msg__line__pick">
-          <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
-        </div>
         <div class="msg__line__pin icon-pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
         <div class="msg__line__unread icon-unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
-        <div v-if="threads && hasSplit()" @click.prevent="openInSplit(msg.query_thread)" class="msg__line__split icon-next" title="Open in split pane"></div>
         <div v-if="threads" @click.stop="details(msg.uid)" class="msg__line__more icon-details" title="More actions"></div>
         <tags :raw="msg.flags" :trancated="true" />
         <a class="msg__line__from" @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`">
@@ -59,6 +55,10 @@
           </div>
           <div class="msg__line__preview__time" :title="msg.time_title">{{msg.time_human}}</div>
         </a>
+        <div class="msg__line__pick">
+          <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
+        </div>
+        <div v-if="threads && hasSplit()" @click.prevent="openInSplit(msg.query_thread)" class="msg__line__split icon-next" title="Open in split pane"></div>
       </div>
       <div class="msg__actions">
         <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->

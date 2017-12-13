@@ -12,8 +12,7 @@ module.exports = {
   entry: {
     index: './assets/index.js',
     'theme-base': './assets/theme-base.css',
-    'theme-amber': './assets/theme-amber.css',
-    'theme-teal': './assets/theme-teal.css',
+    'theme-mint': './assets/theme-mint.css',
     'theme-indigo': './assets/theme-indigo.css',
     'theme-solarized': './assets/theme-solarized.css'
   },
@@ -25,22 +24,16 @@ module.exports = {
       chunks: ['index', 'theme-base']
     }),
     new HtmlPlugin({
-      filename: 'amber/index.html',
-      template: 'assets/index.html',
-      favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme-amber']
-    }),
-    new HtmlPlugin({
       filename: 'indigo/index.html',
       template: 'assets/index.html',
       favicon: 'assets/favicon.png',
       chunks: ['index', 'theme-indigo']
     }),
     new HtmlPlugin({
-      filename: 'teal/index.html',
+      filename: 'mint/index.html',
       template: 'assets/index.html',
       favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme-teal']
+      chunks: ['index', 'theme-mint']
     }),
     new HtmlPlugin({
       filename: 'solarized/index.html',

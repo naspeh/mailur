@@ -1,13 +1,27 @@
 @import './index.css';
 
+/* Material Design: Blue Grey
+https://material.io/guidelines/style/color.html#color-color-palette
+
+50  #eceff1
+100 #cfd8dc
+200 #b0bec5
+300 #90a4ae
+400 #78909c
+500 #607d8b
+600 #546e7a
+700 #455a64
+800 #37474f
+900 #263238
+*/
 :root {
   --colorWhite: #fff;
-  --colorBlack: #333;
-  --colorGrey: #ccc;
-  --colorLightGrey: #eee;
-  --colorDarkGrey: #777;
-  --colorGreen: green;
-  --colorOrange: #f63;
+  --colorLightGrey: #eceff1;
+  --colorGrey: #90a4ae;
+  --colorDarkGrey: #455a64;
+  --colorBlack: #263238;
+  --colorGreen: #388e3c;
+  --colorOrange: #ff6f00;
 
   /* Sizes & heights */
   --fontSize: 100%;
