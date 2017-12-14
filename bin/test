@@ -20,9 +20,10 @@ apk add git
 set +ux
 . env/bin/activate
 set -ux
-pytest -v
 
 ci=1 bin/lint
 
 yarn run build
+
+pytest -v
 EOF

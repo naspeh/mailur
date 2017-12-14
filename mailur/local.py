@@ -23,21 +23,24 @@ ALL = 'All'
 
 
 class Local(imaplib.IMAP4, imap.Conn):
-    def __init__(self, user):
-        self.username = user
+    def __init__(self, username):
+        self.username = username
         self.current_box = None
         super().__init__('localhost')
 
     def _create_socket(self):
         return socket.create_connection((self.host, self.port))
 
-    def login(self):
-        return super().login('%s*root' % self.username, 'root')
+    def login_root(self):
+        return imap.login(self, '%s*root' % self.username, 'root')
 
 
-def connect(user=None):
-    con = Local(user or USER)
-    imap.check(con.login())
+def connect(username=None, password=None):
+    con = Local(username or USER)
+    if password is None:
+        con.login_root()
+    else:
+        imap.login(con, username, password)
 
     # For searching with non ascii symbols (Dovecot understands this)
     con._encoding = 'utf-8'

@@ -4,46 +4,57 @@ from mailur import local
 from mailur.web import from_list
 
 
-def test_init(clean_users, gm_client, web, some):
-    def tag(name, **kw):
-        return dict({
-            'id': name,
-            'name': name,
-            'short_name': name,
-            'query': ':threads keyword "%s"' % name
-        }, **kw)
-
-    res = web.post_json('/init')
-    assert res.status_code == 200
+def test_login(web, some):
+    res = web.post_json('/login', status=400)
+    assert 'errors' in res
+    assert 'schema' in res
     assert web.cookies == {}
 
-    res = web.post_json('/init', {'offset': 2})
-    assert res.status_code == 200
-    assert web.cookies == {'offset': '2'}
-    assert res.json == {'tags': {
-        '#inbox': tag('#inbox', pinned=1),
-        '#spam': tag('#spam', pinned=1),
-        '#trash': tag('#trash', pinned=1),
-        '#sent': tag('#sent', unread=0),
-        '#latest': tag('#latest', unread=0),
-    }}
+    res = web.get('/')
+    assert res.status_code == 302
+    assert res.location.endswith('/login')
+    assert web.cookies == {'origin_url': '"/"'}
+    res.follow(status=200)
 
+    res = web.post_json('/login', {'username': 'test1'}, status=400)
+    assert 'errors' in res
+    assert 'schema' in res
+
+    login = {'username': 'test1', 'password': 'user', 'offset': 2}
+    res = web.post_json('/login', dict(login, password=''), status=400)
+    assert res.json == {
+        'errors': ['Authentication failed.'],
+        'details': "b'[AUTHENTICATIONFAILED] Authentication failed.'"
+    }
+    web.get('/', status=302)
+
+    res = web.post_json('/login', login, status=200)
+    assert web.cookies == {'session': some}
+    assert 'test1' not in some
+
+    res = web.get('/logout', status=302)
+    assert web.cookies == {}
+
+
+def test_offset(clean_users, gm_client, login, some):
     time_dt = dt.datetime.utcnow()
     time = int(time_dt.timestamp())
     gm_client.add_emails([{'labels': '\\Inbox', 'date': time}])
     local.parse()
 
-    res = web.post_json('/init')
+    web = login(offset=0)
+    res = web.post_json('/search', {'q': 'all', 'preload': 1})
     assert res.status_code == 200
-    assert web.cookies == {'offset': '2'}
-    assert res.json == {'tags': {
-        '#inbox': tag('#inbox', pinned=1, unread=1),
-        '#spam': tag('#spam', pinned=1),
-        '#trash': tag('#trash', pinned=1),
-        '#sent': tag('#sent', unread=0),
-        '#latest': tag('#latest', unread=0),
-    }}
+    assert res.json == {
+        'uids': ['1'],
+        'msgs': {'1': some},
+        'msgs_info': '/msgs/info',
+        'threads': False
+    }
+    assert some['time_human'] == time_dt.strftime('%H:%M')
+    assert some['time_title'] == time_dt.strftime('%a, %d %b, %Y at %H:%M')
 
+    web = login(offset=2)
     res = web.post_json('/search', {'q': 'all', 'preload': 1})
     assert res.status_code == 200
     assert res.json == {
@@ -56,23 +67,42 @@ def test_init(clean_users, gm_client, web, some):
     assert some['time_human'] == time_2h.strftime('%H:%M')
     assert some['time_title'] == time_2h.strftime('%a, %d %b, %Y at %H:%M')
 
-    res = web.post_json('/init', {'offset': 0})
-    assert res.status_code == 200
-    assert web.cookies == {'offset': '0'}
 
-    res = web.post_json('/search', {'q': 'all', 'preload': 1})
-    assert res.status_code == 200
+def test_tags(clean_users, gm_client, login, some):
+    def tag(name, **kw):
+        return dict({
+            'id': name,
+            'name': name,
+            'short_name': name,
+            'query': ':threads keyword "%s"' % name
+        }, **kw)
+
+    web = login()
+
+    res = web.get('/tags', status=200)
     assert res.json == {
-        'uids': ['1'],
-        'msgs': {'1': some},
-        'msgs_info': '/msgs/info',
-        'threads': False
+        '#inbox': tag('#inbox', pinned=1),
+        '#spam': tag('#spam', pinned=1),
+        '#trash': tag('#trash', pinned=1),
+        '#sent': tag('#sent', unread=0),
+        '#latest': tag('#latest', unread=0),
     }
-    assert some['time_human'] == time_dt.strftime('%H:%M')
-    assert some['time_title'] == time_dt.strftime('%a, %d %b, %Y at %H:%M')
+
+    gm_client.add_emails([{'labels': '\\Inbox'}])
+    local.parse()
+
+    res = web.get('/tags', status=200)
+    assert res.json == {
+        '#inbox': tag('#inbox', pinned=1, unread=1),
+        '#spam': tag('#spam', pinned=1),
+        '#trash': tag('#trash', pinned=1),
+        '#sent': tag('#sent', unread=0),
+        '#latest': tag('#latest', unread=0),
+    }
 
 
-def test_basic(clean_users, gm_client, web, some):
+def test_basic(clean_users, gm_client, login, some):
+    web = login()
     res = web.post_json('/search', {'q': 'all', 'preload': 10})
     assert res.status_code == 200
     assert res.json == {

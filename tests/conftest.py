@@ -205,3 +205,12 @@ def web():
 
     app.catchall = False
     return TestApp(app)
+
+
+@pytest.fixture
+def login(web):
+    def inner(username='test1', password='user', offset=2):
+        params = {'username': username, 'password': password, 'offset': offset}
+        web.post_json('/login', params, status=200)
+        return web
+    return inner

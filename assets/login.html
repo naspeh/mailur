@@ -1,0 +1,14 @@
+<form @submit.prevent="send" class="login">
+  <div v-if="error" style="color:red">{{error}}</div>
+  <div>username: <input v-model="params.username" /></div>
+  <div>password: <input v-model="params.password" type="password" /></div>
+  <div>offset: <input v-model="params.offset" /></div>
+  <div>
+    theme:
+    <select v-model="params.theme">
+      <option v-for="theme of themes">{{theme}}</option>
+    </select>
+  </div>
+
+  <div><button type="submit">Send</button></div>
+</form>

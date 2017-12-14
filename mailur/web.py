@@ -1,27 +1,85 @@
 import base64
 import datetime as dt
 import json
+import os
 import pathlib
 import re
 
-from bottle import Bottle, abort, request, response, static_file
+from bottle import Bottle, abort, redirect, request, response, static_file
 
 from gevent.pool import Pool
 
 from geventhttpclient import HTTPClient
 
-from . import local
+from . import imap, local
+from .schema import validate
 
+secret = os.environ.get('MLR_SECRET', 'secret')
 assets_path = pathlib.Path(__file__).parent / '../assets/dist'
 app = Bottle()
 
 
-@app.post('/init')
-def init():
-    if request.json:
-        response.set_cookie('offset', str(request.json['offset']))
+def auth(callback):
+    def inner(*args, **kwargs):
+        session = request.get_cookie('session', secret=secret)
+        if session:
+            request.session = session
+            local.USER = session['username']
+            return callback(*args, **kwargs)
+        u = '?'.join(i for i in (request.fullpath, request.query_string) if i)
+        response.set_cookie('origin_url', u)
+        return redirect(app.get_url('login'))
+    return inner
 
-    return {'tags': wrap_tags(local.tags_info())}
+
+app.install(auth)
+
+
+@app.get('/login.js', skip=[auth])
+@app.route('/login', method=['GET', 'POST'], skip=[auth], name='login')
+def login():
+    if request.method == 'GET':
+        filename = 'login.js' if request.path == '/login.js' else 'login.html'
+        return static_file(filename, root=assets_path)
+
+    schema = {
+        'type': 'object',
+        'properties': {
+            'username': {'type': 'string'},
+            'password': {'type': 'string'},
+            'offset': {'type': 'integer'},
+            'theme': {'type': 'string', 'default': 'base'}
+        },
+        'required': ['username', 'password', 'offset']
+    }
+    errs, data = validate(request.json, schema)
+    if errs:
+        response.status = 400
+        return {'errors': errs, 'schema': schema}
+
+    try:
+        local.connect(data['username'], data['password'])
+    except imap.Error as e:
+        response.status = 400
+        return {'errors': ['Authentication failed.'], 'details': str(e)}
+
+    del data['password']
+    response.set_cookie('session', data, secret)
+    origin_url = request.cookies.get('origin_url')
+    if origin_url:
+        response.delete_cookie('origin_url')
+    return {'url': origin_url or '/'}
+
+
+@app.get('/logout')
+def logout():
+    response.delete_cookie('session')
+    return redirect('/login')
+
+
+@app.get('/tags')
+def tags():
+    return wrap_tags(local.tags_info())
 
 
 @app.post('/search')
@@ -101,11 +159,13 @@ def avatars():
 
 @app.get('/')
 @app.get('/<filepath:path>')
-def assets(filepath='index.html'):
+def assets(filepath=''):
     themes = [t.name for t in assets_path.glob('*') if t.is_dir()]
     themes = '|'.join('%s/' % t for t in themes)
     theme, filepath = re.match('^(%s|)(.*)' % themes, filepath).groups()
-    if theme and not filepath:
+    if not theme and not filepath:
+        return redirect(request.session['theme'] + '/')
+    if not filepath:
         filepath = theme + 'index.html'
     return static_file(filepath, root=assets_path)
 
@@ -133,7 +193,7 @@ def wrap_msgs(items):
         value = json.dumps(value, ensure_ascii=False)
         return ':threads header %s %s' % (name, value)
 
-    offset = int(request.cookies.get('offset', 0))
+    offset = request.session['offset']
     msgs = {}
     for uid, txt, flags, addrs in items:
         if isinstance(txt, bytes):

@@ -57,7 +57,8 @@ a {
   margin-bottom: 0.2em;
 }
 
-.app__main__split {
+.app__main__split,
+.app__main__logout {
   float: right;
 }
 

@@ -1,5 +1,6 @@
 <div :class="['app', {'opt--only-icons': false, 'opt--split-on': split, 'opt--bigger': bigger}]">
   <div class="app__main">
+    <button @click="logout" class="app__main__logout">Logout</button>
     <button @click="toggleSplit" class="app__main__split">Split pane</button>
     <button @click="toggleBigger" class="app__main__bigger" title="Bigger font"></button>
     <div class="app__main__tags">

@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import { send } from './utils.js';
+import { call } from './utils.js';
 import tpl from './app.html';
 
 Vue.component('App', {
@@ -57,6 +57,9 @@ Vue.component('App', {
     },
     toggleBigger: function() {
       this.bigger = !this.bigger;
+    },
+    logout: function() {
+      window.location = '/logout';
     }
   }
 });
@@ -68,17 +71,14 @@ export default function() {
     window.location.hash = q;
   }
 
-  let data = {
-    offset: new Date().getTimezoneOffset() / 60
-  };
-  send('/init', data).then(res => {
+  call('get', '/tags').then(res => {
     new Vue({
       el: '#app',
       template: '<app v-bind="init" />',
       data: {
         init: {
           _query: q,
-          _tags: res.tags
+          _tags: res
         }
       }
     });

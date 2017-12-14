@@ -1,0 +1,15 @@
+body {
+  display: flex;
+  justify-content: center;
+}
+
+.login > div {
+  width: 250px;
+  display: flex;
+  justify-content: space-between;
+
+  & input,
+  & select {
+    width: 150px;
+  }
+}

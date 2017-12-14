@@ -161,6 +161,13 @@ def client(connect, *, writable=False, dovecot=False, debug=DEBUG):
     return ctx
 
 
+def login(con, username, password):
+    try:
+        return check(con.login(username, password))
+    except con.error as e:
+        raise Error(e)
+
+
 @contextmanager
 def _cmd(con, name):
     tag = con._new_tag()

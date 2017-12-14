@@ -8,40 +8,44 @@ const CleanPlugin = require('clean-webpack-plugin');
 const src = path.resolve(__dirname, 'assets');
 const dist = path.resolve(src, 'dist');
 
-module.exports = {
-  entry: {
-    index: './assets/index.js',
-    'theme-base': './assets/theme-base.css',
-    'theme-mint': './assets/theme-mint.css',
-    'theme-indigo': './assets/theme-indigo.css',
-    'theme-solarized': './assets/theme-solarized.css'
-  },
-  plugins: [
-    new CleanPlugin([dist]),
+const themes = ['base', 'mint', 'indigo', 'solarized'];
+let entries = {
+  index: './assets/index.js',
+  login: './assets/login.js'
+};
+let plugins = [
+  new CleanPlugin([dist]),
+  new HtmlPlugin({
+    themes: themes,
+    filename: 'login.html',
+    template: 'assets/index.tpl',
+    favicon: 'assets/favicon.png',
+    chunks: ['login']
+  }),
+  new HtmlPlugin({
+    themes: themes,
+    template: 'assets/index.tpl',
+    favicon: 'assets/favicon.png',
+    chunks: ['index', 'theme-base']
+  })
+];
+for (const theme of themes) {
+  let entry = 'theme-' + theme;
+  entries[entry] = `./assets/${entry}.css`;
+  plugins.push(
     new HtmlPlugin({
-      template: 'assets/index.html',
+      themes: themes,
+      filename: `${theme}/index.html`,
+      template: 'assets/index.tpl',
       favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme-base']
-    }),
-    new HtmlPlugin({
-      filename: 'indigo/index.html',
-      template: 'assets/index.html',
-      favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme-indigo']
-    }),
-    new HtmlPlugin({
-      filename: 'mint/index.html',
-      template: 'assets/index.html',
-      favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme-mint']
-    }),
-    new HtmlPlugin({
-      filename: 'solarized/index.html',
-      template: 'assets/index.html',
-      favicon: 'assets/favicon.png',
-      chunks: ['index', 'theme-solarized']
+      chunks: ['index', entry]
     })
-  ],
+  );
+}
+
+module.exports = {
+  entry: entries,
+  plugins: plugins,
   output: {
     filename: '[name].js?[hash]',
     path: dist

@@ -7,6 +7,7 @@ docopt
 gevent
 geventhttpclient
 gunicorn
+jsonschema
 lxml
 wheel
 wsaccel

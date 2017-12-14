@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import { send } from './utils.js';
+import { call } from './utils.js';
 import tpl from './msgs.html';
 
 Vue.component('Msgs', {
@@ -35,7 +35,7 @@ Vue.component('Msgs', {
     }
   },
   methods: {
-    send: send,
+    call: call,
     setMsgs: function(msgs, uids) {
       if (!msgs) {
         this.msgs = {};
@@ -58,7 +58,7 @@ Vue.component('Msgs', {
 
       this.uids = [];
       this.setMsgs();
-      return this.send('/search', {
+      return this.call('post', '/search', {
         q: this.query,
         preload: this.perPage
       }).then(res => {
@@ -100,14 +100,16 @@ Vue.component('Msgs', {
       this.picked = [];
     },
     link: function() {
-      this.send('/thrs/link', { uids: this.picked }).then(() => this.fetch());
+      this.call('post', '/thrs/link', { uids: this.picked }).then(() =>
+        this.fetch()
+      );
     },
     canLoadMore: function() {
       return this.length < this.uids.length;
     },
     loadMore: function() {
       let uids = this.uids.slice(this.length, this.length + this.perPage);
-      return this.send(this.url, { uids: uids }).then(res =>
+      return this.call('post', this.url, { uids: uids }).then(res =>
         this.setMsgs(res, uids)
       );
     },
