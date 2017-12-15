@@ -1,102 +1,15 @@
-/* @import "vue-multiselect/dist/vue-multiselect.min.css"; */
+body {
+  display: flex;
+  justify-content: center;
+}
 
-.login {
-  position: absolute;
-  top: 20%;
-  left: 50%;
-  box-sizing: border-box;
-  margin-left: -150px;
-  width: 300px;
-  padding: 20px;
-  background: #eee;
-
-  & > div {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-  }
+.login > div {
+  width: 250px;
+  display: flex;
+  justify-content: space-between;
 
   & input,
   & select {
-    box-sizing: border-box;
     width: 150px;
-  }
-}
-
-.login__timezone {
-  & > div {
-    position: relative;
-    width: 150px;
-  }
-}
-
-.multiselect {
-  &:focus {
-    outline: 0;
-  }
-}
-
-.multiselect_input {
-  outline: 0;
-
-  &:focus {
-    outline: 0;
-  }
-}
-
-.multiselect__content-wrapper {
-  position: absolute;
-  left: 0;
-  width: 17em;
-  overflow-x: hidden;
-  overflow-y: auto;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  white-space: nowrap;
-}
-
-.multiselect__content {
-  padding: 0;
-  margin: 0;
-  list-style-type: none;
-  width: 100%;
-}
-
-.multiselect__option {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 0.2em;
-  box-sizing: border-box;
-}
-
-.multiselect__option--highlight {
-  position: relative;
-  background-color: #eee;
-
-  &::after {
-    position: absolute;
-    right: 0;
-    content: attr(data-select);
-    background: #41b883;
-    color: white;
-  }
-}
-
-.multiselect__option--selected {
-  position: relative;
-
-  &::after {
-    position: absolute;
-    right: 0;
-    content: attr(data-selected);
-    color: silver;
-  }
-
-  &.multiselect__option--highlight::after {
-    position: absolute;
-    right: 0;
-    content: attr(data-deselect);
-    background: #ff6a6a;
-    color: #fff;
   }
 }

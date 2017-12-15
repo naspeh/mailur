@@ -1,8 +1,7 @@
 {
   "license": "GPL-3.0",
   "dependencies": {
-    "vue": "^2.5.2",
-    "vue-multiselect": "^2.0.8"
+    "vue": "^2.5.2"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
