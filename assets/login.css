@@ -1,15 +1,26 @@
-body {
-  display: flex;
-  justify-content: center;
-}
+.login {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  width: 300px;
+  margin-left: -150px;
+  box-sizing: border-box;
+  padding: 20px;
+  background-color: var(--colorLightGrey);
 
-.login > div {
-  width: 250px;
-  display: flex;
-  justify-content: space-between;
+  & > div {
+    display: flex;
+    justify-content: flex-end;
+  }
 
   & input,
   & select {
     width: 150px;
+    box-sizing: border-box;
+    margin-left: 0.5em;
   }
+}
+
+.login__submit {
+  margin-top: 0.5em;
 }

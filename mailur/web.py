@@ -34,11 +34,44 @@ def auth(callback):
     return inner
 
 
+def theme_filter(config):
+    themes = [t.name for t in assets_path.glob('*') if t.is_dir()]
+    regexp = r'(%s)?' % '|'.join(re.escape(t) for t in themes)
+
+    def to_python(t):
+        return t
+
+    def to_url(t):
+        return t
+
+    return regexp, to_python, to_url
+
+
 app.install(auth)
+app.router.add_filter('theme', theme_filter)
 
 
-@app.get('/login.js', skip=[auth])
-@app.route('/login', method=['GET', 'POST'], skip=[auth], name='login')
+@app.get('/')
+def index():
+    return redirect(request.session['theme'] + '/')
+
+
+@app.get('/<filepath:path>', skip=[auth])
+@app.get('/<theme>/<filepath:path>', skip=[auth])
+@app.get('/<theme>/', skip=[auth])
+def assets(theme=None, filepath=''):
+    print(theme, filepath)
+    if not filepath:
+        filepath = theme + '/index.html'
+    return static_file(filepath, root=assets_path)
+
+
+@app.get('/login', skip=[auth])
+def login_html():
+    return static_file('login.html', root=assets_path)
+
+
+@app.post('/login', skip=[auth], name='login')
 def login():
     if request.method == 'GET':
         filename = 'login.js' if request.path == '/login.js' else 'login.html'
@@ -162,19 +195,6 @@ def avatars():
         '%s {background-image: url(data:image/gif;base64,%s);}'
         % ((cls % h), i.decode())
     ) for h, i in fetch_avatars(hashes, size, default))
-
-
-@app.get('/')
-@app.get('/<filepath:path>')
-def assets(filepath=''):
-    themes = [t.name for t in assets_path.glob('*') if t.is_dir()]
-    themes = '|'.join('%s/' % t for t in themes)
-    theme, filepath = re.match('^(%s|)(.*)' % themes, filepath).groups()
-    if not theme and not filepath:
-        return redirect(request.session['theme'] + '/')
-    if not filepath:
-        filepath = theme + 'index.html'
-    return static_file(filepath, root=assets_path)
 
 
 # Helpers bellow

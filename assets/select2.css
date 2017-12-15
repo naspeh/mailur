@@ -1,0 +1,25 @@
+.select2 {
+  position: relative;
+}
+
+.select2__input {
+  box-sizing: border-box;
+
+  &:focus {
+    outline: 0;
+  }
+}
+
+.select2__select {
+  display: none;
+  position: absolute;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: 0;
+  }
+
+  @nest .select2--active & {
+    display: block;
+  }
+}

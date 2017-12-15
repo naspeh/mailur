@@ -20,7 +20,7 @@ let plugins = [
     filename: 'login.html',
     template: 'assets/index.tpl',
     favicon: 'assets/favicon.png',
-    chunks: ['login']
+    chunks: ['login', 'theme-base']
   }),
   new HtmlPlugin({
     themes: themes,

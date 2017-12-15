@@ -1,7 +1,7 @@
 import Vue from 'vue';
+import './select2.js';
 import { call } from './utils.js';
 import tpl from './login.html';
-import './login.css';
 
 Vue.component('Login', {
   template: tpl,
