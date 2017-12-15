@@ -9,6 +9,7 @@ geventhttpclient
 gunicorn
 jsonschema
 lxml
+pytz
 wheel
 wsaccel
 "

@@ -20,7 +20,7 @@ def test_login(web, some):
     assert 'errors' in res
     assert 'schema' in res
 
-    login = {'username': 'test1', 'password': 'user', 'offset': 2}
+    login = {'username': 'test1', 'password': 'user', 'timezone': 'UTC'}
     res = web.post_json('/login', dict(login, password=''), status=400)
     assert res.json == {
         'errors': ['Authentication failed.'],
@@ -36,13 +36,16 @@ def test_login(web, some):
     assert web.cookies == {}
 
 
-def test_offset(clean_users, gm_client, login, some):
+def test_tz(clean_users, gm_client, web, login, some):
+    res = web.get('/timezones')
+    assert 'Europe/Kiev' in res
+
     time_dt = dt.datetime.utcnow()
     time = int(time_dt.timestamp())
     gm_client.add_emails([{'labels': '\\Inbox', 'date': time}])
     local.parse()
 
-    web = login(offset=0)
+    web = login(tz='UTC')
     res = web.post_json('/search', {'q': 'all', 'preload': 1})
     assert res.status_code == 200
     assert res.json == {
@@ -54,7 +57,7 @@ def test_offset(clean_users, gm_client, login, some):
     assert some['time_human'] == time_dt.strftime('%H:%M')
     assert some['time_title'] == time_dt.strftime('%a, %d %b, %Y at %H:%M')
 
-    web = login(offset=2)
+    web = login(tz='Asia/Singapore')
     res = web.post_json('/search', {'q': 'all', 'preload': 1})
     assert res.status_code == 200
     assert res.json == {
@@ -63,7 +66,7 @@ def test_offset(clean_users, gm_client, login, some):
         'msgs_info': '/msgs/info',
         'threads': False,
     }
-    time_2h = time_dt + dt.timedelta(hours=2)
+    time_2h = time_dt + dt.timedelta(hours=8)
     assert some['time_human'] == time_2h.strftime('%H:%M')
     assert some['time_title'] == time_2h.strftime('%a, %d %b, %Y at %H:%M')
 

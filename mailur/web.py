@@ -11,6 +11,8 @@ from gevent.pool import Pool
 
 from geventhttpclient import HTTPClient
 
+from pytz import common_timezones, timezone, utc
+
 from . import imap, local
 from .schema import validate
 
@@ -47,10 +49,10 @@ def login():
         'properties': {
             'username': {'type': 'string'},
             'password': {'type': 'string'},
-            'offset': {'type': 'integer'},
+            'timezone': {'type': 'string', 'enum': common_timezones},
             'theme': {'type': 'string', 'default': 'base'}
         },
-        'required': ['username', 'password', 'offset']
+        'required': ['username', 'password', 'timezone']
     }
     errs, data = validate(request.json, schema)
     if errs:
@@ -75,6 +77,11 @@ def login():
 def logout():
     response.delete_cookie('session')
     return redirect('/login')
+
+
+@app.get('/timezones', skip=[auth])
+def timezones():
+    return json.dumps(common_timezones)
 
 
 @app.get('/tags')
@@ -193,7 +200,7 @@ def wrap_msgs(items):
         value = json.dumps(value, ensure_ascii=False)
         return ':threads header %s %s' % (name, value)
 
-    offset = request.session['offset']
+    tz = request.session['timezone']
     msgs = {}
     for uid, txt, flags, addrs in items:
         if isinstance(txt, bytes):
@@ -214,8 +221,8 @@ def wrap_msgs(items):
             'query_subject': query_header('subject', info['subject']),
             'query_msgid': query_header('message-id', info['msgid']),
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
-            'time_human': humanize_dt(info['date'], offset=offset),
-            'time_title': format_dt(info['date'], offset=offset),
+            'time_human': humanize_dt(info['date'], tz=tz),
+            'time_title': format_dt(info['date'], tz=tz),
             'is_unread': '\\Seen' not in flags,
             'is_pinned': '\\Flagged' in flags,
         })
@@ -258,19 +265,25 @@ def from_list(addrs, max=4):
     return addrs_few
 
 
-def localize_dt(val, offset=None):
+def localize_dt(val, tz=utc):
     if isinstance(val, (float, int)):
         val = dt.datetime.fromtimestamp(val)
-    return val + dt.timedelta(hours=(offset or 0))
+    if not val.tzinfo:
+        val = utc.localize(val)
+    if isinstance(tz, str):
+        tz = timezone(tz)
+    if tz != utc:
+        val = val.astimezone(tz)
+    return val
 
 
-def format_dt(value, offset=None, fmt='%a, %d %b, %Y at %H:%M'):
-    return localize_dt(value, offset).strftime(fmt)
+def format_dt(value, tz=utc, fmt='%a, %d %b, %Y at %H:%M'):
+    return localize_dt(value, tz).strftime(fmt)
 
 
-def humanize_dt(val, offset=None, secs=False):
-    val = localize_dt(val, offset)
-    now = localize_dt(dt.datetime.utcnow(), offset)
+def humanize_dt(val, tz=utc, secs=False):
+    val = localize_dt(val, tz)
+    now = localize_dt(dt.datetime.utcnow(), tz)
     if (now - val).total_seconds() < 12 * 60 * 60:
         fmt = '%H:%M' + (':%S' if secs else '')
     elif now.year == val.year:

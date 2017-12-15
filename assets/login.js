@@ -5,12 +5,15 @@ import './login.css';
 
 Vue.component('Login', {
   template: tpl,
+  props: {
+    timezones: { type: Array, required: true }
+  },
   data: function() {
     return {
       params: {
         username: '',
         password: '',
-        offset: new Date().getTimezoneOffset() / 60,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         theme: 'base'
       },
       error: null,
@@ -30,7 +33,12 @@ Vue.component('Login', {
   }
 });
 
-new Vue({
-  el: '#app',
-  template: '<login />'
+call('get', '/timezones').then(res => {
+  new Vue({
+    el: '#app',
+    template: '<login :timezones="timezones" />',
+    data: {
+      timezones: res
+    }
+  });
 });
