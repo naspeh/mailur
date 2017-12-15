@@ -1,7 +1,10 @@
 import Vue from 'vue';
+import Multiselect from 'vue-multiselect';
 import { call } from './utils.js';
 import tpl from './login.html';
 import './login.css';
+
+Vue.component('multiselect', Multiselect);
 
 Vue.component('Login', {
   template: tpl,
