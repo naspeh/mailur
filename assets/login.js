@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import './select2.js';
+import './picker.js';
 import { call } from './utils.js';
 import tpl from './login.html';
 

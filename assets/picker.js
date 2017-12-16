@@ -1,7 +1,7 @@
 import Vue from 'vue';
-import tpl from './select2.html';
+import tpl from './picker.html';
 
-Vue.component('Select2', {
+Vue.component('Picker', {
   template: tpl,
   props: {
     value: { type: String, required: true },
@@ -46,7 +46,7 @@ Vue.component('Select2', {
       }
       if (
         this.$el.contains(e.target) &&
-        e.target.className.indexOf('select2') != -1
+        e.target.className.indexOf('picker') != -1
       ) {
         this.activate();
         return;
@@ -62,7 +62,7 @@ Vue.component('Select2', {
       this.filter = val;
       if (active) {
         this.activate();
-        this.$el.querySelector('.select2__input').focus();
+        this.$el.querySelector('.picker__input').focus();
       } else if (this.active) {
         this.active = false;
       }
@@ -84,8 +84,8 @@ Vue.component('Select2', {
     },
     selectedOpt: function() {
       return (
-        this.$el.querySelector('.select2__opts__item--active') ||
-        this.$el.querySelector('.select2__opts__item')
+        this.$el.querySelector('.picker__opts__item--active') ||
+        this.$el.querySelector('.picker__opts__item')
       );
     },
     select: function(key, count = 1) {

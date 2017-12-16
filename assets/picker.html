@@ -1,4 +1,4 @@
-<form @submit.prevent="" :class="['select2', {'select2--active': active}]">
+<form @submit.prevent="" :class="['picker', {'picker--active': active}]">
   <input v-model="filter"
     @keyup="activate"
     @keyup.esc.prevent="set(value)"
@@ -7,15 +7,15 @@
     @keydown.down="select('down')"
     @keydown.page-down="select('dwon', perPage)"
     @keyup.enter="set()"
-    class="select2__input"
+    class="picker__input"
     :readonly="filterOff"
   />
-  <div class="select2__opts">
+  <div class="picker__opts">
     <div
       v-for="opt of filtered"
       @click="set(opt)"
       :data-value="opt"
-      :class="{'select2__opts__item': 1, 'select2__opts__item--active': opt==selected}"
+      :class="{'picker__opts__item': 1, 'picker__opts__item--active': opt==selected}"
     >{{opt}}</div>
   </div>
 </form>

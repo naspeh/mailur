@@ -1,16 +1,16 @@
-.select2 {
+.picker {
   position: relative;
 
-  &.select2--active {
+  &.picker--active {
     z-index: 1;
   }
 }
 
-.select2__input {
+.picker__input {
   width: 100%;
 }
 
-.select2__opts {
+.picker__opts {
   display: none;
   position: absolute;
   left: 0;
@@ -26,15 +26,15 @@
   background-color: var(--colorWhite);
   border: 1px solid var(--colorGrey);
 
-  @nest .select2--active & {
+  @nest .picker--active & {
     display: block;
   }
 }
 
-.select2__opts__item {
+.picker__opts__item {
   cursor: pointer;
 
-  &.select2__opts__item--active {
+  &.picker__opts__item--active {
     background-color: var(--colorLightGrey);
   }
 }

@@ -4,11 +4,11 @@
   <div>password: <input v-model="params.password" type="password" required /></div>
   <div>
     theme:
-    <select2 :value.sync="params.theme" :options="themes" />
+    <picker :value.sync="params.theme" :options="themes" />
   </div>
   <div>
     timezone:
-    <select2 :value.sync="params.timezone" :options="timezones" />
+    <picker :value.sync="params.timezone" :options="timezones" />
   </div>
 
   <div class="login__submit"><button type="submit">Send</button></div>
