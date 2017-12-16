@@ -1,23 +1,21 @@
-<div
-  @focus.capture="activate"
-  @blur.capture="deactivate"
-  @keyup.esc.capture="deactivate"
-  @keyup.enter.capture="select()"
-  @keyup.up="focus('select')"
-  @keyup.down="focus('select')"
-  @keyup.delete="focus('input')"
-  @keyup.left="focus('input')"
-  @keyup.right="focus('input')"
-  :class="['select2', {'select2--active': active}]"
->
-  <form>
-  <input v-model="filter" @change="activate"  class="select2__input" />
-  <select class="select2__select" size="10">
-    <option
+<form @submit.prevent="" :class="['select2', {'select2--active': active}]">
+  <input v-model="filter"
+    @focus="activate()"
+    @change="activate"
+    @keyup.esc.prevent="set(value)"
+    @keydown.up="select('up')"
+    @keydown.page-up="select('up', 15)"
+    @keydown.down="select('down')"
+    @keydown.page-down="select('dwon', 15)"
+    @keyup.enter="set()"
+    class="select2__input"
+  />
+  <div class="select2__opts">
+    <div
       v-for="opt of filtered"
-      @dblclick="select(opt)"
-      :selected="opt==value"
-    >{{opt}}</option>
-  </select>
-  </form>
-</div>
+      @click="set(opt)"
+      :data-value="opt"
+      :class="{'select2__opts__item': 1, 'select2__opts__item--active': opt==selected}"
+    >{{opt}}</div>
+  </div>
+</form>

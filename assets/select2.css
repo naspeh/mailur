@@ -4,22 +4,33 @@
 
 .select2__input {
   box-sizing: border-box;
-
-  &:focus {
-    outline: 0;
-  }
+  width: 100%;
 }
 
-.select2__select {
+.select2__opts {
   display: none;
   position: absolute;
+  left: 0;
   box-sizing: border-box;
-
-  &:focus {
-    outline: 0;
-  }
+  padding: 0 0.1em;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 100%;
+  max-height: 300px;
+  line-height: 20px;
+  font-size: 14px;
+  background-color: var(--colorWhite);
+  border: 1px solid var(--colorGrey);
 
   @nest .select2--active & {
     display: block;
+  }
+}
+
+.select2__opts__item {
+  cursor: pointer;
+
+  &.select2__opts__item--active {
+    background-color: var(--colorLightGrey);
   }
 }

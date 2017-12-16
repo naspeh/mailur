@@ -11,13 +11,14 @@
   & > div {
     display: flex;
     justify-content: flex-end;
-  }
 
-  & input,
-  & select {
-    width: 150px;
-    box-sizing: border-box;
-    margin-left: 0.5em;
+    & .select2,
+    & > input,
+    & > select {
+      width: 150px;
+      box-sizing: border-box;
+      margin-left: 0.5em;
+    }
   }
 }
 

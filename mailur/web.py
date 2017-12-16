@@ -60,7 +60,6 @@ def index():
 @app.get('/<theme>/<filepath:path>', skip=[auth])
 @app.get('/<theme>/', skip=[auth])
 def assets(theme=None, filepath=''):
-    print(theme, filepath)
     if not filepath:
         filepath = theme + '/index.html'
     return static_file(filepath, root=assets_path)
