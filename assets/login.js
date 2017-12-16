@@ -20,6 +20,9 @@ Vue.component('Login', {
       themes: window.themes
     };
   },
+  mounted: function() {
+    this.$el.querySelector('.login input').focus();
+  },
   methods: {
     send: function() {
       call('post', '/login', this.params).then(res => {

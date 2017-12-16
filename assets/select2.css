@@ -1,9 +1,12 @@
 .select2 {
   position: relative;
+
+  &.select2--active {
+    z-index: 1;
+  }
 }
 
 .select2__input {
-  box-sizing: border-box;
   width: 100%;
 }
 
@@ -13,6 +16,7 @@
   left: 0;
   box-sizing: border-box;
   padding: 0 0.1em;
+  margin-top: -1px;
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 100%;

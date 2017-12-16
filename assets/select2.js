@@ -4,21 +4,25 @@ import tpl from './select2.html';
 Vue.component('Select2', {
   template: tpl,
   props: {
-    value: { type: String },
-    options: { type: Array }
+    value: { type: String, required: true },
+    options: { type: Array, required: true },
+    perPage: { type: Number, default: 15 }
   },
   data: function() {
     return {
       filter: this.value,
+      filterOff: this.options.length <= this.perPage,
       selected: this.value,
       active: false
     };
   },
   mounted: function() {
-    window.addEventListener('click', this.blur);
+    window.addEventListener('focus', this.focus, true);
+    window.addEventListener('click', this.focus, true);
   },
   destroyed: function() {
-    window.removeEventListener('click', this.blur);
+    window.removeEventListener('focus', this.focus, true);
+    window.removeEventListener('click', this.focus, true);
   },
   computed: {
     filtered: function() {
@@ -36,11 +40,20 @@ Vue.component('Select2', {
     }
   },
   methods: {
-    blur: function(e) {
-      if (e.target.className.indexOf('select2') != -1) {
+    focus: function(e) {
+      if (e.target == window) {
         return;
       }
-      this.set();
+      if (
+        this.$el.contains(e.target) &&
+        e.target.className.indexOf('select2') != -1
+      ) {
+        this.activate();
+        return;
+      }
+      if (this.active) {
+        this.set();
+      }
     },
     set: function(val, active = false) {
       val = val || this.selected;
@@ -49,15 +62,18 @@ Vue.component('Select2', {
       this.filter = val;
       if (active) {
         this.activate();
+        this.$el.querySelector('.select2__input').focus();
       } else if (this.active) {
         this.active = false;
-        this.$nextTick(() => this.$el.querySelector('.select2__input').blur());
       }
     },
     activate: function() {
       this.active = true;
       this.$nextTick(() => {
         let element = this.selectedOpt();
+        if (!element) {
+          return;
+        }
         for (let i = 0; i < 3; i++) {
           if (element.previousSibling) {
             element = element.previousSibling;

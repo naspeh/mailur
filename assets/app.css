@@ -15,6 +15,17 @@ a {
   }
 }
 
+input {
+  box-sizing: border-box;
+  border: 1px solid var(--colorGrey);
+  padding: 0.1em 0.2em;
+
+  &:focus {
+    outline: 0;
+    border-left: 3px solid var(--colorOrange);
+  }
+}
+
 .app {
   display: flex;
   flex-flow: row nowrap;

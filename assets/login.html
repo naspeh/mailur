@@ -1,16 +1,14 @@
-<form @submit.prevent="send" class="login">
-  <div v-if="error" style="color:red">{{error}}</div>
+<form @submit.prevent="send" @keyup.ctrl.enter="send" class="login">
+  <div v-if="error" class="login__error">{{error}}</div>
   <div>username: <input v-model="params.username" required /></div>
   <div>password: <input v-model="params.password" type="password" required /></div>
   <div>
-    timezone:
-    <select2 :value.sync="params.timezone" :options="timezones" />
+    theme:
+    <select2 :value.sync="params.theme" :options="themes" />
   </div>
   <div>
-    theme:
-    <select v-model="params.theme">
-      <option v-for="theme of themes">{{theme}}</option>
-    </select>
+    timezone:
+    <select2 :value.sync="params.timezone" :options="timezones" />
   </div>
 
   <div class="login__submit"><button type="submit">Send</button></div>

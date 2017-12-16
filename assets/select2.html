@@ -1,14 +1,14 @@
 <form @submit.prevent="" :class="['select2', {'select2--active': active}]">
   <input v-model="filter"
-    @focus="activate()"
-    @change="activate"
+    @keyup="activate"
     @keyup.esc.prevent="set(value)"
     @keydown.up="select('up')"
-    @keydown.page-up="select('up', 15)"
+    @keydown.page-up="select('up', perPage)"
     @keydown.down="select('down')"
-    @keydown.page-down="select('dwon', 15)"
+    @keydown.page-down="select('dwon', perPage)"
     @keyup.enter="set()"
     class="select2__input"
+    :readonly="filterOff"
   />
   <div class="select2__opts">
     <div

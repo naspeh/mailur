@@ -8,13 +8,16 @@ export function call(method, url, data) {
       (params.body = data && JSON.stringify(data));
   }
   return fetch(url, params).then(response => {
-    if (!response.ok) {
-      throw new Error(response);
-    }
+    let res;
     if (response.headers.get('Content-Length') == '0') {
-      return response.text();
+      res = response.text();
     } else {
-      return response.json();
+      res = response.json();
+    }
+    if (!response.ok) {
+      return res || { errors: response };
+    } else {
+      return res;
     }
   });
 }
