@@ -32,7 +32,8 @@ Vue.component('Login', {
           this.error = res.errors[0];
           return;
         }
-        window.location = res.url;
+        let index = window.location.pathname.replace('login', '');
+        window.location.replace(index);
       });
     }
   }

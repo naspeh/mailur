@@ -29,6 +29,7 @@ def test_login_and_themes(web, some):
     res = web.get('/solarized/', status=200)
     assert '/theme-solarized.css' in res, res.text
 
+    web.reset()
     res = web.post_json('/login', dict(login, theme='solarized'), status=200)
     res = web.get('/', status=200)
     assert '/theme-solarized.css' in res, res.text
@@ -36,15 +37,21 @@ def test_login_and_themes(web, some):
     res = web.get('/logout', status=302)
     assert web.cookies == {}
 
+    res = web.get('/', status=302)
+    assert res.location == 'http://localhost:80/login'
+    res.follow(status=200)
+
+    web.reset()
+    res = web.get('/solarized/', status=302)
+    assert res.location == 'http://localhost:80/solarized/login'
+    res.follow(status=200)
+
+    web.get('/tags', status=403)
+
     res = web.post_json('/login', status=400)
     assert 'errors' in res
     assert 'schema' in res
     assert web.cookies == {}
-
-    res = web.get('/', status=302)
-    assert res.location.endswith('/login')
-    assert web.cookies == {'origin_url': '"/"'}
-    res.follow(status=200)
 
     res = web.post_json('/login', {'username': 'test1'}, status=400)
     assert 'errors' in res

@@ -24,16 +24,21 @@ assets_path = pathlib.Path(__file__).parent / '../assets'
 app = Bottle()
 
 
-def auth(callback):
+def session(callback):
     def inner(*args, **kwargs):
         session = request.get_cookie('session', secret=secret)
         if session:
-            request.session = session
             local.USER = session['username']
+        request.session = session
+        return callback(*args, **kwargs)
+    return inner
+
+
+def auth(callback):
+    def inner(*args, **kwargs):
+        if request.session:
             return callback(*args, **kwargs)
-        u = '?'.join(i for i in (request.fullpath, request.query_string) if i)
-        response.set_cookie('origin_url', u)
-        return redirect(app.get_url('login'))
+        return abort(403)
     return inner
 
 
@@ -48,19 +53,25 @@ def theme_filter(config):
     return regexp, to_python, to_url
 
 
+app.install(session)
 app.install(auth)
 app.router.add_filter('theme', theme_filter)
 
 
-@app.get('/')
-@app.get('/<theme>/')
+@app.get('/', skip=[auth], name='index')
+@app.get('/<theme>/', skip=[auth])
 def index(theme=None):
+    if not request.session:
+        prefix = ('/' + theme) if theme else ''
+        login_url = '%s%s' % (prefix, app.get_url('login'))
+        return redirect(login_url)
+
     return render_tpl(theme or request.session['theme'], 'index', {
         'tags': wrap_tags(local.tags_info())
     })
 
 
-@app.get('/login', skip=[auth])
+@app.get('/login', skip=[auth], name='login')
 @app.get('/<theme>/login', skip=[auth])
 def login_html(theme=None):
     return render_tpl(theme or 'base', 'login', {
@@ -74,7 +85,7 @@ def assets(filepath):
     return static_file(filepath, root=assets_path / 'dist')
 
 
-@app.post('/login', skip=[auth], name='login')
+@app.post('/login', skip=[auth])
 def login():
     schema = {
         'type': 'object',
@@ -99,10 +110,7 @@ def login():
 
     del data['password']
     response.set_cookie('session', data, secret)
-    origin_url = request.cookies.get('origin_url')
-    if origin_url:
-        response.delete_cookie('origin_url')
-    return {'url': origin_url or '/'}
+    return {}
 
 
 @app.get('/logout')
