@@ -1,13 +1,10 @@
 import Vue from 'vue';
 import './picker.js';
 import { call } from './utils.js';
-import tpl from './login.html';
+import tpl from './page-login.html';
 
 Vue.component('Login', {
   template: tpl,
-  props: {
-    timezones: { type: Array, required: true }
-  },
   data: function() {
     return {
       params: {
@@ -17,7 +14,8 @@ Vue.component('Login', {
         theme: 'base'
       },
       error: null,
-      themes: window.themes
+      themes: window.data.themes,
+      timezones: window.data.timezones
     };
   },
   mounted: function() {
@@ -36,12 +34,7 @@ Vue.component('Login', {
   }
 });
 
-call('get', '/timezones').then(res => {
-  new Vue({
-    el: '#app',
-    template: '<login :timezones="timezones" />',
-    data: {
-      timezones: res
-    }
-  });
+new Vue({
+  el: '#app',
+  template: '<login />'
 });

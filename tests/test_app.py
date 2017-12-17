@@ -8,7 +8,8 @@ def test_login_and_themes(web, some):
     res = web.get('/login', status=200)
     assert '/theme-base.css' in res, res.text
     assert '/login.js' in res, res.txt
-    assert 'themes=["base", "indigo", "mint", "solarized"]' in res, res.text
+    assert '"themes": ["base", "indigo", "mint", "solarized"]' in res, res.text
+    assert '"Europe/Kiev"' in res, res.text
 
     res = web.get('/solarized/login', status=200)
     assert '/theme-solarized.css' in res, res.text
@@ -41,6 +42,7 @@ def test_login_and_themes(web, some):
     res = web.get('/', status=200)
     assert '/theme-base.css' in res, res.text
     assert '/index.js' in res, res.text
+    assert 'window.data={"tags":' in res, res.text
 
     res = web.get('/solarized/', status=200)
     assert '/theme-solarized.css' in res, res.text

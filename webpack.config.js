@@ -10,8 +10,8 @@ const dist = path.resolve(src, 'dist');
 
 module.exports = {
   entry: {
-    index: './assets/index.js',
-    login: './assets/login.js',
+    index: './assets/page-index.js',
+    login: './assets/page-login.js',
     vendor: ['vue'],
     'theme-base': './assets/theme-base.css',
     'theme-mint': './assets/theme-mint.css',
@@ -23,9 +23,10 @@ module.exports = {
     new ExtractTextPlugin({
       filename: '[name].css?[hash]'
     }),
-     new webpack.optimize.CommonsChunkPlugin({
-       name: 'vendor'
-     })  ],
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor'
+    })
+  ],
   output: {
     filename: '[name].js?[hash]',
     path: dist

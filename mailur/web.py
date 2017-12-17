@@ -22,25 +22,6 @@ from .schema import validate
 secret = os.environ.get('MLR_SECRET', 'secret')
 assets_path = pathlib.Path(__file__).parent / '../assets'
 app = Bottle()
-tpl = '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Mailur: {{title}}</title>
-  <link rel="shortcut icon" href="favicon.png">
-  <link href="/{{css}}?{{mtime}}" rel="stylesheet">
-  <script>
-    window.themes={{!themes}};
-  </script>
-</head>
-<body>
-  <div id="app"/>
-  <script type="text/javascript" src="/vendor.js?{{mtime}}"></script>
-  <script type="text/javascript" src="/{{js}}?{{mtime}}"></script>
-</body>
-</html>
-'''
 
 
 def auth(callback):
@@ -74,13 +55,18 @@ app.router.add_filter('theme', theme_filter)
 @app.get('/')
 @app.get('/<theme>/')
 def index(theme=None):
-    return render_tpl(theme or request.session['theme'], 'index')
+    return render_tpl(theme or request.session['theme'], 'index', {
+        'tags': wrap_tags(local.tags_info())
+    })
 
 
 @app.get('/login', skip=[auth])
 @app.get('/<theme>/login', skip=[auth])
 def login_html(theme=None):
-    return render_tpl(theme or 'base', 'login')
+    return render_tpl(theme or 'base', 'login', {
+        'themes': themes(),
+        'timezones': common_timezones,
+    })
 
 
 @app.get('/<filepath:path>', skip=[auth])
@@ -123,11 +109,6 @@ def login():
 def logout():
     response.delete_cookie('session')
     return redirect('/login')
-
-
-@app.get('/timezones', skip=[auth])
-def timezones():
-    return json.dumps(common_timezones)
 
 
 @app.get('/tags')
@@ -211,27 +192,48 @@ def avatars():
 
 
 # Helpers bellow
-@ft.lru_cache(maxsize=None)
-def themes():
-    return sorted(
-        re.match('theme-(.*)\.css', t.name).group(1)
-        for t in assets_path.glob('theme-*.css') if t.is_file()
-    )
+tpl = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mailur: {{title}}</title>
+  <link rel="shortcut icon" href="favicon.png">
+  <link href="/{{css}}?{{mtime}}" rel="stylesheet">
+  <script>
+    window.data={{!data}};
+  </script>
+</head>
+<body>
+  <div id="app"/>
+  <script type="text/javascript" src="/vendor.js?{{mtime}}"></script>
+  <script type="text/javascript" src="/{{js}}?{{mtime}}"></script>
+</body>
+</html>
+'''
 
 
-def render_tpl(theme, page, **kwargs):
+def render_tpl(theme, page, data={}):
     title = {'index': 'welcome', 'login': 'login'}[page]
     css = assets_path / ('theme-%s.css' % theme)
     js = assets_path / ('%s.js' % page)
     mtime = max(i.stat().st_mtime for i in [css, js] if i.is_file())
     params = {
-        'themes': json.dumps(themes()),
+        'data': json.dumps(data),
         'css': css.name,
         'js': js.name,
         'mtime': mtime,
         'title': title,
     }
     return template(tpl, **params)
+
+
+@ft.lru_cache(maxsize=None)
+def themes():
+    return sorted(
+        re.match('theme-(.*)\.css', t.name).group(1)
+        for t in assets_path.glob('theme-*.css') if t.is_file()
+    )
 
 
 def wrap_tags(tags):

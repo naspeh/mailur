@@ -1,6 +1,6 @@
 @import './font/fontello.css';
 @import './tags.css';
 @import './picker.css';
-@import './login.css';
-@import './app.css';
 @import './msgs.css';
+@import './page-login.css';
+@import './page-index.css';

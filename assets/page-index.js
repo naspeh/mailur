@@ -1,23 +1,27 @@
 import Vue from 'vue';
-import { call } from './utils.js';
-import tpl from './app.html';
+import './msgs.js';
+import './tags.js';
+import tpl from './page-index.html';
 
 Vue.component('App', {
   template: tpl,
-  props: {
-    _query: { type: String, required: true },
-    _tags: { type: Object, default: {} }
-  },
   data: function() {
     return {
-      query: this._query,
-      tags: this._tags,
+      tags: window.data.tags,
+      query: null,
       split: false,
       bigger: false
     };
   },
   created: function() {
     window.app = this;
+
+    let q = decodeURIComponent(location.hash.slice(1));
+    if (!q) {
+      q = ':threads keyword #inbox';
+      window.location.hash = q;
+    }
+    this.query = q;
   },
   computed: {
     allTags: function() {
@@ -64,23 +68,7 @@ Vue.component('App', {
   }
 });
 
-export default function() {
-  let q = decodeURIComponent(location.hash.slice(1));
-  if (!q) {
-    q = ':threads keyword #inbox';
-    window.location.hash = q;
-  }
-
-  call('get', '/tags').then(res => {
-    new Vue({
-      el: '#app',
-      template: '<app v-bind="init" />',
-      data: {
-        init: {
-          _query: q,
-          _tags: res
-        }
-      }
-    });
-  });
-}
+new Vue({
+  el: '#app',
+  template: '<app />'
+});
