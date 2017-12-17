@@ -36,6 +36,7 @@ tpl = '''
 </head>
 <body>
   <div id="app"/>
+  <script type="text/javascript" src="/vendor.js?{{mtime}}"></script>
   <script type="text/javascript" src="/{{js}}?{{mtime}}"></script>
 </body>
 </html>

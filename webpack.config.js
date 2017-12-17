@@ -12,6 +12,7 @@ module.exports = {
   entry: {
     index: './assets/index.js',
     login: './assets/login.js',
+    vendor: ['vue'],
     'theme-base': './assets/theme-base.css',
     'theme-mint': './assets/theme-mint.css',
     'theme-indigo': './assets/theme-indigo.css',
@@ -21,8 +22,10 @@ module.exports = {
     new CleanPlugin([dist]),
     new ExtractTextPlugin({
       filename: '[name].css?[hash]'
-    })
-  ],
+    }),
+     new webpack.optimize.CommonsChunkPlugin({
+       name: 'vendor'
+     })  ],
   output: {
     filename: '[name].js?[hash]',
     path: dist
