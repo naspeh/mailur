@@ -8,6 +8,7 @@
     @keydown.page-down="select('dwon', perPage)"
     @keyup.enter="set()"
     class="picker__input"
+    :disabled="disabled"
     :readonly="filterOff"
   />
   <div class="picker__opts">

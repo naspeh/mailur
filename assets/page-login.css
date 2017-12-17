@@ -7,26 +7,48 @@
   box-sizing: border-box;
   padding: 20px;
   background-color: var(--colorLightGrey);
+  color: var(--colorBlack);
+}
 
-  & > div {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 0.2em;
+.login__username,
+.login__password {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.2em;
 
-    & .picker,
-    & > input,
-    & > select {
-      width: 150px;
-      margin-left: 0.5em;
-    }
+  & input {
+    width: 150px;
+    margin-left: 0.5em;
   }
 }
 
-div.login__error {
+.login__theme,
+.login__timezone {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.2em;
+
+  & .picker {
+    width: 150px;
+    margin-left: 0.5em;
+  }
+}
+
+.login__submit {
+  display: flex;
+  justify-content: flex-end;
+
+  @nest .login--disabled & button {
+    pointer-events: none;
+  }
+}
+
+.login__error {
   position: absolute;
   top: -50px;
   left: 0;
-  width: 100%;
+  display: flex;
   justify-content: center;
+  width: 100%;
   color: red;
 }

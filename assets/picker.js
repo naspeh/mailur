@@ -6,7 +6,8 @@ Vue.component('Picker', {
   props: {
     value: { type: String, required: true },
     options: { type: Array, required: true },
-    perPage: { type: Number, default: 15 }
+    perPage: { type: Number, default: 15 },
+    disabled: { type: Boolean, default: false }
   },
   data: function() {
     return {

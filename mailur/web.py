@@ -214,12 +214,13 @@ tpl = '''
 
 
 def render_tpl(theme, page, data={}):
+    data.update(current_theme=theme)
     title = {'index': 'welcome', 'login': 'login'}[page]
     css = assets_path / ('theme-%s.css' % theme)
     js = assets_path / ('%s.js' % page)
     mtime = max(i.stat().st_mtime for i in [css, js] if i.is_file())
     params = {
-        'data': json.dumps(data),
+        'data': json.dumps(data, sort_keys=True),
         'css': css.name,
         'js': js.name,
         'mtime': mtime,

@@ -1,15 +1,25 @@
-<form @submit.prevent="send" @keyup.ctrl.enter="send" class="login">
+<form
+  @submit.prevent="send"
+  @keyup.ctrl.enter="send"
+  :class="{login: 1, 'login--disabled': disabled}"
+>
   <div v-if="error" class="login__error">{{error}}</div>
-  <div>username: <input v-model="params.username" required /></div>
-  <div>password: <input v-model="params.password" type="password" required /></div>
-  <div>
-    theme:
-    <picker :value.sync="params.theme" :options="themes" />
+  <div class="login__username">
+    username: <input v-model="params.username" required :disabled="disabled" />
   </div>
-  <div>
+  <div class="login__password">
+    password: <input v-model="params.password" type="password" :disabled="disabled" required />
+  </div>
+  <div class="login__theme">
+    theme:
+    <picker :value.sync="params.theme" :options="themes" :disabled="disabled" />
+  </div>
+  <div class="login__timezone">
     timezone:
-    <picker :value.sync="params.timezone" :options="timezones" />
+    <picker :value.sync="params.timezone" :options="timezones" :disabled="disabled" />
   </div>
 
-  <div class="login__submit"><button type="submit">Send</button></div>
+  <div class="login__submit">
+    <button type="submit">{{disabled ? 'Sending...' : 'Send'}}</button>
+  </div>
 </form>

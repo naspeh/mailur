@@ -10,9 +10,31 @@ def test_login_and_themes(web, some):
     assert '/login.js' in res, res.txt
     assert '"themes": ["base", "indigo", "mint", "solarized"]' in res, res.text
     assert '"Europe/Kiev"' in res, res.text
+    assert '"current_theme": "base"' in res, res.text
 
     res = web.get('/solarized/login', status=200)
     assert '/theme-solarized.css' in res, res.text
+    assert '"current_theme": "solarized"' in res, res.text
+
+    login = {'username': 'test1', 'password': 'user', 'timezone': 'UTC'}
+    res = web.post_json('/login', login, status=200)
+    assert web.cookies == {'session': some}
+    assert 'test1' not in some
+    res = web.get('/', status=200)
+    assert '/theme-base.css' in res, res.text
+    assert '/index.js' in res, res.text
+    assert '"tags": {' in res, res.text
+    assert '"current_theme": "base"' in res, res.text
+
+    res = web.get('/solarized/', status=200)
+    assert '/theme-solarized.css' in res, res.text
+
+    res = web.post_json('/login', dict(login, theme='solarized'), status=200)
+    res = web.get('/', status=200)
+    assert '/theme-solarized.css' in res, res.text
+
+    res = web.get('/logout', status=302)
+    assert web.cookies == {}
 
     res = web.post_json('/login', status=400)
     assert 'errors' in res
@@ -28,7 +50,6 @@ def test_login_and_themes(web, some):
     assert 'errors' in res
     assert 'schema' in res
 
-    login = {'username': 'test1', 'password': 'user', 'timezone': 'UTC'}
     res = web.post_json('/login', dict(login, password=''), status=400)
     assert res.json == {
         'errors': ['Authentication failed.'],
@@ -36,29 +57,8 @@ def test_login_and_themes(web, some):
     }
     web.get('/', status=302)
 
-    res = web.post_json('/login', login, status=200)
-    assert web.cookies == {'session': some}
-    assert 'test1' not in some
-    res = web.get('/', status=200)
-    assert '/theme-base.css' in res, res.text
-    assert '/index.js' in res, res.text
-    assert 'window.data={"tags":' in res, res.text
-
-    res = web.get('/solarized/', status=200)
-    assert '/theme-solarized.css' in res, res.text
-
-    res = web.post_json('/login', dict(login, theme='solarized'), status=200)
-    res = web.get('/', status=200)
-    assert '/theme-solarized.css' in res, res.text
-
-    res = web.get('/logout', status=302)
-    assert web.cookies == {}
-
 
 def test_tz(clean_users, gm_client, web, login, some):
-    res = web.get('/timezones')
-    assert 'Europe/Kiev' in res
-
     time_dt = dt.datetime.utcnow()
     time = int(time_dt.timestamp())
     gm_client.add_emails([{'labels': '\\Inbox', 'date': time}])

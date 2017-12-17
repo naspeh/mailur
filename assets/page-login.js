@@ -11,19 +11,23 @@ Vue.component('Login', {
         username: '',
         password: '',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        theme: 'base'
+        theme: window.data.current_theme
       },
+      disabled: false,
       error: null,
       themes: window.data.themes,
       timezones: window.data.timezones
     };
   },
   mounted: function() {
-    this.$el.querySelector('.login input').focus();
+    this.$el.querySelector('.login__username input').focus();
   },
   methods: {
     send: function() {
+      this.disabled = true;
+      this.error = null;
       call('post', '/login', this.params).then(res => {
+        this.disabled = false;
         if (res.errors) {
           this.error = res.errors[0];
           return;
