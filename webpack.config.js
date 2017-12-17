@@ -2,50 +2,27 @@
 const path = require('path');
 const webpack = require('webpack');
 
-const HtmlPlugin = require('html-webpack-plugin');
 const CleanPlugin = require('clean-webpack-plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const src = path.resolve(__dirname, 'assets');
 const dist = path.resolve(src, 'dist');
 
-const themes = ['base', 'mint', 'indigo', 'solarized'];
-let entries = {
-  index: './assets/index.js',
-  login: './assets/login.js'
-};
-let plugins = [
-  new CleanPlugin([dist]),
-  new HtmlPlugin({
-    themes: themes,
-    filename: 'login.html',
-    template: 'assets/index.tpl',
-    favicon: 'assets/favicon.png',
-    chunks: ['login', 'theme-base']
-  }),
-  new HtmlPlugin({
-    themes: themes,
-    template: 'assets/index.tpl',
-    favicon: 'assets/favicon.png',
-    chunks: ['index', 'theme-base']
-  })
-];
-for (const theme of themes) {
-  let entry = 'theme-' + theme;
-  entries[entry] = `./assets/${entry}.css`;
-  plugins.push(
-    new HtmlPlugin({
-      themes: themes,
-      filename: `${theme}/index.html`,
-      template: 'assets/index.tpl',
-      favicon: 'assets/favicon.png',
-      chunks: ['index', entry]
-    })
-  );
-}
-
 module.exports = {
-  entry: entries,
-  plugins: plugins,
+  entry: {
+    index: './assets/index.js',
+    login: './assets/login.js',
+    'theme-base': './assets/theme-base.css',
+    'theme-mint': './assets/theme-mint.css',
+    'theme-indigo': './assets/theme-indigo.css',
+    'theme-solarized': './assets/theme-solarized.css'
+  },
+  plugins: [
+    new CleanPlugin([dist]),
+    new ExtractTextPlugin({
+      filename: '[name].css?[hash]'
+    })
+  ],
   output: {
     filename: '[name].js?[hash]',
     path: dist
@@ -85,19 +62,21 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: [
-          { loader: 'style-loader' },
-          { loader: 'css-loader' },
-          {
-            loader: 'postcss-loader',
-            options: {
-              plugins: [
-                require('postcss-import')(),
-                require('postcss-cssnext')()
-              ]
+        use: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: [
+            { loader: 'css-loader' },
+            {
+              loader: 'postcss-loader',
+              options: {
+                plugins: [
+                  require('postcss-import')(),
+                  require('postcss-cssnext')()
+                ]
+              }
             }
-          }
-        ]
+          ]
+        })
       }
     ]
   },

@@ -4,14 +4,21 @@ from mailur import local
 from mailur.web import from_list
 
 
-def test_login(web, some):
+def test_login_and_themes(web, some):
+    res = web.get('/login', status=200)
+    assert '/theme-base.css' in res, res.text
+    assert '/login.js' in res, res.txt
+    assert 'themes=["base", "indigo", "mint", "solarized"]' in res, res.text
+
+    res = web.get('/solarized/login', status=200)
+    assert '/theme-solarized.css' in res, res.text
+
     res = web.post_json('/login', status=400)
     assert 'errors' in res
     assert 'schema' in res
     assert web.cookies == {}
 
-    res = web.get('/')
-    assert res.status_code == 302
+    res = web.get('/', status=302)
     assert res.location.endswith('/login')
     assert web.cookies == {'origin_url': '"/"'}
     res.follow(status=200)
@@ -31,6 +38,16 @@ def test_login(web, some):
     res = web.post_json('/login', login, status=200)
     assert web.cookies == {'session': some}
     assert 'test1' not in some
+    res = web.get('/', status=200)
+    assert '/theme-base.css' in res, res.text
+    assert '/index.js' in res, res.text
+
+    res = web.get('/solarized/', status=200)
+    assert '/theme-solarized.css' in res, res.text
+
+    res = web.post_json('/login', dict(login, theme='solarized'), status=200)
+    res = web.get('/', status=200)
+    assert '/theme-solarized.css' in res, res.text
 
     res = web.get('/logout', status=302)
     assert web.cookies == {}
@@ -46,8 +63,7 @@ def test_tz(clean_users, gm_client, web, login, some):
     local.parse()
 
     web = login(tz='UTC')
-    res = web.post_json('/search', {'q': 'all', 'preload': 1})
-    assert res.status_code == 200
+    res = web.post_json('/search', {'q': 'all', 'preload': 1}, status=200)
     assert res.json == {
         'uids': ['1'],
         'msgs': {'1': some},
@@ -58,8 +74,7 @@ def test_tz(clean_users, gm_client, web, login, some):
     assert some['time_title'] == time_dt.strftime('%a, %d %b, %Y at %H:%M')
 
     web = login(tz='Asia/Singapore')
-    res = web.post_json('/search', {'q': 'all', 'preload': 1})
-    assert res.status_code == 200
+    res = web.post_json('/search', {'q': 'all', 'preload': 1}, status=200)
     assert res.json == {
         'uids': ['1'],
         'msgs': {'1': some},
@@ -106,8 +121,7 @@ def test_tags(clean_users, gm_client, login, some):
 
 def test_basic(clean_users, gm_client, login, some):
     web = login()
-    res = web.post_json('/search', {'q': 'all', 'preload': 10})
-    assert res.status_code == 200
+    res = web.post_json('/search', {'q': 'all', 'preload': 10}, status=200)
     assert res.json == {
         'uids': [],
         'msgs': {},
@@ -117,8 +131,7 @@ def test_basic(clean_users, gm_client, login, some):
 
     gm_client.add_emails([{}, {'refs': '<101@mlr>'}])
     local.parse()
-    res = web.post_json('/search', {'q': 'all', 'preload': 10})
-    assert res.status_code == 200
+    res = web.post_json('/search', {'q': 'all', 'preload': 10}, status=200)
     assert res.json == {
         'uids': ['2', '1'],
         'msgs': {
@@ -168,8 +181,9 @@ def test_basic(clean_users, gm_client, login, some):
         'msgs_info': '/msgs/info',
         'threads': False,
     }
-    res = web.post_json('/search', {'q': ':threads all', 'preload': 10})
-    assert res.status_code == 200
+    res = web.post_json(
+        '/search', {'q': ':threads all', 'preload': 10}, status=200
+    )
     assert res.json == {
         'uids': ['2'],
         'msgs': {

@@ -1,11 +1,14 @@
 import base64
 import datetime as dt
+import functools as ft
 import json
 import os
 import pathlib
 import re
 
-from bottle import Bottle, abort, redirect, request, response, static_file
+from bottle import (
+    Bottle, abort, redirect, request, response, static_file, template
+)
 
 from gevent.pool import Pool
 
@@ -17,8 +20,26 @@ from . import imap, local
 from .schema import validate
 
 secret = os.environ.get('MLR_SECRET', 'secret')
-assets_path = pathlib.Path(__file__).parent / '../assets/dist'
+assets_path = pathlib.Path(__file__).parent / '../assets'
 app = Bottle()
+tpl = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mailur: {{title}}</title>
+  <link rel="shortcut icon" href="favicon.png">
+  <link href="/{{css}}?{{mtime}}" rel="stylesheet">
+  <script>
+    window.themes={{!themes}};
+  </script>
+</head>
+<body>
+  <div id="app"/>
+  <script type="text/javascript" src="/{{js}}?{{mtime}}"></script>
+</body>
+</html>
+'''
 
 
 def auth(callback):
@@ -35,15 +56,13 @@ def auth(callback):
 
 
 def theme_filter(config):
-    themes = [t.name for t in assets_path.glob('*') if t.is_dir()]
-    regexp = r'(%s)?' % '|'.join(re.escape(t) for t in themes)
+    regexp = r'(%s)?' % '|'.join(re.escape(t) for t in themes())
 
     def to_python(t):
         return t
 
     def to_url(t):
         return t
-
     return regexp, to_python, to_url
 
 
@@ -52,30 +71,24 @@ app.router.add_filter('theme', theme_filter)
 
 
 @app.get('/')
-def index():
-    return redirect(request.session['theme'] + '/')
-
-
-@app.get('/<filepath:path>', skip=[auth])
-@app.get('/<theme>/<filepath:path>', skip=[auth])
-@app.get('/<theme>/', skip=[auth])
-def assets(theme=None, filepath=''):
-    if not filepath:
-        filepath = theme + '/index.html'
-    return static_file(filepath, root=assets_path)
+@app.get('/<theme>/')
+def index(theme=None):
+    return render_tpl(theme or request.session['theme'], 'index')
 
 
 @app.get('/login', skip=[auth])
-def login_html():
-    return static_file('login.html', root=assets_path)
+@app.get('/<theme>/login', skip=[auth])
+def login_html(theme=None):
+    return render_tpl(theme or 'base', 'login')
+
+
+@app.get('/<filepath:path>', skip=[auth])
+def assets(filepath):
+    return static_file(filepath, root=assets_path / 'dist')
 
 
 @app.post('/login', skip=[auth], name='login')
 def login():
-    if request.method == 'GET':
-        filename = 'login.js' if request.path == '/login.js' else 'login.html'
-        return static_file(filename, root=assets_path)
-
     schema = {
         'type': 'object',
         'properties': {
@@ -197,6 +210,29 @@ def avatars():
 
 
 # Helpers bellow
+@ft.lru_cache(maxsize=None)
+def themes():
+    return sorted(
+        re.match('theme-(.*)\.css', t.name).group(1)
+        for t in assets_path.glob('theme-*.css') if t.is_file()
+    )
+
+
+def render_tpl(theme, page, **kwargs):
+    title = {'index': 'welcome', 'login': 'login'}[page]
+    css = assets_path / ('theme-%s.css' % theme)
+    js = assets_path / ('%s.js' % page)
+    mtime = max(i.stat().st_mtime for i in [css, js] if i.is_file())
+    params = {
+        'themes': json.dumps(themes()),
+        'css': css.name,
+        'js': js.name,
+        'mtime': mtime,
+        'title': title,
+    }
+    return template(tpl, **params)
+
+
 def wrap_tags(tags):
     def query(tag):
         if tag.startswith('\\'):
