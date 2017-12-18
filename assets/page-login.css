@@ -38,6 +38,13 @@
   display: flex;
   justify-content: flex-end;
 
+  & button {
+    @apply --icon--login;
+
+    text-transform: lowercase;
+    padding-left: 0;
+  }
+
   @nest .login--disabled & button {
     pointer-events: none;
   }

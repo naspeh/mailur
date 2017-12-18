@@ -1,14 +1,16 @@
-<div :class="['app', {'opt--only-icons': false, 'opt--split-on': split, 'opt--bigger': bigger}]">
-  <div class="app__main">
-    <button @click="logout" class="app__main__logout">Logout</button>
-    <button @click="toggleSplit" class="app__main__split">Split pane</button>
-    <button @click="toggleBigger" class="app__main__bigger" title="Bigger font"></button>
-    <div class="app__main__tags">
+<div :class="{'app': 1, 'opt--only-icons': 0, 'opt--split-on': split, 'opt--bigger': bigger}">
+  <div class="main">
+    <div class="main__actions">
+      <a @click.prevent="toggleBigger" href="#" class="main__actions__bigger" title="Bigger font"></a>
+      <a @click.prevent="toggleSplit" href="#" class="main__actions__split" title="Open split pane"></a>
+      <a @click.prevent="logout" href="#" class="main__actions__logout" title="Logout"></a>
+    </div>
+    <div class="main__tags">
       <tags :raw="allTags" :trancated="true" :unread="true" />
     </div>
     <msgs ref="main" :_query="query" />
   </div>
-  <div class="app__split">
+  <div class="split">
     <msgs ref="split" :split="true" />
   </div>
 </div>

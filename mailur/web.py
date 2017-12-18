@@ -206,7 +206,7 @@ tpl = '''
 <head>
   <meta charset="utf-8">
   <title>Mailur: {{title}}</title>
-  <link rel="shortcut icon" href="favicon.png">
+  <link rel="shortcut icon" href="/favicon.png">
   <link href="/{{css}}?{{mtime}}" rel="stylesheet">
   <script>
     window.data={{!data}};

@@ -5,12 +5,16 @@
     </div>
     <div v-if="!split" class="msgs__header__search">
       <input v-model.lazy.trim="query" @keyup.enter="fetch()">
-      <button @click="fetch()" class="icon-search"></button>
+      <button @click="fetch()" class="action--search"></button>
     </div>
     <div v-if="picked.length" class="msgs__header__actions">
-      <button class="icon-archive" title="Archive"></button>
-      <button class="icon-trash" title="Move to Trash"></button>
-      <button v-if="threads && picked.length > 1" @click="link" class="icon-link" title="Link threads together"></button>
+      <button class="action--archive" title="Archive"></button>
+      <button class="action--trash" title="Move to Trash"></button>
+      <button
+        v-if="threads && picked.length > 1"
+        @click="link" class="action--link"
+        title="Link threads together"
+      ></button>
     </div>
     <div v-if="pages.length" class="msgs__header__picking">
       <span>
@@ -30,9 +34,9 @@
     </template>
     <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg', {'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed == msg.uid}]">
       <div class="msg__line">
-        <div class="msg__line__pin icon-pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
-        <div class="msg__line__unread icon-unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
-        <div v-if="threads" @click.stop="details(msg.uid)" class="msg__line__more icon-details" title="More actions"></div>
+        <div class="msg__line__pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
+        <div class="msg__line__unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
+        <div v-if="threads" @click.stop="details(msg.uid)" class="msg__line__more" title="More actions"></div>
         <tags :raw="msg.flags" :trancated="true" />
         <a class="msg__line__from" @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`">
           <template v-for="from in msg.from_list">
@@ -62,15 +66,15 @@
       </div>
       <div class="msg__actions">
         <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
-        <a href="#" class="icon-archive" title="Archive">Archive</a>
-        <a href="#" class="icon-reply" title="Reply">Reply</a>
-        <a href="#" class="icon-replyall" title="Reply to all">Reply to all</a>
-        <a href="#" class="icon-forward" title="Forward">Forward</a>
-        <a href="#" class="icon-trash" title="Move to Trash">Delete</a>
-        <a href="#" class="icon-ok" title="Add address to Whitelist">Whitelist</a>
-        <a href="#" class="icon-spam" title="Add address to Blacklist">Blacklist</a>
-        <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="icon-plus" >Filter by subject</a>
-        <a :href="msg.url_raw" class="icon-plus" target="_blank">Show original</a>
+        <a href="#" class="action--archive" title="Archive">Archive</a>
+        <a href="#" class="action--reply" title="Reply">Reply</a>
+        <a href="#" class="action--reply-all" title="Reply to all">Reply to all</a>
+        <a href="#" class="action--forward" title="Forward">Forward</a>
+        <a href="#" class="action--trash" title="Move to Trash">Delete</a>
+        <a href="#" class="action--whitelist" title="Add address to Whitelist">Whitelist</a>
+        <a href="#" class="action--blacklist" title="Add address to Blacklist">Blacklist</a>
+        <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="action--another" >Filter by subject</a>
+        <a :href="msg.url_raw" class="action--another" target="_blank">Show original</a>
         <!-- <a @click.prevent="fetch(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
       </div>
       <div v-if="msg.body" v-html="msg.body"></div>

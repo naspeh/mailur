@@ -50,24 +50,8 @@
     white-space: nowrap;
     font-size: 0.9em;
 
-    & > a {
+    & [class^="action--"] {
       margin: 0 0.2em;
-    }
-
-    & .icon-next,
-    & .icon-archive,
-    & .icon-reply,
-    & .icon-replyall,
-    & .icon-forward,
-    & .icon-trash,
-    & .icon-ok,
-    & .icon-spam {
-      min-width: 1.2em;
-      overflow: hidden;
-
-      @nest .opt--only-icons & {
-        width: 1.2em;
-      }
     }
   }
 }
@@ -120,12 +104,29 @@
 .msg__line__more,
 .msg__line__split {
   display: flex;
-  padding: 0;
   color: var(--colorGrey);
+
+  @apply --icon;
 
   &:hover {
     cursor: pointer;
   }
+}
+
+.msg__line__pin {
+  @apply --symbol--pin;
+}
+
+.msg__line__unread {
+  @apply --symbol--unread;
+}
+
+.msg__line__more {
+  @apply --symbol--more;
+}
+
+.msg__line__split {
+  @apply --symbol--open-in-split;
 }
 
 .msg__line__pick {
