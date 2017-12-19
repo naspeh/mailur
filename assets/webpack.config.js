@@ -5,18 +5,17 @@ const webpack = require('webpack');
 const CleanPlugin = require('clean-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
-const src = path.resolve(__dirname, 'assets');
-const dist = path.resolve(src, 'dist');
+const dist = path.resolve(__dirname, 'dist');
 
 module.exports = {
   entry: {
-    index: './assets/page-index.js',
-    login: './assets/page-login.js',
+    index: __dirname + '/app.js',
+    login: __dirname + '/login.js',
     vendor: ['vue'],
-    'theme-base': './assets/theme-base.less',
-    'theme-mint': './assets/theme-mint.less',
-    'theme-indigo': './assets/theme-indigo.less',
-    'theme-solarized': './assets/theme-solarized.less'
+    'theme-base': __dirname + '/theme-base.less',
+    'theme-mint': __dirname + '/theme-mint.less',
+    'theme-indigo': __dirname + '/theme-indigo.less',
+    'theme-solarized': __dirname + '/theme-solarized.less'
   },
   plugins: [
     new CleanPlugin([dist]),

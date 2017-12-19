@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import './msgs.js';
 import './tags.js';
-import tpl from './page-index.html';
+import tpl from './app.html';
 
 Vue.component('App', {
   template: tpl,

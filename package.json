@@ -24,8 +24,8 @@
     "webpack": "^3.8.1"
   },
   "scripts": {
-    "build": "webpack",
-    "dev": "webpack -w"
+    "build": "webpack --config=assets/webpack.config.js",
+    "dev": "webpack --config=assets/webpack.config.js -w"
   },
   "eslintConfig": {
     "extends": "eslint:recommended",

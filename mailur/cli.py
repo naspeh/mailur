@@ -4,7 +4,7 @@ Usage:
   mailur -l<login> gmail <username> <password> [--parse -t<threads> -b<batch>]
   mailur -l<login> parse [<criteria> -t<threads> -b<batch>]
   mailur -l<login> threads [<criteria>]
-  mailur -l<login> web
+  mailur web
 
 Options:
   -h --help     Show this screen.
@@ -53,11 +53,10 @@ def web():
             ' -k gevent --timeout=300 --reload --access-logfile=-'
             ' --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"'
         )
-        env = dict(os.environ, MLR_USER=local.USER)
-        run(cmd, env=env, shell=True)
+        run(cmd, shell=True)
 
     def webpack():
-        run('webpack -w', shell=True)
+        run('webpack --config=assets/webpack.config.js -w', shell=True)
 
     try:
         pool = Pool()
