@@ -42,7 +42,6 @@ def main(args):
 
 
 def web():
-    import os
     import time
     from gevent.subprocess import run
     from gevent.pool import Pool

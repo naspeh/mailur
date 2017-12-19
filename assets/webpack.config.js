@@ -6,6 +6,7 @@ const CleanPlugin = require('clean-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'dist');
+const prod = process.env.NODE_ENV === 'production';
 
 module.exports = {
   entry: {
@@ -68,28 +69,28 @@ module.exports = {
         use: ExtractTextPlugin.extract({
           fallback: 'style-loader',
           use: [
-            { loader: 'css-loader' },
+            { loader: 'css-loader', options: { sourceMap: true } },
             {
-              loader: 'postcss-loader',
+              loader: 'less-loader',
               options: {
-                plugins: [
-                  require('autoprefixer')()
-                  // require('cssnano')(),
-                ]
+                sourceMap: true,
+                plugins: !prod
+                  ? []
+                  : [
+                      new (require('less-plugin-autoprefix'))(),
+                      new (require('less-plugin-clean-css'))({ advanced: true })
+                    ]
               }
-            },
-            { loader: 'less-loader' }
+            }
           ]
         })
       }
     ]
   },
-  devtool: '#eval-source-map'
+  devtool: '#source-map'
 };
 
-if (process.env.NODE_ENV === 'production') {
-  module.exports.devtool = '#source-map';
-  // http://vue-loader.vuejs.org/en/workflow/production.html
+if (prod) {
   module.exports.plugins = (module.exports.plugins || []).concat([
     new webpack.DefinePlugin({
       'process.env': {
@@ -101,9 +102,6 @@ if (process.env.NODE_ENV === 'production') {
       compress: {
         warnings: false
       }
-    }),
-    new webpack.LoaderOptionsPlugin({
-      minimize: true
     })
   ]);
 }
