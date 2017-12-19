@@ -224,12 +224,12 @@ tpl = '''
 def render_tpl(theme, page, data={}):
     data.update(current_theme=theme)
     title = {'index': 'welcome', 'login': 'login'}[page]
-    css = assets_path / ('theme-%s.css' % theme)
+    css = assets_path / ('theme-%s.less' % theme)
     js = assets_path / ('%s.js' % page)
     mtime = max(i.stat().st_mtime for i in [css, js] if i.is_file())
     params = {
         'data': json.dumps(data, sort_keys=True),
-        'css': css.name,
+        'css': css.with_suffix('.css').name,
         'js': js.name,
         'mtime': mtime,
         'title': title,
@@ -240,8 +240,8 @@ def render_tpl(theme, page, data={}):
 @ft.lru_cache(maxsize=None)
 def themes():
     return sorted(
-        re.match('theme-(.*)\.css', t.name).group(1)
-        for t in assets_path.glob('theme-*.css') if t.is_file()
+        re.match('theme-(.*)\.less', t.name).group(1)
+        for t in assets_path.glob('theme-*.less') if t.is_file()
     )
 
 

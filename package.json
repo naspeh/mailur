@@ -14,13 +14,13 @@
     "file-loader": "^1.1.5",
     "html-loader": "^0.5.1",
     "htmlhint": "^0.9.13",
-    "postcss-cssnext": "^3.0.2",
-    "postcss-import": "^11.0.0",
+    "less": "^2.7.3",
+    "less-loader": "^4.0.5",
     "postcss-loader": "^2.0.8",
     "prettier": "^1.7.4",
     "style-loader": "^0.19.0",
-    "stylelint": "^8.2.0",
-    "stylelint-config-standard": "^17.0.0",
+    "stylelint": "^8.4.0",
+    "stylelint-config-standard": "^18.0.0",
     "webpack": "^3.8.1"
   },
   "scripts": {
@@ -42,14 +42,6 @@
     "singleQuote": true
   },
   "stylelint": {
-    "extends": "stylelint-config-standard",
-    "rules": {
-      "selector-type-no-unknown": [
-        true,
-        {
-          "ignoreTypes": "/^--/"
-        }
-      ]
-    }
+    "extends": "stylelint-config-standard"
   }
 }

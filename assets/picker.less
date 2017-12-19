@@ -23,10 +23,10 @@
   max-height: 300px;
   line-height: 20px;
   font-size: 14px;
-  background-color: var(--colorWhite);
-  border: 1px solid var(--colorGrey);
+  background-color: @--colorWhite;
+  border: 1px solid @--colorGrey;
 
-  @nest .picker--active & {
+  .picker--active & {
     display: block;
   }
 }
@@ -35,6 +35,6 @@
   cursor: pointer;
 
   &.picker__opts__item--active {
-    background-color: var(--colorLightGrey);
+    background-color: @--colorLightGrey;
   }
 }

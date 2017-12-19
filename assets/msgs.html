@@ -5,14 +5,14 @@
     </div>
     <div v-if="!split" class="msgs__header__search">
       <input v-model.lazy.trim="query" @keyup.enter="fetch()">
-      <button @click="fetch()" class="action--search"></button>
+      <button @click="fetch()" class="icon--search"></button>
     </div>
     <div v-if="picked.length" class="msgs__header__actions">
-      <button class="action--archive" title="Archive"></button>
-      <button class="action--trash" title="Move to Trash"></button>
+      <button class="icon--archive" title="Archive"></button>
+      <button class="icon--trash" title="Move to Trash"></button>
       <button
         v-if="threads && picked.length > 1"
-        @click="link" class="action--link"
+        @click="link" class="icon--link"
         title="Link threads together"
       ></button>
     </div>
@@ -66,15 +66,15 @@
       </div>
       <div class="msg__actions">
         <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
-        <a href="#" class="action--archive" title="Archive">Archive</a>
-        <a href="#" class="action--reply" title="Reply">Reply</a>
-        <a href="#" class="action--reply-all" title="Reply to all">Reply to all</a>
-        <a href="#" class="action--forward" title="Forward">Forward</a>
-        <a href="#" class="action--trash" title="Move to Trash">Delete</a>
-        <a href="#" class="action--whitelist" title="Add address to Whitelist">Whitelist</a>
-        <a href="#" class="action--blacklist" title="Add address to Blacklist">Blacklist</a>
-        <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="action--another" >Filter by subject</a>
-        <a :href="msg.url_raw" class="action--another" target="_blank">Show original</a>
+        <a href="#" class="icon--archive" title="Archive">Archive</a>
+        <a href="#" class="icon--reply" title="Reply">Reply</a>
+        <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a>
+        <a href="#" class="icon--forward" title="Forward">Forward</a>
+        <a href="#" class="icon--trash" title="Move to Trash">Delete</a>
+        <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a>
+        <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a>
+        <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="icon--ok" >Filter by subject</a>
+        <a :href="msg.url_raw" class="icon--ok" target="_blank">Show original</a>
         <!-- <a @click.prevent="fetch(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
       </div>
       <div v-if="msg.body" v-html="msg.body"></div>

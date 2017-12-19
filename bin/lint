@@ -8,7 +8,7 @@ flake8
 prettier --write assets/*.js webpack.config.js
 
 eslint assets/*.js webpack.config.js
-stylelint assets/*.css --fix
+stylelint assets/**/*.less --fix
 htmlhint --rules=doctype-html5=0 assets/*.html
 
 [ ! ${ci-} ] || git diff --exit-code assets/

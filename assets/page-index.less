@@ -1,8 +1,8 @@
 .app {
   display: flex;
   flex-flow: row nowrap;
-  line-height: var(--lineHeight);
-  background-color: var(--colorWhite);
+  line-height: @--lineHeight;
+  background-color: @--colorWhite;
 
   &.opt--bigger {
     font-size: 1.5em;
@@ -12,7 +12,7 @@
 .split {
   display: none;
 
-  @nest .opt--split-on & {
+  .opt--split-on & {
     display: block;
   }
 }
@@ -26,11 +26,11 @@
   padding: 0.2em;
   overflow-y: auto;
 
-  @nest .opt--split-on & {
+  .opt--split-on & {
     width: 50vw;
   }
 
-  @nest .opt--bigger & {
+  .opt--bigger & {
     min-width: 800px;
   }
 }
@@ -47,21 +47,21 @@
 }
 
 .main__actions__split {
-  @apply --icon--split;
+  .--icon--split;
 
-  @nest .opt--split-on & {
-    color: var(--colorOrange);
+  .opt--split-on & {
+    color: @--colorOrange;
   }
 }
 
 .main__actions__logout {
-  @apply --icon--logout;
+  .--icon--logout;
 }
 
 .main__actions__bigger {
-  @apply --icon--font;
+  .--icon--font;
 
-  @nest .opt--bigger & {
-    color: var(--colorOrange);
+  .opt--bigger & {
+    color: @--colorOrange;
   }
 }

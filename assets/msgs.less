@@ -31,26 +31,27 @@
 .msg {
   box-sizing: border-box;
   padding: 0 0.2em;
-  background-color: var(--colorLightGrey);
-  border-top: 1px solid var(--colorWhite);
+  background-color: @--colorLightGrey;
+  border-top: 1px solid @--colorWhite;
   border-radius: 0.5em;
 
   &.msg--detailed {
-    border-top: 1px solid var(--colorGrey);
-    background-color: var(--colorWhite);
+    border-top: 1px solid @--colorGrey;
+    background-color: @--colorWhite;
   }
 }
 
 .msg__actions {
   display: none;
 
-  @nest .msg--detailed & {
+  .msg--detailed & {
     display: flex;
     flex-flow: reverse nowrap;
     white-space: nowrap;
     font-size: 0.9em;
 
-    & [class^="action--"] {
+    & [class^="icon--"] {
+      display: flex;
       margin: 0 0.2em;
     }
   }
@@ -60,41 +61,41 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
-  color: var(--colorDarkGrey);
+  color: @--colorDarkGrey;
   font-size: 0.85em;
   overflow: hidden;
 
-  @nest .msg--detailed & {
+  .msg--detailed & {
     & .msg__line__preview__time,
     & .tags__item {
-      background-color: var(--colorWhite);
+      background-color: @--colorWhite;
     }
 
     & .msg__line__preview__count,
     & .msg__line__from__more {
-      background-color: var(--colorLightGrey);
-      border-color: var(--colorWhite);
+      background-color: @--colorLightGrey;
+      border-color: @--colorWhite;
     }
 
     & .msg__line__more {
-      color: var(--colorGreen);
+      color: @--colorGreen;
     }
   }
 
-  @nest .msg--unread & {
+  .msg--unread & {
     & .msg__line__preview__subj,
     & .msg__line__from {
       font-weight: bold;
     }
 
     & .msg__line__unread {
-      color: var(--colorBlack);
+      color: @--colorBlack;
     }
   }
 
-  @nest .msg--pinned & {
+  .msg--pinned & {
     & .msg__line__pin {
-      color: var(--colorOrange);
+      color: @--colorOrange;
     }
   }
 }
@@ -104,9 +105,7 @@
 .msg__line__more,
 .msg__line__split {
   display: flex;
-  color: var(--colorGrey);
-
-  @apply --icon;
+  color: @--colorGrey;
 
   &:hover {
     cursor: pointer;
@@ -114,19 +113,19 @@
 }
 
 .msg__line__pin {
-  @apply --symbol--pin;
+  .--icon--pin;
 }
 
 .msg__line__unread {
-  @apply --symbol--unread;
+  .--icon--unread;
 }
 
 .msg__line__more {
-  @apply --symbol--more;
+  .--icon--more;
 }
 
 .msg__line__split {
-  @apply --symbol--open-in-split;
+  .--icon--open-in-split;
 }
 
 .msg__line__pick {
@@ -152,8 +151,8 @@
 }
 
 .msg__line__from__pic {
-  height: var(--picHeight);
-  width: var(--picHeight);
+  height: @--picHeight;
+  width: @--picHeight;
   background-position: center center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -164,10 +163,10 @@
 }
 
 .msg__line__from__more {
-  min-width: var(--picHeight);
-  line-height: var(--picHeight);
+  min-width: @--picHeight;
+  line-height: @--picHeight;
   text-align: center;
-  background-color: var(--colorWhite);
+  background-color: @--colorWhite;
 }
 
 .msg__line__from__name {
@@ -196,17 +195,17 @@
 
 .msg__line__preview__count {
   padding: 0 0.2em;
-  border: 0.2em solid var(--colorLightGrey);
+  border: 0.2em solid @--colorLightGrey;
   border-left: none;
-  height: var(--picHeight);
-  line-height: var(--picHeight);
-  background-color: var(--colorWhite);
+  height: @--picHeight;
+  line-height: @--picHeight;
+  background-color: @--colorWhite;
   text-align: center;
 }
 
 .msg__line__preview__subj {
   margin-right: 0.2em;
-  color: var(--colorBlack);
+  color: @--colorBlack;
 }
 
 .msg__line__preview__text {
@@ -217,6 +216,6 @@
   position: absolute;
   top: 0;
   right: 0;
-  background-color: var(--colorLightGrey);
+  background-color: @--colorLightGrey;
   padding-left: 0.5em;
 }

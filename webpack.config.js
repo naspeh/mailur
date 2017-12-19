@@ -13,10 +13,10 @@ module.exports = {
     index: './assets/page-index.js',
     login: './assets/page-login.js',
     vendor: ['vue'],
-    'theme-base': './assets/theme-base.css',
-    'theme-mint': './assets/theme-mint.css',
-    'theme-indigo': './assets/theme-indigo.css',
-    'theme-solarized': './assets/theme-solarized.css'
+    'theme-base': './assets/theme-base.less',
+    'theme-mint': './assets/theme-mint.less',
+    'theme-indigo': './assets/theme-indigo.less',
+    'theme-solarized': './assets/theme-solarized.less'
   },
   plugins: [
     new CleanPlugin([dist]),
@@ -65,7 +65,7 @@ module.exports = {
         }
       },
       {
-        test: /\.css$/,
+        test: /\.less$/,
         use: ExtractTextPlugin.extract({
           fallback: 'style-loader',
           use: [
@@ -74,11 +74,12 @@ module.exports = {
               loader: 'postcss-loader',
               options: {
                 plugins: [
-                  require('postcss-import')(),
-                  require('postcss-cssnext')()
+                  require('autoprefixer')()
+                  // require('cssnano')(),
                 ]
               }
-            }
+            },
+            { loader: 'less-loader' }
           ]
         })
       }
