@@ -15,5 +15,6 @@ apk add neovim neovim-doc xauth xclip
 sed -i -e 's|^#*\(X11Forwarding\) .*|\1 yes|' /etc/ssh/sshd_config
 rc-service sshd restart
 
-pip=/opt/mailur/env/bin/pip
+env=${env:-/opt/mailur/env}
+pip=$env/bin/pip
 $pip install -U neovim
