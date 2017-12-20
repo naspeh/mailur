@@ -1,8 +1,8 @@
 .app {
   display: flex;
   flex-flow: row nowrap;
-  line-height: @--lineHeight;
-  background-color: @--colorWhite;
+  line-height: @--line-height;
+  background-color: @--color--white;
 
   &.opt--bigger {
     font-size: 1.5em;
@@ -44,24 +44,9 @@
   float: right;
   margin-top: -0.2em;
   font-size: 1em;
-}
 
-.main__actions__split {
-  .--icon--split;
-
-  .opt--split-on & {
-    color: @--colorOrange;
-  }
-}
-
-.main__actions__logout {
-  .--icon--logout;
-}
-
-.main__actions__bigger {
-  .--icon--font;
-
-  .opt--bigger & {
-    color: @--colorOrange;
+  .opt--split-on & .icon--split,
+  .opt--bigger & .icon--font {
+    color: @--color--orange;
   }
 }

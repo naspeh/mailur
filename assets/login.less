@@ -6,8 +6,8 @@
   margin-left: -150px;
   box-sizing: border-box;
   padding: 20px;
-  background-color: @--colorLightGrey;
-  color: @--colorBlack;
+  background-color: @--color--light-grey;
+  color: @--color--black;
 }
 
 .login__username,
@@ -38,15 +38,9 @@
   display: flex;
   justify-content: flex-end;
 
-  & button {
-    .--icon--login;
-
+  & .icon--login {
     text-transform: lowercase;
     padding-left: 0;
-  }
-
-  .login--disabled & button {
-    pointer-events: none;
   }
 }
 

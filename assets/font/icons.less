@@ -11,9 +11,8 @@
   font-style: normal;
 }
 
-.--icon(@symbol) {
+.--icon() {
   &::before {
-    content: @symbol;
     font-family: 'icons', sans-serif;
     font-style: normal;
     font-weight: normal;
@@ -44,192 +43,211 @@
   }
 }
 
-@--symbol--search: "\f002";
-
 .--icon--search() {
-  .--icon("\f002");
+  &::before {
+    content: "\f002";
+  }
 }
 
 .icon--search {
-  .--icon("\f002");
+  .--icon;
+  .--icon--search;
 }
 
-@--symbol--ok: "\f00c";
-
 .--icon--ok() {
-  .--icon("\f00c");
+  &::before {
+    content: "\f00c";
+  }
 }
 
 .icon--ok {
-  .--icon("\f00c");
+  .--icon;
+  .--icon--ok;
 }
 
-@--symbol--font: "\f034";
-
 .--icon--font() {
-  .--icon("\f034");
+  &::before {
+    content: "\f034";
+  }
 }
 
 .icon--font {
-  .--icon("\f034");
+  .--icon;
+  .--icon--font;
 }
 
-@--symbol--forward: "\f064";
-
 .--icon--forward() {
-  .--icon("\f064");
+  &::before {
+    content: "\f064";
+  }
 }
 
 .icon--forward {
-  .--icon("\f064");
+  .--icon;
+  .--icon--forward;
 }
 
-@--symbol--spam: "\f06a";
-
 .--icon--spam() {
-  .--icon("\f06a");
+  &::before {
+    content: "\f06a";
+  }
 }
 
 .icon--spam {
-  .--icon("\f06a");
+  .--icon;
+  .--icon--spam;
 }
 
-@--symbol--unread: "\f06e";
-
 .--icon--unread() {
-  .--icon("\f06e");
+  &::before {
+    content: "\f06e";
+  }
 }
 
 .icon--unread {
-  .--icon("\f06e");
+  .--icon;
+  .--icon--unread;
 }
 
-@--symbol--whitelist: "\f087";
-
 .--icon--whitelist() {
-  .--icon("\f087");
+  &::before {
+    content: "\f087";
+  }
 }
 
 .icon--whitelist {
-  .--icon("\f087");
+  .--icon;
+  .--icon--whitelist;
 }
 
-@--symbol--blacklist: "\f088";
-
 .--icon--blacklist() {
-  .--icon("\f088");
+  &::before {
+    content: "\f088";
+  }
 }
 
 .icon--blacklist {
-  .--icon("\f088");
+  .--icon;
+  .--icon--blacklist;
 }
 
-@--symbol--logout: "\f08b";
-
 .--icon--logout() {
-  .--icon("\f08b");
+  &::before {
+    content: "\f08b";
+  }
 }
 
 .icon--logout {
-  .--icon("\f08b");
+  .--icon;
+  .--icon--logout;
 }
 
-@--symbol--pin: "\f08d";
-
 .--icon--pin() {
-  .--icon("\f08d");
+  &::before {
+    content: "\f08d";
+  }
 }
 
 .icon--pin {
-  .--icon("\f08d");
+  .--icon;
+  .--icon--pin;
 }
 
-@--symbol--open-in-split: "\f08e";
-
 .--icon--open-in-split() {
-  .--icon("\f08e");
+  &::before {
+    content: "\f08e";
+  }
 }
 
 .icon--open-in-split {
-  .--icon("\f08e");
+  .--icon;
+  .--icon--open-in-split;
 }
 
-@--symbol--login: "\f090";
-
 .--icon--login() {
-  .--icon("\f090");
+  &::before {
+    content: "\f090";
+  }
 }
 
 .icon--login {
-  .--icon("\f090");
+  .--icon;
+  .--icon--login;
 }
 
-@--symbol--link: "\f0c1";
-
 .--icon--link() {
-  .--icon("\f0c1");
+  &::before {
+    content: "\f0c1";
+  }
 }
 
 .icon--link {
-  .--icon("\f0c1");
+  .--icon;
+  .--icon--link;
 }
 
-@--symbol--split: "\f0db";
-
 .--icon--split() {
-  .--icon("\f0db");
+  &::before {
+    content: "\f0db";
+  }
 }
 
 .icon--split {
-  .--icon("\f0db");
+  .--icon;
+  .--icon--split;
 }
 
-@--symbol--more: "\f107";
-
 .--icon--more() {
-  .--icon("\f107");
+  &::before {
+    content: "\f107";
+  }
 }
 
 .icon--more {
-  .--icon("\f107");
+  .--icon;
+  .--icon--more;
 }
 
-@--symbol--reply: "\f112";
-
 .--icon--reply() {
-  .--icon("\f112");
+  &::before {
+    content: "\f112";
+  }
 }
 
 .icon--reply {
-  .--icon("\f112");
+  .--icon;
+  .--icon--reply;
 }
 
-@--symbol--reply-all: "\f122";
-
 .--icon--reply-all() {
-  .--icon("\f122");
+  &::before {
+    content: "\f122";
+  }
 }
 
 .icon--reply-all {
-  .--icon("\f122");
+  .--icon;
+  .--icon--reply-all;
 }
 
-@--symbol--archive: "\f187";
-
 .--icon--archive() {
-  .--icon("\f187");
+  &::before {
+    content: "\f187";
+  }
 }
 
 .icon--archive {
-  .--icon("\f187");
+  .--icon;
+  .--icon--archive;
 }
 
-@--symbol--trash: "\f1f8";
-
 .--icon--trash() {
-  .--icon("\f1f8");
+  &::before {
+    content: "\f1f8";
+  }
 }
 
 .icon--trash {
-  .--icon("\f1f8");
+  .--icon;
+  .--icon--trash;
 }

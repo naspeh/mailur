@@ -19,28 +19,28 @@ https://material.io/guidelines/style/color.html#color-color-palette
 800 #37474f
 900 #263238
 */
-@--colorWhite: #fff;
-@--colorLightGrey: #eceff1;
-@--colorGrey: #90a4ae;
-@--colorDarkGrey: #455a64;
-@--colorBlack: #263238;
-@--colorGreen: #388e3c;
-@--colorOrange: #ff6f00;
+@--color--white: #fff;
+@--color--light-grey: #eceff1;
+@--color--grey: #90a4ae;
+@--color--dark-grey: #455a64;
+@--color--black: #263238;
+@--color--green: #388e3c;
+@--color--orange: #ff6f00;
 
 // Sizes & heights
-@--fontSize: 100%;
-@--lineHeight: 1.8em;
-@--picHeight: 20px;
+@--font-size: 100%;
+@--line-height: 1.8em;
+@--pic-height: 20px;
 
 html,
 body {
   padding: 0;
   margin: 0;
-  font-size: @--fontSize;
+  font-size: @--font-size;
 }
 
 a {
-  color: @--colorGreen;
+  color: @--color--green;
   outline: 0;
   text-decoration: none;
 
@@ -51,13 +51,13 @@ a {
 
 input {
   box-sizing: border-box;
-  border: 1px solid @--colorGrey;
+  border: 1px solid @--color--grey;
   padding: 0.1em 0.2em;
-  color: @--colorBlack;
-  background: @--colorWhite;
+  color: @--color--black;
+  background: @--color--white;
 
   &:focus {
     outline: 0;
-    border-left: 3px solid @--colorOrange;
+    border-left: 3px solid @--color--orange;
   }
 }

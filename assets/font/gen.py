@@ -3,7 +3,6 @@ import json
 import pathlib
 
 root = pathlib.Path(__file__).parent
-
 text = (root / 'selection.json').read_text()
 icons = json.loads(text)['icons']
 tpl = '''\
@@ -20,9 +19,8 @@ tpl = '''\
   font-style: normal;
 }
 
-.--icon(@symbol) {
+.--icon() {
   &::before {
-    content: @symbol;
     font-family: 'icons', sans-serif;
     font-style: normal;
     font-weight: normal;
@@ -56,14 +54,15 @@ tpl = '''\
 %(icons)s\
 '''
 icon_tpl = '''\
-@--symbol--%(name)s: %(symbol)s;
-
 .--icon--%(name)s() {
-  .--icon(%(symbol)s);
+  &::before {
+    content: %(symbol)s;
+  }
 }
 
 .icon--%(name)s {
-  .--icon(%(symbol)s);
+  .--icon;
+  .--icon--%(name)s;
 }
 '''
 

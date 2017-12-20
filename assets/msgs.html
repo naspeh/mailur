@@ -32,11 +32,15 @@
     <template v-if="!pages.length">
     <div v-if="query">Loading...</div>
     </template>
-    <div v-for="msg in page(uids)" :key="msg.uid" :class="['msg', {'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed == msg.uid}]">
+    <div
+      v-for="msg in page(uids)"
+      :key="msg.uid"
+      :class="['msg', {'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed == msg.uid}]"
+    >
       <div class="msg__line">
-        <div class="msg__line__pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
-        <div class="msg__line__unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
-        <div v-if="threads" @click.stop="details(msg.uid)" class="msg__line__more" title="More actions"></div>
+        <div class="icon--pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
+        <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
+        <div v-if="threads" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
         <tags :raw="msg.flags" :trancated="true" />
         <a class="msg__line__from" @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`">
           <template v-for="from in msg.from_list">
@@ -47,7 +51,11 @@
             {{msg.from.name}}
           </div>
         </a>
-        <a @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)" :href="`#${msg.query_thread}`" class="msg__line__preview">
+        <a
+          @click.prevent="threads ? fetch(msg.query_thread) : details(msg.uid)"
+          :href="`#${msg.query_thread}`"
+          class="msg__line__preview"
+        >
           <div v-if="msg.count > 1" class="msg__line__preview__count" :title="`${msg.count} emails in thread`">
             {{msg.count}}
           </div>
@@ -62,7 +70,12 @@
         <div class="msg__line__pick">
           <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
         </div>
-        <div v-if="threads && hasSplit()" @click.prevent="openInSplit(msg.query_thread)" class="msg__line__split icon-next" title="Open in split pane"></div>
+        <div
+          v-if="threads && hasSplit()"
+          @click.prevent="openInSplit(msg.query_thread)"
+          class="icon--open-in-split"
+          title="Open in split pane"
+        ></div>
       </div>
       <div class="msg__actions">
         <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->

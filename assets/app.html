@@ -1,9 +1,9 @@
 <div :class="{'app': 1, 'opt--only-icons': 0, 'opt--split-on': split, 'opt--bigger': bigger}">
   <div class="main">
     <div class="main__actions">
-      <a @click.prevent="toggleBigger" href="#" class="main__actions__bigger" title="Bigger font"></a>
-      <a @click.prevent="toggleSplit" href="#" class="main__actions__split" title="Open split pane"></a>
-      <a @click.prevent="logout" href="#" class="main__actions__logout" title="Logout"></a>
+      <a @click.prevent="toggleBigger" href="#" class="icon--font" title="Bigger font"></a>
+      <a @click.prevent="toggleSplit" href="#" class="icon--split" title="Open split pane"></a>
+      <a @click.prevent="logout" href="#" class="icon--logout" title="Logout"></a>
     </div>
     <div class="main__tags">
       <tags :raw="allTags" :trancated="true" :unread="true" />
