@@ -4,6 +4,7 @@ Usage:
   mailur -l<login> gmail <username> <password> [--parse -t<threads> -b<batch>]
   mailur -l<login> parse [<criteria> -t<threads> -b<batch>]
   mailur -l<login> threads [<criteria>]
+  mailur icons
   mailur web
   mailur lint [--ci]
   mailur test -- [<options>...]
@@ -15,9 +16,13 @@ Options:
   -b <batch>    Batch size [default: 1000].
   -t <threads>  Amount of threads for thread pool [default: 2].
 """
+from pathlib import Path
+
 from docopt import docopt
 
 from . import gmail, local
+
+root = Path(__file__).parent.parent
 
 
 def main():
@@ -47,6 +52,8 @@ def process(args):
     elif args['threads']:
         with local.client() as con:
             local.update_threads(con, criteria=args.get('<criteria>'))
+    elif args['icons']:
+        icons()
     elif args['web']:
         web()
     elif args['test']:
@@ -55,6 +62,8 @@ def process(args):
     elif args['lint']:
         ci = args['--ci'] and 1 or ''
         run('ci=%s bin/lint' % ci)
+    else:
+        raise SystemExit('Target not defined:\n%s' % args)
 
 
 def web():
@@ -83,17 +92,35 @@ def web():
 
 
 def run(cmd):
-    from pathlib import Path
     from subprocess import call
-
-    root = Path(__file__).parent.parent
 
     check = 'which pytest'
     if call(check, cwd=root, shell=True):
-        raise SystemExit('First run:\n> pip install -e .[test]')
+        raise SystemExit(
+            'Test dependencies must be installed.\n'
+            '$ pip install -e .[test]'
+        )
 
     cmd = 'sh -xc %r' % cmd
     call(cmd, cwd=root, shell=True)
+
+
+def icons():
+    import json
+    import bottle
+
+    font = root / 'assets/font'
+    sel = (font / 'selection.json').read_text()
+    sel = json.loads(sel)
+    icons = [
+        (i['properties']['name'], '\\%s' % hex(i['properties']['code'])[2:])
+        for i in sel['icons']
+    ]
+    tpl = (font / 'icons.less.txt').resolve()
+    txt = bottle.template(str(tpl), icons=icons)
+    f = font / 'icons.less'
+    f.write_text(txt)
+    print('%s updated' % f)
 
 
 if __name__ == '__main__':
