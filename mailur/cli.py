@@ -5,6 +5,8 @@ Usage:
   mailur -l<login> parse [<criteria> -t<threads> -b<batch>]
   mailur -l<login> threads [<criteria>]
   mailur web
+  mailur lint [--ci]
+  mailur test -- [<options>...]
 
 Options:
   -h --help     Show this screen.
@@ -18,7 +20,15 @@ from docopt import docopt
 from . import gmail, local
 
 
-def main(args):
+def main():
+    args = docopt(__doc__, version='Mailur 0.3')
+    try:
+        process(args)
+    except KeyboardInterrupt:
+        raise SystemExit('^C')
+
+
+def process(args):
     local.USER = args['-l']
     opts = {
         'batch': int(args.get('-b')),
@@ -39,6 +49,12 @@ def main(args):
             local.update_threads(con, criteria=args.get('<criteria>'))
     elif args['web']:
         web()
+    elif args['test']:
+        opts = ' '.join(args['<options>'])
+        run('pytest %r' % opts)
+    elif args['lint']:
+        ci = args['--ci'] and 1 or ''
+        run('ci=%s bin/lint' % ci)
 
 
 def web():
@@ -66,9 +82,19 @@ def web():
         time.sleep(1)
 
 
+def run(cmd):
+    from pathlib import Path
+    from subprocess import call
+
+    root = Path(__file__).parent.parent
+
+    check = 'which pytest'
+    if call(check, cwd=root, shell=True):
+        raise SystemExit('First run:\n> pip install -e .[test]')
+
+    cmd = 'sh -xc %r' % cmd
+    call(cmd, cwd=root, shell=True)
+
+
 if __name__ == '__main__':
-    args = docopt(__doc__, version='Mailur 0.3')
-    try:
-        main(args)
-    except KeyboardInterrupt:
-        raise SystemExit('^C')
+    main()

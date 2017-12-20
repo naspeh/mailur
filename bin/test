@@ -13,7 +13,7 @@ cat << EOF | ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $(l
 set -exuo pipefail
 
 cd /opt/mailur
-dev=1 bin/install
+bin/install
 
 apk add git
 
@@ -21,9 +21,10 @@ set +ux
 . env/bin/activate
 set -ux
 
-ci=1 bin/lint
+pip install -e .[test]
+
+mailur lint --ci
+mailur test -- -v
 
 yarn run build
-
-pytest -v
 EOF

@@ -1,5 +1,8 @@
 *.py[co]
 .cache
+.eggs
+*.egg
+*.egg-info
 
 env
 node_modules

@@ -15,7 +15,8 @@ env=${env:-/opt/mailur/env}
 pip=$env/bin/pip
 python3 -m venv $env
 
-$pip install -U $(./reqs.sh)
+$pip install -U setuptools
+$pip install -U -e .
 
 apk add yarn
 yarn
