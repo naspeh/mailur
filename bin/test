@@ -23,8 +23,8 @@ set -ux
 
 pip install -e .[test]
 
-mailur lint --ci
-mailur test -- -v
+mlr lint --ci
+mlr test -- -v
 
 yarn run build
 EOF

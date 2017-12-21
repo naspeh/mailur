@@ -1,18 +1,17 @@
 """Mailur CLI
 
 Usage:
-  mailur -l<login> gmail <username> <password> [--parse -t<threads> -b<batch>]
-  mailur -l<login> parse [<criteria> -t<threads> -b<batch>]
-  mailur -l<login> threads [<criteria>]
-  mailur icons
-  mailur web
-  mailur lint [--ci]
-  mailur test -- [<options>...]
+  mlr gmail <login> <username> <password> [--parse -t<threads> -b<batch>]
+  mlr parse <login> [<criteria> -t<threads> -b<batch>]
+  mlr threads <login> [<criteria>]
+  mlr icons
+  mlr web
+  mlr lint [--ci]
+  mlr test -- [<options>...]
 
 Options:
   -h --help     Show this screen.
   --version     Show version.
-  -l <login>    Local user (for dovecot).
   -b <batch>    Batch size [default: 1000].
   -t <threads>  Amount of threads for thread pool [default: 2].
 """
@@ -34,7 +33,7 @@ def main():
 
 
 def process(args):
-    local.USER = args['-l']
+    local.USER = args['<login>']
     opts = {
         'batch': int(args.get('-b')),
         'threads': int(args.get('-t')),
