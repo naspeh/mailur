@@ -116,8 +116,11 @@ def icons():
         (i['properties']['name'], '\\%s' % hex(i['properties']['code'])[2:])
         for i in sel['icons']
     ]
-    tpl = (font / 'icons.less.txt').resolve()
-    txt = bottle.template(str(tpl), icons=icons)
+    tpl = str((font / 'icons.less.tpl').resolve())
+    txt = bottle.template(
+        tpl, icons=icons,
+        template_settings={'syntax': '{% %} % {{ }}'}
+    )
     f = font / 'icons.less'
     f.write_text(txt)
     print('%s updated' % f)
