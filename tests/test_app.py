@@ -158,12 +158,12 @@ def test_basic(clean_users, gm_client, login, some):
                 'preview': '42',
                 'query_msgid': ':threads header message-id "<101@mlr>"',
                 'query_subject': ':threads header subject "Subj 101"',
-                'query_thread': 'inthread refs uid 1',
+                'query_thread': ':thread 1',
                 'subject': 'Subj 101',
                 'time_human': some,
                 'time_title': some,
                 'uid': '1',
-                'url_raw': '/raw/1'
+                'url_raw': '/raw/1',
             },
             '2': {
                 'arrived': 1499504910,
@@ -179,12 +179,12 @@ def test_basic(clean_users, gm_client, login, some):
                 'preview': '42',
                 'query_msgid': ':threads header message-id "<102@mlr>"',
                 'query_subject': ':threads header subject "Subj 102"',
-                'query_thread': 'inthread refs uid 2',
+                'query_thread': ':thread 2',
                 'subject': 'Subj 102',
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
-                'url_raw': '/raw/2'
+                'url_raw': '/raw/2',
             }
         },
         'msgs_info': '/msgs/info',
@@ -210,17 +210,92 @@ def test_basic(clean_users, gm_client, login, some):
                 'preview': '42',
                 'query_msgid': ':threads header message-id "<102@mlr>"',
                 'query_subject': ':threads header subject "Subj 102"',
-                'query_thread': 'inthread refs uid 2',
+                'query_thread': ':thread 2',
                 'subject': 'Subj 102',
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
-                'url_raw': '/raw/2'
+                'url_raw': '/raw/2',
             }
         },
         'msgs_info': '/thrs/info',
         'threads': True
     }
+
+
+def test_msgs_flag(clean_users, gm_client, login, msgs):
+    def post(uids, cmd, flags):
+        web.post_json('/msgs/flag', {
+            'uids': uids, 'cmd': cmd, 'flags': flags
+        }, status=200)
+        return [m['flags'] for m in msgs(local.ALL)]
+
+    web = login()
+    web.post_json('/msgs/flag', {'flags': ['\\Seen']}, status=400)
+    web.post_json('/msgs/flag', {
+        'uids': ['1'], 'cmd': '.', 'flags': ['\\Seen']
+    }, status=400)
+
+    gm_client.add_emails([{}])
+    local.parse()
+    assert [m['flags'] for m in msgs(local.ALL)] == ['#latest']
+
+    assert post(['1'], '+', ['\\Seen']) == ['\\Seen #latest']
+    assert post(['1'], '-', ['\\Seen']) == ['#latest']
+
+    gm_client.add_emails([{'refs': '<101@mlr>'}])
+    local.parse()
+    assert [m['flags'] for m in msgs(local.ALL)] == ['', '#latest']
+    assert post(['1', '2'], '+', ['\\Seen']) == ['\\Seen', '\\Seen #latest']
+    assert post(['1'], '-', ['\\Seen']) == ['', '\\Seen #latest']
+    assert post(['1', '2'], '-', ['\\Seen']) == ['', '#latest']
+
+
+def test_search_thread(clean_users, gm_client, login, some):
+    def post(uid):
+        data = {'q': ':thread %s' % uid}
+        return web.post_json('/search', data, status=200).json
+
+    web = login()
+    assert post('1') == {}
+
+    gm_client.add_emails([{}])
+    local.parse()
+    assert post('1') == {
+        'uids': ['1'],
+        'msgs': {'1': some},
+        'msgs_info': '/msgs/info',
+        'hidden': []
+    }
+
+    gm_client.add_emails([{'refs': '<101@mlr>'}] * 2)
+    local.parse()
+    res = post('1')
+    assert len(res['uids']) == 3
+    assert len(res['msgs']) == 3
+
+    gm_client.add_emails([{'refs': '<101@mlr>'}] * 3)
+    local.parse()
+    res = post('1')
+    assert len(res['uids']) == 6
+    assert len(res['msgs']) == 6
+    res = web.post_json('/msgs/flag', {
+        'uids': res['uids'], 'cmd': '+', 'flags': ['\\Seen']
+    }, status=200)
+
+    res = post('1')
+    assert len(res['uids']) == 6
+    assert sorted(res['msgs']) == ['1', '4', '5', '6']
+    assert res['hidden'] == ['2', '3']
+
+    res = web.post_json('/msgs/flag', {
+        'uids': ['2'], 'cmd': '+', 'flags': ['\\Flagged']
+    }, status=200)
+
+    res = post('1')
+    assert len(res['uids']) == 6
+    assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
+    assert res['hidden'] == ['3']
 
 
 def test_from_list(some):

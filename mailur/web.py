@@ -81,11 +81,6 @@ def login_html(theme=None):
     })
 
 
-@app.get('/<filepath:path>', skip=[auth])
-def serve_assets(filepath):
-    return static_file(filepath, root=assets)
-
-
 @app.post('/login', skip=[auth])
 def login():
     schema = {
@@ -128,12 +123,15 @@ def tags():
 @app.post('/search')
 def search():
     q = request.json['q']
-    preload = request.json['preload']
+    preload = request.json.get('preload', 100)
 
     if q.startswith(':threads'):
         q = q[8:]
         uids = local.search_thrs(q)
         info = 'thrs_info'
+    elif q.startswith(':thread'):
+        q = q[7:]
+        return thread(q)
     else:
         uids = local.search_msgs(q)
         info = 'msgs_info'
@@ -175,6 +173,24 @@ def thrs_link():
     return local.link_threads(uids)
 
 
+@app.post('/msgs/flag')
+def msgs_flag():
+    schema = {
+        'type': 'object',
+        'properties': {
+            'uids': {'type': 'array'},
+            'cmd': {'type': 'string', 'enum': ['+', '-']},
+            'flags': {'type': 'array'}
+        },
+        'required': ['uids', 'cmd', 'flags']
+    }
+    errs, data = validate(request.json, schema)
+    if errs:
+        response.status = 400
+        return {'errors': errs, 'schema': schema}
+    local.msgs_flag(**data)
+
+
 @app.get('/raw/<uid:int>', name='raw')
 def raw(uid):
     box = request.query.get('box', local.SRC)
@@ -198,6 +214,11 @@ def avatars():
         '%s {background-image: url(data:image/gif;base64,%s);}'
         % ((cls % h), i.decode())
     ) for h, i in fetch_avatars(hashes, size, default))
+
+
+@app.get('/<filepath:path>', skip=[auth])
+def serve_assets(filepath):
+    return static_file(filepath, root=assets)
 
 
 # Helpers bellow
@@ -244,6 +265,31 @@ def themes():
     return sorted(pkg['mailur']['themes'])
 
 
+def thread(uid):
+    uids = local.search_msgs('INTHREAD REFS UID %s' % uid, '(DATE)')
+    if not uids:
+        return {}
+    msgs = wrap_msgs(local.msgs_info(uids))
+    hidden = []
+    if len(uids) > 4:
+        msgs_few = {
+            i: m for i, m in msgs.items() if m['is_unread'] or m['is_pinned']
+        }
+        uids_few = [uids[0]] + uids[-3:]
+        for i in uids_few:
+            if i in msgs_few:
+                continue
+            msgs_few[i] = msgs[i]
+        msgs = msgs_few
+        hidden = sorted(set(uids) - set(msgs_few))
+    return {
+        'uids': uids,
+        'msgs': msgs,
+        'hidden': hidden,
+        'msgs_info': app.get_url('msgs_info')
+    }
+
+
 def wrap_tags(tags):
     def query(tag):
         if tag.startswith('\\'):
@@ -283,7 +329,7 @@ def wrap_msgs(items):
             'count': len(addrs),
             'flags': [f for f in flags if not f.startswith('\\')],
             'from_list': from_list(addrs, max=3),
-            'query_thread': 'inthread refs uid %s' % uid,
+            'query_thread': ':thread %s' % uid,
             'query_subject': query_header('subject', info['subject']),
             'query_msgid': query_header('message-id', info['msgid']),
             'url_raw': app.get_url('raw', uid=info['origin_uid']),

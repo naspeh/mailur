@@ -64,7 +64,11 @@ Vue.component('Msgs', {
       }).then(res => {
         this.url = res.msgs_info;
         this.threads = res.threads;
-        this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
+        if (res.hidden === undefined) {
+          this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
+        } else {
+          this.setMsgs(res.msgs, res.uids);
+        }
         this.uids = res.uids;
       });
     },
@@ -108,7 +112,15 @@ Vue.component('Msgs', {
       return this.length < this.uids.length;
     },
     loadMore: function() {
-      let uids = this.uids.slice(this.length, this.length + this.perPage);
+      let uids = [];
+      for (let uid of this.uids) {
+        if (!this.msgs[uid]) {
+          uids.push(uid);
+          if (uids.length == this.perPage) {
+            break
+          }
+        }
+      }
       return this.call('post', this.url, { uids: uids }).then(res =>
         this.setMsgs(res, uids)
       );
@@ -117,7 +129,9 @@ Vue.component('Msgs', {
       let msgs = [];
       for (const uid of uids) {
         // if (!this.msgs[uid]) console.error(`No message for uid=${uid}`);
-        msgs.push(this.msgs[uid]);
+        if (this.msgs[uid]) {
+          msgs.push(this.msgs[uid]);
+        }
       }
       return msgs;
     },
@@ -126,6 +140,13 @@ Vue.component('Msgs', {
         this.detailed = null;
       } else {
         this.detailed = uid;
+      }
+    },
+    open: function(msg) {
+      if (this.threads) {
+        this.fetch(msg.query_thread);
+      } else {
+        this.details(msg.uid);
       }
     },
     canOpenInSplit: function() {

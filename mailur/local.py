@@ -434,6 +434,14 @@ def update_threads(con, criteria=None):
 
 
 @fn_time
+@using(readonly=False)
+def msgs_flag(uids, cmd, flags, con=None):
+    cmd += 'FLAGS.SILENT'
+    flags = ' '.join(f for f in flags)
+    return con.store(uids, cmd, flags)
+
+
+@fn_time
 @using()
 def link_threads(uids, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
@@ -487,8 +495,8 @@ def raw_msg(uid, box, con=None):
 
 @fn_time
 @using()
-def search_msgs(query, con=None):
-    res = con.sort('(REVERSE DATE)', 'UNKEYWORD #link %s' % query)
+def search_msgs(query, sort='(REVERSE DATE)', con=None):
+    res = con.sort(sort, 'UNKEYWORD #link %s' % query)
     uids = res[0].decode().split()
     log.debug('## query: %r; messages: %s', query, len(uids))
     return uids
