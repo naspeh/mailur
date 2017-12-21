@@ -69,6 +69,9 @@ Vue.component('Picker', {
       }
     },
     activate: function() {
+      if (this.disabled) {
+        return;
+      }
       this.active = true;
       this.$nextTick(() => {
         let element = this.selectedOpt();

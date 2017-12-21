@@ -1,5 +1,6 @@
 /* eslint-env node */
 const path = require('path');
+const pkg = require('../package.json');
 const webpack = require('webpack');
 
 const CleanPlugin = require('clean-webpack-plugin');
@@ -8,16 +9,17 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const dist = path.resolve(__dirname, 'dist');
 const prod = process.env.NODE_ENV === 'production';
 
+let entries = {
+  index: __dirname + '/app.js',
+  login: __dirname + '/login.js',
+  vendor: ['vue']
+};
+for (let theme of pkg['mailur']['themes']) {
+  entries[`theme-${theme}`] = __dirname + `/theme-${theme}.less`;
+}
+
 module.exports = {
-  entry: {
-    index: __dirname + '/app.js',
-    login: __dirname + '/login.js',
-    vendor: ['vue'],
-    'theme-base': __dirname + '/theme-base.less',
-    'theme-mint': __dirname + '/theme-mint.less',
-    'theme-indigo': __dirname + '/theme-indigo.less',
-    'theme-solarized': __dirname + '/theme-solarized.less'
-  },
+  entry: entries,
   plugins: [
     new CleanPlugin([dist]),
     new ExtractTextPlugin({

@@ -201,9 +201,15 @@ def latest():
 @pytest.fixture
 def web():
     from webtest import TestApp
-    from mailur.web import app
+    from mailur.web import app, assets, themes
 
     app.catchall = False
+
+    if not assets.exists():
+        assets.mkdir()
+        for i in themes():
+            filename = 'theme-%s.css' % i
+            (assets / filename).write_text('')
     return TestApp(app)
 
 

@@ -20,7 +20,8 @@ from . import imap, local
 from .schema import validate
 
 secret = os.environ.get('MLR_SECRET', 'secret')
-assets_path = pathlib.Path(__file__).parent / '../assets'
+root = pathlib.Path(__file__).parent.parent
+assets = (root / 'assets/dist').resolve()
 app = Bottle()
 
 
@@ -81,8 +82,8 @@ def login_html(theme=None):
 
 
 @app.get('/<filepath:path>', skip=[auth])
-def assets(filepath):
-    return static_file(filepath, root=assets_path / 'dist')
+def serve_assets(filepath):
+    return static_file(filepath, root=assets)
 
 
 @app.post('/login', skip=[auth])
@@ -224,12 +225,12 @@ tpl = '''
 def render_tpl(theme, page, data={}):
     data.update(current_theme=theme)
     title = {'index': 'welcome', 'login': 'login'}[page]
-    css = assets_path / ('theme-%s.less' % theme)
-    js = assets_path / ('%s.js' % page)
+    css = assets / ('theme-%s.css' % theme)
+    js = assets / ('%s.js' % page)
     mtime = max(i.stat().st_mtime for i in [css, js] if i.is_file())
     params = {
         'data': json.dumps(data, sort_keys=True),
-        'css': css.with_suffix('.css').name,
+        'css': css.name,
         'js': js.name,
         'mtime': mtime,
         'title': title,
@@ -239,10 +240,8 @@ def render_tpl(theme, page, data={}):
 
 @ft.lru_cache(maxsize=None)
 def themes():
-    return sorted(
-        re.match('theme-(.*)\.less', t.name).group(1)
-        for t in assets_path.glob('theme-*.less') if t.is_file()
-    )
+    pkg = json.loads((root / 'package.json').read_text())
+    return sorted(pkg['mailur']['themes'])
 
 
 def wrap_tags(tags):

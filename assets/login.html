@@ -20,7 +20,7 @@
   </div>
 
   <div class="login__submit">
-    <button class="icon--login" type="submit">
+    <button class="icon--login" type="submit" :disabled="disabled">
       {{disabled ? 'Logging in...' : 'Log in'}}
     </button>
   </div>

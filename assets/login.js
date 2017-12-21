@@ -27,8 +27,8 @@ Vue.component('Login', {
       this.disabled = true;
       this.error = null;
       call('post', '/login', this.params).then(res => {
-        this.disabled = false;
         if (res.errors) {
+          this.disabled = false;
           this.error = res.errors[0];
           return;
         }
