@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import tpl from './tags.html';
 
-Vue.component('Tags', {
+Vue.component('tags', {
   template: tpl,
   props: {
     trancated: { type: Boolean, default: false },

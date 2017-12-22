@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import tpl from './picker.html';
 
-Vue.component('Picker', {
+Vue.component('picker', {
   template: tpl,
   props: {
     value: { type: String, required: true },

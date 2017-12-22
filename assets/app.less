@@ -2,10 +2,9 @@
   display: flex;
   flex-flow: row nowrap;
   line-height: @--line-height;
-  background-color: @--color--white;
 
   &.opt--bigger {
-    font-size: 1.5em;
+    font-size: 1.25em;
   }
 }
 
@@ -25,13 +24,10 @@
   height: 100vh;
   padding: 0.2em;
   overflow-y: auto;
+  background-color: @--color--white;
 
   .opt--split-on & {
     width: 50vw;
-  }
-
-  .opt--bigger & {
-    min-width: 800px;
   }
 }
 
@@ -42,8 +38,9 @@
 
 .main__actions {
   float: right;
-  margin-top: -0.2em;
-  font-size: 1em;
+  display: flex;
+  line-height: 1.2em;
+  white-space: nowrap;
 
   .opt--split-on & .icon--split,
   .opt--bigger & .icon--font {

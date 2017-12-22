@@ -3,7 +3,7 @@ import './msgs.js';
 import './tags.js';
 import tpl from './app.html';
 
-Vue.component('App', {
+Vue.component('app', {
   template: tpl,
   data: function() {
     return {

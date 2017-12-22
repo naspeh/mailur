@@ -42,31 +42,7 @@
         <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
         <div v-if="threads" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
         <tags :raw="msg.flags" :trancated="true" />
-        <a class="msg__line__from" @click.prevent="open(msg)" :href="`#${msg.query_thread}`">
-          <template v-for="from in msg.from_list">
-          <div v-if="from.hash" @click.stop="fetch(from.query)" :class="`msg__line__from__pic pic-${from.hash}`" :title="from.title"></div>
-          <div v-if="from.expander" class="msg__line__from__more" :title="`${from.expander} more addresses`">…</div>
-          </template>
-          <div class="msg__line__from__name" :title="msg.from.title">
-            {{msg.from.name}}
-          </div>
-        </a>
-        <a
-          @click.prevent="open(msg)"
-          :href="`#${msg.query_thread}`"
-          class="msg__line__preview"
-        >
-          <div v-if="msg.count > 1" class="msg__line__preview__count" :title="`${msg.count} emails in thread`">
-            {{msg.count}}
-          </div>
-          <div class="msg__line__preview__subj" :title="msg.subject">
-             {{msg.subject}}
-          </div>
-          <div class="msg__line__preview__text" :title="msg.preview">
-            {{msg.preview}}
-          </div>
-          <div class="msg__line__preview__time" :title="msg.time_title">{{msg.time_human}}</div>
-        </a>
+        <msg-line :msg="msg" :open="open" :fetch="fetch" />
         <div class="msg__line__pick">
           <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
         </div>

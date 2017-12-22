@@ -1,8 +1,9 @@
 import Vue from 'vue';
+import './msg-line.js';
 import { call } from './utils.js';
 import tpl from './msgs.html';
 
-Vue.component('Msgs', {
+Vue.component('msgs', {
   template: tpl,
   props: {
     _query: { type: String, default: null },
@@ -117,7 +118,7 @@ Vue.component('Msgs', {
         if (!this.msgs[uid]) {
           uids.push(uid);
           if (uids.length == this.perPage) {
-            break
+            break;
           }
         }
       }

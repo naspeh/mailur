@@ -1,0 +1,26 @@
+<a class="msg-line" @click.prevent="open(msg)" :href="`#${msg.query_thread}`">
+  <div class="msg-line__from">
+    <template v-for="from in msg.from_list">
+    <div
+      v-if="from.hash"
+      @click.stop="fetch(from.query)"
+      :class="`msg-line__from__pic pic-${from.hash}`"
+      :title="from.title"
+    ></div>
+    <div
+      v-if="from.expander"
+      class="msg-line__from__more"
+      :title="`${from.expander} more addresses`"
+    >…</div>
+    </template>
+    <div class="msg-line__from__name" :title="msg.from.title">{{msg.from.name}}</div>
+  </div>
+  <div
+    v-if="msg.count > 1"
+    class="msg-line__count"
+    :title="`${msg.count} emails in thread`"
+  >{{msg.count}}</div>
+  <div class="msg-line__subj" :title="msg.subject">{{msg.subject}}</div>
+  <div class="msg-line__text" :title="msg.preview">{{msg.preview}}</div>
+  <div class="msg-line__time" :title="msg.time_title">{{msg.time_human}}</div>
+</a>

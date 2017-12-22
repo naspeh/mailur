@@ -23,7 +23,7 @@
     speak: none;
     text-transform: none;
     display: inline-block;
-    width: 1.4em;
+    width: 1.5em;
     text-align: center;
 
     // Better Font Rendering
@@ -34,11 +34,11 @@
 
 .--only-icon() {
   box-sizing: content-box;
-  min-width: 1.4em;
+  min-width: 1.5em;
   overflow: hidden;
 
   .opt--only-icons & {
-    width: 1.4em;
+    width: 1.5em;
 
     &::before {
       padding-right: 2em;
