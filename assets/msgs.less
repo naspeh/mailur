@@ -1,8 +1,8 @@
-@import './msg-line.less';
-
 .msgs__header {
   display: flex;
   justify-content: flex-end;
+  line-height: 1.5em;
+  height: 1.5em;
   margin-bottom: 0.2em;
   white-space: nowrap;
 }
@@ -28,97 +28,4 @@
   display: flex;
   justify-content: space-between;
   margin-left: 0.2em;
-}
-
-.msg__actions {
-  display: none;
-
-  .msg--detailed & {
-    display: flex;
-    flex-flow: reverse nowrap;
-    white-space: nowrap;
-    font-size: 0.85em;
-
-    & [class^="icon--"] {
-      display: flex;
-      margin: 0 0.2em;
-    }
-  }
-
-  & .icon--archive,
-  & .icon--reply,
-  & .icon--reply-all,
-  & .icon--forward,
-  & .icon--trash,
-  & .icon--blacklist,
-  & .icon--whitelist {
-    .--only-icon;
-  }
-}
-
-.msg__line {
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  padding: 0 0.2em;
-  overflow: hidden;
-  border-top: 1px solid @--color--white;
-  border-radius: 0.5em;
-  background-color: @--color--light-grey;
-  color: @--color--dark-grey;
-
-  .msg__tags {
-    margin-left: 0.2em;
-    font-size: 0.85em;
-  }
-
-  .msg--detailed & {
-    border-top: 1px solid @--color--grey;
-    background-color: @--color--white;
-
-    .tags__item {
-      background-color: @--color--white;
-    }
-
-    .icon--more {
-      color: @--color--green;
-    }
-  }
-
-  .msg--unread & {
-    & .icon--unread {
-      color: @--color--black;
-    }
-  }
-
-  .msg--pinned & {
-    & .icon--pin {
-      color: @--color--orange;
-    }
-  }
-
-  .icon--pin,
-  .icon--unread,
-  .icon--more {
-    display: flex;
-    color: @--color--grey;
-    font-size: 0.85em;
-
-    &:hover {
-      cursor: pointer;
-    }
-  }
-
-  .icon--open-in-split {
-    display: none;
-
-    .opt--split-on & {
-      .icon--pin;
-    }
-  }
-
-}
-
-.msg__line__pick {
-  display: flex;
 }

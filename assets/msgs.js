@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import './msg-line.js';
 import { call } from './utils.js';
 import tpl from './msgs.html';
 
@@ -17,7 +16,7 @@ Vue.component('msgs', {
       uids: [],
       pages: [],
       url: null,
-      threads: null,
+      threads: false,
       picked: [],
       detailed: null
     };
@@ -41,7 +40,7 @@ Vue.component('msgs', {
       if (!msgs) {
         this.msgs = {};
         this.pages = [];
-        this.picked = [];
+        //this.picked = [];
         this.addrs = [];
       } else {
         Object.assign(this.msgs, msgs);
@@ -64,7 +63,7 @@ Vue.component('msgs', {
         preload: this.perPage
       }).then(res => {
         this.url = res.msgs_info;
-        this.threads = res.threads;
+        this.threads = res.threads || false;
         if (res.hidden === undefined) {
           this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         } else {
@@ -96,6 +95,14 @@ Vue.component('msgs', {
         sheet.href = `/avatars.css?size=${this.picSize}&hashes=${few}`;
         sheet.rel = 'stylesheet';
         document.body.appendChild(sheet);
+      }
+    },
+    pick: function(uid) {
+      let idx = this.picked.indexOf(uid)
+      if (idx == -1) {
+        this.picked.push(uid);
+      } else {
+        this.picked.splice(idx, 1);
       }
     },
     pickAll: function() {
@@ -143,21 +150,5 @@ Vue.component('msgs', {
         this.detailed = uid;
       }
     },
-    open: function(msg) {
-      if (this.threads) {
-        this.fetch(msg.query_thread);
-      } else {
-        this.details(msg.uid);
-      }
-    },
-    canOpenInSplit: function() {
-      return this.split && !window.app.$refs.main.threads;
-    },
-    openInSplit: function(query) {
-      if (!query) {
-        query = window.app.$refs.main.query;
-      }
-      return window.app.openInSplit(query);
-    }
   }
 });

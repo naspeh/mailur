@@ -1,0 +1,57 @@
+<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed}">
+  <div class="msg-line">
+    <div class="icon--pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
+    <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
+    <div v-if="thread" @click.stop="details" class="icon--more" title="More actions"></div>
+    <tags :raw="msg.flags" :trancated="true" class="msg-line__tags" />
+    <a class="msg-line__insight" @click.prevent="open" :href="`#${msg.query_thread}`">
+      <div class="msg-line__from">
+        <template v-for="from in msg.from_list">
+        <div
+          v-if="from.hash"
+          @click.stop="fetch(from.query)"
+          :class="`msg-line__from__pic pic-${from.hash}`"
+          :title="from.title"
+        ></div>
+        <div
+          v-if="from.expander"
+          class="msg-line__from__more"
+          :title="`${from.expander} more addresses`"
+        >…</div>
+        </template>
+        <div class="msg-line__from__name" :title="msg.from.title">{{msg.from.name}}</div>
+      </div>
+      <div
+        v-if="msg.count > 1"
+        class="msg-line__count"
+        :title="`${msg.count} emails in thread`"
+      >{{msg.count}}</div>
+      <div class="msg-line__subj" :title="msg.subject">{{msg.subject}}</div>
+      <div class="msg-line__text" :title="msg.preview">{{msg.preview}}</div>
+      <div class="msg-line__time" :title="msg.time_title">{{msg.time_human}}</div>
+    </a>
+    <div class="msg-line__pick">
+      <input :checked="picked" @change="pick" type="checkbox">
+    </div>
+    <div
+      v-if="thread"
+      @click.prevent="openInSplit"
+      class="icon--open-in-split"
+      title="Open in split pane"
+    ></div>
+  </div>
+  <div class="msg__actions">
+    <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
+    <a href="#" class="icon--archive" title="Archive">Archive</a>
+    <a href="#" class="icon--reply" title="Reply">Reply</a>
+    <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a>
+    <a href="#" class="icon--forward" title="Forward">Forward</a>
+    <a href="#" class="icon--trash" title="Move to Trash">Delete</a>
+    <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a>
+    <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a>
+    <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="icon--ok" >Filter by subject</a>
+    <a :href="msg.url_raw" class="icon--ok" target="_blank">Show original</a>
+    <!-- <a @click.prevent="fetch(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
+  </div>
+  <div v-if="msg.body" v-html="msg.body"></div>
+</div>

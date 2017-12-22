@@ -1,8 +1,5 @@
 <div class="msgs">
   <div class="msgs__header">
-    <div v-if="canOpenInSplit()">
-      <button @click="openInSplit()">Copy from main</button>
-    </div>
     <div v-if="!split" class="msgs__header__search">
       <input v-model.lazy.trim="query" @keyup.enter="fetch()">
       <button @click="fetch()" class="icon--search"></button>
@@ -28,46 +25,19 @@
       </span>
     </div>
   </div>
-  <div v-for="uids of pages" class="msgs__body">
-    <template v-if="!pages.length">
-    <div v-if="query">Loading...</div>
-    </template>
-    <div
-      v-for="msg in page(uids)"
-      :key="msg.uid"
-      :class="['msg', {'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed == msg.uid}]"
-    >
-      <div class="msg__line">
-        <div class="icon--pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
-        <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
-        <div v-if="threads" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
-        <tags :raw="msg.flags" :trancated="true" class="msg__tags" />
-        <msg-line :msg="msg" :open="open" :fetch="fetch" />
-        <div class="msg__line__pick">
-          <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
-        </div>
-        <div
-          v-if="!split && threads"
-          @click.prevent="openInSplit(msg.query_thread)"
-          class="icon--open-in-split"
-          title="Open in split pane"
-        ></div>
-      </div>
-      <div class="msg__actions">
-        <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
-        <a href="#" class="icon--archive" title="Archive">Archive</a>
-        <a href="#" class="icon--reply" title="Reply">Reply</a>
-        <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a>
-        <a href="#" class="icon--forward" title="Forward">Forward</a>
-        <a href="#" class="icon--trash" title="Move to Trash">Delete</a>
-        <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a>
-        <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a>
-        <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="icon--ok" >Filter by subject</a>
-        <a :href="msg.url_raw" class="icon--ok" target="_blank">Show original</a>
-        <!-- <a @click.prevent="fetch(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
-      </div>
-      <div v-if="msg.body" v-html="msg.body"></div>
+  <div class="msgs__body">
+    <div v-if="!pages.length && query">Loading...</div>
+    <div v-for="uids of pages">
+      <msg
+        v-for="msg in page(uids)" :key="msg.uid"
+        :msg="msg"
+        :thread="threads"
+        @details="details(msg.uid)"
+        :detailed="msg.uid == detailed"
+        @pick="pick(msg.uid)"
+        :picked="picked.indexOf(msg.uid) != -1"
+      />
     </div>
+    <a @click.prevent="loadMore()" href="#" v-if="canLoadMore()">Load more...</a>
   </div>
-  <a @click.prevent="loadMore()" href="#" v-if="canLoadMore()">Load more...</a>
 </div>

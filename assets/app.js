@@ -1,6 +1,7 @@
 import Vue from 'vue';
-import './msgs.js';
 import './tags.js';
+import './msg.js';
+import './msgs.js';
 import tpl from './app.html';
 
 Vue.component('app', {

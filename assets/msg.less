@@ -1,0 +1,191 @@
+.msg-line {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0 0.2em;
+  overflow: hidden;
+  border-top: 1px solid @--color--white;
+  border-radius: 0.5em;
+  background-color: @--color--light-grey;
+  color: @--color--dark-grey;
+
+  .icon--pin,
+  .icon--unread,
+  .icon--more {
+    display: flex;
+    color: @--color--grey;
+    font-size: 0.85em;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
+  .icon--open-in-split {
+    display: none;
+
+    .opt--split-on .main & {
+      .icon--pin;
+    }
+  }
+
+  .msg--detailed & {
+    border-top: 1px solid @--color--grey;
+    background-color: @--color--white;
+
+    .icon--more {
+      color: @--color--green;
+    }
+  }
+
+  .msg--unread & {
+    & .icon--unread {
+      color: @--color--black;
+    }
+  }
+
+  .msg--pinned & {
+    & .icon--pin {
+      color: @--color--orange;
+    }
+  }
+}
+
+.msg-line__tags {
+  margin-left: 0.2em;
+  font-size: 0.85em;
+
+  .msg--detailed & {
+    .tags__item {
+      background-color: @--color--white;
+    }
+  }
+}
+
+.msg-line__from {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-left: 0.2em;
+  color: inherit;
+}
+
+.msg-line__from__pic {
+  height: @--pic-height;
+  width: @--pic-height;
+  margin-right: 0.2em;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: contain;
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.msg-line__from__more {
+  min-width: @--pic-height;
+  line-height: @--pic-height;
+  margin-right: 0.2em;
+  background-color: @--color--white;
+  text-align: center;
+
+  .msg--detailed & {
+    background-color: @--color--light-grey;
+  }
+}
+
+.msg-line__from__name {
+  margin-right: 0.2em;
+  max-width: 7em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .msg--unread & {
+    font-weight: bold;
+  }
+}
+
+.msg-line__insight {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-left: 0.1em;
+  white-space: nowrap;
+  overflow: hidden;
+  background-color: inherit;
+  color: inherit;
+
+  &:hover {
+    cursor: pointer;
+    text-decoration: none;
+  }
+}
+
+.msg-line__pick {
+  display: flex;
+}
+
+.msg-line__count {
+  padding: 0 0.2em;
+  border: 0.2em solid @--color--light-grey;
+  border-left: none;
+  height: @--pic-height;
+  line-height: @--pic-height;
+  background-color: @--color--white;
+  text-align: center;
+
+  .msg--detailed & {
+    background-color: @--color--light-grey;
+    border-color: @--color--white;
+  }
+}
+
+.msg-line__subj {
+  margin-right: 0.2em;
+  color: @--color--black;
+
+  .msg--unread & {
+    font-weight: bold;
+  }
+}
+
+.msg-line__text {
+  margin-right: 0.2em;
+}
+
+.msg-line__time {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding-left: 0.5em;
+  background-color: inherit;
+}
+
+.msg__actions {
+  display: none;
+
+  .msg--detailed & {
+    display: flex;
+    flex-flow: reverse nowrap;
+    white-space: nowrap;
+    font-size: 0.85em;
+
+    & [class^="icon--"] {
+      display: flex;
+      margin: 0 0.2em;
+    }
+  }
+
+  & .icon--archive,
+  & .icon--reply,
+  & .icon--reply-all,
+  & .icon--forward,
+  & .icon--trash,
+  & .icon--blacklist,
+  & .icon--whitelist {
+    .--only-icon;
+  }
+}
