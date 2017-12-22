@@ -158,9 +158,6 @@ Vue.component('msgs', {
         query = window.app.$refs.main.query;
       }
       return window.app.openInSplit(query);
-    },
-    hasSplit: function() {
-      return !this.split && window.app.split;
     }
   }
 });

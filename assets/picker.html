@@ -1,5 +1,7 @@
 <form @submit.prevent="" :class="['picker', {'picker--active': active}]">
-  <input v-model="filter"
+  <input
+    ref="input"
+    v-model="filter"
     @keyup="activate"
     @keyup.esc.prevent="set(value)"
     @keydown.up="select('up')"

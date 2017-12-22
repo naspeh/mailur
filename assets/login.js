@@ -20,9 +20,12 @@ Vue.component('Login', {
     };
   },
   mounted: function() {
-    this.$el.querySelector('.login__username input').focus();
+    this.focus();
   },
   methods: {
+    focus: function() {
+      this.$refs.username.focus();
+    },
     send: function() {
       this.disabled = true;
       this.error = null;
@@ -30,6 +33,7 @@ Vue.component('Login', {
         if (res.errors) {
           this.disabled = false;
           this.error = res.errors[0];
+          this.$nextTick(() => this.focus());
           return;
         }
         let index = window.location.pathname.replace('login', '');

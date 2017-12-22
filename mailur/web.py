@@ -248,7 +248,7 @@ def render_tpl(theme, page, data={}):
     title = {'index': 'welcome', 'login': 'login'}[page]
     css = assets / ('theme-%s.css' % theme)
     js = assets / ('%s.js' % page)
-    mtime = max(i.stat().st_mtime for i in [css, js] if i.is_file())
+    mtime = max(i.stat().st_mtime for i in [css, js])
     params = {
         'data': json.dumps(data, sort_keys=True),
         'css': css.name,

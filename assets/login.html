@@ -5,10 +5,12 @@
 >
   <div v-if="error" class="login__error">{{error}}</div>
   <div class="login__username">
-    username: <input v-model="params.username" required :disabled="disabled" />
+    username:
+    <input ref="username" v-model="params.username" required :disabled="disabled" />
   </div>
   <div class="login__password">
-    password: <input v-model="params.password" type="password" :disabled="disabled" required />
+    password:
+    <input v-model="params.password" type="password" :disabled="disabled" required />
   </div>
   <div class="login__theme">
     theme:

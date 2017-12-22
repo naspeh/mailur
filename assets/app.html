@@ -5,9 +5,7 @@
       <a @click.prevent="toggleSplit" href="#" class="icon--split" title="Open split pane"></a>
       <a @click.prevent="logout" href="#" class="icon--logout" title="Logout"></a>
     </div>
-    <div class="main__tags">
-      <tags :raw="allTags" :trancated="true" :unread="true" />
-    </div>
+    <tags :raw="allTags" :trancated="true" :unread="true" class="main__tags" />
     <msgs ref="main" :_query="query" />
   </div>
   <div class="split">

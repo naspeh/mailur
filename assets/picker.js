@@ -63,7 +63,7 @@ Vue.component('picker', {
       this.filter = val;
       if (active) {
         this.activate();
-        this.$el.querySelector('.picker__input').focus();
+        this.$refs.input.focus();
       } else if (this.active) {
         this.active = false;
       }

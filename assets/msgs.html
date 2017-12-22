@@ -41,13 +41,13 @@
         <div class="icon--pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
         <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
         <div v-if="threads" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
-        <tags :raw="msg.flags" :trancated="true" />
+        <tags :raw="msg.flags" :trancated="true" class="msg__tags" />
         <msg-line :msg="msg" :open="open" :fetch="fetch" />
         <div class="msg__line__pick">
           <input :id="msg.uid" :value="msg.uid" v-model="picked" type="checkbox">
         </div>
         <div
-          v-if="threads && hasSplit()"
+          v-if="!split && threads"
           @click.prevent="openInSplit(msg.query_thread)"
           class="icon--open-in-split"
           title="Open in split pane"
