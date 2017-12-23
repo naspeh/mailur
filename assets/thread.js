@@ -11,6 +11,7 @@ Vue.component('thread', {
   data: function() {
     return {
       uids: [],
+      hidden: [],
       msgs: {},
       url: null,
       detailed: []
@@ -24,19 +25,12 @@ Vue.component('thread', {
   computed: {
     length: function() {
       return Object.getOwnPropertyNames(this.msgs).length;
-    },
-    hidden: function() {
-      for (let uid of this.uids) {
-        if (!this.msgs[uid]) {
-          return uid;
-        }
-      }
     }
   },
   methods: {
     call: call,
     pics: msgs => window.app.pics(msgs),
-    fetch: function(query) {
+    fetch: function(query, preload = 4) {
       if (query && !this.split) {
         window.app.query = query;
       }
@@ -44,11 +38,14 @@ Vue.component('thread', {
       this.uids = [];
       this.msgs = {};
       return this.call('post', '/search', {
-        q: this.query
+        q: this.query,
+        preload: preload
       }).then(res => {
         this.url = res.msgs_info;
         this.uids = res.uids;
         this.msgs = res.msgs;
+        this.hidden = res.hidden;
+        this.same_subject = res.same_subject;
         this.pics(this.msgs);
       });
     },
@@ -61,6 +58,7 @@ Vue.component('thread', {
       }
       return this.call('post', this.url, { uids: uids }).then(msgs => {
         this.msgs = Object.assign({}, this.msgs, msgs);
+        this.hidden = [];
         this.pics(msgs);
       });
     },
@@ -71,13 +69,6 @@ Vue.component('thread', {
       } else {
         this.detailed.splice(idx, 1);
       }
-    },
-    hideSubj: function(uid) {
-      let idx = this.uids.indexOf(uid) - 1;
-      if (idx > 0 && this.msgs[this.uids[idx]]) {
-        return this.msgs[this.uids[idx]].subject == this.msgs[uid].subject;
-      }
-      return false;
     }
   }
 });

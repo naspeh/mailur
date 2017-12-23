@@ -18,7 +18,7 @@
     <div v-if="!uids.length && query">Loading...</div>
     <div v-for="uid of uids" :key="uid">
       <a
-        v-if="uid == hidden"
+        v-if="hidden.indexOf(uid) == 0"
         @click.prevent="loadAll()" href="#"
         class="msg-hidden"
       >{{uids.length - length}} hidden</a>
@@ -26,7 +26,7 @@
         :msg="msgs[uid]"
         @details="details(uid)"
         :detailed="detailed.indexOf(uid) != -1"
-        :hideSubj="hideSubj"
+        :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"
       />
     </div>
   </div>
