@@ -6,7 +6,8 @@
       <a @click.prevent="logout" href="#" class="icon--logout" title="Logout"></a>
     </div>
     <tags :raw="allTags" :trancated="true" :unread="true" class="main__tags" />
-    <msgs ref="main" :_query="query" />
+    <msgs v-if="query.indexOf(':thread ') == -1" ref="main" :_query="query" />
+    <thread v-if="query.indexOf(':thread ') != -1" ref="main" :query="query" />
   </div>
   <div class="split">
     <msgs ref="split" :split="true" />

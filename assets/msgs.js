@@ -11,7 +11,6 @@ Vue.component('msgs', {
   data: function() {
     return {
       perPage: 200,
-      picSize: 20,
       query: this._query,
       uids: [],
       pages: [],
@@ -41,7 +40,6 @@ Vue.component('msgs', {
         this.msgs = {};
         this.pages = [];
         //this.picked = [];
-        this.addrs = [];
       } else {
         Object.assign(this.msgs, msgs);
         this.pages.push(uids);
@@ -72,33 +70,9 @@ Vue.component('msgs', {
         this.uids = res.uids;
       });
     },
-    pics: function(msgs) {
-      let hashes = [];
-      for (let m in msgs) {
-        for (let f of msgs[m].from_list) {
-          if (
-            f.hash &&
-            hashes.indexOf(f.hash) == -1 &&
-            this.addrs.indexOf(f.hash) == -1
-          ) {
-            hashes.push(f.hash);
-          }
-        }
-      }
-      if (hashes.length == 0) {
-        return;
-      }
-      this.addrs = this.addrs.concat(hashes);
-      while (hashes.length > 0) {
-        let sheet = document.createElement('link');
-        let few = encodeURIComponent(hashes.splice(0, 50));
-        sheet.href = `/avatars.css?size=${this.picSize}&hashes=${few}`;
-        sheet.rel = 'stylesheet';
-        document.body.appendChild(sheet);
-      }
-    },
+    pics: msgs => window.app.pics(msgs),
     pick: function(uid) {
-      let idx = this.picked.indexOf(uid)
+      let idx = this.picked.indexOf(uid);
       if (idx == -1) {
         this.picked.push(uid);
       } else {
@@ -149,6 +123,6 @@ Vue.component('msgs', {
       } else {
         this.detailed = uid;
       }
-    },
+    }
   }
 });

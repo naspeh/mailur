@@ -1,4 +1,4 @@
-<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed}">
+<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed, 'msg--no-subj': hideSubj(msg.uid)}">
   <div class="msg-line">
     <div class="icon--pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
     <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>

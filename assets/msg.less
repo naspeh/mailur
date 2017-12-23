@@ -126,6 +126,10 @@
 
 .msg-line__pick {
   display: flex;
+
+  .thread & {
+    display: none;
+  }
 }
 
 .msg-line__count {
@@ -149,6 +153,9 @@
 
   .msg--unread & {
     font-weight: bold;
+  }
+  .msg--no-subj & {
+    display: none;
   }
 }
 
@@ -187,5 +194,28 @@
   & .icon--blacklist,
   & .icon--whitelist {
     .--only-icon;
+  }
+}
+
+.msg-hidden {
+  display: flex;
+  box-sizing: border-box;
+  padding-left: 1em;
+  border-top: 1px solid @--color--white;
+  border-radius: 0.5em;
+  background-color: @--color--light-grey;
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  &:before {
+    content: "---";
+    margin-right: 0.2em;
+  }
+
+  &:after {
+    content: "---";
+    margin-left: 0.2em;
   }
 }

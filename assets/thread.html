@@ -1,0 +1,33 @@
+<div class="msgs thread">
+  <div class="msgs__header">
+    <div v-if="!split" class="msgs__header__search">
+      <input v-model.lazy.trim="query" @keyup.enter="fetch()">
+      <button @click="fetch()" class="icon--search"></button>
+    </div>
+    <div class="msgs__header__actions">
+      <button class="icon--archive" title="Archive"></button>
+      <button class="icon--trash" title="Move to Trash"></button>
+    </div>
+    <div class="msgs__header__picking">
+      <span>
+        {{uids.length}} emails in thread
+      </span>
+    </div>
+  </div>
+  <div class="msgs__body">
+    <div v-if="!uids.length && query">Loading...</div>
+    <div v-for="uid of uids" :key="uid">
+      <a
+        v-if="uid == hidden"
+        @click.prevent="loadAll()" href="#"
+        class="msg-hidden"
+      >{{uids.length - length}} hidden</a>
+      <msg v-if="msgs[uid]"
+        :msg="msgs[uid]"
+        @details="details(uid)"
+        :detailed="detailed.indexOf(uid) != -1"
+        :hideSubj="hideSubj"
+      />
+    </div>
+  </div>
+</div>

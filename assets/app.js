@@ -2,6 +2,7 @@ import Vue from 'vue';
 import './tags.js';
 import './msg.js';
 import './msgs.js';
+import './thread.js';
 import tpl from './app.html';
 
 Vue.component('app', {
@@ -10,6 +11,8 @@ Vue.component('app', {
     return {
       tags: window.data.tags,
       query: null,
+      addrs: [],
+      picSize: 20,
       split: false,
       bigger: false
     };
@@ -44,6 +47,31 @@ Vue.component('app', {
   methods: {
     fetch: function(q) {
       return this.$refs.main.fetch(q);
+    },
+    pics: function(msgs) {
+      let hashes = [];
+      for (let m in msgs) {
+        for (let f of msgs[m].from_list) {
+          if (
+            f.hash &&
+            hashes.indexOf(f.hash) == -1 &&
+            this.addrs.indexOf(f.hash) == -1
+          ) {
+            hashes.push(f.hash);
+          }
+        }
+      }
+      if (hashes.length == 0) {
+        return;
+      }
+      this.addrs = this.addrs.concat(hashes);
+      while (hashes.length > 0) {
+        let sheet = document.createElement('link');
+        let few = encodeURIComponent(hashes.splice(0, 50));
+        sheet.href = `/avatars.css?size=${this.picSize}&hashes=${few}`;
+        sheet.rel = 'stylesheet';
+        document.body.appendChild(sheet);
+      }
     },
     openInSplit: function(query) {
       this.split = true;
