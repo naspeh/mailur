@@ -13,7 +13,7 @@ Vue.component('msgs', {
       perPage: 200,
       query: this._query,
       uids: [],
-      pages: [],
+      msgs: {},
       url: null,
       threads: false,
       picked: [],
@@ -27,10 +27,15 @@ Vue.component('msgs', {
     }
   },
   computed: {
-    length: function() {
-      return this.pages.length
-        ? Object.getOwnPropertyNames(this.msgs).length
-        : 0;
+    loaded: function() {
+      return this.uids.filter(i => this.msgs[i]);
+    },
+    flags: function() {
+      let flags = [];
+      for (let i of this.picked) {
+        flags.push.apply(flags, this.msgs[i].flags);
+      }
+      return [...new Set(flags)];
     }
   },
   methods: {
@@ -38,15 +43,15 @@ Vue.component('msgs', {
     setMsgs: function(msgs, uids) {
       if (!msgs) {
         this.msgs = {};
-        this.pages = [];
         //this.picked = [];
       } else {
-        Object.assign(this.msgs, msgs);
-        this.pages.push(uids);
+        this.picked = this.picked.filter(i => this.uids.indexOf(i) != -1);
+        this.uids = uids;
+        this.msgs = Object.assign({}, this.msgs, msgs);
         this.pics(msgs);
       }
     },
-    fetch: function(query) {
+    fetch: function(query, clean = true) {
       if (query) {
         this.query = query;
       }
@@ -54,19 +59,17 @@ Vue.component('msgs', {
         window.app.query = query;
       }
 
-      this.uids = [];
-      this.setMsgs();
+      if (clean) {
+        this.uids = [];
+        this.setMsgs();
+      }
       return this.call('post', '/search', {
         q: this.query,
         preload: this.perPage
       }).then(res => {
         this.url = res.msgs_info;
         this.threads = res.threads || false;
-        if (res.hidden === undefined) {
-          this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
-        } else {
-          this.setMsgs(res.msgs, res.uids);
-        }
+        this.setMsgs(res.msgs, res.uids.slice(0, this.perPage));
         this.uids = res.uids;
       });
     },
@@ -80,7 +83,7 @@ Vue.component('msgs', {
       }
     },
     pickAll: function() {
-      this.picked = Object.keys(this.msgs);
+      this.picked = this.loaded;
     },
     pickNone: function() {
       this.picked = [];
@@ -91,7 +94,7 @@ Vue.component('msgs', {
       );
     },
     canLoadMore: function() {
-      return this.length < this.uids.length;
+      return this.loaded.length < this.uids.length;
     },
     loadMore: function() {
       let uids = [];
@@ -123,6 +126,25 @@ Vue.component('msgs', {
       } else {
         this.detailed = uid;
       }
+    },
+    editFlags: function(opts, picked = null) {
+      let uids = this.loaded;
+      opts = Object.assign({ uids: picked || this.picked }, opts);
+      call('post', '/msgs/flag', opts).then(res => {
+        if (!res.errors) {
+          this.fetch(this.query, false).then(() =>
+            this.call('post', this.url, { uids: uids }).then(res =>
+              this.setMsgs(res, uids)
+            )
+          );
+        }
+      });
+    },
+    archive: function() {
+      return this.editFlags({ old: ['#inbox'] });
+    },
+    del: function() {
+      return this.editFlags({ new: ['#trash'] });
     }
   }
 });

@@ -17,7 +17,8 @@
     font-size: 0.85em;
 
     &:hover {
-      color: inherit;
+      margin-top: 0.1em;
+      margin-bottom: -0.1em;
       cursor: pointer;
     }
   }
@@ -42,20 +43,12 @@
   .msg--unread & {
     & .icon--unread {
       color: @--color--black;
-
-      &:hover {
-        color: inherit;
-      }
     }
   }
 
   .msg--pinned & {
     & .icon--pin {
       color: @--color--orange;
-
-      &:hover {
-        color: inherit;
-      }
     }
   }
 }

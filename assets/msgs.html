@@ -1,43 +1,46 @@
 <div class="msgs">
   <div class="msgs__header">
     <div v-if="!split" class="msgs__header__search">
-      <input v-model.lazy.trim="query" @keyup.enter="fetch()">
-      <button @click="fetch()" class="icon--search"></button>
+      <input v-model.lazy.trim="query" @keyup.enter="fetch(query)">
+      <button @click="fetch(query)" class="icon--search"></button>
+    </div>
+    <div v-if="picked.length" class="msgs__header__tags">
+      <tags :raw="flags" :edit="editFlags" :trancated="true" />
     </div>
     <div v-if="picked.length" class="msgs__header__actions">
-      <button class="icon--archive" title="Archive"></button>
-      <button class="icon--trash" title="Move to Trash"></button>
+      <button @click="archive" class="icon--archive" title="Archive"></button>
+      <button @click="del" class="icon--trash" title="Move to Trash"></button>
       <button
         v-if="threads && picked.length > 1"
         @click="link" class="icon--link"
         title="Link threads together"
       ></button>
     </div>
-    <div v-if="pages.length" class="msgs__header__picking">
+    <div v-if="loaded.length" class="msgs__header__picking">
       <span>
-        {{length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
+        {{loaded.length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
       </span>
       <span>
         (Select
-        <a v-if="length > picked.length" @click.prevent="pickAll" href="#">All</a>
+        <a v-if="loaded.length > picked.length" @click.prevent="pickAll" href="#">All</a>
         <a v-if="picked.length > 0" @click.prevent="pickNone" href="#">None</a>
         )
       </span>
     </div>
   </div>
   <div class="msgs__body">
-    <div v-if="!pages.length && query">Loading...</div>
-    <div v-for="uids of pages">
-      <msg
-        v-for="msg in page(uids)" :key="msg.uid"
-        :msg="msg"
-        :thread="threads"
-        :details="details"
-        :detailed="msg.uid == detailed"
-        :pick="pick"
-        :picked="picked.indexOf(msg.uid) != -1"
-      />
-    </div>
+    <div v-if="!loaded.length && query">Loading...</div>
+    <msg
+      v-for="uid in uids" :key="uid"
+      v-if="msgs[uid]"
+      :msg="msgs[uid]"
+      :thread="threads"
+      :details="details"
+      :detailed="uid == detailed"
+      :pick="pick"
+      :picked="picked.indexOf(uid) != -1"
+      :editFlags="editFlags"
+    />
     <a @click.prevent="loadMore()" href="#" v-if="canLoadMore()">Load more...</a>
   </div>
 </div>

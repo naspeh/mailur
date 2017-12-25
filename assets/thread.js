@@ -10,6 +10,7 @@ Vue.component('thread', {
   },
   data: function() {
     return {
+      preload: 4,
       uids: null,
       msgs: null,
       thread: null,
@@ -24,29 +25,28 @@ Vue.component('thread', {
     }
   },
   computed: {
+    loaded: function() {
+      return this.uids.filter(i => this.msgs[i]);
+    },
     hidden: function() {
-      let uids = [];
-      for (let uid of this.uids) {
-        if (!this.msgs[uid]) {
-          uids.push(uid)
-        }
-      }
-      return uids;
+      return this.uids.filter(i => !this.msgs[i]);
     }
   },
   methods: {
     call: call,
     pics: msgs => window.app.pics(msgs),
-    fetch: function(query, preload = 4) {
+    fetch: function(query, clean = true, preload = undefined) {
       if (query && !this.split) {
         window.app.query = query;
       }
 
-      this.uids = [];
-      this.msgs = {};
+      if (clean) {
+        this.uids = [];
+        this.msgs = {};
+      }
       return this.call('post', '/search', {
         q: this.query,
-        preload: preload
+        preload: preload === undefined ? this.preload : preload
       }).then(res => {
         this.url = res.msgs_info;
         this.thread = res.thread;
@@ -57,14 +57,8 @@ Vue.component('thread', {
       });
     },
     loadAll: function() {
-      let uids = [];
-      for (let uid of this.uids) {
-        if (!this.msgs[uid]) {
-          uids.push(uid);
-        }
-      }
       return this.call('post', this.url, {
-        uids: uids,
+        uids: this.hidden,
         hide_flags: this.thread.flags
       }).then(msgs => {
         this.msgs = Object.assign({}, this.msgs, msgs);
@@ -79,10 +73,17 @@ Vue.component('thread', {
         this.detailed.splice(idx, 1);
       }
     },
-    edit: function(opts) {
-      call('post', '/msgs/flag', Object.assign({ uids: this.uids}, opts))
-        .then(() => call('post', '/thrs/info', { uids: [this.thread.uid] }))
-        .then(res => (this.thread = res[Object.keys(res)[0]]));
+    editFlags: function(opts, picked = null) {
+      opts = Object.assign({ uids: picked || this.uids }, opts);
+      call('post', '/msgs/flag', opts).then(res => {
+        if (!res.errors) {
+          this.fetch(
+            this.query,
+            false,
+            this.hidden.length > 0 ? this.preload : null
+          );
+        }
+      });
     }
   }
 });

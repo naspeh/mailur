@@ -7,7 +7,7 @@ Vue.component('tags', {
     raw: { type: Array, required: true },
     trancated: { type: Boolean, default: false },
     unread: { type: Boolean, default: false },
-    edit: { type: Function },
+    edit: { type: Function }
   },
   computed: {
     display: function() {
@@ -21,7 +21,7 @@ Vue.component('tags', {
   methods: {
     fetch: tag => window.app.fetch(tag.query),
     remove: function(tag) {
-      return this.edit({old: [tag]})
+      return this.edit({ old: [tag] });
     }
   }
 });

@@ -1,7 +1,15 @@
 <div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed}">
   <div class="msg-line">
-    <div class="icon--pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
-    <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
+    <div
+      class="icon--pin"
+      @click="pin(msg)"
+      :title="msg.is_pinned ? 'Unpin' : 'Pin'"
+    ></div>
+    <div
+      class="icon--unread"
+      @click="read(msg)"
+      :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"
+    ></div>
     <div v-if="thread" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
     <tags :raw="msg.flags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open" :href="`#${msg.query_thread}`">

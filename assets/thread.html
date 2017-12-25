@@ -9,7 +9,7 @@
       <button class="icon--trash" title="Move to Trash"></button>
     </div>
     <div v-if="thread" class="msgs__header__tags">
-      <tags :raw="thread.flags" :edit="edit" :trancated="true" />
+      <tags :raw="thread.flags" :edit="editFlags" :trancated="true" />
     </div>
     <div class="msgs__header__picking">
       <span>
@@ -27,6 +27,7 @@
       >{{hidden.length}} hidden</a>
       <msg v-if="msgs[uid]"
         :msg="msgs[uid]"
+        :editFlags="editFlags"
         :details="details"
         :detailed="detailed.indexOf(uid) != -1"
         :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"
