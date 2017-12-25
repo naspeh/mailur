@@ -319,7 +319,7 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
-        'uids': ['2'], 'cmd': '+', 'flags': ['#inbox', 'test2']
+        'uids': ['2'], 'cmd': '+', 'flags': ['#inbox', '#sent', 'test2']
     }, status=200)
     res = web.post_json('/msgs/flag', {
         'uids': ['1'], 'cmd': '+', 'flags': ['#inbox', 'test1']
@@ -332,16 +332,16 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['thread']['count'] == 6
     assert res['thread']['uid'] == '6'
     assert sorted(res['thread']['flags']) == ['#inbox', 'test1', 'test2']
-    assert [m['flags'] for m in res['msgs'].values()] == [
-        [], [], [], [], ['#latest']
+    assert [res['msgs'][uid]['flags'] for uid in sorted(res['msgs'])] == [
+        [], ['#sent'], [], [], ['#latest']
     ]
 
     res = web.post_json(res['msgs_info'], {
         'uids': res['uids'],
         'hide_flags': res['thread']['flags']
     })
-    assert [m['flags'] for m in res.json.values()] == [
-        [], [], [], [], [], ['#latest']
+    assert [res.json[uid]['flags'] for uid in sorted(res.json)] == [
+        [], ['#sent'], [], [], [], ['#latest']
     ]
 
 

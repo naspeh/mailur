@@ -4,20 +4,42 @@
 }
 
 .tags__item {
+  display: flex;
   line-height: 1.5em;
   padding: 0 0.1em;
   margin: 0 0.1em;
   background-color: @--color--light-grey;
   color: @--color--green;
   white-space: nowrap;
-}
 
-.tags__item--unread {
-  font-weight: bold;
+  .icon--remove {
+    display: none;
+  }
+
+  &.tags__item--unread {
+    font-weight: bold;
+  }
+
+  &.tags__item--edit {
+
+    &:hover {
+      text-decoration: none;
+      background-color: @--color--white;
+    }
+
+    .icon--remove {
+      display: block;
+      font-size: 0.85em;
+
+      &:hover {
+        color: @--color--orange;
+      }
+    }
+  }
 }
 
 .tags__item__unread {
-  display: None;
+  display: none;
 
   &::before {
     content: "(";

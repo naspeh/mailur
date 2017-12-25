@@ -45,6 +45,7 @@
 
 .icon--search,
 .icon--ok,
+.icon--remove,
 .icon--font,
 .icon--forward,
 .icon--spam,
@@ -83,6 +84,16 @@
 
 .icon--ok {
   .--icon--ok;
+}
+
+.--icon--remove() {
+  &::before {
+    content: "\f00d";
+  }
+}
+
+.icon--remove {
+  .--icon--remove;
 }
 
 .--icon--font() {

@@ -4,9 +4,11 @@ import tpl from './tags.html';
 Vue.component('tags', {
   template: tpl,
   props: {
+    raw: { type: Array, required: true },
     trancated: { type: Boolean, default: false },
     unread: { type: Boolean, default: false },
-    raw: { type: Array, required: true }
+    edit: { type: Boolean, default: false },
+    removeTag: { type: Function }
   },
   computed: {
     display: function() {

@@ -3,10 +3,11 @@
     v-for="tag in display"
     @click.prevent="fetch(tag)"
     :title="tag.name"
-    :class="['tags__item', {'tags__item--unread': unread && tag.unread}]"
+    :class="{tags__item: 1, 'tags__item--unread': unread && tag.unread, 'tags__item--edit': edit}"
     :href="`#${tag.query}`"
   >
     {{trancated ? tag.short_name : tag.name}}
-    <span class="tags__item__unread">{{tag.unread}}</span>
+    <div class="tags__item__unread">{{tag.unread}}</div>
+    <div @click.prevent.stop="removeTag(tag.id)" class="icon--remove" title="Remove"></div>
   </a>
 </div>

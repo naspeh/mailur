@@ -10,13 +10,13 @@ Vue.component('thread', {
   },
   data: function() {
     return {
-      uids: [],
-      hidden: [],
-      msgs: {},
-      thread: {},
+      uids: null,
+      hidden: null,
+      msgs: null,
+      thread: null,
       url: null,
       detailed: [],
-      same_subject: []
+      same_subject: null
     };
   },
   created: function() {
@@ -44,9 +44,9 @@ Vue.component('thread', {
         preload: preload
       }).then(res => {
         this.url = res.msgs_info;
+        this.thread = res.thread;
         this.uids = res.uids;
         this.msgs = res.msgs;
-        this.thread = res.thread;
         this.hidden = res.hidden;
         this.same_subject = res.same_subject;
         this.pics(this.msgs);
@@ -75,6 +75,11 @@ Vue.component('thread', {
       } else {
         this.detailed.splice(idx, 1);
       }
+    },
+    removeTag: function(tag) {
+      call('post', '/msgs/flag', { uids: this.uids, cmd: '-', flags: [tag] })
+        .then(() => call('post', '/thrs/info', { uids: [this.thread.uid] }))
+        .then(res => (this.thread = res[Object.keys(res)[0]]));
     }
   }
 });

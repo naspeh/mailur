@@ -8,6 +8,9 @@
       <button class="icon--archive" title="Archive"></button>
       <button class="icon--trash" title="Move to Trash"></button>
     </div>
+    <div v-if="thread" class="msgs__header__tags">
+      <tags :raw="thread.flags" :edit="true" :removeTag="removeTag" :trancated="true" />
+    </div>
     <div class="msgs__header__picking">
       <span>
         {{uids.length}} emails in thread
