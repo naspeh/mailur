@@ -435,10 +435,14 @@ def update_threads(con, criteria=None):
 
 @fn_time
 @using(readonly=False)
-def msgs_flag(uids, cmd, flags, con=None):
-    cmd += 'FLAGS.SILENT'
-    flags = ' '.join(f for f in flags)
-    return con.store(uids, cmd, flags)
+def msgs_flag(uids, old, new, con=None):
+    rm = set(old) - set(new) if old else []
+    if rm:
+        con.store(uids, '-FLAGS.SILENT', ' '.join(rm))
+
+    add = set(new) - set(old) if new else []
+    if add:
+        con.store(uids, '+FLAGS.SILENT', ' '.join(add))
 
 
 @fn_time

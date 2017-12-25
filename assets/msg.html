@@ -2,7 +2,7 @@
   <div class="msg-line">
     <div class="icon--pin" :title="msg.is_pinned ? 'Unpin' : 'Pin'"></div>
     <div class="icon--unread" :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"></div>
-    <div v-if="thread" @click.stop="details" class="icon--more" title="More actions"></div>
+    <div v-if="thread" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
     <tags :raw="msg.flags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open" :href="`#${msg.query_thread}`">
       <div class="msg-line__from">
@@ -31,7 +31,7 @@
       <div class="msg-line__time" :title="msg.time_title">{{msg.time_human}}</div>
     </a>
     <div class="msg-line__pick">
-      <input :checked="picked" @change="pick" type="checkbox">
+      <input :checked="picked" @change="pick(msg.uid)" type="checkbox">
     </div>
     <div
       v-if="thread"

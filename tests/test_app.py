@@ -224,31 +224,35 @@ def test_basic(clean_users, gm_client, login, some):
 
 
 def test_msgs_flag(clean_users, gm_client, login, msgs):
-    def post(uids, cmd, flags):
-        web.post_json('/msgs/flag', {
-            'uids': uids, 'cmd': cmd, 'flags': flags
-        }, status=200)
-        return [m['flags'] for m in msgs(local.ALL)]
+    def post(uids, **data):
+        web.post_json('/msgs/flag', dict(uids=uids, **data), status=200)
+        return [' '.join(sorted(m['flags'].split())) for m in msgs(local.ALL)]
 
     web = login()
-    web.post_json('/msgs/flag', {'flags': ['\\Seen']}, status=400)
-    web.post_json('/msgs/flag', {
-        'uids': ['1'], 'cmd': '.', 'flags': ['\\Seen']
-    }, status=400)
+    web.post_json('/msgs/flag', {'new': ['\\Seen']}, status=400)
+    web.post_json('/msgs/flag', {'old': ['\\Seen']}, status=400)
 
     gm_client.add_emails([{}])
     local.parse()
     assert [m['flags'] for m in msgs(local.ALL)] == ['#latest']
 
-    assert post(['1'], '+', ['\\Seen']) == ['\\Seen #latest']
-    assert post(['1'], '-', ['\\Seen']) == ['#latest']
+    assert post(['1'], new=['\\Seen']) == ['#latest \\Seen']
+    assert post(['1'], old=['\\Seen']) == ['#latest']
 
     gm_client.add_emails([{'refs': '<101@mlr>'}])
     local.parse()
     assert [m['flags'] for m in msgs(local.ALL)] == ['', '#latest']
-    assert post(['1', '2'], '+', ['\\Seen']) == ['\\Seen', '\\Seen #latest']
-    assert post(['1'], '-', ['\\Seen']) == ['', '\\Seen #latest']
-    assert post(['1', '2'], '-', ['\\Seen']) == ['', '#latest']
+    assert post(['1', '2'], new=['\\Seen']) == ['\\Seen', '#latest \\Seen']
+    assert post(['1'], old=['\\Seen']) == ['', '#latest \\Seen']
+    assert post(['1', '2'], old=['\\Seen']) == ['', '#latest']
+
+    assert post(['1', '2'], new=['#1', '#2']) == ['#1 #2', '#1 #2 #latest']
+    assert post(['1', '2'], new=['#3', '#2'], old=['#1', '#2']) == [
+        '#2 #3', '#2 #3 #latest'
+    ]
+    assert post(['1', '2'], new=['#4'], old=['#2', '#3']) == [
+        '#4', '#4 #latest'
+    ]
 
 
 def test_search_thread(clean_users, gm_client, login, some):
@@ -266,7 +270,6 @@ def test_search_thread(clean_users, gm_client, login, some):
         'uids': ['1'],
         'msgs': {'1': some},
         'msgs_info': '/msgs/info',
-        'hidden': [],
         'thread': some,
         'same_subject': [],
     }
@@ -293,42 +296,39 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
-        'uids': res['uids'], 'cmd': '+', 'flags': ['\\Seen']
+        'uids': res['uids'], 'new': ['\\Seen']
     }, status=200)
 
     res = post('1')
     assert len(res['uids']) == 6
     assert sorted(res['msgs']) == ['1', '4', '5', '6']
-    assert res['hidden'] == ['2', '3']
     assert res['thread']['count'] == 6
     assert res['thread']['uid'] == '6'
     assert res['thread']['flags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
-        'uids': ['2'], 'cmd': '+', 'flags': ['\\Flagged']
+        'uids': ['2'], 'new': ['\\Flagged']
     }, status=200)
 
     res = post('1')
     assert len(res['uids']) == 6
     assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
-    assert res['hidden'] == ['3']
     assert res['thread']['count'] == 6
     assert res['thread']['uid'] == '6'
     assert res['thread']['flags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
-        'uids': ['2'], 'cmd': '+', 'flags': ['#inbox', '#sent', 'test2']
+        'uids': ['2'], 'new': ['#inbox', '#sent', 'test2']
     }, status=200)
     res = web.post_json('/msgs/flag', {
-        'uids': ['1'], 'cmd': '+', 'flags': ['#inbox', 'test1']
+        'uids': ['1'], 'new': ['#inbox', 'test1']
     }, status=200)
 
     res = post('1')
     assert len(res['uids']) == 6
     assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
-    assert res['hidden'] == ['3']
     assert res['thread']['count'] == 6
     assert res['thread']['uid'] == '6'
     assert sorted(res['thread']['flags']) == ['#inbox', 'test1', 'test2']

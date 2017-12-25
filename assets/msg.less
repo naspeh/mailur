@@ -17,6 +17,7 @@
     font-size: 0.85em;
 
     &:hover {
+      color: inherit;
       cursor: pointer;
     }
   }
@@ -41,12 +42,20 @@
   .msg--unread & {
     & .icon--unread {
       color: @--color--black;
+
+      &:hover {
+        color: inherit;
+      }
     }
   }
 
   .msg--pinned & {
     & .icon--pin {
       color: @--color--orange;
+
+      &:hover {
+        color: inherit;
+      }
     }
   }
 }
@@ -54,12 +63,6 @@
 .msg-line__tags {
   margin-left: 0.2em;
   font-size: 0.85em;
-
-  .msg--detailed & {
-    .tags__item {
-      background-color: @--color--white;
-    }
-  }
 }
 
 .msg-line__from {

@@ -181,10 +181,10 @@ def msgs_flag():
         'type': 'object',
         'properties': {
             'uids': {'type': 'array'},
-            'cmd': {'type': 'string', 'enum': ['+', '-']},
-            'flags': {'type': 'array'}
+            'old': {'type': 'array', 'default': []},
+            'new': {'type': 'array', 'default': []}
         },
-        'required': ['uids', 'cmd', 'flags']
+        'required': ['uids']
     }
     errs, data = validate(request.json, schema)
     if errs:
@@ -281,7 +281,6 @@ def thread(uid, preload=4):
         if subj == prev_subj:
             same_subject.append(uid)
 
-    hidden = []
     if preload is not None and len(uids) > preload:
         msgs_few = {
             i: m for i, m in msgs.items() if m['is_unread'] or m['is_pinned']
@@ -292,12 +291,10 @@ def thread(uid, preload=4):
                 continue
             msgs_few[i] = msgs[i]
         msgs = msgs_few
-        hidden = sorted(set(uids) - set(msgs_few))
 
     return {
         'uids': uids,
         'msgs': msgs,
-        'hidden': hidden,
         'msgs_info': app.get_url('msgs_info'),
         'thread': thr,
         'same_subject': same_subject

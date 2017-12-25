@@ -5,12 +5,20 @@
 
 .tags__item {
   display: flex;
-  line-height: 1.5em;
+  align-items: center;
+  box-sizing: border-box;
+  height: 1.5em;
   padding: 0 0.1em;
   margin: 0 0.1em;
   background-color: @--color--light-grey;
+  border: 1px solid @--color--light-grey;
   color: @--color--green;
   white-space: nowrap;
+
+  &:hover {
+    text-decoration: none;
+    background-color: @--color--white;
+  }
 
   .icon--remove {
     display: none;
@@ -21,11 +29,7 @@
   }
 
   &.tags__item--edit {
-
-    &:hover {
-      text-decoration: none;
-      background-color: @--color--white;
-    }
+    padding-right: 0;
 
     .icon--remove {
       display: block;

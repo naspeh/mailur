@@ -11,7 +11,6 @@ Vue.component('thread', {
   data: function() {
     return {
       uids: null,
-      hidden: null,
       msgs: null,
       thread: null,
       url: null,
@@ -25,8 +24,14 @@ Vue.component('thread', {
     }
   },
   computed: {
-    length: function() {
-      return Object.getOwnPropertyNames(this.msgs).length;
+    hidden: function() {
+      let uids = [];
+      for (let uid of this.uids) {
+        if (!this.msgs[uid]) {
+          uids.push(uid)
+        }
+      }
+      return uids;
     }
   },
   methods: {
@@ -47,7 +52,6 @@ Vue.component('thread', {
         this.thread = res.thread;
         this.uids = res.uids;
         this.msgs = res.msgs;
-        this.hidden = res.hidden;
         this.same_subject = res.same_subject;
         this.pics(this.msgs);
       });
@@ -64,7 +68,6 @@ Vue.component('thread', {
         hide_flags: this.thread.flags
       }).then(msgs => {
         this.msgs = Object.assign({}, this.msgs, msgs);
-        this.hidden = [];
         this.pics(msgs);
       });
     },
@@ -76,8 +79,8 @@ Vue.component('thread', {
         this.detailed.splice(idx, 1);
       }
     },
-    removeTag: function(tag) {
-      call('post', '/msgs/flag', { uids: this.uids, cmd: '-', flags: [tag] })
+    edit: function(opts) {
+      call('post', '/msgs/flag', Object.assign({ uids: this.uids}, opts))
         .then(() => call('post', '/thrs/info', { uids: [this.thread.uid] }))
         .then(res => (this.thread = res[Object.keys(res)[0]]));
     }

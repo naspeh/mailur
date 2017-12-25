@@ -8,6 +8,6 @@
   >
     {{trancated ? tag.short_name : tag.name}}
     <div class="tags__item__unread">{{tag.unread}}</div>
-    <div @click.prevent.stop="removeTag(tag.id)" class="icon--remove" title="Remove"></div>
+    <div @click.prevent.stop="remove(tag.id)" class="icon--remove" title="Remove"></div>
   </a>
 </div>

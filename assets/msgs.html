@@ -32,9 +32,9 @@
         v-for="msg in page(uids)" :key="msg.uid"
         :msg="msg"
         :thread="threads"
-        @details="details(msg.uid)"
+        :details="details"
         :detailed="msg.uid == detailed"
-        @pick="pick(msg.uid)"
+        :pick="pick"
         :picked="picked.indexOf(msg.uid) != -1"
       />
     </div>

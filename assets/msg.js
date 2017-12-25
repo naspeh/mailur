@@ -8,21 +8,17 @@ Vue.component('msg', {
     thread: { type: Boolean, default: false },
     detailed: { type: Boolean, default: false },
     picked: { type: Boolean, default: false },
+    details: {type: Function },
+    pick: {type: Function },
     hideSubj: { type: Function, default: () => false }
   },
   methods: {
     fetch: q => window.app.fetch(q),
-    details: function() {
-      this.$emit('details');
-    },
-    pick: function() {
-      this.$emit('pick');
-    },
     open: function() {
       if (this.thread) {
         this.fetch(this.msg.query_thread);
       } else {
-        this.details();
+        this.details(this.msg.uid);
       }
     },
     openInSplit: function() {
