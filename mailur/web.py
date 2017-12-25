@@ -152,17 +152,19 @@ def search():
 @app.post('/thrs/info', name='thrs_info')
 def thrs_info():
     uids = request.json['uids']
+    hide_flags = request.json.get('hide_flags', [])
     if not uids:
         return abort(400)
-    return wrap_msgs(local.thrs_info(uids))
+    return wrap_msgs(local.thrs_info(uids, hide_flags))
 
 
 @app.post('/msgs/info', name='msgs_info')
 def msgs_info():
     uids = request.json['uids']
+    hide_flags = request.json.get('hide_flags', [])
     if not uids:
         return abort(400)
-    return wrap_msgs(local.msgs_info(uids))
+    return wrap_msgs(local.msgs_info(uids, hide_flags))
 
 
 @app.post('/thrs/link')
@@ -269,7 +271,8 @@ def thread(uid, preload=4):
     uids = local.search_msgs('INTHREAD REFS UID %s' % uid, '(DATE)')
     if not uids:
         return {}
-    msgs = wrap_msgs(local.msgs_info(uids))
+    thr = list(wrap_msgs(local.thrs_info(uids[0:1])).values())[0]
+    msgs = wrap_msgs(local.msgs_info(uids, thr['flags']))
     same_subject = []
     for num, uid in enumerate(uids[1:], 1):
         prev = uids[num-1]
@@ -290,10 +293,6 @@ def thread(uid, preload=4):
             msgs_few[i] = msgs[i]
         msgs = msgs_few
         hidden = sorted(set(uids) - set(msgs_few))
-
-    thr = msgs[uids[0]]
-    if len(uids) > 1:
-        thr = list(wrap_msgs(local.thrs_info(uids[0])).values())[0]
 
     return {
         'uids': uids,

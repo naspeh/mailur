@@ -13,8 +13,10 @@ Vue.component('thread', {
       uids: [],
       hidden: [],
       msgs: {},
+      thread: {},
       url: null,
-      detailed: []
+      detailed: [],
+      same_subject: []
     };
   },
   created: function() {
@@ -44,6 +46,7 @@ Vue.component('thread', {
         this.url = res.msgs_info;
         this.uids = res.uids;
         this.msgs = res.msgs;
+        this.thread = res.thread;
         this.hidden = res.hidden;
         this.same_subject = res.same_subject;
         this.pics(this.msgs);
@@ -56,7 +59,10 @@ Vue.component('thread', {
           uids.push(uid);
         }
       }
-      return this.call('post', this.url, { uids: uids }).then(msgs => {
+      return this.call('post', this.url, {
+        uids: uids,
+        hide_flags: this.thread.flags
+      }).then(msgs => {
         this.msgs = Object.assign({}, this.msgs, msgs);
         this.hidden = [];
         this.pics(msgs);

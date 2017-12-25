@@ -270,7 +270,7 @@ def test_search_thread(clean_users, gm_client, login, some):
         'thread': some,
         'same_subject': [],
     }
-    assert res['msgs']['1'] == res['thread']
+    assert dict(res['msgs']['1'], count=1, flags=[]) == res['thread']
 
     gm_client.add_emails([{'refs': '<101@mlr>'}] * 2)
     local.parse()
@@ -281,7 +281,6 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['thread']['uid'] == '3'
     assert res['thread']['flags'] == []
     assert res['same_subject'] == []
-    print(res['thread']['subject'])
 
     gm_client.add_emails([{'refs': '<101@mlr>', 'subj': 'Subj 103'}] * 3)
     local.parse()
@@ -320,10 +319,10 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
-        'uids': ['2'], 'cmd': '+', 'flags': ['test', 'test2']
+        'uids': ['2'], 'cmd': '+', 'flags': ['#inbox', 'test2']
     }, status=200)
     res = web.post_json('/msgs/flag', {
-        'uids': ['1'], 'cmd': '+', 'flags': ['test', 'test1']
+        'uids': ['1'], 'cmd': '+', 'flags': ['#inbox', 'test1']
     }, status=200)
 
     res = post('1')
@@ -332,7 +331,18 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['hidden'] == ['3']
     assert res['thread']['count'] == 6
     assert res['thread']['uid'] == '6'
-    assert sorted(res['thread']['flags']) == ['test', 'test1', 'test2']
+    assert sorted(res['thread']['flags']) == ['#inbox', 'test1', 'test2']
+    assert [m['flags'] for m in res['msgs'].values()] == [
+        [], [], [], [], ['#latest']
+    ]
+
+    res = web.post_json(res['msgs_info'], {
+        'uids': res['uids'],
+        'hide_flags': res['thread']['flags']
+    })
+    assert [m['flags'] for m in res.json.values()] == [
+        [], [], [], [], [], ['#latest']
+    ]
 
 
 def test_from_list(some):

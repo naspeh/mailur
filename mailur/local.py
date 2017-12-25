@@ -504,14 +504,17 @@ def search_msgs(query, sort='(REVERSE DATE)', con=None):
 
 @fn_time
 @using()
-def msgs_info(uids, con=None):
+def msgs_info(uids, hide_flags=None, con=None):
     res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
         uid, flags = (
             re.search(r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode())
             .groups()
         )
-        yield uid, res[i][1], flags.split(), None
+        flags = flags.split()
+        if hide_flags:
+            flags = sorted(set(flags) - set(hide_flags))
+        yield uid, res[i][1], flags, None
 
 
 @fn_time
@@ -526,7 +529,7 @@ def search_thrs(query, con=None):
 
 @fn_time
 @using()
-def thrs_info(uids, con=None):
+def thrs_info(uids, hide_flags=None, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
     all_flags = {}
     all_msgs = {}
@@ -567,6 +570,8 @@ def thrs_info(uids, con=None):
             flags.remove('\\Seen')
         if '#latest' in flags:
             flags.remove('#latest')
+        if hide_flags:
+            flags = sorted(set(flags) - set(hide_flags))
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
         yield thrid, all_msgs[thrid], flags, addrs
 
