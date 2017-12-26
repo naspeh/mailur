@@ -1,22 +1,27 @@
-.msgs__search {
-  display: flex;
-  margin-bottom: 0.2em;
-
-  & input {
-    flex-grow: 10;
-  }
-}
-
 .msgs__header {
   display: flex;
-  justify-content: flex-end;
-  line-height: 1.5em;
+  justify-content: flex-start;
   height: 1.5em;
+  line-height: 1.5em;
   margin-bottom: 0.2em;
   white-space: nowrap;
 }
 
-.msgs__header__picking {
+.msgs__search {
+  display: flex;
+  flex-grow: 10;
+
+  & input {
+    flex-grow: 10;
+    max-width: 30em;
+
+    &:focus {
+      min-width: 20em
+    }
+  }
+}
+
+.msgs__picking {
   margin-left: 0.2em;
 
   & a {
@@ -24,12 +29,13 @@
   }
 }
 
-.msgs__header__actions {
+.msgs__actions {
   display: flex;
   justify-content: space-between;
   margin-left: 0.2em;
+  overflow: hidden;
 }
 
-.msgs__header__tags {
+.msgs__tags {
   margin: 0 0.2em;
 }

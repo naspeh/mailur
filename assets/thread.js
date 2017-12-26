@@ -38,6 +38,7 @@ Vue.component('thread', {
 
       this.uids = [];
       this.msgs = {};
+      this.thread = null;
 
       this.$nextTick(() => this.fetch());
     },

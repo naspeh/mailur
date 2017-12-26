@@ -1,22 +1,20 @@
 <div class="msgs">
-  <div class="msgs__search">
-    <input ref="query" :value="query" @keyup.enter="newQuery">
-    <button @click="newQuery" class="icon--search"></button>
-  </div>
   <div class="msgs__header">
-    <div v-if="picked.length" class="msgs__header__tags">
-      <tags :raw="flags" :edit="editFlags" :trancated="true" />
+    <div class="msgs__search">
+      <input ref="query" :value="query" @keyup.enter="newQuery">
+      <button @click="newQuery" class="icon--search"></button>
     </div>
-    <div v-if="picked.length" class="msgs__header__actions">
+    <div v-if="picked.length" class="msgs__actions">
       <button @click="archive" class="icon--archive" title="Archive"></button>
       <button @click="del" class="icon--trash" title="Move to Trash"></button>
       <button
-        v-if="threads && picked.length > 1"
+        v-if="threads && picked.length"
         @click="link" class="icon--link"
         title="Link threads together"
       ></button>
+      <tags class="msgs__tags" :raw="flags" :edit="editFlags" :trancated="true" />
     </div>
-    <div v-if="loaded.length" class="msgs__header__picking">
+    <div v-if="loaded.length" class="msgs__picking">
       <span>
         {{loaded.length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
       </span>

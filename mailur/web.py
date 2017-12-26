@@ -325,6 +325,7 @@ def wrap_msgs(items):
 
     tz = request.session['timezone']
     msgs = {}
+    flags_re = re.compile(r'(^\\|#sent|#latest)')
     for uid, txt, flags, addrs in items:
         if isinstance(txt, bytes):
             txt = txt.decode()
@@ -338,7 +339,7 @@ def wrap_msgs(items):
         info.update({
             'uid': uid,
             'count': len(addrs),
-            'flags': [f for f in flags if not f.startswith('\\')],
+            'flags': sorted(f for f in flags if not flags_re.match(f)),
             'from_list': from_list(addrs, max=3),
             'query_thread': ':thread %s' % uid,
             'query_subject': query_header('subject', info['subject']),

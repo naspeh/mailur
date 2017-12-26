@@ -48,7 +48,28 @@ Vue.component('app', {
   methods: {
     fetch: function(q) {
       this.query = q;
-      this.$nextTick(() => this.$refs.main.fetch());
+      this.$nextTick(() => this.$refs.main.newQuery());
+    },
+    openInSplit: function(query) {
+      this.split = true;
+      this.querySplit = query;
+      this.$nextTick(() => this.$refs.split.newQuery());
+    },
+    toggleSplit: function() {
+      this.split = !this.split;
+      this.$nextTick(() => {
+        if (this.split) {
+          if (!this.querySplit) {
+            this.querySplit = this.query;
+          }
+        }
+      });
+    },
+    toggleBigger: function() {
+      this.bigger = !this.bigger;
+    },
+    logout: function() {
+      window.location = '/logout';
     },
     pics: function(msgs) {
       let hashes = [];
@@ -74,27 +95,6 @@ Vue.component('app', {
         sheet.rel = 'stylesheet';
         document.body.appendChild(sheet);
       }
-    },
-    openInSplit: function(query) {
-      this.split = true;
-      this.querySplit = query;
-      this.$nextTick(() => this.$refs.split.fetch());
-    },
-    toggleSplit: function() {
-      this.split = !this.split;
-      this.$nextTick(() => {
-        if (this.split) {
-          if (!this.querySplit) {
-            this.querySplit = this.query;
-          }
-        }
-      });
-    },
-    toggleBigger: function() {
-      this.bigger = !this.bigger;
-    },
-    logout: function() {
-      window.location = '/logout';
     }
   }
 });

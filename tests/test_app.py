@@ -169,7 +169,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'arrived': 1499504910,
                 'count': 0,
                 'date': some,
-                'flags': ['#latest'],
+                'flags': [],
                 'from_list': [],
                 'is_pinned': False,
                 'is_unread': True,
@@ -333,7 +333,7 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['thread']['uid'] == '6'
     assert sorted(res['thread']['flags']) == ['#inbox', 'test1', 'test2']
     assert [res['msgs'][uid]['flags'] for uid in sorted(res['msgs'])] == [
-        [], ['#sent'], [], [], ['#latest']
+        [], [], [], [], []
     ]
 
     res = web.post_json(res['msgs_info'], {
@@ -341,7 +341,7 @@ def test_search_thread(clean_users, gm_client, login, some):
         'hide_flags': res['thread']['flags']
     })
     assert [res.json[uid]['flags'] for uid in sorted(res.json)] == [
-        [], ['#sent'], [], [], [], ['#latest']
+        [], [], [], [], [], []
     ]
 
 
