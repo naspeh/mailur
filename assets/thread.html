@@ -1,9 +1,9 @@
 <div class="msgs thread">
+  <div class="msgs__search">
+    <input ref="query" :value="query" @keyup.enter="newQuery">
+    <button @click="newQuery" class="icon--search"></button>
+  </div>
   <div class="msgs__header">
-    <div v-if="!split" class="msgs__header__search">
-      <input v-model.lazy.trim="query" @keyup.enter="fetch()">
-      <button @click="fetch()" class="icon--search"></button>
-    </div>
     <div class="msgs__header__actions">
       <button class="icon--archive" title="Archive"></button>
       <button class="icon--trash" title="Move to Trash"></button>

@@ -11,6 +11,7 @@ Vue.component('app', {
     return {
       tags: window.data.tags,
       query: null,
+      querySplit: null,
       addrs: [],
       picSize: 20,
       split: false,
@@ -27,6 +28,11 @@ Vue.component('app', {
     }
     this.query = q;
   },
+  watch: {
+    query: function(val) {
+      window.location.hash = val;
+    }
+  },
   computed: {
     allTags: function() {
       let tags = [];
@@ -39,14 +45,10 @@ Vue.component('app', {
       return tags;
     }
   },
-  watch: {
-    query: function(val) {
-      window.location.hash = val;
-    }
-  },
   methods: {
     fetch: function(q) {
-      return this.$refs.main.fetch(q);
+      this.query = q;
+      this.$nextTick(() => this.$refs.main.fetch());
     },
     pics: function(msgs) {
       let hashes = [];
@@ -75,16 +77,16 @@ Vue.component('app', {
     },
     openInSplit: function(query) {
       this.split = true;
-      this.$nextTick(() => {
-        this.$refs.split.fetch(query);
-      });
-      return;
+      this.querySplit = query;
+      this.$nextTick(() => this.$refs.split.fetch());
     },
     toggleSplit: function() {
       this.split = !this.split;
       this.$nextTick(() => {
         if (this.split) {
-          this.$refs.split.fetch(this.query);
+          if (!this.querySplit) {
+            this.querySplit = this.query;
+          }
         }
       });
     },

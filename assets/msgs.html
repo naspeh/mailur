@@ -1,9 +1,9 @@
 <div class="msgs">
+  <div class="msgs__search">
+    <input ref="query" :value="query" @keyup.enter="newQuery">
+    <button @click="newQuery" class="icon--search"></button>
+  </div>
   <div class="msgs__header">
-    <div v-if="!split" class="msgs__header__search">
-      <input v-model.lazy.trim="query" @keyup.enter="fetch(query)">
-      <button @click="fetch(query)" class="icon--search"></button>
-    </div>
     <div v-if="picked.length" class="msgs__header__tags">
       <tags :raw="flags" :edit="editFlags" :trancated="true" />
     </div>
@@ -41,6 +41,6 @@
       :picked="picked.indexOf(uid) != -1"
       :editFlags="editFlags"
     />
-    <a @click.prevent="loadMore()" href="#" v-if="canLoadMore()">Load more...</a>
+    <a @click.prevent="loadMore()" href="#" v-if="hidden.length > 0">Load more...</a>
   </div>
 </div>

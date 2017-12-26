@@ -5,29 +5,23 @@ import tpl from './thread.html';
 Vue.component('thread', {
   template: tpl,
   props: {
-    query: { type: String, default: null },
-    split: { type: Boolean, default: false }
+    query: { type: String, required: true }
   },
   data: function() {
     return {
       preload: 4,
-      uids: null,
-      msgs: null,
+      uids: [],
+      msgs: {},
       thread: null,
+      same_subject: [],
       url: null,
-      detailed: [],
-      same_subject: null
+      detailed: []
     };
   },
   created: function() {
-    if (this.query) {
-      this.fetch(this.query);
-    }
+    this.fetch();
   },
   computed: {
-    loaded: function() {
-      return this.uids.filter(i => this.msgs[i]);
-    },
     hidden: function() {
       return this.uids.filter(i => !this.msgs[i]);
     }
@@ -35,35 +29,35 @@ Vue.component('thread', {
   methods: {
     call: call,
     pics: msgs => window.app.pics(msgs),
-    fetch: function(query, clean = true, preload = undefined) {
-      if (query && !this.split) {
-        window.app.query = query;
-      }
+    setMsgs: function(msgs) {
+      this.msgs = Object.assign({}, this.msgs, msgs);
+      this.pics(msgs);
+    },
+    newQuery: function() {
+      this.$emit('update:query', this.$refs.query.value);
 
-      if (clean) {
-        this.uids = [];
-        this.msgs = {};
-      }
+      this.uids = [];
+      this.msgs = {};
+
+      this.$nextTick(() => this.fetch());
+    },
+    fetch: function() {
       return this.call('post', '/search', {
         q: this.query,
-        preload: preload === undefined ? this.preload : preload
+        preload: this.preload
       }).then(res => {
         this.url = res.msgs_info;
         this.thread = res.thread;
         this.uids = res.uids;
-        this.msgs = res.msgs;
         this.same_subject = res.same_subject;
-        this.pics(this.msgs);
+        this.setMsgs(res.msgs);
       });
     },
     loadAll: function() {
       return this.call('post', this.url, {
         uids: this.hidden,
         hide_flags: this.thread.flags
-      }).then(msgs => {
-        this.msgs = Object.assign({}, this.msgs, msgs);
-        this.pics(msgs);
-      });
+      }).then(msgs => this.setMsgs(msgs));
     },
     details: function(uid) {
       let idx = this.detailed.indexOf(uid);
@@ -74,14 +68,11 @@ Vue.component('thread', {
       }
     },
     editFlags: function(opts, picked = null) {
+      this.preload = this.hidden.length > 0 ? this.preload : null;
       opts = Object.assign({ uids: picked || this.uids }, opts);
       call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.fetch(
-            this.query,
-            false,
-            this.hidden.length > 0 ? this.preload : null
-          );
+          this.fetch();
         }
       });
     }
