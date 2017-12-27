@@ -23,7 +23,7 @@ Vue.component('app', {
     if (!q) {
       q = ':threads keyword #inbox';
     }
-    this.fetch(q);
+    this.openInMain(q);
   },
   computed: {
     allTags: function() {
@@ -39,41 +39,41 @@ Vue.component('app', {
   },
   methods: {
     call: call,
-    fetch: function(q, opts) {
-      opts = opts || {};
-      let result = this.call('post', '/search', {
+    search: function(q, preload = undefined) {
+      return this.call('post', '/search', {
         q: q,
-        preload: opts.preload
+        preload: preload
       });
-      if (!opts.refresh) {
-        if (opts.split) {
-          this.split && this.split.clean();
-        } else {
-          this.main && this.main.clean();
-        }
-        result.then(res => {
-          let view = msgs(
-            Object.assign(res, {
-              cls: `${opts.split ? 'split' : 'main'}__body`,
-              query: q,
-              fetch: opts.split ? this.openInSplit : this.fetch,
-              pics: this.pics
-            })
-          );
-
-          if (opts.split) {
-            this.split = view;
-          } else {
-            this.main = view;
-            window.location.hash = q;
-          }
-        });
-      }
-      return result;
     },
-    openInSplit: function(query) {
+    openInMain: function(q) {
+      this.main && this.main.clean();
+      this.search(q).then(res => {
+        window.location.hash = q;
+        this.main = msgs(
+          Object.assign(res, {
+            cls: 'main__body',
+            query: q,
+            open: this.openInMain,
+            search: this.search,
+            pics: this.pics
+          })
+        );
+      });
+    },
+    openInSplit: function(q) {
       this.optSplit = true;
-      this.fetch(query, { split: true });
+      this.split && this.split.clean();
+      this.search(q).then(res => {
+        this.split = msgs(
+          Object.assign(res, {
+            cls: 'split__body',
+            query: q,
+            open: this.openInSplit,
+            search: this.search,
+            pics: this.pics
+          })
+        );
+      });
     },
     toggleSplit: function() {
       this.optSplit = !this.optSplit;

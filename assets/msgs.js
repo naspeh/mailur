@@ -15,7 +15,8 @@ let Base = {
     uids: { type: Array, required: true },
     msgs: { type: Object, required: true },
     msgs_info: { type: String, required: true },
-    fetch: { type: Function, required: true },
+    open: { type: Function, required: true },
+    search: { type: Function, required: true },
     pics: { type: Function, required: true }
   },
   created: function() {
@@ -38,7 +39,7 @@ let Base = {
     },
     newQuery: function() {
       this.clean();
-      this.fetch(this.query);
+      this.open(this.query);
     },
     archive: function() {
       return this.editFlags({ old: ['#inbox'] });
@@ -64,7 +65,7 @@ let Msgs = Vue.extend({
   },
   computed: {
     flags: function() {
-      if (this.uids.length) {
+      if (!this.uids.length) {
         return [];
       }
       let flags = [];
@@ -79,6 +80,16 @@ let Msgs = Vue.extend({
       this.uids = [];
       this.msgs = {};
       this.picked = [];
+    },
+    refresh: function() {
+      let uids = this.loaded;
+      this.search(this.query).then(res => {
+        this.uids = res.uids;
+        this.setMsgs(res.msgs);
+        this.call('post', this.msgs_info, { uids: uids }).then(res =>
+          this.setMsgs(res)
+        );
+      });
     },
     pick: function(uid) {
       let idx = this.picked.indexOf(uid);
@@ -95,9 +106,7 @@ let Msgs = Vue.extend({
       this.picked = [];
     },
     link: function() {
-      this.call('post', '/thrs/link', { uids: this.picked }).then(() =>
-        this.fetch(this.query)
-      );
+      this.call('post', '/thrs/link', { uids: this.picked }).then(this.refresh);
     },
     loadMore: function() {
       let uids = [];
@@ -121,17 +130,10 @@ let Msgs = Vue.extend({
       }
     },
     editFlags: function(opts, picked = null) {
-      let uids = this.loaded;
       opts = Object.assign({ uids: picked || this.picked }, opts);
       call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.fetch(this.query, { refresh: true }).then(res => {
-            this.uids = res.uids;
-            this.setMsgs(res.msgs);
-            this.call('post', this.msgs_info, { uids: uids }).then(res =>
-              this.setMsgs(res)
-            );
-          });
+          this.refresh();
         }
       });
     }
@@ -176,13 +178,11 @@ let Thread = Vue.extend({
       opts = Object.assign({ uids: picked || this.uids }, opts);
       call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.fetch(this.query, { refresh: true, preload: preload }).then(
-            res => {
-              this.uids = res.uids;
-              this.thread = res.thread;
-              this.setMsgs(res.msgs);
-            }
-          );
+          this.search(this.query, preload).then(res => {
+            this.uids = res.uids;
+            this.thread = res.thread;
+            this.setMsgs(res.msgs);
+          });
         }
       });
     }

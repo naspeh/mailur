@@ -17,7 +17,7 @@
         <template v-for="from in msg.from_list">
         <div
           v-if="from.hash"
-          @click.stop="fetch(from.query)"
+          @click.stop="openInMain(from.query)"
           :class="`msg-line__from__pic pic-${from.hash}`"
           :title="from.title"
         ></div>
@@ -57,9 +57,9 @@
     <a href="#" class="icon--trash" title="Move to Trash">Delete</a>
     <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a>
     <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a>
-    <a :href="`#${msg.query_subject}`" @click.stop="fetch(msg.query_subject)" class="icon--ok" >Filter by subject</a>
+    <a :href="`#${msg.query_subject}`" @click.stop="openInMain(msg.query_subject)" class="icon--ok" >Filter by subject</a>
     <a :href="msg.url_raw" class="icon--ok" target="_blank">Show original</a>
-    <!-- <a @click.prevent="fetch(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
+    <!-- <a @click.prevent="openInMain(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
   </div>
   <div v-if="msg.body" v-html="msg.body"></div>
 </div>

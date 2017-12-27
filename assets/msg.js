@@ -14,10 +14,10 @@ Vue.component('msg', {
     hideSubj: { type: Function, default: () => false }
   },
   methods: {
-    fetch: q => window.app.fetch(q),
+    openInMain: q => window.app.openInMain(q),
     open: function() {
       if (this.thread) {
-        this.fetch(this.msg.query_thread);
+        this.openInMain(this.msg.query_thread);
       } else {
         this.details(this.msg.uid);
       }

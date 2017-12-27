@@ -19,7 +19,7 @@ Vue.component('tags', {
     }
   },
   methods: {
-    fetch: tag => window.app.fetch(tag.query),
+    openInMain: tag => window.app.openInMain(tag.query),
     remove: function(tag) {
       return this.edit({ old: [tag] });
     }
