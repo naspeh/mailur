@@ -80,7 +80,7 @@ Vue.component('app', {
       });
     },
     toggleBigger: function() {
-      this.bigger = !this.bigger;
+      this.optBigger = !this.optBigger;
     },
     logout: function() {
       window.location = '/logout';

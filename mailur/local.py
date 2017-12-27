@@ -557,6 +557,7 @@ def thrs_info(uids, hide_flags=None, con=None):
             if uid not in all_msgs:
                 continue
             info = all_msgs[uid]
+            info['uids'] = thr
             msg_flags = all_flags[uid]
             thr_from.append((info['date'], info.get('from')))
             if not msg_flags:

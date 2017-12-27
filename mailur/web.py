@@ -284,8 +284,8 @@ def thread(uid, preload=4):
     same_subject = []
     for num, uid in enumerate(uids[1:], 1):
         prev = uids[num-1]
-        subj = msgs[uid]['subject'].strip()
-        prev_subj = msgs[prev]['subject'].strip()
+        subj = msgs[uid]['subject']
+        prev_subj = msgs[prev]['subject']
         if subj == prev_subj:
             same_subject.append(uid)
 

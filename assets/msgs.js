@@ -128,7 +128,21 @@ let Msgs = Vue.extend({
       }
     },
     editTags: function(opts, picked = null) {
-      opts = Object.assign({ uids: picked || this.picked }, opts);
+      picked = picked || this.picked;
+
+      let uids;
+      if (!opts['new'] && opts.old.indexOf('\\Seen') != -1) {
+        uids = picked;
+      } else if (!opts.old && opts['new'].indexOf('\\Flagged') != -1) {
+        uids = picked;
+      } else {
+        uids = [];
+        for (let i of picked) {
+          uids.push.apply(uids, this.msgs[i].uids);
+        }
+      }
+
+      opts = Object.assign({ uids: uids }, opts);
       call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
           this.refresh();

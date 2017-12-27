@@ -215,6 +215,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
+                'uids': ['1', '2'],
                 'url_raw': '/raw/2',
             }
         },
