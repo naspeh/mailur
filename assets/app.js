@@ -2,8 +2,7 @@ import Vue from 'vue';
 import { call } from './utils.js';
 import './tags.js';
 import './msg.js';
-import Msgs from './msgs.js';
-import Thread from './thread.js';
+import msgs from './msgs.js';
 import tpl from './app.html';
 
 Vue.component('app', {
@@ -47,17 +46,21 @@ Vue.component('app', {
         preload: opts.preload
       });
       if (!opts.refresh) {
+        if (opts.split) {
+          this.split && this.split.clean();
+        } else {
+          this.main && this.main.clean();
+        }
         result.then(res => {
-          let params = {
-            propsData: Object.assign(res, {
+          let view = msgs(
+            Object.assign(res, {
               cls: `${opts.split ? 'split' : 'main'}__body`,
               query: q,
               fetch: opts.split ? this.openInSplit : this.fetch,
               pics: this.pics
             })
-          };
+          );
 
-          let view = res.thread ? new Thread(params) : new Msgs(params);
           if (opts.split) {
             this.split = view;
           } else {

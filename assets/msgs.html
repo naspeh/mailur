@@ -1,4 +1,6 @@
-<div :class="['msgs', cls]">
+<div :class="['msgs', cls, name]">
+  <!-- msgs -->
+  <template v-if="name == 'msgs'">
   <div class="msgs__header">
     <div class="msgs__search">
       <input v-model="query" @keyup.enter="newQuery">
@@ -41,4 +43,42 @@
     />
     <a @click.prevent="loadMore()" href="#" v-if="hidden.length > 0">Load more...</a>
   </div>
+  </template>
+
+  <!-- thread -->
+  <template v-if="name == 'thread'">
+  <div class="msgs__header">
+    <div class="msgs__search">
+      <input v-model="query" @keyup.enter="newQuery">
+      <button @click="newQuery" class="icon--search"></button>
+    </div>
+    <div v-if="thread" class="msgs__actions">
+      <button @click="archive" class="icon--archive" title="Archive"></button>
+      <button @click="del" class="icon--trash" title="Move to Trash"></button>
+      <tags class="msgs__tags" :raw="thread.flags" :edit="editFlags" :trancated="true" />
+    </div>
+    <div v-if="uids.length" class="msgs__picking">
+      <span>
+        {{uids.length}} emails in thread
+      </span>
+    </div>
+  </div>
+  <div class="msgs__body">
+    <div v-if="!uids.length && query">Loading...</div>
+    <div v-for="uid of uids" :key="uid">
+      <a
+        v-if="hidden.indexOf(uid) == 0"
+        @click.prevent="loadAll()" href="#"
+        class="msg-hidden"
+      >{{hidden.length}} hidden</a>
+      <msg v-if="msgs[uid]"
+        :msg="msgs[uid]"
+        :editFlags="editFlags"
+        :details="details"
+        :detailed="detailed.indexOf(uid) != -1"
+        :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"
+      />
+    </div>
+  </div>
+  </template>
 </div>

@@ -2,24 +2,21 @@ import Vue from 'vue';
 import { call } from './utils.js';
 import tpl from './msgs.html';
 
-export default Vue.extend({
+export default function(params) {
+  let data = { propsData: params };
+  return params.thread ? new Thread(data) : new Msgs(data);
+}
+
+let Base = {
   template: tpl,
   props: {
     cls: { type: String, required: true },
     query: { type: String, required: true },
     uids: { type: Array, required: true },
     msgs: { type: Object, required: true },
-    threads: { type: Boolean, required: true },
     msgs_info: { type: String, required: true },
     fetch: { type: Function, required: true },
     pics: { type: Function, required: true }
-  },
-  data: function() {
-    return {
-      perPage: 200,
-      picked: [],
-      detailed: null
-    };
   },
   created: function() {
     this.$mount(`.${this.cls}`);
@@ -31,8 +28,45 @@ export default Vue.extend({
     },
     hidden: function() {
       return this.uids.filter(i => !this.msgs[i]);
+    }
+  },
+  methods: {
+    call: call,
+    setMsgs: function(msgs) {
+      this.msgs = Object.assign({}, this.msgs, msgs);
+      this.pics(msgs);
     },
+    newQuery: function() {
+      this.clean();
+      this.fetch(this.query);
+    },
+    archive: function() {
+      return this.editFlags({ old: ['#inbox'] });
+    },
+    del: function() {
+      return this.editFlags({ new: ['#trash'] });
+    }
+  }
+};
+
+let Msgs = Vue.extend({
+  mixins: [Base],
+  props: {
+    threads: { type: Boolean, required: true }
+  },
+  data: function() {
+    return {
+      name: 'msgs',
+      perPage: 200,
+      picked: [],
+      detailed: null
+    };
+  },
+  computed: {
     flags: function() {
+      if (this.uids.length) {
+        return [];
+      }
       let flags = [];
       for (let i of this.picked) {
         flags.push.apply(flags, this.msgs[i].flags);
@@ -41,17 +75,10 @@ export default Vue.extend({
     }
   },
   methods: {
-    call: call,
-    setMsgs: function(msgs) {
-      this.picked = this.picked.filter(i => this.uids.indexOf(i) != -1);
-      this.msgs = Object.assign({}, this.msgs, msgs);
-      this.pics(msgs);
-    },
-    newQuery: function() {
+    clean: function() {
       this.uids = [];
       this.msgs = {};
-
-      this.fetch(this.query);
+      this.picked = [];
     },
     pick: function(uid) {
       let idx = this.picked.indexOf(uid);
@@ -107,12 +134,57 @@ export default Vue.extend({
           });
         }
       });
+    }
+  }
+});
+
+let Thread = Vue.extend({
+  mixins: [Base],
+  props: {
+    thread: { type: Object, required: true },
+    same_subject: { type: Array, required: true }
+  },
+  data: function() {
+    return {
+      name: 'thread',
+      preload: 4,
+      detailed: []
+    };
+  },
+  methods: {
+    clean: function() {
+      this.uids = [];
+      this.msgs = {};
+      this.thread = null;
     },
-    archive: function() {
-      return this.editFlags({ old: ['#inbox'] });
+    loadAll: function() {
+      return this.call('post', this.msgs_info, {
+        uids: this.hidden,
+        hide_flags: this.thread.flags
+      }).then(msgs => this.setMsgs(msgs));
     },
-    del: function() {
-      return this.editFlags({ new: ['#trash'] });
+    details: function(uid) {
+      let idx = this.detailed.indexOf(uid);
+      if (idx == -1) {
+        this.detailed.push(uid);
+      } else {
+        this.detailed.splice(idx, 1);
+      }
+    },
+    editFlags: function(opts, picked = null) {
+      let preload = this.hidden.length > 0 ? this.preload : null;
+      opts = Object.assign({ uids: picked || this.uids }, opts);
+      call('post', '/msgs/flag', opts).then(res => {
+        if (!res.errors) {
+          this.fetch(this.query, { refresh: true, preload: preload }).then(
+            res => {
+              this.uids = res.uids;
+              this.thread = res.thread;
+              this.setMsgs(res.msgs);
+            }
+          );
+        }
+      });
     }
   }
 });
