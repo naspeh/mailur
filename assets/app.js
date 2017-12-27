@@ -38,12 +38,8 @@ Vue.component('app', {
     }
   },
   methods: {
-    call: call,
     search: function(q, preload = undefined) {
-      return this.call('post', '/search', {
-        q: q,
-        preload: preload
-      });
+      return call('post', '/search', { q: q, preload: preload });
     },
     openInMain: function(q) {
       this.main && this.main.clean();

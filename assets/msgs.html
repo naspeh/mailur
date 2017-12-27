@@ -14,7 +14,7 @@
         @click="link" class="icon--link"
         title="Link threads together"
       ></button>
-      <tags class="msgs__tags" :raw="flags" :edit="editFlags" :trancated="true" />
+      <tags class="msgs__tags" :raw="flags" :edit="editTags" :trancated="true" />
     </div>
     <div v-if="loaded.length" class="msgs__picking">
       <span>
@@ -39,9 +39,9 @@
       :detailed="uid == detailed"
       :pick="pick"
       :picked="picked.indexOf(uid) != -1"
-      :editFlags="editFlags"
+      :editTags="editTags"
     />
-    <a @click.prevent="loadMore()" href="#" v-if="hidden.length > 0">Load more...</a>
+    <a @click.prevent="loadMore()" href="#" v-if="hidden.length">Load more...</a>
   </div>
   </template>
 
@@ -52,10 +52,10 @@
       <input v-model="query" @keyup.enter="newQuery">
       <button @click="newQuery" class="icon--search"></button>
     </div>
-    <div v-if="thread" class="msgs__actions">
+    <div v-if="uids.length" class="msgs__actions">
       <button @click="archive" class="icon--archive" title="Archive"></button>
       <button @click="del" class="icon--trash" title="Move to Trash"></button>
-      <tags class="msgs__tags" :raw="thread.flags" :edit="editFlags" :trancated="true" />
+      <tags class="msgs__tags" :raw="tags" :edit="editTags" :trancated="true" />
     </div>
     <div v-if="uids.length" class="msgs__picking">
       <span>
@@ -73,7 +73,7 @@
       >{{hidden.length}} hidden</a>
       <msg v-if="msgs[uid]"
         :msg="msgs[uid]"
-        :editFlags="editFlags"
+        :editTags="editTags"
         :details="details"
         :detailed="detailed.indexOf(uid) != -1"
         :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"

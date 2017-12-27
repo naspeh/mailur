@@ -272,8 +272,15 @@ def thread(uid, preload=4):
     uids = local.search_msgs('INTHREAD REFS UID %s' % uid, '(DATE)')
     if not uids:
         return {}
-    thr = list(wrap_msgs(local.thrs_info(uids[0:1])).values())[0]
-    msgs = wrap_msgs(local.msgs_info(uids, thr['flags']))
+
+    msgs = wrap_msgs(local.msgs_info(uids))
+
+    tags = set()
+    for m in msgs.values():
+        tags.update(m.pop('flags'))
+        m['flags'] = []
+    tags = clean_tags(tags)
+
     same_subject = []
     for num, uid in enumerate(uids[1:], 1):
         prev = uids[num-1]
@@ -297,7 +304,7 @@ def thread(uid, preload=4):
         'uids': uids,
         'msgs': msgs,
         'msgs_info': app.get_url('msgs_info'),
-        'thread': thr,
+        'tags': tags,
         'same_subject': same_subject
     }
 
@@ -319,6 +326,11 @@ def wrap_tags(tags):
     }
 
 
+def clean_tags(tags):
+    ignore = re.compile(r'(^\\|#sent|#latest)')
+    return sorted(i for i in tags if not ignore.match(i))
+
+
 def wrap_msgs(items):
     def query_header(name, value):
         value = json.dumps(value, ensure_ascii=False)
@@ -326,7 +338,6 @@ def wrap_msgs(items):
 
     tz = request.session['timezone']
     msgs = {}
-    flags_re = re.compile(r'(^\\|#sent|#latest)')
     for uid, txt, flags, addrs in items:
         if isinstance(txt, bytes):
             txt = txt.decode()
@@ -340,7 +351,7 @@ def wrap_msgs(items):
         info.update({
             'uid': uid,
             'count': len(addrs),
-            'flags': sorted(f for f in flags if not flags_re.match(f)),
+            'flags': clean_tags(flags),
             'from_list': from_list(addrs, max=3),
             'query_thread': ':thread %s' % uid,
             'query_subject': query_header('subject', info['subject']),

@@ -270,19 +270,16 @@ def test_search_thread(clean_users, gm_client, login, some):
         'uids': ['1'],
         'msgs': {'1': some},
         'msgs_info': '/msgs/info',
-        'thread': some,
+        'tags': [],
         'same_subject': [],
     }
-    assert dict(res['msgs']['1'], count=1, flags=[]) == res['thread']
 
     gm_client.add_emails([{'refs': '<101@mlr>'}] * 2)
     local.parse()
     res = post('1')
     assert len(res['uids']) == 3
     assert len(res['msgs']) == 3
-    assert res['thread']['count'] == 3
-    assert res['thread']['uid'] == '3'
-    assert res['thread']['flags'] == []
+    assert res['tags'] == []
     assert res['same_subject'] == []
 
     gm_client.add_emails([{'refs': '<101@mlr>', 'subj': 'Subj 103'}] * 3)
@@ -290,9 +287,7 @@ def test_search_thread(clean_users, gm_client, login, some):
     res = post('1')
     assert len(res['uids']) == 6
     assert len(res['msgs']) == 6
-    assert res['thread']['count'] == 6
-    assert res['thread']['uid'] == '6'
-    assert res['thread']['flags'] == []
+    assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
@@ -302,9 +297,7 @@ def test_search_thread(clean_users, gm_client, login, some):
     res = post('1')
     assert len(res['uids']) == 6
     assert sorted(res['msgs']) == ['1', '4', '5', '6']
-    assert res['thread']['count'] == 6
-    assert res['thread']['uid'] == '6'
-    assert res['thread']['flags'] == []
+    assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
@@ -314,9 +307,7 @@ def test_search_thread(clean_users, gm_client, login, some):
     res = post('1')
     assert len(res['uids']) == 6
     assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
-    assert res['thread']['count'] == 6
-    assert res['thread']['uid'] == '6'
-    assert res['thread']['flags'] == []
+    assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
     res = web.post_json('/msgs/flag', {
@@ -329,16 +320,14 @@ def test_search_thread(clean_users, gm_client, login, some):
     res = post('1')
     assert len(res['uids']) == 6
     assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
-    assert res['thread']['count'] == 6
-    assert res['thread']['uid'] == '6'
-    assert sorted(res['thread']['flags']) == ['#inbox', 'test1', 'test2']
+    assert res['tags'] == ['#inbox', 'test1', 'test2']
     assert [res['msgs'][uid]['flags'] for uid in sorted(res['msgs'])] == [
         [], [], [], [], []
     ]
 
     res = web.post_json(res['msgs_info'], {
         'uids': res['uids'],
-        'hide_flags': res['thread']['flags']
+        'hide_flags': res['tags']
     })
     assert [res.json[uid]['flags'] for uid in sorted(res.json)] == [
         [], [], [], [], [], []

@@ -572,10 +572,6 @@ def thrs_info(uids, hide_flags=None, con=None):
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
-        if '#latest' in flags:
-            flags.remove('#latest')
-        if '#sent' in flags:
-            flags.remove('#sent')
         if hide_flags:
             flags = sorted(set(flags) - set(hide_flags))
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]

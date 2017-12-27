@@ -4,7 +4,7 @@ import tpl from './msgs.html';
 
 export default function(params) {
   let data = { propsData: params };
-  return params.thread ? new Thread(data) : new Msgs(data);
+  return params.tags ? new Thread(data) : new Msgs(data);
 }
 
 let Base = {
@@ -32,7 +32,13 @@ let Base = {
     }
   },
   methods: {
-    call: call,
+    refresh: function(hide_flags) {
+      let data = { uids: this.loaded, hide_flags: hide_flags };
+      this.search(this.query).then(res => {
+        this.set(res);
+        call('post', this.msgs_info, data).then(this.setMsgs);
+      });
+    },
     setMsgs: function(msgs) {
       this.msgs = Object.assign({}, this.msgs, msgs);
       this.pics(msgs);
@@ -42,10 +48,10 @@ let Base = {
       this.open(this.query);
     },
     archive: function() {
-      return this.editFlags({ old: ['#inbox'] });
+      return this.editTags({ old: ['#inbox'] });
     },
     del: function() {
-      return this.editFlags({ new: ['#trash'] });
+      return this.editTags({ new: ['#trash'] });
     }
   }
 };
@@ -81,15 +87,9 @@ let Msgs = Vue.extend({
       this.msgs = {};
       this.picked = [];
     },
-    refresh: function() {
-      let uids = this.loaded;
-      this.search(this.query).then(res => {
-        this.uids = res.uids;
-        this.setMsgs(res.msgs);
-        this.call('post', this.msgs_info, { uids: uids }).then(res =>
-          this.setMsgs(res)
-        );
-      });
+    set: function(res) {
+      this.uids = res.uids;
+      this.setMsgs(res.msgs);
     },
     pick: function(uid) {
       let idx = this.picked.indexOf(uid);
@@ -106,7 +106,7 @@ let Msgs = Vue.extend({
       this.picked = [];
     },
     link: function() {
-      this.call('post', '/thrs/link', { uids: this.picked }).then(this.refresh);
+      call('post', '/thrs/link', { uids: this.picked }).then(this.refresh);
     },
     loadMore: function() {
       let uids = [];
@@ -118,9 +118,7 @@ let Msgs = Vue.extend({
           }
         }
       }
-      return this.call('post', this.msgs_info, { uids: uids }).then(res =>
-        this.setMsgs(res)
-      );
+      return call('post', this.msgs_info, { uids: uids }).then(this.setMsgs);
     },
     details: function(uid) {
       if (this.detailed == uid) {
@@ -129,7 +127,7 @@ let Msgs = Vue.extend({
         this.detailed = uid;
       }
     },
-    editFlags: function(opts, picked = null) {
+    editTags: function(opts, picked = null) {
       opts = Object.assign({ uids: picked || this.picked }, opts);
       call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
@@ -143,7 +141,7 @@ let Msgs = Vue.extend({
 let Thread = Vue.extend({
   mixins: [Base],
   props: {
-    thread: { type: Object, required: true },
+    tags: { type: Array, required: true },
     same_subject: { type: Array, required: true }
   },
   data: function() {
@@ -157,13 +155,18 @@ let Thread = Vue.extend({
     clean: function() {
       this.uids = [];
       this.msgs = {};
-      this.thread = null;
+      this.tags = [];
+    },
+    set: function(res) {
+      this.uids = res.uids;
+      this.tags = res.tags;
+      this.setMsgs(res.msgs);
     },
     loadAll: function() {
-      return this.call('post', this.msgs_info, {
+      return call('post', this.msgs_info, {
         uids: this.hidden,
-        hide_flags: this.thread.flags
-      }).then(msgs => this.setMsgs(msgs));
+        hide_flags: this.tags
+      }).then(this.setMsgs);
     },
     details: function(uid) {
       let idx = this.detailed.indexOf(uid);
@@ -173,16 +176,12 @@ let Thread = Vue.extend({
         this.detailed.splice(idx, 1);
       }
     },
-    editFlags: function(opts, picked = null) {
+    editTags: function(opts, picked = null) {
       let preload = this.hidden.length > 0 ? this.preload : null;
       opts = Object.assign({ uids: picked || this.uids }, opts);
       call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.search(this.query, preload).then(res => {
-            this.uids = res.uids;
-            this.thread = res.thread;
-            this.setMsgs(res.msgs);
-          });
+          this.search(this.query, preload).then(() => this.refresh(this.tags));
         }
       });
     }
