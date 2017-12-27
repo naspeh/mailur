@@ -32,8 +32,8 @@ let Base = {
     }
   },
   methods: {
-    refresh: function(hide_flags) {
-      let data = { uids: this.loaded, hide_flags: hide_flags };
+    refresh: function(hide_tags) {
+      let data = { uids: this.loaded, hide_tags: hide_tags };
       this.search(this.query).then(res => {
         this.set(res);
         call('post', this.msgs_info, data).then(this.setMsgs);
@@ -70,15 +70,15 @@ let Msgs = Vue.extend({
     };
   },
   computed: {
-    flags: function() {
+    tags: function() {
       if (!this.uids.length) {
         return [];
       }
-      let flags = [];
+      let tags = [];
       for (let i of this.picked) {
-        flags.push.apply(flags, this.msgs[i].flags);
+        tags.push.apply(tags, this.msgs[i].tags);
       }
-      return [...new Set(flags)];
+      return [...new Set(tags)];
     }
   },
   methods: {
@@ -165,7 +165,7 @@ let Thread = Vue.extend({
     loadAll: function() {
       return call('post', this.msgs_info, {
         uids: this.hidden,
-        hide_flags: this.tags
+        hide_tags: this.tags
       }).then(this.setMsgs);
     },
     details: function(uid) {

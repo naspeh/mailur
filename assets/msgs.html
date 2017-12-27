@@ -14,7 +14,7 @@
         @click="link" class="icon--link"
         title="Link threads together"
       ></button>
-      <tags class="msgs__tags" :raw="flags" :edit="editTags" :trancated="true" />
+      <tags class="msgs__tags" :raw="tags" :edit="editTags" :trancated="true" />
     </div>
     <div v-if="loaded.length" class="msgs__picking">
       <span>

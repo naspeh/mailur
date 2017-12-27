@@ -153,19 +153,19 @@ def search():
 @app.post('/thrs/info', name='thrs_info')
 def thrs_info():
     uids = request.json['uids']
-    hide_flags = request.json.get('hide_flags', [])
+    hide_tags = request.json.get('hide_tags', [])
     if not uids:
         return abort(400)
-    return wrap_msgs(local.thrs_info(uids, hide_flags))
+    return wrap_msgs(local.thrs_info(uids, hide_tags))
 
 
 @app.post('/msgs/info', name='msgs_info')
 def msgs_info():
     uids = request.json['uids']
-    hide_flags = request.json.get('hide_flags', [])
+    hide_tags = request.json.get('hide_tags', [])
     if not uids:
         return abort(400)
-    return wrap_msgs(local.msgs_info(uids, hide_flags))
+    return wrap_msgs(local.msgs_info(uids, hide_tags))
 
 
 @app.post('/thrs/link')
@@ -277,8 +277,8 @@ def thread(uid, preload=4):
 
     tags = set()
     for m in msgs.values():
-        tags.update(m.pop('flags'))
-        m['flags'] = []
+        tags.update(m.pop('tags'))
+        m['tags'] = []
     tags = clean_tags(tags)
 
     same_subject = []
@@ -351,7 +351,7 @@ def wrap_msgs(items):
         info.update({
             'uid': uid,
             'count': len(addrs),
-            'flags': clean_tags(flags),
+            'tags': clean_tags(flags),
             'from_list': from_list(addrs, max=3),
             'query_thread': ':thread %s' % uid,
             'query_subject': query_header('subject', info['subject']),

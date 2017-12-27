@@ -148,7 +148,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'arrived': 1499504910,
                 'count': 0,
                 'date': some,
-                'flags': [],
+                'tags': [],
                 'from_list': [],
                 'is_pinned': False,
                 'is_unread': True,
@@ -169,7 +169,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'arrived': 1499504910,
                 'count': 0,
                 'date': some,
-                'flags': [],
+                'tags': [],
                 'from_list': [],
                 'is_pinned': False,
                 'is_unread': True,
@@ -200,7 +200,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'arrived': 1499504910,
                 'count': 2,
                 'date': some,
-                'flags': [],
+                'tags': [],
                 'from_list': [],
                 'is_pinned': False,
                 'is_unread': True,
@@ -321,15 +321,15 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert len(res['uids']) == 6
     assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
     assert res['tags'] == ['#inbox', 'test1', 'test2']
-    assert [res['msgs'][uid]['flags'] for uid in sorted(res['msgs'])] == [
+    assert [res['msgs'][uid]['tags'] for uid in sorted(res['msgs'])] == [
         [], [], [], [], []
     ]
 
     res = web.post_json(res['msgs_info'], {
         'uids': res['uids'],
-        'hide_flags': res['tags']
+        'hide_tags': res['tags']
     })
-    assert [res.json[uid]['flags'] for uid in sorted(res.json)] == [
+    assert [res.json[uid]['tags'] for uid in sorted(res.json)] == [
         [], [], [], [], [], []
     ]
 
