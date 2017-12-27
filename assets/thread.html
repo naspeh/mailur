@@ -1,7 +1,7 @@
-<div class="msgs thread">
+<div :class="['msgs thread', cls]">
   <div class="msgs__header">
     <div class="msgs__search">
-      <input ref="query" :value="query" @keyup.enter="newQuery">
+      <input v-model="query" @keyup.enter="newQuery">
       <button @click="newQuery" class="icon--search"></button>
     </div>
     <div v-if="thread" class="msgs__actions">

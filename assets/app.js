@@ -1,8 +1,9 @@
 import Vue from 'vue';
+import { call } from './utils.js';
 import './tags.js';
 import './msg.js';
-import './msgs.js';
-import './thread.js';
+import Msgs from './msgs.js';
+import Thread from './thread.js';
 import tpl from './app.html';
 
 Vue.component('app', {
@@ -10,12 +11,10 @@ Vue.component('app', {
   data: function() {
     return {
       tags: window.data.tags,
-      query: null,
-      querySplit: null,
       addrs: [],
       picSize: 20,
-      split: false,
-      bigger: false
+      optSplit: false,
+      optBigger: false
     };
   },
   created: function() {
@@ -24,14 +23,8 @@ Vue.component('app', {
     let q = decodeURIComponent(location.hash.slice(1));
     if (!q) {
       q = ':threads keyword #inbox';
-      window.location.hash = q;
     }
-    this.query = q;
-  },
-  watch: {
-    query: function(val) {
-      window.location.hash = val;
-    }
+    this.fetch(q);
   },
   computed: {
     allTags: function() {
@@ -46,22 +39,44 @@ Vue.component('app', {
     }
   },
   methods: {
-    fetch: function(q) {
-      this.query = q;
-      this.$nextTick(() => this.$refs.main.newQuery());
+    call: call,
+    fetch: function(q, opts) {
+      opts = opts || {};
+      let result = this.call('post', '/search', {
+        q: q,
+        preload: opts.preload
+      });
+      if (!opts.refresh) {
+        result.then(res => {
+          let params = {
+            propsData: Object.assign(res, {
+              cls: `${opts.split ? 'split' : 'main'}__body`,
+              query: q,
+              fetch: opts.split ? this.openInSplit : this.fetch,
+              pics: this.pics
+            })
+          };
+
+          let view = res.thread ? new Thread(params) : new Msgs(params);
+          if (opts.split) {
+            this.split = view;
+          } else {
+            this.main = view;
+            window.location.hash = q;
+          }
+        });
+      }
+      return result;
     },
     openInSplit: function(query) {
-      this.split = true;
-      this.querySplit = query;
-      this.$nextTick(() => this.$refs.split.newQuery());
+      this.optSplit = true;
+      this.fetch(query, { split: true });
     },
     toggleSplit: function() {
-      this.split = !this.split;
+      this.optSplit = !this.optSplit;
       this.$nextTick(() => {
-        if (this.split) {
-          if (!this.querySplit) {
-            this.querySplit = this.query;
-          }
+        if (this.optSplit && !this.split) {
+          this.openInSplit(this.main.query);
         }
       });
     },

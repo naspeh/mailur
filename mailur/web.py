@@ -123,7 +123,7 @@ def tags():
 @app.post('/search')
 def search():
     q = request.json['q']
-    preload = request.json.get('preload', 100)
+    preload = request.json.get('preload', 200)
 
     if q.startswith(':threads'):
         q = q[8:]
@@ -131,6 +131,7 @@ def search():
         info = 'thrs_info'
     elif q.startswith(':thread'):
         q = q[7:]
+        preload = request.json.get('preload', 4)
         return thread(q, preload)
     else:
         uids = local.search_msgs(q)

@@ -2,24 +2,28 @@ import Vue from 'vue';
 import { call } from './utils.js';
 import tpl from './msgs.html';
 
-Vue.component('msgs', {
+export default Vue.extend({
   template: tpl,
   props: {
-    query: { type: String, required: true }
+    cls: { type: String, required: true },
+    query: { type: String, required: true },
+    uids: { type: Array, required: true },
+    msgs: { type: Object, required: true },
+    threads: { type: Boolean, required: true },
+    msgs_info: { type: String, required: true },
+    fetch: { type: Function, required: true },
+    pics: { type: Function, required: true }
   },
   data: function() {
     return {
       perPage: 200,
-      uids: [],
-      msgs: {},
-      url: null,
-      threads: false,
       picked: [],
       detailed: null
     };
   },
   created: function() {
-    this.fetch();
+    this.$mount(`.${this.cls}`);
+    this.pics(this.msgs);
   },
   computed: {
     loaded: function() {
@@ -38,30 +42,16 @@ Vue.component('msgs', {
   },
   methods: {
     call: call,
-    pics: msgs => window.app.pics(msgs),
     setMsgs: function(msgs) {
       this.picked = this.picked.filter(i => this.uids.indexOf(i) != -1);
       this.msgs = Object.assign({}, this.msgs, msgs);
       this.pics(msgs);
     },
     newQuery: function() {
-      this.$emit('update:query', this.$refs.query.value);
-
       this.uids = [];
       this.msgs = {};
 
-      this.$nextTick(() => this.fetch());
-    },
-    fetch: function() {
-      return this.call('post', '/search', {
-        q: this.query,
-        preload: this.perPage
-      }).then(res => {
-        this.url = res.msgs_info;
-        this.threads = res.threads || false;
-        this.uids = res.uids;
-        this.setMsgs(res.msgs);
-      });
+      this.fetch(this.query);
     },
     pick: function(uid) {
       let idx = this.picked.indexOf(uid);
@@ -79,7 +69,7 @@ Vue.component('msgs', {
     },
     link: function() {
       this.call('post', '/thrs/link', { uids: this.picked }).then(() =>
-        this.fetch()
+        this.fetch(this.query)
       );
     },
     loadMore: function() {
@@ -92,7 +82,7 @@ Vue.component('msgs', {
           }
         }
       }
-      return this.call('post', this.url, { uids: uids }).then(res =>
+      return this.call('post', this.msgs_info, { uids: uids }).then(res =>
         this.setMsgs(res)
       );
     },
@@ -108,11 +98,13 @@ Vue.component('msgs', {
       opts = Object.assign({ uids: picked || this.picked }, opts);
       call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.fetch().then(() =>
-            this.call('post', this.url, { uids: uids }).then(res =>
+          this.fetch(this.query, { refresh: true }).then(res => {
+            this.uids = res.uids;
+            this.setMsgs(res.msgs);
+            this.call('post', this.msgs_info, { uids: uids }).then(res =>
               this.setMsgs(res)
-            )
-          );
+            );
+          });
         }
       });
     },
