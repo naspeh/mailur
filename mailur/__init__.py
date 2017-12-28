@@ -1,15 +1,39 @@
 import functools as ft
 import inspect
 import logging
+import logging.config
+import os
 import time
 from contextlib import contextmanager
 
+DEBUG = os.environ.get('DEBUG', True)
 log = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.DEBUG,
-    datefmt='%Y-%m-%d %H:%M:%S%Z',
-    format='[%(asctime)s][%(process)s][%(levelname).3s] %(message)s'
-)
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'f': {
+        'datefmt': '%Y-%m-%d %H:%M:%S%Z',
+        'format': '[%(asctime)s][%(process)s][%(levelname).3s] %(message)s',
+    }},
+    'handlers': {'h': {
+        'class': 'logging.StreamHandler',
+        'level': logging.DEBUG,
+        'formatter': 'f',
+        'stream': 'ext://sys.stdout',
+    }},
+    'loggers': {
+        __name__: {
+            'handlers': 'h',
+            'level': logging.DEBUG if DEBUG else logging.INFO,
+            'propagate': False
+        },
+        '': {
+            'handlers': 'h',
+            'level': logging.INFO,
+            'propagate': False
+        },
+    }
+})
 
 
 def fn_desc(func, *a, **kw):
