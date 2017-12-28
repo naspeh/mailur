@@ -8,13 +8,13 @@
   border-radius: 0.5em;
   background-color: @--color--light-grey;
   color: @--color--dark-grey;
+  font-size: @--font-size--s;
 
   .icon--pin,
   .icon--unread,
   .icon--more {
     display: flex;
     color: @--color--grey;
-    font-size: 0.85em;
 
     &:hover {
       margin-top: 0.1em;
@@ -55,7 +55,7 @@
 
 .msg-line__tags {
   margin-left: 0.2em;
-  font-size: 0.85em;
+  font-size: @--font-size--xs;
 }
 
 .msg-line__from {
@@ -182,7 +182,7 @@
     display: flex;
     flex-flow: reverse nowrap;
     white-space: nowrap;
-    font-size: 0.85em;
+    font-size: @--font-size--xs;
 
     & [class^="icon--"] {
       display: flex;

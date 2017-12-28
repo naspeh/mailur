@@ -14,7 +14,6 @@ Vue.component('app', {
       addrs: [],
       picSize: 20,
       optSplit: false,
-      optBigger: false
     };
   },
   created: function() {
@@ -81,7 +80,7 @@ Vue.component('app', {
       });
     },
     toggleBigger: function() {
-      this.optBigger = !this.optBigger;
+      document.querySelector('html').classList.toggle('opt--bigger');
     },
     logout: function() {
       window.location = '/logout';
