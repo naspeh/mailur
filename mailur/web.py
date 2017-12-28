@@ -320,14 +320,16 @@ def wrap_tags(tags):
     def trancate(val, max=14, end='…'):
         return val[:max] + end if len(val) > max else val
 
-    return {
-        tag: dict(i, query=query(tag), short_name=trancate(i['name']))
-        for tag, i in tags.items()
+    ids = sorted(clean_tags(tags), key=lambda i: tags[i]['name'])
+    info = {
+        t: dict(tags[t], query=query(t), short_name=trancate(tags[t]['name']))
+        for t in ids
     }
+    return {'ids': ids, 'info': info}
 
 
 def clean_tags(tags):
-    ignore = re.compile(r'(^\\|#sent|#latest)')
+    ignore = re.compile(r'(^\\|#sent|#latest|#link)')
     return sorted(i for i in tags if not ignore.match(i))
 
 

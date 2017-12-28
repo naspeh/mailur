@@ -25,7 +25,7 @@ ALL = 'All'
 class Local(imaplib.IMAP4, imap.Conn):
     def __init__(self, username):
         self.username = username
-        self.current_box = None
+        self.defaults()
         super().__init__('localhost')
 
     def _create_socket(self):
@@ -58,6 +58,22 @@ def using(box=ALL, readonly=True):
     return imap.using(client, box, readonly)
 
 
+def fn_cache(fn):
+    fn.cache = {}
+
+    @ft.wraps(fn)
+    def inner(*a, **kw):
+        key = a, tuple((k, kw[k]) for k in sorted(kw))
+        if key not in fn.cache.get(USER, {}):
+            res = fn(*a, **kw)
+            fn.cache.setdefault(USER, {})
+            fn.cache[USER][key] = res
+        return fn.cache[USER][key]
+
+    inner.cache_clear = lambda: fn.cache.pop(USER, None)
+    return inner
+
+
 def binary_msg(txt, mimetype='text/plain'):
     msg = MIMEPart()
     msg.set_type(mimetype)
@@ -70,7 +86,7 @@ def gen_msgid(label):
     return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
 
 
-@ft.lru_cache(maxsize=None)
+@fn_cache
 @using(None)
 def saved_tags(reverse=False, con=None):
     res = con.getmetadata(SRC, 'tags')
@@ -80,7 +96,7 @@ def saved_tags(reverse=False, con=None):
 
 
 def get_tag(name):
-    if re.match(r'(?i)^[a-z0-9/#\-.,:;!?]*$', name):
+    if re.match(r'(?i)^[\\]?[a-z0-9/#\-.,:;!?]*$', name):
         tag = name
     else:
         tag = '#' + hashlib.md5(name.lower().encode()).hexdigest()[:8]
@@ -94,7 +110,6 @@ def get_tag(name):
             with client(None) as con:
                 con.setmetadata(SRC, 'tags', json.dumps(tags))
             log.info('## new tag %s: %r', tag, name)
-            saved_tags.cache_clear()
     info.update(id=tag)
     return info
 
@@ -116,7 +131,7 @@ def save_uid_pairs(uids=None, con=None):
     uid_pairs.cache_clear()
 
 
-@ft.lru_cache(maxsize=None)
+@fn_cache
 @fn_time
 @using(None)
 def uid_pairs(con=None):
@@ -164,7 +179,7 @@ def save_msgids(uids=None, con=None):
     msgids.cache_clear()
 
 
-@ft.lru_cache(maxsize=None)
+@fn_cache
 @fn_time
 @using(None)
 def msgids(con=None):
@@ -583,7 +598,7 @@ def thrs_info(uids, hide_flags=None, con=None):
 @using()
 def tags_info(con=None):
     unread = {}
-    res = con.search('ALL')
+    res = con.search('UNSEEN')
     uids = res[0].decode().split()
     if uids:
         res = con.fetch(uids, 'FLAGS')
@@ -593,18 +608,13 @@ def tags_info(con=None):
             ).group(1)
             for f in flags.split():
                 unread.setdefault(f, 0)
-                if '\Seen' not in flags:
-                    unread[f] += 1
+                unread[f] += 1
     tags = {
         t: dict(get_tag(t), unread=unread.get(t, 0))
-        for t in sorted(unread) if t not in ('#link',)
+        for t in con.flags
     }
     tags.update({
         t: dict(tags.get(t, get_tag(t)), pinned=1)
         for t in ('#inbox', '#spam', '#trash')
-    })
-    tags.update({
-        t: dict(tags.get(t, get_tag(t)), unread=0)
-        for t in ('#sent', '#latest')
     })
     return tags

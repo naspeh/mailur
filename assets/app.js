@@ -9,7 +9,8 @@ Vue.component('app', {
   template: tpl,
   data: function() {
     return {
-      tags: window.data.tags,
+      tags: window.data.tags.info,
+      tagIds: window.data.tags.ids,
       addrs: [],
       picSize: 20,
       optSplit: false,
@@ -28,7 +29,7 @@ Vue.component('app', {
   computed: {
     allTags: function() {
       let tags = [];
-      for (let i in this.tags) {
+      for (let i of this.tagIds) {
         let tag = this.tags[i];
         if (tag.unread || tag.pinned) {
           tags.push(i);

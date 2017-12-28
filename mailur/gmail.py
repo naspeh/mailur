@@ -34,7 +34,7 @@ class Gmail(imaplib.IMAP4, imap.Conn):
     def __init__(self):
         self.username = USER
         self.password = PASS
-        self.current_box = None
+        self.defaults()
         super().__init__('imap.gmail.com', imaplib.IMAP4_SSL_PORT)
 
     def _create_socket(self):

@@ -98,11 +98,9 @@ def command(*, name=None, lock=True, writable=False, dovecot=False):
 
 
 class Conn:
-    def username(self):
-        raise NotImplementedError
-
-    def current_box(self):
-        raise NotImplementedError
+    def defaults(self):
+        self.current_box = None
+        self.flags = None
 
     def __repr__(self):
         return str(self)
@@ -126,6 +124,10 @@ class Ctx:
     @property
     def box(self):
         return self._con.current_box
+
+    @property
+    def flags(self):
+        return self._con.flags
 
     def __enter__(self):
         return self
@@ -276,8 +278,10 @@ def xlist(con, folder='""', pattern='*'):
 
 @command()
 def select(con, box, readonly=True):
+    res = check(con.select(box, readonly))
     con.current_box = box.decode() if isinstance(box, bytes) else box
-    return check(con.select(box, readonly))
+    con.flags = con.untagged_responses['FLAGS'][0].decode()[1:-1].split()
+    return res
 
 
 @command(lock=False)

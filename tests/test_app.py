@@ -97,34 +97,66 @@ def test_tz(clean_users, gm_client, web, login, some):
 
 def test_tags(clean_users, gm_client, login, some):
     def tag(name, **kw):
+        id = kw.get('id', name)
         return dict({
-            'id': name,
+            'id': id,
             'name': name,
             'short_name': name,
-            'query': ':threads keyword "%s"' % name
+            'query': ':threads keyword "%s"' % id
         }, **kw)
 
     web = login()
 
     res = web.get('/tags', status=200)
-    assert res.json == {
+    assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
+    assert some.value == {
         '#inbox': tag('#inbox', pinned=1),
         '#spam': tag('#spam', pinned=1),
         '#trash': tag('#trash', pinned=1),
-        '#sent': tag('#sent', unread=0),
-        '#latest': tag('#latest', unread=0),
     }
 
-    gm_client.add_emails([{'labels': '\\Inbox'}])
+    gm_client.add_emails([{'labels': '\\Inbox test1 "test 2"'}])
     local.parse()
 
     res = web.get('/tags', status=200)
     assert res.json == {
+        'ids': ['#inbox', '#spam', '#trash', '#38b0d2ff', 'test1'],
+        'info': some
+    }
+    assert some.value == {
         '#inbox': tag('#inbox', pinned=1, unread=1),
         '#spam': tag('#spam', pinned=1),
         '#trash': tag('#trash', pinned=1),
-        '#sent': tag('#sent', unread=0),
-        '#latest': tag('#latest', unread=0),
+        'test1': tag('test1', unread=1),
+        '#38b0d2ff': tag('test 2', unread=1, id='#38b0d2ff')
+    }
+
+    gm_client.add_emails([{'labels': '"test 3"', 'flags': '\\Flagged'}])
+    local.parse()
+    res = web.get('/tags', status=200)
+    assert res.json == {
+        'ids': [
+            '#inbox', '#spam', '#trash',
+            '#38b0d2ff', '#e558c4df', 'test1'
+        ],
+        'info': some
+    }
+    assert some.value == {
+        '#inbox': tag('#inbox', pinned=1, unread=1),
+        '#spam': tag('#spam', pinned=1),
+        '#trash': tag('#trash', pinned=1),
+        'test1': tag('test1', unread=1),
+        '#38b0d2ff': tag('test 2', unread=1, id='#38b0d2ff'),
+        '#e558c4df': tag('test 3', unread=1, id='#e558c4df'),
+    }
+
+    web = login(username='test2')
+    res = web.get('/tags', status=200)
+    assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
+    assert some.value == {
+        '#inbox': tag('#inbox', pinned=1),
+        '#spam': tag('#spam', pinned=1),
+        '#trash': tag('#trash', pinned=1),
     }
 
 
