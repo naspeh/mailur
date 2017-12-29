@@ -1,18 +1,23 @@
 import Vue from 'vue';
 import tpl from './picker.html';
 
+
 Vue.component('picker', {
   template: tpl,
   props: {
+    opts: { type: Array, required: true },
     value: { type: String, required: true },
-    options: { type: Array, required: true },
+    title: { type: String, default: ''},
+    filterOff: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
     perPage: { type: Number, default: 15 },
-    disabled: { type: Boolean, default: false }
+    fnUpdate: {type: Function, default: (val) => null},
+    fnDisplay: {type: Function, default: (val) => val},
+    fnFilter: {type: Function, default: (val, filter) => val.toLowerCase().indexOf(filter.toLowerCase()) != -1},
   },
   data: function() {
     return {
       filter: this.value,
-      filterOff: this.options.length <= this.perPage,
       selected: this.value,
       active: false
     };
@@ -28,16 +33,10 @@ Vue.component('picker', {
   computed: {
     filtered: function() {
       if (this.filter == this.value) {
-        return this.options;
+        return this.opts;
       }
 
-      let opts = [];
-      for (let opt of this.options) {
-        if (opt.toLowerCase().indexOf(this.filter.toLowerCase()) != -1) {
-          opts.push(opt);
-        }
-      }
-      return opts;
+      return this.opts.filter(val => this.fnFilter(val, this.filter))
     }
   },
   methods: {
@@ -45,27 +44,27 @@ Vue.component('picker', {
       if (e.target == window) {
         return;
       }
-      if (
-        this.$el.contains(e.target) &&
-        e.target.className.indexOf('picker') != -1
-      ) {
-        this.activate();
+      if (this.$el.contains(e.target)){
+        this.active || this.activate();
         return;
       }
       if (this.active) {
+        this.active = false;
         this.set();
       }
     },
-    set: function(val, active = false) {
-      val = val || this.selected;
-      this.$emit('update:value', val);
-      this.selected = val;
-      this.filter = val;
-      if (active) {
-        this.activate();
-        this.$refs.input.focus();
-      } else if (this.active) {
-        this.active = false;
+    set: function(val) {
+      val = val === undefined ? this.selected : val;
+      this.active = false;
+      if (!val) {
+        return
+      }
+      this.fnUpdate(val);
+      if (this.value) {
+        this.selected = val;
+        this.filter = val;
+      } else {
+        this.filter = this.value;
       }
     },
     activate: function() {
@@ -78,12 +77,17 @@ Vue.component('picker', {
         if (!element) {
           return;
         }
+        // make selected option visible if scroll exists
+        let opts = this.$refs.opts;
+        if (opts.scrollHeight == opts.clientHeight) {
+          return;
+        }
         for (let i = 0; i < 3; i++) {
           if (element.previousSibling) {
             element = element.previousSibling;
           }
         }
-        element.scrollIntoView();
+        opts.scrollTop = element.offsetTop;
       });
     },
     selectedOpt: function() {
@@ -101,15 +105,15 @@ Vue.component('picker', {
       for (let i = 0; i < count; i++) {
         idx = key == 'up' ? idx - 1 : idx + 1;
         if (idx < 0) {
-          val = this.filtered[this.filtered.length - 1];
-        } else if (idx > this.filtered.length - 1) {
           val = this.filtered[0];
+        } else if (idx > this.filtered.length - 1) {
+          val = this.filtered[this.filtered.length - 1];
         } else {
           val = this.filtered[idx];
         }
       }
       this.selected = val;
       this.activate();
-    }
+    },
   }
 });

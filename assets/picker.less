@@ -7,6 +7,8 @@
 }
 
 .picker__input {
+  display: flex;
+  height: 100%;
   width: 100%;
 }
 
@@ -15,16 +17,17 @@
   position: absolute;
   left: 0;
   box-sizing: border-box;
-  padding: 0 0.1em;
   margin-top: -1px;
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 100%;
   max-height: 300px;
   line-height: 20px;
-  font-size: @--font-size--s;
   background-color: @--color--white;
   border: 1px solid @--color--grey;
+  color: @--color--black;
+  font-size: @--font-size--s;
+  white-space: nowrap;
 
   .picker--active & {
     display: block;
@@ -35,6 +38,12 @@
   cursor: pointer;
 
   &.picker__opts__item--active {
+    background-color: @--color--grey;
+    color: @--color--white;
+  }
+
+  &:hover {
     background-color: @--color--light-grey;
+    color: inherit;
   }
 }

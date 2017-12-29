@@ -3,6 +3,13 @@
   margin: 0 -0.1em;
 }
 
+.tags-select {
+  .picker__input {
+    width: 10em;
+    background-color: @--color--light-grey;
+  }
+}
+
 .tags__item {
   display: flex;
   align-items: center;
@@ -24,15 +31,11 @@
     display: none;
   }
 
-  &.tags__item--unread {
-    font-weight: bold;
-  }
-
   &.tags__item--edit {
     padding-right: 0;
 
     .icon--remove {
-      display: flex;
+      display: block;
       font-size: @--font-size--s;
 
       &:hover {
@@ -40,6 +43,10 @@
       }
     }
   }
+}
+
+.tags__item--unread {
+  font-weight: bold;
 }
 
 .tags__item__unread {

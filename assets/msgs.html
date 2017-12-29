@@ -14,7 +14,7 @@
         @click="link" class="icon--link"
         title="Link threads together"
       ></button>
-      <tags class="msgs__tags" :raw="tags" :edit="editTags" :trancated="true" />
+      <tags class="msgs__tags" :opts="tags" :edit="editTags" :trancated="true" />
     </div>
     <div v-if="loaded.length" class="msgs__picking">
       <span>
@@ -55,7 +55,7 @@
     <div v-if="uids.length" class="msgs__actions">
       <button @click="archive" class="icon--archive" title="Archive"></button>
       <button @click="del" class="icon--trash" title="Move to Trash"></button>
-      <tags class="msgs__tags" :raw="tags" :edit="editTags" :trancated="true" />
+      <tags class="msgs__tags" :opts="tags" :edit="editTags" :trancated="true" />
     </div>
     <div v-if="uids.length" class="msgs__picking">
       <span>

@@ -1,6 +1,7 @@
-<div class="tags">
+<div :class="['tags', name]">
+  <template v-if="name == 'tags'">
   <a
-    v-for="tag in display"
+    v-for="tag in optsInfo"
     @click.prevent="openInMain(tag)"
     :title="tag.name"
     :class="{tags__item: 1, 'tags__item--unread': unread && tag.unread, 'tags__item--edit': edit}"
@@ -10,4 +11,15 @@
     <div class="tags__item__unread">{{tag.unread}}</div>
     <div @click.prevent.stop="remove(tag.id)" class="icon--remove" title="Remove"></div>
   </a>
+  </template>
+  <template v-if="name == 'tags-select'">
+    <picker
+      value=""
+      :title="title"
+      :opts="opts"
+      :fnUpdate="update"
+      :fnFilter="filter"
+      :fnDisplay="display"
+    />
+  </template>
 </div>

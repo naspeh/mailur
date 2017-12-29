@@ -14,11 +14,22 @@
   </div>
   <div class="login__theme">
     theme:
-    <picker :value.sync="params.theme" :options="themes" :disabled="disabled" />
+    <picker
+      :opts="themes"
+      :value="params.theme"
+      :filterOff="true"
+      :disabled="disabled"
+      :fnUpdate="(val) => params.theme = val"
+    />
   </div>
   <div class="login__timezone">
     timezone:
-    <picker :value.sync="params.timezone" :options="timezones" :disabled="disabled" />
+    <picker
+      :opts="timezones"
+      :value="params.timezone"
+      :disabled="disabled"
+      :fnUpdate="(val) => params.timezone = val"
+    />
   </div>
 
   <div class="login__submit">

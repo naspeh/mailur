@@ -11,7 +11,7 @@
       :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"
     ></div>
     <div v-if="thread" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
-    <tags :raw="msg.tags" :trancated="true" class="msg-line__tags" />
+    <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open" :href="`#${msg.query_thread}`">
       <div class="msg-line__from">
         <template v-for="from in msg.from_list">

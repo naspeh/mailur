@@ -28,8 +28,25 @@
 }
 
 .main__tags {
+  display: flex;
+  align-items: stretch;
+  height: 1.5em;
+  line-height: 1.5em;
   margin-bottom: 0.2em;
-  overflow: hidden;
+
+  .tags {
+    overflow: hidden;
+  }
+
+  .tags-select {
+    margin-left: 0.2em;
+    overflow: unset;
+
+    .picker__opts {
+      right: 0;
+      left: unset;
+    }
+  }
 }
 
 .main__actions {

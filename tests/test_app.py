@@ -120,7 +120,7 @@ def test_tags(clean_users, gm_client, login, some):
 
     res = web.get('/tags', status=200)
     assert res.json == {
-        'ids': ['#inbox', '#spam', '#trash', '#38b0d2ff', 'test1'],
+        'ids': ['#inbox', '#38b0d2ff', 'test1', '#spam', '#trash'],
         'info': some
     }
     assert some.value == {
@@ -136,8 +136,8 @@ def test_tags(clean_users, gm_client, login, some):
     res = web.get('/tags', status=200)
     assert res.json == {
         'ids': [
-            '#inbox', '#spam', '#trash',
-            '#38b0d2ff', '#e558c4df', 'test1'
+            '#inbox', '#38b0d2ff', '#e558c4df', 'test1',
+            '#spam', '#trash',
         ],
         'info': some
     }

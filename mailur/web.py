@@ -320,7 +320,15 @@ def wrap_tags(tags):
     def trancate(val, max=14, end='…'):
         return val[:max] + end if len(val) > max else val
 
-    ids = sorted(clean_tags(tags), key=lambda i: tags[i]['name'])
+    def sort(key):
+        tag = tags[key]
+        first = (
+            key not in ('#spam', '#trash') and
+            (tag.get('unread', 0) or tag.get('pinned', 0))
+        )
+        return 0 if first else 1, tags[key]['name']
+
+    ids = sorted(clean_tags(tags), key=sort)
     info = {
         t: dict(tags[t], query=query(t), short_name=trancate(tags[t]['name']))
         for t in ids

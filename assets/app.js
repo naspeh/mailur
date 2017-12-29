@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import { call } from './utils.js';
+import './picker.js';
 import './tags.js';
 import './msg.js';
 import msgs from './msgs.js';
@@ -13,6 +14,7 @@ Vue.component('app', {
       tagIds: window.data.tags.ids,
       addrs: [],
       picSize: 20,
+      tagCount: 5,
       optSplit: false,
     };
   },

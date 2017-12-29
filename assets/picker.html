@@ -4,21 +4,23 @@
     v-model="filter"
     @keyup="activate"
     @keyup.esc.prevent="set(value)"
-    @keydown.up="select('up')"
-    @keydown.page-up="select('up', perPage)"
-    @keydown.down="select('down')"
-    @keydown.page-down="select('dwon', perPage)"
-    @keyup.enter="set()"
+    @keydown.up.prevent="select('up')"
+    @keydown.page-up.prevent="select('up', perPage)"
+    @keydown.down.prevent="select('down')"
+    @keydown.page-down.prevent="select('dwon', perPage)"
+    @keyup.enter.prevent="set()"
     class="picker__input"
     :disabled="disabled"
     :readonly="filterOff"
+    :placeholder="title"
   />
-  <div class="picker__opts">
+  <div ref="opts" class="picker__opts">
     <div
       v-for="opt of filtered"
+      v-html="fnDisplay(opt)"
       @click="set(opt)"
       :data-value="opt"
       :class="{'picker__opts__item': 1, 'picker__opts__item--active': opt==selected}"
-    >{{opt}}</div>
+    ></div>
   </div>
 </form>
