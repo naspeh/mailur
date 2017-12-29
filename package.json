@@ -46,6 +46,11 @@
     "extends": "stylelint-config-standard"
   },
   "mailur": {
-    "themes": ["base", "indigo", "mint", "solarized"]
+    "themes": [
+      "base",
+      "indigo",
+      "mint",
+      "solarized"
+    ]
   }
 }

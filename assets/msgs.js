@@ -143,7 +143,7 @@ let Msgs = Vue.extend({
       }
 
       opts = Object.assign({ uids: uids }, opts);
-      call('post', '/msgs/flag', opts).then(res => {
+      return call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
           this.refresh();
         }
@@ -193,7 +193,7 @@ let Thread = Vue.extend({
     editTags: function(opts, picked = null) {
       let preload = this.hidden.length > 0 ? this.preload : null;
       opts = Object.assign({ uids: picked || this.uids }, opts);
-      call('post', '/msgs/flag', opts).then(res => {
+      return call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
           this.search(this.query, preload).then(() => this.refresh(this.tags));
         }

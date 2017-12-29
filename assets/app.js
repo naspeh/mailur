@@ -15,7 +15,7 @@ Vue.component('app', {
       addrs: [],
       picSize: 20,
       tagCount: 5,
-      optSplit: false,
+      optSplit: false
     };
   },
   created: function() {

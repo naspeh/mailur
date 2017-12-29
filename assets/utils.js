@@ -29,3 +29,7 @@ export function trancate(value, max = 15, simbol = '…') {
   }
   return value;
 }
+
+export function contains(one, two) {
+  return one.toLowerCase().indexOf(two.toLowerCase()) != -1;
+}

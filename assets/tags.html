@@ -22,4 +22,26 @@
       :fnDisplay="display"
     />
   </template>
+  <template v-if="name == 'tags-edit'">
+    <picker
+      ref="picker"
+      value=""
+      :title="title"
+      :opts="opts"
+      :fnApply="apply"
+      :fnUpdate="update"
+      :fnFilter="filter"
+      :fnDisplay="display"
+      :class="{'tags--edited': !noChanges}"
+      @keyup.ctrl.enter.capture.prevent="apply"
+    >
+      <button
+        type="button"
+        slot="header"
+        class="icon--ok"
+        :disabled="noChanges"
+        @click="apply"
+      ></button>
+    </picker>
+  </template>
 </div>

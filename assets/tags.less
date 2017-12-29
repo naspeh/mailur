@@ -6,7 +6,22 @@
 .tags-select {
   .picker__input {
     width: 10em;
-    background-color: @--color--light-grey;
+  }
+}
+.tags-edit {
+  .tags--edited {
+    .icon--ok {
+      color: @--color--orange;
+    }
+    .picker__input {
+      &::placeholder {
+        color: @--color--orange;
+      }
+    }
+  }
+  .picker__opts__item {
+    display: flex;
+    justify-content: space-between;
   }
 }
 

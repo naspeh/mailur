@@ -1,19 +1,20 @@
 import Vue from 'vue';
+import { contains } from './utils.js';
 import tpl from './picker.html';
-
 
 Vue.component('picker', {
   template: tpl,
   props: {
     opts: { type: Array, required: true },
     value: { type: String, required: true },
-    title: { type: String, default: ''},
+    title: { type: String, default: '' },
     filterOff: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     perPage: { type: Number, default: 15 },
-    fnUpdate: {type: Function, default: (val) => null},
-    fnDisplay: {type: Function, default: (val) => val},
-    fnFilter: {type: Function, default: (val, filter) => val.toLowerCase().indexOf(filter.toLowerCase()) != -1},
+    fnUpdate: { type: Function, default: val => val },
+    fnDisplay: { type: Function, default: val => val },
+    fnFilter: { type: Function, default: contains },
+    fnApply: { type: Function }
   },
   data: function() {
     return {
@@ -36,7 +37,7 @@ Vue.component('picker', {
         return this.opts;
       }
 
-      return this.opts.filter(val => this.fnFilter(val, this.filter))
+      return this.opts.filter(val => this.fnFilter(val, this.filter));
     }
   },
   methods: {
@@ -44,20 +45,22 @@ Vue.component('picker', {
       if (e.target == window) {
         return;
       }
-      if (this.$el.contains(e.target)){
+      if (this.$el.contains(e.target)) {
         this.active || this.activate();
         return;
       }
       if (this.active) {
-        this.active = false;
-        this.set();
+        this.cancel();
       }
     },
     set: function(val) {
       val = val === undefined ? this.selected : val;
-      this.active = false;
+      if (this.active) {
+        this.$refs.input.focus();
+      }
+      this.active = this.fnApply ? true : false;
       if (!val) {
-        return
+        return;
       }
       this.fnUpdate(val);
       if (this.value) {
@@ -66,6 +69,13 @@ Vue.component('picker', {
       } else {
         this.filter = this.value;
       }
+    },
+    cancel: function() {
+      this.set(this.value);
+      this.active = false;
+    },
+    apply: function() {
+      this.fnApply ? this.fnApply() : this.set();
     },
     activate: function() {
       if (this.disabled) {
@@ -114,6 +124,6 @@ Vue.component('picker', {
       }
       this.selected = val;
       this.activate();
-    },
+    }
   }
 });

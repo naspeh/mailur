@@ -6,15 +6,8 @@
       <a @click.prevent="logout" href="#" class="icon--logout" title="Logout"></a>
     </div>
     <div class="main__tags">
-      <tags
-        :opts="tagIds.slice(0, tagCount)"
-        :trancated="true"
-        :unread="true"
-      />
-      <tags-select
-        v-if="tagIds.length > tagCount"
-        :opts="tagIds"
-      />
+      <tags-select v-if="tagIds.length > tagCount" :opts="tagIds" />
+      <tags :opts="tagIds.slice(0, tagCount)" :trancated="true" :unread="true" />
     </div>
     <div class="main__body" />
   </div>

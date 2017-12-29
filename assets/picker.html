@@ -1,19 +1,26 @@
-<form @submit.prevent="" :class="['picker', {'picker--active': active}]">
-  <input
-    ref="input"
-    v-model="filter"
-    @keyup="activate"
-    @keyup.esc.prevent="set(value)"
-    @keydown.up.prevent="select('up')"
-    @keydown.page-up.prevent="select('up', perPage)"
-    @keydown.down.prevent="select('down')"
-    @keydown.page-down.prevent="select('dwon', perPage)"
-    @keyup.enter.prevent="set()"
-    class="picker__input"
-    :disabled="disabled"
-    :readonly="filterOff"
-    :placeholder="title"
-  />
+<form
+  @submit.prevent=""
+  :class="['picker', {'picker--active': active}]"
+  >
+  <div class="picker__header">
+    <input
+      ref="input"
+      v-model="filter"
+      @keyup="activate"
+      @keyup.esc.prevent="cancel"
+      @keyup.enter.exact.prevent="set()"
+      @keyup.ctrl.enter.exact.prevent="apply()"
+      @keydown.up.prevent="select('up')"
+      @keydown.page-up.prevent="select('up', perPage)"
+      @keydown.down.prevent="select('down')"
+      @keydown.page-down.prevent="select('dwon', perPage)"
+      class="picker__input"
+      :disabled="disabled"
+      :readonly="filterOff"
+      :placeholder="title"
+    />
+    <slot name="header"></slot>
+  </div>
   <div ref="opts" class="picker__opts">
     <div
       v-for="opt of filtered"
