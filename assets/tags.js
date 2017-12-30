@@ -90,6 +90,14 @@ let TagsEdit = {
         return picked.every((v, i) => v === changed[i]);
       }
       return false;
+    },
+    sort: function() {
+      let tags = this.changed.slice();
+      tags = tags.concat(this.opts.filter(i => this.changed.indexOf(i) == -1));
+      this.$nextTick(
+        () => this.$refs.picker.active && this.$refs.picker.activate()
+      );
+      return tags;
     }
   },
   methods: {
