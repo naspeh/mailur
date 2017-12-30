@@ -15,11 +15,13 @@
   <template v-if="name == 'tags-select'">
     <picker
       value=""
-      :title="`🏷 ${optsInfo.length} tags… (${totalUnread})`"
+      ref="picker"
+      :title="`${optsInfo.length} tags… (${totalUnread})`"
       :opts="opts"
       :fnUpdate="update"
       :fnFilter="filter"
     >
+      <div slot="header" class="icon--tags" />
       <div
         slot="opt"
         slot-scope="$"
@@ -34,7 +36,7 @@
     <picker
       ref="picker"
       value=""
-      :title="`🏷 ${changed.length} tags ${noChanges ? 'applied' : 'selected'}`"
+      :title="`${changed.length} tags ${noChanges ? 'applied' : 'selected'}`"
       :opts="opts"
       :fnApply="apply"
       :fnCancel="cancel"
@@ -43,22 +45,20 @@
       :class="{'tags--edited': !noChanges}"
       @keyup.ctrl.enter.capture.prevent="apply"
     >
-      <button
-        type="button"
-        slot="header"
-        class="icon--ok"
-        :disabled="noChanges"
-        @click="apply"
-      ></button>
+      <template slot="header">
+        <div class="icon--tags" />
+        <div class="icon--ok" @click="apply" />
+      </template>
       <div
         slot="opts-title"
         slot-scope="_"
         v-if="_.filter"
+        title="Add new tag"
         :class="{'tags-edit__add': 1, 'picker__opts__item': 1, 'picker__opts__item--active': _.filter==_.selected}"
         :data-value="_.filter"
         @click="_.set(_.filter)"
       >
-        {{_.filter}} <div class="tags-edit__add">Add</div>
+        {{_.filter}} <div class="icon--add"></div>
       </div>
       <template slot="opt" slot-scope="_">
         {{tagName(_.opt)}}

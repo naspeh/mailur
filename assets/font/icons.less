@@ -43,9 +43,11 @@
   }
 }
 
+.icon--add,
 .icon--search,
 .icon--ok,
 .icon--remove,
+.icon--tags,
 .icon--font,
 .icon--forward,
 .icon--spam,
@@ -64,6 +66,16 @@
 .icon--archive,
 .icon--trash {
   .--icon;
+}
+
+.--icon--add() {
+  &::before {
+    content: "\f067";
+  }
+}
+
+.icon--add {
+  .--icon--add;
 }
 
 .--icon--search() {
@@ -94,6 +106,16 @@
 
 .icon--remove {
   .--icon--remove;
+}
+
+.--icon--tags() {
+  &::before {
+    content: "\f02c";
+  }
+}
+
+.icon--tags {
+  .--icon--tags;
 }
 
 .--icon--font() {

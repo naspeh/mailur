@@ -1,12 +1,26 @@
 .tags {
   display: flex;
 
+  .icon--tags {
+    position: absolute;
+    left: 3px;
+    cursor: pointer;
+  }
+
+  .picker__header {
+    color: @--color--green;
+    background: inherit;
+  }
+
   .picker__input {
+    width: 10em;
+    padding-left: 1.5em;
     border-color: @--color--light-grey;
     background-color: @--color--light-grey;
 
     &::placeholder {
       color: @--color--green;
+      text-align: center;
     }
 
     &:hover {
@@ -18,11 +32,9 @@
       border-left: 3px solid @--color--orange;
     }
   }
-}
 
-.tags-select {
-  .picker__input {
-    width: 10em;
+  .picker__opts__item {
+    padding-right: 0;
   }
 }
 
@@ -39,11 +51,17 @@
   }
 
   .icon--ok {
-    display: none;
+    position: absolute;
+    right: 0;
+    cursor: pointer;
+  }
+
+  .icon--add {
+    color: @--color--orange;
   }
 
   .picker__input {
-    width: 9em;
+    padding-right: 1.5em;
   }
 
   .picker__opts__item {
@@ -53,10 +71,10 @@
   }
 
   .tags--edited {
-    .icon--ok {
-      display: block;
+    .picker__header {
       color: @--color--orange;
     }
+
     .picker__input {
       &::placeholder {
         color: @--color--orange;
