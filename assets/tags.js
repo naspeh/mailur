@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import { contains } from './utils.js';
+import { contains, call } from './utils.js';
 import tpl from './tags.html';
 
 let Tags = {
@@ -97,6 +97,14 @@ let TagsEdit = {
       return this.changed.indexOf(id) != -1;
     },
     update: function(id) {
+      if (this.opts.indexOf(id) == -1) {
+        call('post', '/tag/new', { name: id }).then(res => {
+          window.app.tags[res.id] = res;
+          this.opts.splice(0, 0, res.id);
+          this.update(res.id);
+        });
+        return;
+      }
       let idx = this.changed.indexOf(id);
       if (idx == -1) {
         this.changed.push(id);

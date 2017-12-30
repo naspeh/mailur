@@ -22,11 +22,16 @@
     <slot name="header"></slot>
   </div>
   <div ref="opts" class="picker__opts">
+    <slot name="opts-title" :filter="filter" :selected="selected" :set="set">
+      <div v-if="filter && !filtered.length" class="picker__opts__empty">
+        nothing...
+      </div>
+    </slot>
     <div
       v-for="opt of filtered"
       @click="set(opt)"
       :data-value="opt"
       :class="{'picker__opts__item': 1, 'picker__opts__item--active': opt==selected}"
-    ><slot name="opt" :opt="opt">{{opt}}</slot></div>
+    ><slot name="opt" :opt="opt" :selected="selected">{{opt}}</slot></div>
   </div>
 </form>

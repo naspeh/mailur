@@ -91,6 +91,7 @@ def web():
 
 
 def run(cmd):
+    from sys import exit
     from subprocess import call
 
     check = 'which pytest'
@@ -101,7 +102,7 @@ def run(cmd):
         )
 
     cmd = 'sh -xc %r' % cmd
-    call(cmd, cwd=root, shell=True)
+    exit(call(cmd, cwd=root, shell=True))
 
 
 def icons():

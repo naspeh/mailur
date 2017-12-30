@@ -110,22 +110,26 @@ Vue.component('picker', {
       );
     },
     select: function(key, count = 1) {
-      if (!this.selectedOpt()) {
+      let el = this.selectedOpt();
+      if (!el) {
         return;
       }
-      let val, idx;
-      idx = this.filtered.indexOf(this.selectedOpt().dataset.value);
-      for (let i = 0; i < count; i++) {
-        idx = key == 'up' ? idx - 1 : idx + 1;
-        if (idx < 0) {
-          val = this.filtered[0];
-        } else if (idx > this.filtered.length - 1) {
-          val = this.filtered[this.filtered.length - 1];
-        } else {
-          val = this.filtered[idx];
+      if (el.classList.contains('picker__opts__item--active')) {
+        for (let i = 0; i < count; i++) {
+          if (key == 'up') {
+            if (el.previousElementSibling) {
+              el = el.previousElementSibling;
+            } else {
+              break;
+            }
+          } else {
+            if (el.nextElementSibling) {
+              el = el.nextElementSibling;
+            }
+          }
         }
       }
-      this.selected = val;
+      this.selected = el.dataset && el.dataset.value;
       this.activate();
     }
   }

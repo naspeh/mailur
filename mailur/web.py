@@ -120,6 +120,13 @@ def tags():
     return wrap_tags(local.tags_info())
 
 
+@app.post('/tag/new')
+def tag_new():
+    name = request.json['name']
+    tag = local.get_tag(name)
+    return wrap_tags({tag['id']: tag})['info'][tag['id']]
+
+
 @app.post('/search')
 def search():
     q = request.json['q']

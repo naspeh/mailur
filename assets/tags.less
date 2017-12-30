@@ -18,12 +18,6 @@
       border-left: 3px solid @--color--orange;
     }
   }
-
-  .picker__opts__item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
 }
 
 .tags-select {
@@ -40,12 +34,22 @@
 
 
 .tags-edit {
+  .tags-edit__add {
+    font-weight: bold;
+  }
+
   .icon--ok {
     display: none;
   }
 
   .picker__input {
     width: 9em;
+  }
+
+  .picker__opts__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .tags--edited {

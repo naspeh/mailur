@@ -24,11 +24,11 @@ def init():
 def setup(gm_client):
     from mailur import local
 
-    local.uid_pairs.cache_clear()
-    local.msgids.cache_clear()
-    local.saved_tags.cache_clear()
-
     with mock.patch('mailur.local.USER', 'test1'):
+        local.uid_pairs.cache_clear()
+        local.msgids.cache_clear()
+        local.saved_tags.cache_clear()
+
         yield
 
 
@@ -209,6 +209,8 @@ def web():
         assets.mkdir()
         for i in themes():
             filename = 'theme-%s.css' % i
+            (assets / filename).write_text('')
+        for filename in ('login.js', 'index.js'):
             (assets / filename).write_text('')
     return TestApp(app)
 
