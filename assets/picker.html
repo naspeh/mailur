@@ -24,10 +24,9 @@
   <div ref="opts" class="picker__opts">
     <div
       v-for="opt of filtered"
-      v-html="fnDisplay(opt)"
       @click="set(opt)"
       :data-value="opt"
       :class="{'picker__opts__item': 1, 'picker__opts__item--active': opt==selected}"
-    ></div>
+    ><slot name="opt" :opt="opt">{{opt}}</slot></div>
   </div>
 </form>

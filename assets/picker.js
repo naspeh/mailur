@@ -12,9 +12,9 @@ Vue.component('picker', {
     disabled: { type: Boolean, default: false },
     perPage: { type: Number, default: 15 },
     fnUpdate: { type: Function, default: val => val },
-    fnDisplay: { type: Function, default: val => val },
     fnFilter: { type: Function, default: contains },
-    fnApply: { type: Function }
+    fnApply: { type: Function },
+    fnCancel: { type: Function }
   },
   data: function() {
     return {
@@ -51,14 +51,15 @@ Vue.component('picker', {
       }
       if (this.active) {
         this.cancel();
+        this.$refs.input.blur();
       }
     },
     set: function(val) {
       val = val === undefined ? this.selected : val;
+      this.active = this.fnApply ? true : false;
       if (this.active) {
         this.$refs.input.focus();
       }
-      this.active = this.fnApply ? true : false;
       if (!val) {
         return;
       }
@@ -71,6 +72,7 @@ Vue.component('picker', {
       }
     },
     cancel: function() {
+      this.fnCancel && this.fnCancel();
       this.set(this.value);
       this.active = false;
     },
@@ -81,6 +83,7 @@ Vue.component('picker', {
       if (this.disabled) {
         return;
       }
+      this.$refs.input.focus();
       this.active = true;
       this.$nextTick(() => {
         let element = this.selectedOpt();

@@ -1,15 +1,17 @@
 .msgs__header {
   display: flex;
   justify-content: flex-start;
+  width: 100%;
   height: 1.5em;
   line-height: 1.5em;
   margin-bottom: 0.2em;
+  font-size: @--font-size--s;
   white-space: nowrap;
 }
 
 .msgs__search {
-  display: flex;
   flex-grow: 10;
+  display: flex;
 
   & input {
     flex-grow: 10;
@@ -31,26 +33,18 @@
 
 .msgs__actions {
   display: flex;
-  justify-content: space-between;
-  margin-left: 0.2em;
-}
-
-.msgs__tags {
-  display: flex;
   align-items: stretch;
   height: 1.5em;
   line-height: 1.5em;
-  margin: 0 0.2em;
+  margin-left: 0.2em;
 
-  .tags {
-    overflow: hidden;
-  }
   .tags-edit {
-    overflow: unset;
-    margin-right: 0.2em;
-
-    .picker__input {
-      width: 10em;
-    }
+    margin-left: 0.2em;
   }
+}
+
+.msgs__tags {
+  margin-left: 0.2em;
+  overflow: hidden;
+  white-space: nowrap;
 }

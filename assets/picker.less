@@ -41,6 +41,11 @@
 
 .picker__opts__item {
   cursor: pointer;
+  padding: 0.1em 0.2em;
+
+  &:nth-child(odd) {
+    background-color: @--color--light-grey;
+  }
 
   &.picker__opts__item--active {
     background-color: @--color--grey;
@@ -48,7 +53,7 @@
   }
 
   &:hover {
-    background-color: @--color--light-grey;
-    color: inherit;
+    background-color: @--color--grey;
+    color: @--color--white;
   }
 }

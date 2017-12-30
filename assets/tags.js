@@ -40,28 +40,22 @@ let TagsSelect = {
     name: { type: String, default: 'tags-select' }
   },
   computed: {
-    title: function() {
+    totalUnread: function() {
       let unread = 0;
       for (let i of this.optsInfo) {
         if (i.unread) {
           unread = unread + i.unread;
         }
       }
-      return `🏷 ${this.optsInfo.length} tags… (${unread})`;
+      return unread;
     }
   },
   methods: {
+    tagName: function(id) {
+      return this.trancated ? this.info[id].short_name : this.info[id].name;
+    },
     update: function(val) {
       this.openInMain(this.info[val]);
-    },
-    display: function(val) {
-      let tag = this.info[val];
-      let name = this.trancated ? tag['short_name'] : tag['name'];
-      return `
-        <div class="${tag.unread ? 'tags__item--unread' : ''}">
-        ${name}<div class="tags__item__unread">${tag.unread}</div>
-        </div>
-      `;
     },
     filter: function(val, filter) {
       return contains(this.info[val].name, filter);
@@ -71,7 +65,7 @@ let TagsSelect = {
 
 let TagsEdit = {
   template: tpl,
-  mixins: [Tags],
+  mixins: [TagsSelect],
   props: {
     name: { type: String, default: 'tags-edit' },
     picked: { type: Array, required: true },
@@ -89,11 +83,6 @@ let TagsEdit = {
     }
   },
   computed: {
-    title: function() {
-      return `🏷 ${this.changed.length} tags ${
-        this.noChanges ? 'applied' : 'selected'
-      }`;
-    },
     noChanges: function() {
       if (this.picked.length == this.changed.length) {
         let changed = this.changed.sort();
@@ -104,6 +93,9 @@ let TagsEdit = {
     }
   },
   methods: {
+    tagChecked: function(id) {
+      return this.changed.indexOf(id) != -1;
+    },
     update: function(id) {
       let idx = this.changed.indexOf(id);
       if (idx == -1) {
@@ -112,13 +104,6 @@ let TagsEdit = {
         this.changed.splice(idx, 1);
       }
     },
-    display: function(id) {
-      let tag = this.info[id];
-      let checked = this.changed.indexOf(id) != -1 ? 'checked' : '';
-      return `
-        ${tag.name}<input class="tags__pick" type="checkbox" ${checked} />
-      `;
-    },
     filter: function(val, filter) {
       return contains(this.info[val].name, filter);
     },
@@ -126,6 +111,9 @@ let TagsEdit = {
       if (this.noChanges) return;
       this.edit({ old: this.picked, new: this.changed });
       this.$refs.picker.cancel(true);
+    },
+    cancel: function() {
+      this.changed = this.picked.slice();
     }
   }
 };

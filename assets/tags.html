@@ -15,23 +15,31 @@
   <template v-if="name == 'tags-select'">
     <picker
       value=""
-      :title="title"
+      :title="`🏷 ${optsInfo.length} tags… (${totalUnread})`"
       :opts="opts"
       :fnUpdate="update"
       :fnFilter="filter"
-      :fnDisplay="display"
-    />
+    >
+      <div
+        slot="opt"
+        slot-scope="$"
+        :class="{'tags-select__item': 1,'tags__item--unread': info[$.opt].unread}"
+      >
+        <div>{{tagName($.opt)}}</div>
+        <div class="tags__item__unread">{{info[$.opt].unread}}</div>
+      </div>
+    </picker>
   </template>
   <template v-if="name == 'tags-edit'">
     <picker
       ref="picker"
       value=""
-      :title="title"
+      :title="`🏷 ${changed.length} tags ${noChanges ? 'applied' : 'selected'}`"
       :opts="opts"
       :fnApply="apply"
+      :fnCancel="cancel"
       :fnUpdate="update"
       :fnFilter="filter"
-      :fnDisplay="display"
       :class="{'tags--edited': !noChanges}"
       @keyup.ctrl.enter.capture.prevent="apply"
     >
@@ -42,6 +50,10 @@
         :disabled="noChanges"
         @click="apply"
       ></button>
+      <template slot="opt" slot-scope="$">
+        {{tagName($.opt)}}
+        <input class="tags__pick" type="checkbox" :checked="tagChecked($.opt)" />
+      </template>
     </picker>
   </template>
 </div>
