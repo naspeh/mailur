@@ -68,33 +68,33 @@ let TagsEdit = {
   mixins: [TagsSelect],
   props: {
     name: { type: String, default: 'tags-edit' },
-    picked: { type: Array, required: true },
+    origin: { type: Array, required: true },
     edit: { type: Function, required: true },
     opts: { type: Array, default: () => window.app.tagIds }
   },
   data: function() {
     return {
-      changed: this.picked.slice(),
+      picked: this.origin.slice(),
       failed: null
     };
   },
   watch: {
-    picked: function() {
+    origin: function() {
       this.cancel();
     }
   },
   computed: {
     noChanges: function() {
-      if (this.picked.length == this.changed.length) {
-        let changed = this.changed.sort();
-        let picked = this.picked.slice().sort();
-        return picked.every((v, i) => v === changed[i]);
+      if (this.origin.length == this.picked.length) {
+        let picked = this.picked.sort();
+        let origin = this.origin.slice().sort();
+        return origin.every((v, i) => v === picked[i]);
       }
       return false;
     },
     sort: function() {
-      let tags = this.changed.slice();
-      tags = tags.concat(this.opts.filter(i => this.changed.indexOf(i) == -1));
+      let tags = this.picked.slice();
+      tags = tags.concat(this.opts.filter(i => this.picked.indexOf(i) == -1));
       this.$nextTick(
         () => this.$refs.picker.active && this.$refs.picker.activate()
       );
@@ -103,7 +103,11 @@ let TagsEdit = {
   },
   methods: {
     tagChecked: function(id) {
-      return this.changed.indexOf(id) != -1;
+      return this.picked.indexOf(id) != -1;
+    },
+    cancel: function() {
+      this.picked = this.origin.slice();
+      this.failed = null;
     },
     update: function(id) {
       if (this.opts.indexOf(id) == -1) {
@@ -119,24 +123,17 @@ let TagsEdit = {
         });
         return;
       }
-      let idx = this.changed.indexOf(id);
+      let idx = this.picked.indexOf(id);
       if (idx == -1) {
-        this.changed.push(id);
+        this.picked.push(id);
       } else {
-        this.changed.splice(idx, 1);
+        this.picked.splice(idx, 1);
       }
-    },
-    filter: function(val, filter) {
-      return contains(this.info[val].name, filter);
     },
     apply: function() {
       if (this.noChanges) return;
-      this.edit({ old: this.picked, new: this.changed });
+      this.edit({ old: this.origin, new: this.picked });
       this.$refs.picker.cancel(true);
-    },
-    cancel: function() {
-      this.changed = this.picked.slice();
-      this.failed = null;
     }
   }
 };
