@@ -106,7 +106,6 @@ def test_tags(clean_users, gm_client, login, some):
         }, **kw)
 
     web = login()
-
     res = web.get('/tags', status=200)
     assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
     assert some.value == {
@@ -150,9 +149,6 @@ def test_tags(clean_users, gm_client, login, some):
         '#e558c4df': tag('test 3', unread=1, id='#e558c4df'),
     }
 
-    res = web.post_json('/tag/new', {'name': 'new'}, status=200)
-    assert res.json == tag('new')
-
     web = login(username='test2')
     res = web.get('/tags', status=200)
     assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
@@ -161,6 +157,15 @@ def test_tags(clean_users, gm_client, login, some):
         '#spam': tag('#spam', pinned=1),
         '#trash': tag('#trash', pinned=1),
     }
+
+    web = login()
+    web.post_json('/tag', {}, status=400)
+    web.post_json('/tag', {'name': '#new'}, status=400)
+    web.post_json('/tag', {'name': '\\new'}, status=400)
+    res = web.post_json('/tag', {'name': 'new'}, status=200)
+    assert res.json == tag('new')
+    res = web.post_json('/tag', {'name': 'нью'}, status=200)
+    assert res.json == tag('нью', id='#d44f332a')
 
 
 def test_basic(clean_users, gm_client, login, some):

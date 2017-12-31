@@ -3,6 +3,7 @@
 
   .icon--tags {
     position: absolute;
+    top: 0;
     left: 3px;
     cursor: pointer;
   }
@@ -49,11 +50,18 @@
 
 .tags-edit {
   .tags-edit__add {
+    display: flex;
+    align-items: stretch;
     font-weight: bold;
+  }
+
+  .tags-edit__failed {
+    color: @--color--orange;
   }
 
   .icon--ok {
     position: absolute;
+    top: 0;
     right: 0;
     cursor: pointer;
   }

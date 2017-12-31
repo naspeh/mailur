@@ -74,12 +74,13 @@ let TagsEdit = {
   },
   data: function() {
     return {
-      changed: this.picked.slice()
+      changed: this.picked.slice(),
+      failed: null
     };
   },
   watch: {
     picked: function() {
-      this.changed = this.picked.slice();
+      this.cancel();
     }
   },
   computed: {
@@ -106,7 +107,12 @@ let TagsEdit = {
     },
     update: function(id) {
       if (this.opts.indexOf(id) == -1) {
-        call('post', '/tag/new', { name: id }).then(res => {
+        call('post', '/tag', { name: id }).then(res => {
+          if (res.errors) {
+            this.failed = id;
+            this.$refs.picker.filter = id;
+            return;
+          }
           window.app.tags[res.id] = res;
           this.opts.splice(0, 0, res.id);
           this.update(res.id);
@@ -130,6 +136,7 @@ let TagsEdit = {
     },
     cancel: function() {
       this.changed = this.picked.slice();
+      this.failed = null;
     }
   }
 };

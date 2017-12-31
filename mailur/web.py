@@ -120,10 +120,23 @@ def tags():
     return wrap_tags(local.tags_info())
 
 
-@app.post('/tag/new')
-def tag_new():
-    name = request.json['name']
-    tag = local.get_tag(name)
+@app.post('/tag')
+def tag():
+    schema = {
+        'type': 'object',
+        'properties': {
+            'name': {
+                'type': 'string',
+                'pattern': r'^[^\\#]'
+            },
+        },
+        'required': ['name']
+    }
+    errs, data = validate(request.json, schema)
+    if errs:
+        response.status = 400
+        return {'errors': errs, 'schema': schema}
+    tag = local.get_tag(data['name'])
     return wrap_tags({tag['id']: tag})['info'][tag['id']]
 
 
