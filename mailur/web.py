@@ -188,6 +188,14 @@ def msgs_info():
     return wrap_msgs(local.msgs_info(uids, hide_tags))
 
 
+@app.post('/msgs/body', name='msgs_body')
+def msgs_body():
+    uids = request.json['uids']
+    if not uids:
+        return abort(400)
+    return dict(local.msgs_body(uids))
+
+
 @app.post('/thrs/link')
 def thrs_link():
     uids = request.json['uids']

@@ -24,10 +24,19 @@
 }
 
 .msgs__picking {
+  display: flex;
   margin-left: 0.2em;
 
   & a {
     text-transform: lowercase;
+  }
+
+  .icon--open-in-split {
+    display: none;
+
+    .opt--split-on .main & {
+      display: block;
+    }
   }
 }
 

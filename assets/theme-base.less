@@ -32,7 +32,9 @@ https://material.io/guidelines/style/color.html#color-color-palette
 @--font-size: 100%;
 @--font-size--s: 0.9375rem; // 15px
 @--font-size--xs: 0.875rem; // 14px
-@--line-height: 2rem;
+@--line-height: 1.5rem;
+@--line-height--s: 1.2rem;
+@--line-height--l: 2rem;
 @--pic-height: 20px;
 
 html,
@@ -41,6 +43,7 @@ body {
   margin: 0;
   font-size: @--font-size;
   font-family: sans-serif;
+  line-height: @--line-height--s;
 
   &.opt--bigger {
     font-size: @--font-size * 1.25;

@@ -38,6 +38,9 @@
       v-if="msgs[uid]"
       :msg="msgs[uid]"
       :thread="threads"
+      :body="bodies[uid]"
+      :opened="uid == opened"
+      :open="openMsg"
       :details="details"
       :detailed="uid == detailed"
       :pick="pick"
@@ -64,9 +67,15 @@
       <tags :opts="tags" :edit="editTags" :trancated="true" />
     </div>
     <div v-if="uids.length" class="msgs__picking">
-      <span>
+      <div>
         {{uids.length}} emails in thread
-      </span>
+      </div>
+      <a
+        @click.prevent="openInSplit"
+        class="icon--open-in-split"
+        title="Open in split pane"
+        href="#"
+      ></a>
     </div>
   </div>
   <div class="msgs__body">
@@ -82,6 +91,9 @@
         :editTags="editTags"
         :details="details"
         :detailed="detailed.indexOf(uid) != -1"
+        :body="bodies[uid]"
+        :open="openMsg"
+        :opened="opened.indexOf(uid) != -1"
         :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"
       />
     </div>

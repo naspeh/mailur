@@ -47,6 +47,11 @@ let Base = {
       this.clean();
       this.open(this.query);
     },
+    fetchBody: function(uid) {
+      return call('post', '/msgs/body', { uids: [uid] }).then(res => {
+        Vue.set(this.bodies, uid, res[uid]);
+      });
+    },
     archive: function() {
       return this.editTags({ old: ['#inbox'] });
     },
@@ -66,7 +71,9 @@ let Msgs = Vue.extend({
       name: 'msgs',
       perPage: 200,
       picked: [],
-      detailed: null
+      bodies: {},
+      detailed: null,
+      opened: null
     };
   },
   computed: {
@@ -127,6 +134,20 @@ let Msgs = Vue.extend({
         this.detailed = uid;
       }
     },
+    openMsg: function(uid) {
+      if (this.threads) {
+        return this.open(this.msgs[uid].query_thread);
+      }
+      let msg = this.msgs[uid];
+      if (msg.count == 1) {
+        this.fetchBody(uid);
+      }
+      if (this.opened == uid) {
+        this.opened = null;
+      } else {
+        this.opened = uid;
+      }
+    },
     editTags: function(opts, picked = null) {
       picked = picked || this.picked;
 
@@ -162,8 +183,15 @@ let Thread = Vue.extend({
     return {
       name: 'thread',
       preload: 4,
-      detailed: []
+      detailed: [],
+      opened: [],
+      bodies: {}
     };
+  },
+  created: function() {
+    if (!this.threads && this.uids.length == 1) {
+      this.openMsg(this.uids[0]);
+    }
   },
   methods: {
     clean: function() {
@@ -189,6 +217,23 @@ let Thread = Vue.extend({
       } else {
         this.detailed.splice(idx, 1);
       }
+    },
+    openMsg: function(uid) {
+      if (!this.bodies[uid]) {
+        call('post', '/msgs/body', { uids: [uid] }).then(res => {
+          Vue.set(this.bodies, uid, res[uid]);
+        });
+      }
+      let idx = this.opened.indexOf(uid);
+      if (idx == -1) {
+        this.opened.push(uid);
+      } else {
+        this.opened.splice(idx, 1);
+      }
+      this.setMsgs(this.msgs);
+    },
+    openInSplit: function() {
+      window.app.openInSplit(this.query);
     },
     editTags: function(opts, picked = null) {
       let preload = this.hidden.length > 0 ? this.preload : null;

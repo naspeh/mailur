@@ -218,19 +218,21 @@ def clean_html(htm):
 
     htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
     if not htm:
-        return ''
+        return '', ''
 
     cleaner = Cleaner(
         links=False,
-        safe_attrs_only=False,
-        kill_tags=['head', 'style'],
-        remove_tags=['html', 'base']
+        style=True,
+        kill_tags=['head', 'img', 'figure', 'picture'],
+        remove_tags=['html', 'base'],
+        safe_attrs=set(Cleaner.safe_attrs) - {'class'},
     )
     htm = lhtml.fromstring(htm)
     htm = cleaner.clean_html(htm)
 
-    # return lhtml.tostring(htm, encoding='utf-8').decode()
-    return '\n'.join(i.rstrip() for i in htm.xpath('//text()') if i.rstrip())
+    txt = '\n'.join(i.rstrip() for i in htm.xpath('//text()') if i.rstrip())
+    htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
+    return txt, htm
 
 
 def create_msg(raw, uid, time):
@@ -244,6 +246,7 @@ def create_msg(raw, uid, time):
         orig = raw
 
     meta = {'origin_uid': uid}
+    msg = MIMEPart(policy)
 
     fields = (('from', 1), ('sender', 1), ('to', 0), ('cc', 0), ('bcc', 0))
     for n, one in fields:
@@ -279,6 +282,7 @@ def create_msg(raw, uid, time):
     meta['msgid'] = mid
     if mids[mid][0] != uid:
         log.info('## UID=%s is a duplicate {%r: %r}', uid, mid, mids[mid])
+        msg.add_header('X-Dpulicate', mid)
         mid = gen_msgid('dup')
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
@@ -287,18 +291,20 @@ def create_msg(raw, uid, time):
     date = orig['date']
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
-    txt = orig.get_body(preferencelist=('plain', 'html'))
-    body = ''
+    txt = orig.get_body(preferencelist=('html', 'plain'))
     if txt:
         try:
             body = txt.get_content()
-            body = clean_html(body)
+            if txt.get_content_subtype() == 'plain':
+                body = '<pre>%s</pre>' % body
+            txt, body = clean_html(body)
         except Exception as e:
+            txt = 'ERROR(mlr): %s' % e
+            body = txt
             more = raw[:300].decode()
             log.error('## UID=%s error on body: %r\n%s', uid, e, more)
-    meta['preview'] = re.sub('[\s ]+', ' ', body[:200])
+    meta['preview'] = re.sub('[\s ]+', ' ', txt[:200])
 
-    msg = MIMEPart(policy)
     msg.add_header('X-UID', '<%s>' % uid)
     msg.add_header('Message-Id', mid)
     msg.add_header('Subject', meta['subject'])
@@ -338,15 +344,19 @@ def parse_msgs(uids, con=None):
                 r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
                 m[0].decode()
             ).groups()
-            flags = flags.replace('\\Recent', '').strip()
+            flags = flags.split()
+            if flags.count('\\Recent'):
+                flags.remove('\\Recent')
             try:
                 msg_obj = create_msg(m[1], uid, time)
+                if msg_obj['X-Dpulicate']:
+                    flags.append('#dup')
                 msg = msg_obj.as_bytes()
             except Exception as e:
                 msgid = re.findall(b'^(?im)message-id:.*', m[1])
                 log.exception('## %r uid=%s %s', e, uid, msgid)
                 continue
-            yield time, flags, msg
+            yield time, ' '.join(flags), msg
 
     return con.multiappend(ALL, msgs())
 
@@ -534,6 +544,15 @@ def msgs_info(uids, hide_flags=None, con=None):
         if hide_flags:
             flags = sorted(set(flags) - set(hide_flags))
         yield uid, res[i][1], flags, None
+
+
+@fn_time
+@using()
+def msgs_body(uids, con=None):
+    res = con.fetch(uids, '(UID BINARY.PEEK[2])')
+    for i in range(0, len(res), 2):
+        uid = res[i][0].decode().split()[2]
+        yield uid, res[i][1].decode()
 
 
 @fn_time

@@ -1,6 +1,7 @@
 .msg-line {
   display: flex;
   align-items: center;
+  line-height: @--line-height--l;
   box-sizing: border-box;
   padding: 0 0.2em;
   overflow: hidden;
@@ -11,8 +12,7 @@
   font-size: @--font-size--s;
 
   .icon--pin,
-  .icon--unread,
-  .icon--more {
+  .icon--unread {
     display: flex;
     color: @--color--grey;
 
@@ -31,13 +31,18 @@
     }
   }
 
+  .icon--more {
+    .icon--pin;
+
+    .msg--detailed & {
+      color: @--color--green;
+    }
+  }
+
+  .msg--opened &,
   .msg--detailed & {
     border-top: 1px solid @--color--grey;
     background-color: @--color--white;
-
-    .icon--more {
-      color: @--color--green;
-    }
   }
 
   .msg--unread & {
@@ -86,6 +91,7 @@
   background-color: @--color--white;
   text-align: center;
 
+  .msg--opened &,
   .msg--detailed & {
     background-color: @--color--light-grey;
   }
@@ -141,6 +147,7 @@
   background-color: @--color--white;
   text-align: center;
 
+  .msg--opened &,
   .msg--detailed & {
     background-color: @--color--light-grey;
     border-color: @--color--white;
@@ -161,6 +168,10 @@
 
 .msg-line__text {
   margin-right: 0.2em;
+
+  .msg--opened & {
+    display: none;
+  }
 }
 
 .msg-line__time {
@@ -172,6 +183,30 @@
 
   .thread & {
     padding-right: 0.2em;
+  }
+}
+
+.msg-hidden {
+  display: flex;
+  line-height: @--line-height--l;
+  box-sizing: border-box;
+  padding-left: 1em;
+  border-top: 1px solid @--color--white;
+  border-radius: 0.5em;
+  background-color: @--color--light-grey;
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  &:before {
+    content: "---";
+    margin-right: 0.2em;
+  }
+
+  &:after {
+    content: "---";
+    margin-left: 0.2em;
   }
 }
 
@@ -201,25 +236,26 @@
   }
 }
 
-.msg-hidden {
-  display: flex;
-  box-sizing: border-box;
-  padding-left: 1em;
-  border-top: 1px solid @--color--white;
-  border-radius: 0.5em;
-  background-color: @--color--light-grey;
+.msg__body {
+  display: none;
+  padding: 0 0.2em;
+  margin-top: 0.2em;
 
-  &:hover {
-    text-decoration: none;
+  .msg--opened & {
+    display: block;
   }
 
-  &:before {
-    content: "---";
-    margin-right: 0.2em;
+  pre {
+    white-space: pre-wrap;
   }
-
-  &:after {
-    content: "---";
-    margin-left: 0.2em;
+  pre, code {
+    font-size: 0.9em;
+  }
+  blockquote {
+    border-left: 1px solid #ccc;
+    padding: 0;
+    margin: 0;
+    padding-left: 0.5em;
+    margin-left: 0.5em;
   }
 }

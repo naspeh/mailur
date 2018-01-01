@@ -5,17 +5,19 @@ Vue.component('msg', {
   template: tpl,
   props: {
     msg: { type: Object, required: true },
-    editTags: { type: Function, required: true },
+    body: { type: String },
     thread: { type: Boolean, default: false },
+    opened: { type: Boolean, default: false },
+    open: { type: Function, required: true },
     detailed: { type: Boolean, default: false },
+    details: { type: Function, required: true },
     picked: { type: Boolean, default: false },
-    details: { type: Function },
     pick: { type: Function },
-    hideSubj: { type: Function, default: () => false }
+    editTags: { type: Function, required: true }
   },
   methods: {
     openInMain: q => window.app.openInMain(q),
-    open: function() {
+    openDefault: function() {
       if (this.thread) {
         this.openInMain(this.msg.query_thread);
       } else {
