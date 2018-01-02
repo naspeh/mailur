@@ -297,8 +297,8 @@ def test_msgs_flag(clean_users, gm_client, login, msgs):
 
 
 def test_search_thread(clean_users, gm_client, login, some):
-    def post(uid):
-        data = {'q': ':thread %s' % uid, 'preload': 4}
+    def post(uid, preload=4):
+        data = {'q': ':thread %s' % uid, 'preload': preload}
         return web.post_json('/search', data, status=200).json
 
     web = login()
@@ -335,9 +335,9 @@ def test_search_thread(clean_users, gm_client, login, some):
         'uids': res['uids'], 'new': ['\\Seen']
     }, status=200)
 
-    res = post('1')
+    res = post('1', preload=2)
     assert len(res['uids']) == 6
-    assert sorted(res['msgs']) == ['1', '4', '5', '6']
+    assert sorted(res['msgs']) == ['1', '6']
     assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
@@ -345,9 +345,9 @@ def test_search_thread(clean_users, gm_client, login, some):
         'uids': ['2'], 'new': ['\\Flagged']
     }, status=200)
 
-    res = post('1')
+    res = post('1', preload=2)
     assert len(res['uids']) == 6
-    assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
+    assert sorted(res['msgs']) == ['1', '2', '6']
     assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
@@ -358,12 +358,12 @@ def test_search_thread(clean_users, gm_client, login, some):
         'uids': ['1'], 'new': ['#inbox', 'test1']
     }, status=200)
 
-    res = post('1')
+    res = post('1', preload=None)
     assert len(res['uids']) == 6
-    assert sorted(res['msgs']) == ['1', '2', '4', '5', '6']
+    assert sorted(res['msgs']) == ['1', '2', '3', '4', '5', '6']
     assert res['tags'] == ['#inbox', 'test1', 'test2']
     assert [res['msgs'][uid]['tags'] for uid in sorted(res['msgs'])] == [
-        [], [], [], [], []
+        [], [], [], [], [], []
     ]
 
     res = web.post_json(res['msgs_info'], {

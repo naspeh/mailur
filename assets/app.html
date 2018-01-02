@@ -1,8 +1,8 @@
-<div :class="{'app': 1, 'opt--only-icons': 0, 'opt--split-on': optSplit}">
+<div :class="{'app': 1, 'opt--only-icons': 0, 'opt--split-on': opts.split}">
   <div class="main">
     <div class="main__actions">
-      <a @click.prevent="toggleBigger" href="#" class="icon--font" title="Bigger font"></a>
-      <a @click.prevent="toggleSplit" href="#" class="icon--split" title="Open split pane"></a>
+      <a @click.prevent="toggleOpt('bigger')" href="#" class="icon--font" title="Bigger font"></a>
+      <a @click.prevent="toggleOpt('split')" href="#" class="icon--split" title="Open split pane"></a>
       <a @click.prevent="logout" href="#" class="icon--logout" title="Logout"></a>
     </div>
     <div class="main__tags">
@@ -12,6 +12,8 @@
     <div class="main__body" />
   </div>
   <div class="split">
-    <div class="split__body" />
+    <div class="split__body">
+      Please find <span class="icon--open-in-split" /> to open things in split pane...
+    </div>
   </div>
 </div>

@@ -67,6 +67,7 @@ def index(theme=None):
         return redirect(login_url)
 
     return render_tpl(theme or request.session['theme'], 'index', {
+        'user': request.session['username'],
         'tags': wrap_tags(local.tags_info())
     })
 
@@ -316,11 +317,11 @@ def thread(uid, preload=4):
         if subj == prev_subj:
             same_subject.append(uid)
 
-    if preload is not None and len(uids) > preload:
+    if preload is not None and len(uids) > preload * 2:
         msgs_few = {
             i: m for i, m in msgs.items() if m['is_unread'] or m['is_pinned']
         }
-        uids_few = [uids[0]] + uids[-3:]
+        uids_few = [uids[0]] + uids[-preload+1:]
         for i in uids_few:
             if i in msgs_few:
                 continue

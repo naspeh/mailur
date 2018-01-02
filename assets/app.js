@@ -15,17 +15,23 @@ Vue.component('app', {
       addrs: [],
       picSize: 20,
       tagCount: 5,
-      optSplit: false
+      opts: { split: false, splitQuery: null, bigger: false },
+      optsKey: `${window.data.user}:opts`
     };
   },
   created: function() {
-    window.app = this;
-
-    let q = decodeURIComponent(location.hash.slice(1));
-    if (!q) {
-      q = ':threads keyword #inbox';
+    let opts = window.localStorage.getItem(this.optsKey);
+    if (opts) {
+      this.opts = JSON.parse(opts);
+      this.reloadOpts();
     }
-    this.openInMain(q);
+
+    window.app = this;
+    this.openFromHash();
+
+    window.onhashchange = () => {
+      this.openFromHash();
+    };
   },
   computed: {
     allTags: function() {
@@ -40,6 +46,31 @@ Vue.component('app', {
     }
   },
   methods: {
+    setOpt: function(name, value) {
+      this.opts[name] = value;
+      window.localStorage.setItem(this.optsKey, JSON.stringify(this.opts));
+      this.reloadOpts();
+    },
+    toggleOpt: function(name) {
+      this.setOpt(name, !this.opts[name]);
+    },
+    reloadOpts: function() {
+      document
+        .querySelector('html')
+        .classList.toggle('opt--bigger', this.opts.bigger);
+      if (!this.split && this.opts.split && this.opts.splitQuery) {
+        this.openInSplit(this.opts.splitQuery);
+      }
+    },
+    openFromHash: function() {
+      let q = decodeURIComponent(location.hash.slice(1));
+      if (!q) {
+        q = ':threads keyword #inbox';
+      }
+      if (!this.main || this.main.query != q) {
+        this.openInMain(q);
+      }
+    },
     search: function(q, preload = undefined) {
       return call('post', '/search', { q: q, preload: preload });
     },
@@ -59,7 +90,8 @@ Vue.component('app', {
       });
     },
     openInSplit: function(q) {
-      this.optSplit = true;
+      this.opts.split || this.setOpt('split', true);
+      this.opts.splitQuery == q || this.setOpt('splitQuery', q);
       this.split && this.split.clean();
       this.search(q).then(res => {
         this.split = msgs(
@@ -72,17 +104,6 @@ Vue.component('app', {
           })
         );
       });
-    },
-    toggleSplit: function() {
-      this.optSplit = !this.optSplit;
-      this.$nextTick(() => {
-        if (this.optSplit && !this.split) {
-          this.openInSplit(this.main.query);
-        }
-      });
-    },
-    toggleBigger: function() {
-      document.querySelector('html').classList.toggle('opt--bigger');
     },
     logout: function() {
       window.location = '/logout';
