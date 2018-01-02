@@ -1,7 +1,6 @@
 import functools as ft
 import inspect
 import json
-import os
 import re
 import time
 from contextlib import contextmanager
@@ -10,9 +9,8 @@ from imaplib import CRLF, Time2Internaldate
 from gevent.lock import RLock
 from gevent.pool import Pool
 
-from . import fn_desc, fn_time, log
+from . import DEBUG_IMAP, fn_desc, fn_time, log
 
-DEBUG = int(os.environ.get('IMAP_DEBUG', 0))
 commands = {}
 
 
@@ -136,7 +134,7 @@ class Ctx:
         self.logout()
 
 
-def client(connect, *, writable=False, dovecot=False, debug=DEBUG):
+def client(connect, *, writable=False, dovecot=False, debug=DEBUG_IMAP):
     def start():
         con = connect()
         con.debug = debug

@@ -5,7 +5,6 @@ import functools as ft
 import hashlib
 import imaplib
 import json
-import os
 import re
 import uuid
 from email.message import MIMEPart
@@ -14,9 +13,7 @@ from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 from gevent import socket
 
-from . import fn_time, imap, log
-
-USER = os.environ.get('MLR_USER', 'user')
+from . import MASTER, USER, fn_time, imap, log
 
 SRC = 'Src'
 ALL = 'All'
@@ -32,7 +29,9 @@ class Local(imaplib.IMAP4, imap.Conn):
         return socket.create_connection((self.host, self.port))
 
     def login_root(self):
-        return imap.login(self, '%s*root' % self.username, 'root')
+        master, pwd = MASTER
+        username = '%s*%s' % (self.username, master)
+        return imap.login(self, username, pwd)
 
 
 def connect(username=None, password=None):

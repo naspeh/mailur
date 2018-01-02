@@ -6,7 +6,12 @@ import os
 import time
 from contextlib import contextmanager
 
-DEBUG = os.environ.get('DEBUG', True)
+DEBUG = os.environ.get('MLR_DEBUG', True)
+DEBUG_IMAP = os.environ.get('MLR_DEBUG_IMAP', 0)
+SECRET = os.environ.get('MLR_SECRET', 'secret')
+MASTER = os.environ.get('MLR_MASTER', 'root:root').split(':')
+USER = os.environ.get('MLR_USER', 'user')
+
 log = logging.getLogger(__name__)
 logging.config.dictConfig({
     'version': 1,

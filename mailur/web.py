@@ -2,7 +2,6 @@ import base64
 import datetime as dt
 import functools as ft
 import json
-import os
 import pathlib
 import re
 
@@ -16,10 +15,10 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import imap, local
+from . import SECRET, imap, local
 from .schema import validate
 
-secret = os.environ.get('MLR_SECRET', 'secret')
+
 root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
 app = Bottle()
@@ -27,7 +26,7 @@ app = Bottle()
 
 def session(callback):
     def inner(*args, **kwargs):
-        session = request.get_cookie('session', secret=secret)
+        session = request.get_cookie('session', secret=SECRET)
         if session:
             local.USER = session['username']
         request.session = session
@@ -105,7 +104,7 @@ def login():
         return {'errors': ['Authentication failed.'], 'details': str(e)}
 
     del data['password']
-    response.set_cookie('session', data, secret)
+    response.set_cookie('session', data, SECRET)
     return {}
 
 
