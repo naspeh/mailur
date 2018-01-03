@@ -1,12 +1,20 @@
 .msgs__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
-  justify-content: flex-start;
-  width: 100%;
+  justify-content: space-between;
   height: 1.5em;
   line-height: 1.5em;
-  margin-bottom: 0.2em;
+  padding: 0.2em;
+  background-color: @--color--white;
   font-size: @--font-size--s;
   white-space: nowrap;
+}
+
+.msgs__body {
+  padding: 0.2em;
+  padding-top: 0;
 }
 
 .msgs__search {

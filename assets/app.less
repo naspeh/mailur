@@ -1,23 +1,44 @@
-.app {
-  display: flex;
-  flex-flow: row nowrap;
+html, body {
+  height: 100%;
 }
 
-.split {
-  display: none;
+.app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 
-  .opt--split-on & {
-    display: block;
-  }
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 1.7em;
+  padding: 0.1em 0.2em;
+  background-color: @--color--light-grey;
+}
+
+.panes {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-flow: row nowrap;
+  box-sizing: border-box;
+  height: 100%;
+  padding-top: 1.7em;
 }
 
 .main,
 .split {
+  position: relative;
   box-sizing: border-box;
   min-width: 600px;
   width: 100vw;
-  height: 100vh;
-  padding: 0.2em;
   overflow-x: hidden;
   overflow-y: auto;
   background-color: @--color--white;
@@ -27,7 +48,16 @@
   }
 }
 
-.main__tags {
+.split {
+  display: none;
+
+  .opt--split-on & {
+    display: block;
+    border-left: 1px solid @--color--light-grey;
+  }
+}
+
+.header__tags {
   display: flex;
   align-items: stretch;
   height: 1.5em;
@@ -45,10 +75,8 @@
   }
 }
 
-.main__actions {
-  float: right;
+.header__actions {
   display: flex;
-  line-height: 1.5em;
   white-space: nowrap;
 
   .opt--split-on & .icon--split,

@@ -14,7 +14,7 @@ Vue.component('app', {
       tagIds: window.data.tags.ids,
       addrs: [],
       picSize: 20,
-      tagCount: 5,
+      tagCount: 7,
       opts: { split: false, splitQuery: null, bigger: false },
       optsKey: `${window.data.user}:opts`
     };
@@ -80,7 +80,7 @@ Vue.component('app', {
         window.location.hash = q;
         this.main = msgs(
           Object.assign(res, {
-            cls: 'main__body',
+            cls: 'main',
             query: q,
             open: this.openInMain,
             search: this.search,
@@ -96,7 +96,7 @@ Vue.component('app', {
       this.search(q).then(res => {
         this.split = msgs(
           Object.assign(res, {
-            cls: 'split__body',
+            cls: 'split',
             query: q,
             open: this.openInSplit,
             search: this.search,

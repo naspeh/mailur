@@ -24,9 +24,19 @@
         {{loaded.length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
       </span>
       <span>
-        (Select
-        <a v-if="loaded.length > picked.length" @click.prevent="pickAll" href="#">All</a>
-        <a v-if="picked.length > 0" @click.prevent="pickNone" href="#">None</a>
+        (
+        <a
+          v-if="loaded.length > picked.length"
+          @click.prevent="pickAll"
+          href="#"
+          title="Select all"
+        >All</a>
+        <a
+          v-if="picked.length > 0"
+          @click.prevent="pickNone"
+          href="#"
+          title="Select none"
+        >None</a>
         )
       </span>
     </div>
