@@ -3,14 +3,14 @@
 set -exuo pipefail
 
 # smtp server for testing with Thunderbird
-apk add opensmtpd
-sed -i 's/^listen.*/listen on 0.0.0.0/' /etc/smtpd/smtpd.conf
-rc-update add smtpd
-rc-service smtpd restart
+# pacman --noconfirm -S opensmtpd
+# sed -i 's/^listen.*/listen on 0.0.0.0/' /etc/smtpd/smtpd.conf
+# systemctl enable smtpd
+# systemctl start smtpd
 
 bin/dovecot
 
-apk add python3-dev libxml2-dev libxslt-dev musl-dev gcc make
+pacman --noconfirm -S python gcc
 env=${env:-/opt/mailur/env}
 pip=$env/bin/pip
 python3 -m venv $env
@@ -18,5 +18,5 @@ python3 -m venv $env
 $pip install -U setuptools
 $pip install -U -e .
 
-apk add yarn
+pacman --noconfirm -S yarn
 yarn

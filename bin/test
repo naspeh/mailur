@@ -7,6 +7,7 @@ lxc_name=mlr-test
 lxc-destroy -fn $lxc_name || true
 
 export lxc_name
+export no_login=1
 $root/lxc
 
 cat << EOF | ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $(lxc-info -n $lxc_name -iH)
@@ -15,7 +16,7 @@ set -exuo pipefail
 cd /opt/mailur
 bin/install
 
-apk add git
+pacman --noconfirm -S git
 
 set +ux
 . env/bin/activate

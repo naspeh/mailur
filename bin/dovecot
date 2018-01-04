@@ -1,11 +1,11 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
-apk add dovecot
+pacman --noconfirm -S dovecot
 
 id -u vmail || (
-addgroup -g 5000 -S vmail
-adduser -h /home/vmail -s /bin/false -u 5000 -DSG vmail vmail
+groupadd -g 5000 vmail
+useradd -m -d /home/vmail -s /bin/false -u 5000 -g vmail vmail
 )
 
 [ -d '/etc/dovecot.bak' ] || (
@@ -21,10 +21,10 @@ mail_debug=yes
 verbose_ssl=yes
 log_path = /var/log/dovecot.log
 
-ssl = required
-ssl_key = </etc/ssl/dovecot/server.key
-ssl_cert = </etc/ssl/dovecot/server.pem
-ssl_client_ca_dir = /etc/ssl/certs/
+# ssl = required
+# ssl_key = </etc/ssl/dovecot/server.key
+# ssl_cert = </etc/ssl/dovecot/server.pem
+# ssl_client_ca_dir = /etc/ssl/certs/
 
 # should be big enough to save all message-ids as metadata
 imap_max_line_length = 10M
@@ -156,5 +156,5 @@ EOF
 
 bin/users
 
-rc-update add dovecot
-rc-service dovecot restart
+systemctl enable dovecot
+systemctl start dovecot

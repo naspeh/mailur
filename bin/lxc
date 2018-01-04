@@ -5,17 +5,19 @@ set -exuo pipefail
 proj=mailur
 lxc_name=${lxc_name:-mlr}
 mount_src=${lxc_src-$(pwd)}
+no_login=${no_login:-}
 
-lxc-create -t download -n $lxc_name -- -d alpine -r edge -a amd64
+lxc-create -t download -n $lxc_name -- -d archlinux -r current -a amd64
 
 # mount src from host and also some cache directories
 [ -z "$mount_src" ] || (
 cache=$mount_src/.cache/$lxc_name
-mkdir -p $cache/{root,home}
+mkdir -p $cache/{root,home,pacman}
 cat <<EOF >> /var/lib/lxc/$lxc_name/config
 lxc.mount.entry = $mount_src opt/$proj none bind,create=dir
 lxc.mount.entry = $cache/root root none bind,create=dir
 lxc.mount.entry = $cache/home home none bind,create=dir
+lxc.mount.entry = $cache/pacman var/cache/pacman/pkg none bind,create=dir
 EOF
 unset cache
 )
@@ -27,21 +29,10 @@ sleep 5
 cat <<EOF | lxc-attach --clear-env -n $lxc_name -- /bin/sh
 set -exu
 
-# The loopback configuration must appear first in /etc/network/interfaces
-# to prevent networking issues.
-echo "\
-auto lo
-iface lo inet loopback
-
-\$(cat /etc/network/interfaces)
-" > /etc/network/interfaces
-rc-service networking restart
-
-apk update
-apk add openssh bash
-rc-update add sshd
-rc-service sshd start
-sed -i 's|/bin/ash|/bin/bash|' /etc/passwd
+pacman --noconfirm -Syy
+pacman --noconfirm -S openssh
+systemctl enable sshd
+systemctl start sshd
 
 mkdir -p /root/.ssh
 cat <<EOF0 > /root/.ssh/authorized_keys
@@ -49,3 +40,9 @@ $(cat ~/.ssh/id_rsa.pub)
 $([ ! -f /root/.ssh/id_rsa.pub ] ||  cat /root/.ssh/id_rsa.pub)
 EOF0
 EOF
+
+[ -n "$no_login" ] || (ssh\
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    $(lxc-info -iH -n $lxc_name)
+)
