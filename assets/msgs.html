@@ -1,10 +1,27 @@
 <div :class="['msgs', cls, name]">
+  <!-- loader -->
+  <template v-if="name == 'loader'">
+  <div class="msgs__header">
+    <div v-if="loading" class="icon--spinner" />
+    <div class="msgs__search">
+      <input v-model="query" @keyup.enter="open(query)">
+      <button @click="open(query)" class="icon--search"></button>
+    </div>
+  </div>
+  <div class="msgs__body">
+    <div v-if="loading">Loading...</div>
+    <div v-if="error" class="msgs__error">{{error}}</div>
+  </div>
+  </template>
+
   <!-- msgs -->
   <template v-if="name == 'msgs'">
   <div class="msgs__header">
+    <div v-if="!loading" class="icon--reload" @click="open(query)" />
+    <div v-if="loading" class="icon--spinner" />
     <div class="msgs__search">
-      <input v-model="query" @keyup.enter="newQuery">
-      <button @click="newQuery" class="icon--search"></button>
+      <input v-model="query" @keyup.enter="open(query)">
+      <button @click="open(query)" class="icon--search"></button>
     </div>
     <div v-if="picked.length" class="msgs__actions">
       <button @click="archive" class="icon--archive" title="Archive"></button>
@@ -42,7 +59,8 @@
     </div>
   </div>
   <div class="msgs__body">
-    <div v-if="!loaded.length && query">Loading...</div>
+    <div v-if="error" class="msgs__error">{{error}}</div>
+    <div v-if="!loading && !uids.length">Nothing...</div>
     <msg
       v-for="uid in uids" :key="uid"
       v-if="msgs[uid]"
@@ -64,9 +82,11 @@
   <!-- thread -->
   <template v-if="name == 'thread'">
   <div class="msgs__header">
+    <div v-if="!loading" class="icon--reload" @click="open(query)" />
+    <div v-if="loading" class="icon--spinner" />
     <div class="msgs__search">
-      <input v-model="query" @keyup.enter="newQuery">
-      <button @click="newQuery" class="icon--search"></button>
+      <input v-model="query" @keyup.enter="open(query)">
+      <button @click="open(query)" class="icon--search"></button>
     </div>
     <div v-if="uids.length" class="msgs__actions">
       <button @click="archive" class="icon--archive" title="Archive"></button>
@@ -89,7 +109,8 @@
     </div>
   </div>
   <div class="msgs__body">
-    <div v-if="!uids.length && query">Loading...</div>
+    <div v-if="error" class="msgs__error">{{error}}</div>
+    <div v-if="!loading && !uids.length">Nothing...</div>
     <div v-for="uid of uids" :key="uid">
       <a
         v-if="hidden.indexOf(uid) == 0"

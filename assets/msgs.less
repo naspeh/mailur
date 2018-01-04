@@ -10,6 +10,35 @@
   background-color: @--color--white;
   font-size: @--font-size--s;
   white-space: nowrap;
+
+  .icon--reload {
+    cursor: pointer;
+    color: @--color--green;
+  }
+
+  .icon--spinner {
+    color: @--color--orange;
+
+    &:before {
+      animation: spin 1s infinite;
+    }
+  }
+}
+
+.msgs__error {
+  position: sticky;
+  top: 1.7em;
+  z-index: 1;
+  padding: 0.2em;
+  background-color: @--color--white;
+  color: @--color--orange;
+
+  &::before {
+    content: "Error:";
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-right: 0.2em;
+  }
 }
 
 .msgs__body {

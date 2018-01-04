@@ -15,7 +15,7 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import SECRET, imap, local
+from . import SECRET, imap, local, log
 from .schema import validate
 
 
@@ -39,6 +39,16 @@ def auth(callback):
         if request.session:
             return callback(*args, **kwargs)
         return abort(403)
+    return inner
+
+
+def endpoint(callback):
+    def inner(*args, **kwargs):
+        try:
+            return callback(*args, **kwargs)
+        except Exception as e:
+            log.exception(e)
+            return {'errors': str(e)}
     return inner
 
 
@@ -116,11 +126,13 @@ def logout():
 
 
 @app.get('/tags')
+@endpoint
 def tags():
     return wrap_tags(local.tags_info())
 
 
 @app.post('/tag')
+@endpoint
 def tag():
     schema = {
         'type': 'object',
@@ -141,6 +153,7 @@ def tag():
 
 
 @app.post('/search')
+@endpoint
 def search():
     q = request.json['q']
     preload = request.json.get('preload', 200)
@@ -171,6 +184,7 @@ def search():
 
 
 @app.post('/thrs/info', name='thrs_info')
+@endpoint
 def thrs_info():
     uids = request.json['uids']
     hide_tags = request.json.get('hide_tags', [])
@@ -180,6 +194,7 @@ def thrs_info():
 
 
 @app.post('/msgs/info', name='msgs_info')
+@endpoint
 def msgs_info():
     uids = request.json['uids']
     hide_tags = request.json.get('hide_tags', [])
@@ -189,6 +204,7 @@ def msgs_info():
 
 
 @app.post('/msgs/body', name='msgs_body')
+@endpoint
 def msgs_body():
     uids = request.json['uids']
     if not uids:
@@ -197,6 +213,7 @@ def msgs_body():
 
 
 @app.post('/thrs/link')
+@endpoint
 def thrs_link():
     uids = request.json['uids']
     if not uids:
@@ -205,6 +222,7 @@ def thrs_link():
 
 
 @app.post('/msgs/flag')
+@endpoint
 def msgs_flag():
     schema = {
         'type': 'object',

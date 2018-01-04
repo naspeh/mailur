@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import { call } from './utils.js';
 import './picker.js';
 import './tags.js';
 import './msg.js';
@@ -20,13 +19,15 @@ Vue.component('app', {
     };
   },
   created: function() {
+    window.app = this;
+  },
+  mounted: function() {
     let opts = window.localStorage.getItem(this.optsKey);
     if (opts) {
       this.opts = JSON.parse(opts);
       this.reloadOpts();
     }
 
-    window.app = this;
     this.openFromHash();
 
     window.onhashchange = () => {
@@ -71,39 +72,38 @@ Vue.component('app', {
         this.openInMain(q);
       }
     },
-    search: function(q, preload = undefined) {
-      return call('post', '/search', { q: q, preload: preload });
-    },
     openInMain: function(q) {
-      this.main && this.main.clean();
-      this.search(q).then(res => {
-        window.location.hash = q;
-        this.main = msgs(
-          Object.assign(res, {
-            cls: 'main',
-            query: q,
-            open: this.openInMain,
-            search: this.search,
-            pics: this.pics
-          })
-        );
+      window.location.hash = q;
+
+      let view = msgs({
+        cls: 'main',
+        query: q,
+        open: this.openInMain,
+        pics: this.pics
       });
+      if (this.main) {
+        this.main.newQuery(q);
+      } else {
+        view.mount();
+      }
+      this.main = view;
     },
     openInSplit: function(q) {
       this.opts.split || this.setOpt('split', true);
       this.opts.splitQuery == q || this.setOpt('splitQuery', q);
-      this.split && this.split.clean();
-      this.search(q).then(res => {
-        this.split = msgs(
-          Object.assign(res, {
-            cls: 'split',
-            query: q,
-            open: this.openInSplit,
-            search: this.search,
-            pics: this.pics
-          })
-        );
+
+      let view = msgs({
+        cls: 'split',
+        query: q,
+        open: this.openInSplit,
+        pics: this.pics
       });
+      if (this.split) {
+        this.split.newQuery(q);
+      } else {
+        view.mount();
+      }
+      this.split = view;
     },
     logout: function() {
       window.location = '/logout';

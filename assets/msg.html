@@ -17,7 +17,7 @@
         <template v-for="from in msg.from_list">
         <div
           v-if="from.hash"
-          @click.stop="openInMain(from.query)"
+          @click.stop.prevent="openInMain(from.query)"
           :class="`msg-line__from__pic pic-${from.hash}`"
           :title="from.title"
         ></div>

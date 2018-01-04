@@ -64,7 +64,9 @@
 .icon--reply,
 .icon--reply-all,
 .icon--archive,
-.icon--trash {
+.icon--trash,
+.icon--reload,
+.icon--spinner {
   .--icon;
 }
 
@@ -286,4 +288,24 @@
 
 .icon--trash {
   .--icon--trash;
+}
+
+.--icon--reload() {
+  &::before {
+    content: "\f01e";
+  }
+}
+
+.icon--reload {
+  .--icon--reload;
+}
+
+.--icon--spinner() {
+  &::before {
+    content: "\f110";
+  }
+}
+
+.icon--spinner {
+  .--icon--spinner;
 }
