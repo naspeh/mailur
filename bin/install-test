@@ -1,0 +1,16 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+env=${env:-"env"}
+
+cd /opt/mailur
+bin/install
+
+pacman --noconfirm -S git
+
+set +ux
+. $env/bin/activate
+set -ux
+
+pip install -e .[test]

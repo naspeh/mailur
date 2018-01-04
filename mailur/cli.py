@@ -7,7 +7,7 @@ Usage:
   mlr icons
   mlr web
   mlr lint [--ci]
-  mlr test -- [<options>...]
+  mlr test
 
 Options:
   -h --help     Show this screen.
@@ -56,8 +56,7 @@ def process(args):
     elif args['web']:
         web()
     elif args['test']:
-        opts = ' '.join(args['<options>'])
-        run('pytest %r' % opts)
+        run('pytest')
     elif args['lint']:
         ci = args['--ci'] and 1 or ''
         run('ci=%s bin/lint' % ci)

@@ -10,22 +10,20 @@ export lxc_name
 export no_login=1
 $root/lxc
 
-cat << EOF | ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $(lxc-info -n $lxc_name -iH)
+cat << "EOF" | lxc-attach --clear-env -n $lxc_name
 set -exuo pipefail
 
 cd /opt/mailur
-bin/install
 
-pacman --noconfirm -S git
+export env=/opt/mailur-env
+bin/install-test
 
 set +ux
-. env/bin/activate
+. $env/bin/activate
 set -ux
 
-pip install -e .[test]
-
 mlr lint --ci
-mlr test -- -v
+mlr test
 
 yarn run build
 EOF
