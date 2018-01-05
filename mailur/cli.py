@@ -78,7 +78,7 @@ def web():
         run(cmd, shell=True)
 
     def webpack():
-        run('webpack --config=assets/webpack.config.js -w', shell=True)
+        run('which yarn && yarn run dev || npm run dev', shell=True)
 
     try:
         pool = Pool()

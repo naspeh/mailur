@@ -1,0 +1,146 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+[ ! -f bin/env ] || . bin/env
+
+live=${live-'--staging'}
+domain=${domain:-}
+
+[ -n "$domain" ] || (
+echo '"domain" variable is not set'
+exit 1
+)
+
+pacman --noconfirm -S nginx certbot
+
+cat <<EOF > /etc/nginx/nginx.conf
+events {
+    worker_connections 768;
+    # multi_accept on;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    server {
+        listen 80 default;
+        location /.well-known {
+            root /var/tmp;
+        }
+    }
+}
+EOF
+
+systemctl enable nginx
+systemctl restart nginx
+
+certbot certonly $live --webroot -w /var/tmp -d $domain
+
+cat <<EOF > /etc/nginx/nginx.conf
+events {
+    worker_connections 768;
+    # multi_accept on;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    include /etc/nginx/params.conf;
+
+    server {
+        listen 80 default;
+
+        return 301 https://$domain\$request_uri;
+    }
+    server {
+        listen 443 ssl;
+
+        ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+
+        location / {
+            proxy_pass http://localhost:5000/;
+            expires epoch;
+        }
+        location /.well-known {
+            root /var/tmp;
+        }
+    }
+}
+
+mail {
+    server_name $domain;
+    auth_http   localhost:5000/nginx;
+
+    error_log /var/log/nginx/mail.log;
+
+    proxy_pass_error_message on;
+
+    ssl on;
+    ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+
+    server {
+        listen   993;
+        protocol imap;
+    }
+}
+EOF
+
+cat <<EOF > /etc/nginx/params.conf
+tcp_nopush on;
+tcp_nodelay on;
+output_buffers 1 256k;
+postpone_output 0;
+keepalive_requests 210;
+reset_timedout_connection on;
+ignore_invalid_headers  on;
+server_tokens off;
+client_max_body_size 1024m;
+recursive_error_pages   on;
+server_name_in_redirect off;
+
+gzip on;
+gzip_disable "msie6";
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 1;
+gzip_buffers 16 8k;
+gzip_http_version 1.1;
+gzip_types text/plain text/css application/json application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+proxy_set_header Host \$host;
+proxy_set_header X-Forwarded-For \$remote_addr;
+proxy_set_header Accept-Encoding "";
+proxy_buffering on;
+proxy_ignore_client_abort off;
+proxy_intercept_errors on;
+proxy_next_upstream error timeout invalid_header;
+proxy_redirect off;
+proxy_buffer_size 32k;
+proxy_buffers 8 32k;
+proxy_busy_buffers_size 64k;
+proxy_temp_file_write_size 64k;
+client_body_buffer_size 128k;
+proxy_connect_timeout 1;
+proxy_send_timeout 300;
+proxy_read_timeout 300;
+proxy_cache_min_uses 1;
+proxy_temp_path /var/tmp;
+
+
+ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
+ssl_ciphers         HIGH:!aNULL:!MD5;
+ssl_session_cache   shared:SSL:10m;
+ssl_session_timeout 10m;
+EOF
+
+systemctl restart nginx

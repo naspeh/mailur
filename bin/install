@@ -1,6 +1,9 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
+[ ! -f bin/env ] || . bin/env
+
+pacman --noconfirm -Syy
 
 # smtp server for testing with Thunderbird
 # pacman --noconfirm -S opensmtpd
@@ -20,3 +23,20 @@ $pip install -U -e .
 
 pacman --noconfirm -S yarn
 yarn
+yarn build
+
+cat <<"EOF" > /etc/systemd/system/mailur.service
+[Unit]
+Description=mailur
+Wants=network.target
+After=network.target
+[Service]
+ExecStart=/bin/sh -c '[ -f bin/env ] && . bin/env && . env/bin/activate && exec mlr web'
+WorkingDirectory=/opt/mailur
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable mailur
+systemctl restart mailur

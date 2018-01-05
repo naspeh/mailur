@@ -4,7 +4,8 @@
 *.egg
 *.egg-info
 
-env
-node_modules
-assets/dist
-yarn.lock
+/env
+/bin/env
+/node_modules
+/assets/dist
+/yarn.lock

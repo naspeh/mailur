@@ -1,20 +1,10 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
+[ ! -f bin/env ] || . bin/env
 
 # some useful stuff
-apk add curl htop git less
-
-apk add zsh zsh-vcs coreutils
+pacman --noconfirm -S vim git htop zsh grml-zsh-config
 sed -i 's|/bin/bash|/bin/zsh|' /etc/passwd
 
-apk add the_silver_searcher the_silver_searcher-zsh-completion
-
-apk add neovim neovim-doc xauth xclip
-[ -f /usr/bin/vim ] || ln -s /usr/bin/nvim /usr/bin/vim
-sed -i -e 's|^#*\(X11Forwarding\) .*|\1 yes|' /etc/ssh/sshd_config
-rc-service sshd restart
-
-env=${env:-/opt/mailur/env}
-pip=$env/bin/pip
-$pip install -U neovim
+bin/install-test

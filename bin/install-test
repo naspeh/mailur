@@ -1,6 +1,7 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
+[ ! -f bin/env ] || . bin/env
 
 env=${env:-"env"}
 

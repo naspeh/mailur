@@ -1,6 +1,8 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
+[ ! -f bin/env ] || . bin/env
+
 pacman --noconfirm -S dovecot
 
 id -u vmail || (
@@ -122,9 +124,8 @@ service imap-login {
         address = localhost
     }
     inet_listener imaps {
-        port = 993
+        port = 0
         ssl = yes
-        address = *
     }
 }
 service imap {
@@ -144,8 +145,8 @@ service doveadm {
 doveadm_port = 12345
 doveadm_password = secret
 EOF
-cat <<"EOF" > /etc/dovecot/passwd.masters
-root:{plain}root
+cat <<EOF > /etc/dovecot/passwd.masters
+root:{plain}${secret:-root}
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr

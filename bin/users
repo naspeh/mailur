@@ -1,10 +1,13 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
+[ ! -f bin/env ] || . bin/env
+
+pass=${pass:-\{plain\}user}
+names=${user:-"user demo test1 test2 grrr"}
+
 users=/etc/dovecot/passwd.users
-pass='{BLF-CRYPT}$2y$05$B/zqrUWYzs/BHOBteLtir.rygIhqN7eVXor3fyN81FSUlhmJZhX5S'
 : > $users
-names="user demo test1 test2 grrr"
 for user in $names; do
     echo "$user:$pass" >> $users
 done

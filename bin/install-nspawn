@@ -1,0 +1,14 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+[ ! -f bin/env ] || . bin/env
+
+env=${env:-$(pwd)/env}
+bin/install
+
+cat <<EOF > /etc/profile.d/activate.sh
+[ -d $env ] && . $env/bin/activate
+[ -f $(pwd)/bin/env ] && . $(pwd)/bin/env
+EOF
+
+timedatectl set-timezone UTC

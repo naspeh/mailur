@@ -1,0 +1,46 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+name=${name:-mlr}
+tpl=${tpl:-arch}
+bin=${bin:-install-nspawn}
+
+(machinectl list-images | grep -E "$tpl\s") || (
+# pacman -S btrfs-progs
+# truncate -s20G /var/lib/machines.raw
+# losetup --show --find /var/lib/machines.raw
+# mkfs -t btrfs /dev/loop0
+# mount /dev/loop0 /var/lib/machines
+base_url=https://uk.images.linuxcontainers.org/images/archlinux/current/amd64/default
+machinectl pull-tar --verify=no $base_url/20180105_01:27/rootfs.tar.xz $tpl
+)
+
+!(machinectl list-images | grep -E "$name\s") || (
+machinectl kill $name || true
+sleep 1
+machinectl remove $name
+)
+
+machinectl clone $tpl $name
+
+sudo mkdir -p /etc/systemd/nspawn/
+cat <<EOF | sudo tee /etc/systemd/nspawn/$name.nspawn
+[Exec]
+PrivateUsers=false
+#PrivateUsersChown=true
+[Network]
+VirtualEthernet=false
+[Files]
+Bind=$(pwd):/opt/mailur
+EOF
+
+machinectl start $name
+sleep 1
+
+machinectl shell $name /bin/sh -c "echo $name > /etc/hostname"
+machinectl shell $name /bin/sh -c "cd /opt/mailur && bin/$bin"
+
+machinectl stop $name
+sleep 1
+machinectl start $name

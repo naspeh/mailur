@@ -125,6 +125,20 @@ def logout():
     return redirect('/login')
 
 
+@app.get('/nginx', skip=[auth])
+def nginx():
+    h = request.headers
+    try:
+        local.connect(h['Auth-User'], h['Auth-Pass'])
+        response.set_header('Auth-Status', 'OK')
+        response.set_header('Auth-Server', '127.0.0.1')
+        response.set_header('Auth-Port', '143')
+    except imap.Error as e:
+        response.set_header('Auth-Status', str(e))
+        response.set_header('Auth-Wait', 3)
+    return ''
+
+
 @app.get('/tags')
 @endpoint
 def tags():
