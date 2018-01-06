@@ -1,6 +1,19 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
+
+[ -f bin/env ] || cat <<EOF > bin/env
+user=demo
+pass='{plain}demo'
+secret=$(openssl rand -hex 16)
+
+#domain=pad.pusto.org
+#certbot_opts='--staging --manual'
+
+export MLR_SECRET=\$secret
+export MLR_MASTER=root:\$secret
+EOF
+
 . bin/activate
 
 bin/install
