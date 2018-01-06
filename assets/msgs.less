@@ -1,3 +1,9 @@
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
 .msgs__header {
   position: sticky;
   top: 0;
@@ -19,7 +25,7 @@
   .icon--spinner {
     color: @--color--orange;
 
-    &:before {
+    &::before {
       animation: spin 1s infinite;
     }
   }

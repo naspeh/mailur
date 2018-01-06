@@ -6,5 +6,3 @@ set -exuo pipefail
 # some useful stuff
 pacman --noconfirm -S vim git htop zsh grml-zsh-config
 sed -i 's|/bin/bash|/bin/zsh|' /etc/passwd
-
-bin/install-test

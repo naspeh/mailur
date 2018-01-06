@@ -8,6 +8,7 @@ install:
   - export lxc_attach="sudo lxc-attach --clear-env -n mlr"
   - export mlr="cd /opt/mailur && . env/bin/activate && mlr"
   - sudo sh -c "no_login=1 ./bin/lxc"
+  - echo "cd /opt/mailur && bin/install" | $lxc_attach
   - echo "cd /opt/mailur && bin/install-test" | $lxc_attach
 script:
   - echo "$mlr lint --ci" | $lxc_attach

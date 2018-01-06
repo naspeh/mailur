@@ -17,6 +17,7 @@ sys.path.insert(0, str(root))
 def init():
     call('''
     bin/dovecot
+    sleep 2
     ''', shell=True, cwd=root)
 
 

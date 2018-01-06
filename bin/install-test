@@ -3,13 +3,11 @@
 set -exuo pipefail
 [ ! -f bin/env ] || . bin/env
 
-env=${env:-"env"}
-
-cd /opt/mailur
-bin/install
-
 pacman --noconfirm -S git
 
+cd /opt/mailur
+
+env=${env:-"env"}
 set +ux
 . $env/bin/activate
 set -ux

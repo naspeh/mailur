@@ -106,6 +106,9 @@ let Base = {
     fetchBody: function(uid) {
       return this.call('post', '/msgs/body', { uids: [uid] }).then(res => {
         Vue.set(this.bodies, uid, res[uid]);
+        if (this.msgs[uid].is_unread) {
+          this.editTags({ new: ['\\Seen'] }, [uid]);
+        }
       });
     },
     archive: function() {
@@ -214,6 +217,8 @@ let Msgs = Vue.extend({
         uids = picked;
       } else if (!opts.old && opts['new'].indexOf('\\Flagged') != -1) {
         uids = picked;
+      } else if (!this.threads) {
+        uids = picked;
       } else {
         uids = [];
         for (let i of picked) {
@@ -271,11 +276,7 @@ let Thread = Vue.extend({
       }
     },
     openMsg: function(uid) {
-      if (!this.bodies[uid]) {
-        this.call('post', '/msgs/body', { uids: [uid] }).then(res => {
-          Vue.set(this.bodies, uid, res[uid]);
-        });
-      }
+      this.fetchBody(uid);
       let idx = this.opened.indexOf(uid);
       if (idx == -1) {
         this.opened.push(uid);

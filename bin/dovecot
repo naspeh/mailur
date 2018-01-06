@@ -3,6 +3,8 @@
 set -exuo pipefail
 [ ! -f bin/env ] || . bin/env
 
+secret=${secret:-root}
+
 pacman --noconfirm -S dovecot
 
 id -u vmail || (
@@ -15,7 +17,7 @@ useradd -m -d /home/vmail -s /bin/false -u 5000 -g vmail vmail
 )
 rm -rf /etc/dovecot
 mkdir /etc/dovecot
-cat <<"EOF" > /etc/dovecot/dovecot.conf
+cat <<EOF > /etc/dovecot/dovecot.conf
 auth_debug=yes
 auth_debug_passwords=yes
 auth_verbose_passwords=sha1
@@ -57,7 +59,7 @@ userdb {
     default_fields = uid=vmail gid=vmail home=/home/vmail/%u
 }
 
-mail_plugins = $mail_plugins acl notify mail_log virtual fts fts_squat
+mail_plugins = \$mail_plugins acl notify mail_log virtual fts fts_squat
 plugin {
     acl = vfile:/etc/dovecot/acl
     acl_globals_only = yes
@@ -127,6 +129,8 @@ service imap-login {
         port = 0
         ssl = yes
     }
+
+    process_min_avail = 1
 }
 service imap {
     vsz_limit = 2G
@@ -143,10 +147,10 @@ service doveadm {
     }
 }
 doveadm_port = 12345
-doveadm_password = secret
+doveadm_password = $secret
 EOF
 cat <<EOF > /etc/dovecot/passwd.masters
-root:{plain}${secret:-root}
+root:{plain}$secret
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lr
@@ -158,4 +162,4 @@ EOF
 bin/users
 
 systemctl enable dovecot
-systemctl start dovecot
+systemctl restart dovecot

@@ -9,7 +9,7 @@ pacman --noconfirm -Syy
 # pacman --noconfirm -S opensmtpd
 # sed -i 's/^listen.*/listen on 0.0.0.0/' /etc/smtpd/smtpd.conf
 # systemctl enable smtpd
-# systemctl start smtpd
+# systemctl restart smtpd
 
 bin/dovecot
 
