@@ -1,15 +1,10 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
-[ ! -f bin/env ] || . bin/env
+. bin/activate
 
 pacman --noconfirm -S git
 
 cd /opt/mailur
-
-env=${env:-"env"}
-set +ux
-. $env/bin/activate
-set -ux
 
 pip install -e .[test]

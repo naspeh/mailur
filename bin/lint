@@ -1,7 +1,7 @@
 #!/bin/sh
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
-PATH=$PATH:./node_modules/.bin
+. bin/activate
 
 flake8
 

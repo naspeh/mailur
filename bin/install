@@ -1,7 +1,7 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
-[ ! -f bin/env ] || . bin/env
+. bin/activate
 
 pacman --noconfirm -Syy
 
@@ -31,7 +31,7 @@ Description=mailur
 Wants=network.target
 After=network.target
 [Service]
-ExecStart=/bin/sh -c '[ -f bin/env ] && . bin/env && . env/bin/activate && exec mlr web'
+ExecStart=/bin/sh -c '. bin/activate && exec mlr web'
 WorkingDirectory=/opt/mailur
 Restart=always
 RestartSec=10

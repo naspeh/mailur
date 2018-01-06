@@ -1,0 +1,17 @@
+#!/bin/bash
+if [[ -o xtrace ]]; then
+    xtrace=1
+    set +x
+else
+    xtrace=
+fi
+
+PATH=./node_modules/.bin:$PATH
+
+cd /opt/mailur
+[ -f bin/env ] && . bin/env
+
+env=${env:-env}
+[ -d $env ] && . $env/bin/activate
+
+[ -z "$xtrace" ] || set -x

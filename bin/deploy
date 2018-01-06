@@ -1,10 +1,10 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
-[ ! -f bin/env ] || . bin/env
+. bin/activate
 
-live=${live-'--staging'}
 domain=${domain:-}
+certbot_opts=${certbot_opts-"--webroot -w /var/tmp"}
 
 [ -n "$domain" ] || (
 echo '"domain" variable is not set'
@@ -38,7 +38,7 @@ EOF
 systemctl enable nginx
 systemctl restart nginx
 
-certbot certonly $live --webroot -w /var/tmp -d $domain
+certbot certonly -d $domain $certbot_opts
 
 cat <<EOF > /etc/nginx/nginx.conf
 events {
@@ -72,6 +72,17 @@ http {
         }
         location /.well-known {
             root /var/tmp;
+        }
+    }
+    server {
+        listen 9003 ssl;
+
+        ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+
+        location / {
+            proxy_pass http://localhost:9000/;
+            expires epoch;
         }
     }
 }

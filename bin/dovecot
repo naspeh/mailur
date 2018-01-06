@@ -1,7 +1,7 @@
 #!/bin/bash
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
-[ ! -f bin/env ] || . bin/env
+. bin/activate
 
 secret=${secret:-root}
 
@@ -143,7 +143,8 @@ service doveadm {
         port = 12345
     }
     inet_listener http {
-        port = 8080
+        port = 9000
+        address = localhost
     }
 }
 doveadm_port = 12345
