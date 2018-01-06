@@ -25,7 +25,11 @@ Vue.component('msg', {
       }
     },
     openInSplit: function() {
-      window.app.openInSplit(this.msg.query_thread);
+      let q = this.msg.query_thread;
+      if (!this.thread) {
+        q = `${q} uid ${this.msg.uid}`;
+      }
+      window.app.openInSplit(q);
     },
     read: function(msg) {
       let data = {};

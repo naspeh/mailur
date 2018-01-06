@@ -10,7 +10,7 @@
       @click="read(msg)"
       :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"
     ></div>
-    <div v-if="thread" @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
+    <div @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
     <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
       <div class="msg-line__from">
@@ -42,7 +42,6 @@
       <input :checked="picked" @change="pick(msg.uid)" type="checkbox">
     </div>
     <div
-      v-if="thread"
       @click.prevent="openInSplit"
       class="icon--open-in-split"
       title="Open in split pane"
