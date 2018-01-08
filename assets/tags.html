@@ -21,15 +21,20 @@
       :fnUpdate="update"
       :fnFilter="filter"
     >
-      <div slot="header" class="icon--tags" />
-      <div
-        slot="opt"
-        slot-scope="$"
-        :class="{'tags-select__item': 1,'tags__item--unread': info[$.opt].unread}"
-      >
-        <div>{{tagName($.opt)}}</div>
-        <div class="tags__item__unread">{{info[$.opt].unread}}</div>
-      </div>
+      <template slot="header">
+        <div class="icon--tags" />
+      </template>
+      <template slot="opts" slot-scope="_">
+        <div
+          v-for="opt of _.opts"
+          @click="_.set(opt)"
+          :data-value="opt"
+          :class="`${_.cls(opt)} ${info[opt].unread ? 'tags__item--unread' : ''}`"
+        >
+          {{tagName(opt)}}
+          <div class="tags__item__unread">{{info[opt].unread}}</div>
+        </div>
+      </template>
     </picker>
   </template>
   <template v-if="name == 'tags-edit'">
@@ -49,25 +54,32 @@
         <div class="icon--tags" />
         <div class="icon--ok" @click="apply" />
       </template>
-      <template
-        slot="opts-title"
-        slot-scope="_"
-        v-if="_.filter"
-      >
-        <div
-          v-if="!info[_.filter]"
-          title="Add new tag"
-          :class="{'tags-edit__add': 1, 'picker__opts__item': 1, 'picker__opts__item--active': _.filter==_.selected}"
-          :data-value="_.filter"
-          @click="_.set(_.filter)"
-        >{{_.filter}} <div class="icon--add" /></div>
+      <template slot="opts-title" slot-scope="_">
         <div v-if="failed" class="tags-edit__failed">
           tag shouldn't start with "#" or "\"
         </div>
+
+        <div
+          v-if="_.filter && !info[_.filter]"
+          @click="_.set(_.filter)"
+          :data-value="_.filter"
+          :class="`tags-edit__add ${_.cls(_.filter)}`"
+          title="Add new tag"
+        >
+          {{_.filter}}
+          <div class="icon--add" />
+        </div>
       </template>
-      <template slot="opt" slot-scope="_">
-        {{tagName(_.opt)}}
-        <input class="tags__pick" type="checkbox" :checked="tagChecked(_.opt)" />
+      <template slot="opts" slot-scope="_">
+        <div
+          v-for="opt of _.opts"
+          @click="_.set(opt)"
+          :data-value="opt"
+          :class="`${_.cls(opt)}`"
+        >
+          {{tagName(opt)}}
+          <input class="tags__pick" type="checkbox" :checked="tagChecked(opt)" />
+        </div>
       </template>
     </picker>
   </template>

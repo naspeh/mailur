@@ -60,16 +60,16 @@ Vue.component('picker', {
       if (this.active) {
         this.$refs.input.focus();
       }
-      if (!val) {
-        return;
-      }
-      this.fnUpdate(val);
       if (this.value) {
         this.selected = val;
         this.filter = val;
       } else {
         this.filter = this.value;
       }
+      if (!val) {
+        return;
+      }
+      this.fnUpdate(val);
     },
     cancel: function() {
       this.fnCancel && this.fnCancel();
@@ -102,6 +102,11 @@ Vue.component('picker', {
         }
         opts.scrollTop = element.offsetTop;
       });
+    },
+    clsOpt: function(opt) {
+      return `picker__opts__item ${
+        opt == this.selected ? 'picker__opts__item--active' : ''
+      }`;
     },
     selectedOpt: function() {
       return (

@@ -8,17 +8,18 @@ export function call(method, url, data) {
       (params.body = data && JSON.stringify(data));
   }
   return fetch(url, params).then(response => {
-    if (!response.ok) {
-      return { errors: response.text() };
-    }
-
     let res;
     if (response.headers.get('Content-Length') == '0') {
       res = response.text();
     } else {
       res = response.json();
     }
-    return res;
+    return res.then(res => {
+      if (!response.ok && !res.errors) {
+        return { errors: res };
+      }
+      return res;
+    });
   });
 }
 
