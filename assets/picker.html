@@ -20,7 +20,7 @@
       :readonly="filterOff"
       :placeholder="title"
     />
-    <slot name="header"></slot>
+    <slot name="header" :activate="activate"></slot>
   </div>
   <div ref="opts" class="picker__opts">
     <slot name="opts-title" :filter="filter" :cls="clsOpt" :set="set">

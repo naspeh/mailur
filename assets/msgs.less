@@ -10,7 +10,6 @@
   z-index: 1;
   display: flex;
   justify-content: space-between;
-  height: 1.5em;
   line-height: 1.5em;
   padding: 0.2em;
   background-color: @--color--white;
@@ -53,7 +52,7 @@
 }
 
 .msgs__search {
-  flex-grow: 10;
+  flex-grow: 3;
   display: flex;
 
   & input {
@@ -66,12 +65,34 @@
   }
 }
 
-.msgs__picking {
-  display: flex;
-  margin-left: 0.2em;
+.msgs__picker {
+  max-width: 10em;
+  text-align: center;
 
-  & a {
-    text-transform: lowercase;
+  .msgs__picker__checkbox {
+    display: flex;
+    margin-left: -1.2em;
+    padding-right: 0.2em;
+  }
+
+  .picker__header {
+    display: flex;
+    align-items: center;
+  }
+
+  .picker__input {
+    box-sizing: border-box;
+    padding-right: 1.2em;
+    width: 100%;
+    cursor: pointer;
+    border: none;
+
+    &::placeholder {
+      color: @--color--green;
+      text-align: right;
+      opacity: unset;
+      font-weight: normal;
+    }
   }
 
   .icon--open-in-split {
@@ -86,7 +107,6 @@
 .msgs__actions {
   display: flex;
   align-items: stretch;
-  height: 1.5em;
   line-height: 1.5em;
   margin-left: 0.2em;
 

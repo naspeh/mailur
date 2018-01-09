@@ -36,27 +36,35 @@
     <div v-if="picked.length" class="msgs__tags">
       <tags :opts="tags" :edit="editTags" :trancated="true" />
     </div>
-    <div v-if="loaded.length" class="msgs__picking">
-      <span>
-        {{loaded.length}} of {{uids.length}} {{threads ? 'threads' : 'emails'}}
-      </span>
-      <span>
-        (
-        <a
-          v-if="loaded.length > picked.length"
-          @click.prevent="pickAll"
-          href="#"
-          title="Select all"
-        >All</a>
-        <a
-          v-if="picked.length > 0"
-          @click.prevent="pickNone"
-          href="#"
-          title="Select none"
-        >None</a>
-        )
-      </span>
-    </div>
+    <picker
+      v-if="loaded.length"
+      ref="picker"
+      class="msgs__picker"
+      value=""
+      :opts="['all', 'none', 'unread', 'read']"
+      :title="`${loaded.length} of ${uids.length} ${threads ? 'threads' : 'emails'}`"
+      :filterOff="true"
+      :fnUpdate="picker"
+    >
+      <template slot="header">
+        <div class="msgs__picker__checkbox">
+          <input
+            ref="picker_checkbox"
+            type="checkbox"
+            :checked="loaded.length == picked.length"
+            @change="loaded.length == picked.length ? picker('none') : picker('all')"
+          />
+        </div>
+      </template>
+      <template slot="opts" slot-scope="_">
+        <div
+          v-for="opt of _.opts"
+          @click="_.set(opt)"
+          :data-value="opt"
+          :class="`${_.cls(opt)}`"
+        >Select <b>{{opt}}</b></div>
+      </template>
+      </picker>
   </div>
   <div class="msgs__body">
     <div v-if="error" class="msgs__error">{{error}}</div>
@@ -96,7 +104,7 @@
     <div v-if="uids.length" class="msgs__tags">
       <tags :opts="tags" :edit="editTags" :trancated="true" />
     </div>
-    <div v-if="uids.length" class="msgs__picking">
+    <div v-if="uids.length" class="msgs__picker">
       <div>
         {{uids.length}} emails in thread
       </div>

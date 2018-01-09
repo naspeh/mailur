@@ -163,11 +163,21 @@ let Msgs = Vue.extend({
         this.picked.splice(idx, 1);
       }
     },
-    pickAll: function() {
-      this.picked = this.loaded;
-    },
-    pickNone: function() {
-      this.picked = [];
+    picker: function(name) {
+      switch (name) {
+        case 'all':
+          this.picked = this.loaded;
+          break;
+        case 'read':
+          this.picked = this.loaded.filter(i => !this.msgs[i].is_unread);
+          break;
+        case 'unread':
+          this.picked = this.loaded.filter(i => this.msgs[i].is_unread);
+          break;
+        case 'none':
+          this.picked = [];
+          break;
+      }
     },
     link: function() {
       this.call('post', '/thrs/link', { uids: this.picked }).then(() =>
