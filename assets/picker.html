@@ -2,7 +2,7 @@
   @submit.prevent=""
   :class="['picker', {'picker--active': active}]"
   >
-  <div class="picker__header">
+  <div class="picker__header" :title="title">
     <input
       ref="input"
       v-model="filter"

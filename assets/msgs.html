@@ -57,7 +57,7 @@
           :class="`${_.cls(opt)}`"
         >Select <b>{{opt}}</b></div>
       </template>
-      </picker>
+    </picker>
   </div>
   <div class="msgs__body">
     <div v-if="error" class="msgs__error">{{error}}</div>
@@ -97,17 +97,34 @@
     <div v-if="uids.length" class="msgs__tags">
       <tags :opts="tags" :edit="editTags" :trancated="true" />
     </div>
-    <div v-if="uids.length" class="msgs__picker">
-      <div>
-        {{uids.length}} emails in thread
-      </div>
-      <a
-        @click.prevent="openInSplit"
-        class="icon--open-in-split"
-        title="Open in split pane"
-        href="#"
-      ></a>
-    </div>
+    <picker
+      v-if="uids.length"
+      ref="picker"
+      class="msgs__picker"
+      value=""
+      :opts="Object.keys(pickerOpts)"
+      :title="`${uids.length} emails`"
+      :filterOff="true"
+      :fnUpdate="picker"
+    >
+      <template slot="header">
+        <div class="icon--more" />
+      </template>
+      <template slot="opts" slot-scope="_">
+        <div
+          v-for="opt of _.opts"
+          @click="_.set(opt)"
+          :data-value="opt"
+          :class="`${_.cls(opt)}`"
+        >{{pickerOpts[opt]}}</div>
+      </template>
+    </picker>
+    <a
+      @click.prevent="openInSplit"
+      class="icon--open-in-split"
+      title="Open in split pane"
+      href="#"
+    ></a>
   </div>
   <div class="msgs__body">
     <div v-if="error" class="msgs__error">{{error}}</div>

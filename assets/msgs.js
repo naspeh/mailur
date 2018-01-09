@@ -103,11 +103,12 @@ let Base = {
       this.msgs = Object.assign({}, this.msgs, msgs);
       this.pics(msgs);
     },
-    fetchBody: function(uid) {
-      return this.call('post', '/msgs/body', { uids: [uid] }).then(res => {
-        Vue.set(this.bodies, uid, res[uid]);
-        if (this.msgs[uid].is_unread) {
-          this.editTags({ new: ['\\Seen'] }, [uid]);
+    fetchBodies: function(uids) {
+      return this.call('post', '/msgs/body', { uids: uids }).then(res => {
+        this.bodies = Object.assign({}, this.bodies, res);
+        let unread = uids.filter(i => this.msgs[i].is_unread);
+        if (unread.length) {
+          this.editTags({ new: ['\\Seen'] }, unread);
         }
       });
     },
@@ -211,7 +212,7 @@ let Msgs = Vue.extend({
       }
       let msg = this.msgs[uid];
       if (msg.count == 1) {
-        this.fetchBody(uid);
+        this.fetchBodies([uid]);
       }
       if (this.opened == uid) {
         this.opened = null;
@@ -257,7 +258,13 @@ let Thread = Vue.extend({
       name: 'thread',
       preload: 4,
       detailed: [],
-      opened: []
+      opened: [],
+      pickerOpts: {
+        unread: 'Mark all as unread',
+        read: 'Mark all as read',
+        collapse: 'Collapse all',
+        expand: 'Expand all'
+      }
     };
   },
   created: function() {
@@ -286,7 +293,7 @@ let Thread = Vue.extend({
       }
     },
     openMsg: function(uid) {
-      this.fetchBody(uid);
+      this.fetchBodies([uid]);
       let idx = this.opened.indexOf(uid);
       if (idx == -1) {
         this.opened.push(uid);
@@ -306,6 +313,26 @@ let Thread = Vue.extend({
           this.search(preload).then(() => this.refresh(this.tags));
         }
       });
+    },
+    picker: function(name) {
+      switch (name) {
+        case 'unread':
+          this.editTags({ old: ['\\Seen'] }, this.uids);
+          break;
+        case 'read':
+          this.editTags({ new: ['\\Seen'] }, this.uids);
+          break;
+        case 'collapse':
+          this.opened = [];
+          break;
+        case 'expand':
+          this.fetchBodies(this.uids);
+          this.opened = this.uids;
+          if (this.hidden.length) {
+            this.loadAll();
+          }
+          break;
+      }
     }
   }
 });

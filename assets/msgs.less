@@ -10,6 +10,7 @@
   z-index: 1;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   line-height: 1.5em;
   padding: 0.2em;
   background-color: @--color--white;
@@ -26,6 +27,14 @@
 
     &::before {
       animation: spin 1s infinite;
+    }
+  }
+
+  .icon--open-in-split {
+    display: none;
+
+    .opt--split-on .main & {
+      display: block;
     }
   }
 }
@@ -69,6 +78,10 @@
   max-width: 12em;
   text-align: center;
 
+  .thread & {
+    max-width: 7em;
+  }
+
   .icon--more {
     margin-left: -1.2em;
     padding-right: 0.2em;
@@ -98,14 +111,6 @@
       text-align: right;
       opacity: unset;
       font-weight: normal;
-    }
-  }
-
-  .icon--open-in-split {
-    display: none;
-
-    .opt--split-on .main & {
-      display: block;
     }
   }
 }
