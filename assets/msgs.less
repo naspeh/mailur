@@ -66,18 +66,24 @@
 }
 
 .msgs__picker {
-  max-width: 10em;
+  max-width: 12em;
   text-align: center;
 
-  .msgs__picker__checkbox {
-    display: flex;
+  .icon--more {
     margin-left: -1.2em;
     padding-right: 0.2em;
+    color: @--color--green;
+    cursor: pointer;
   }
 
   .picker__header {
     display: flex;
     align-items: center;
+  }
+
+  .picker__opts {
+    left: unset;
+    right: 0;
   }
 
   .picker__input {

@@ -47,14 +47,7 @@
       :fnUpdate="picker"
     >
       <template slot="header">
-        <div class="msgs__picker__checkbox">
-          <input
-            ref="picker_checkbox"
-            type="checkbox"
-            :checked="loaded.length == picked.length"
-            @change="loaded.length == picked.length ? picker('none') : picker('all')"
-          />
-        </div>
+        <div class="icon--more" />
       </template>
       <template slot="opts" slot-scope="_">
         <div
