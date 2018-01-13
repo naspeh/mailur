@@ -8,3 +8,5 @@ pacman --noconfirm -S git
 cd /opt/mailur
 
 pip install -e .[test]
+# waiting for new version with "encodings" package as stdlib section
+pip install -e git+https://github.com/PyCQA/flake8-import-order.git#egg=flake8-import-order

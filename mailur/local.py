@@ -1,6 +1,7 @@
 import datetime as dt
 import email
 import email.policy
+import encodings
 import functools as ft
 import hashlib
 import imaplib
@@ -17,6 +18,15 @@ from . import MASTER, USER, fn_time, imap, log
 
 SRC = 'Src'
 ALL = 'All'
+
+encodings.aliases.aliases.update({
+    # Seems Google used gb2312 in some subjects, so there is another symbol
+    # instead of dash, because of next bug:
+    # https://bugs.python.org/issue24036
+    'gb2312': 'gbk',
+    # @naspeh got such encoding in my own mailbox
+    'cp-1251': 'cp1251',
+})
 
 
 class Local(imaplib.IMAP4, imap.Conn):

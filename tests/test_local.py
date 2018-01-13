@@ -434,6 +434,17 @@ def test_bad_msgids(clean_users, gm_client, msgs, some, load_file, latest):
     }
 
 
+def test_encoding_aliases(gm_client, load_file, latest):
+    gm_client.add_emails([
+        {'raw': load_file('msg-subject-gb2312.txt')}
+    ])
+    local.parse()
+    msg = latest(local.ALL, parsed=True)
+    assert msg['body']['subject'] == (
+        'Почта Gmail – особенная. Вот что Вам нужно знать.'
+    )
+
+
 def test_addresses():
     res = local.addresses('test <test@example.com>')
     assert res == [{

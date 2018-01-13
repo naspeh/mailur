@@ -1,4 +1,5 @@
 import email
+import json
 import re
 import sys
 import time
@@ -169,7 +170,7 @@ def gm_client():
         yield gm_client
 
 
-def _msgs(box, uids='1:*', raw=False):
+def _msgs(box, uids='1:*', *, parsed=False, raw=False):
     from mailur import local
 
     def flags(m):
@@ -178,12 +179,20 @@ def _msgs(box, uids='1:*', raw=False):
             res.remove('\\Recent')
         return ' '.join(res)
 
+    def body(m):
+        if parsed:
+            return json.loads(m)
+        elif raw:
+            return m
+        else:
+            return email.message_from_bytes(m)
+
     con = local.client(box)
-    res = con.fetch(uids, '(uid flags body[])')
+    res = con.fetch(uids, '(uid flags body[%s])' % ('1' if parsed else ''))
     return [{
         'uid': re.search('UID (\d+)', res[i][0].decode()).group(1),
         'flags': flags(res[i][0].decode()),
-        'body': res[i][1] if raw else email.message_from_bytes(res[i][1])
+        'body': body(res[i][1])
     } for i in range(0, len(res), 2)]
 
 
@@ -194,8 +203,8 @@ def msgs():
 
 @pytest.fixture
 def latest():
-    def inner(box, raw=False):
-        return _msgs(box, '*', raw=raw)[0]
+    def inner(box, *, parsed=False, raw=False):
+        return _msgs(box, '*', parsed=parsed, raw=raw)[0]
     return inner
 
 
