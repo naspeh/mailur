@@ -1,7 +1,7 @@
 """Mailur CLI
 
 Usage:
-  mlr gmail <login> <username> <password> [--parse -t<threads> -b<batch>]
+  mlr gmail <login> [(set <username> <password>) --parse -t<threads> -b<batch>]
   mlr parse <login> [<criteria> -t<threads> -b<batch>]
   mlr threads <login> [<criteria>]
   mlr icons
@@ -38,9 +38,9 @@ def process(args):
         'batch': int(args.get('-b')),
         'threads': int(args.get('-t')),
     }
-    if args['gmail']:
-        gmail.USER = args['<username>']
-        gmail.PASS = args['<password>']
+    if args['gmail'] and args['set']:
+        gmail.save_credentials(args['<username>'], args['<password>'])
+    elif args['gmail']:
         gmail.fetch(**opts)
         if args.get('--parse'):
             local.parse(**opts)

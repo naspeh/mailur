@@ -1,6 +1,6 @@
 import hashlib
 import imaplib
-import os
+import json
 import re
 
 from gevent import socket, ssl
@@ -26,14 +26,9 @@ MAP_LABELS = {
 }
 
 
-USER = os.environ.get('GM_USER')
-PASS = os.environ.get('GM_PASS')
-
-
 class Gmail(imaplib.IMAP4, imap.Conn):
     def __init__(self):
-        self.username = USER
-        self.password = PASS
+        self.username, self.password = get_credentials()
         self.defaults()
         super().__init__('imap.gmail.com', imaplib.IMAP4_SSL_PORT)
 
@@ -60,6 +55,22 @@ def client(tag='\\All'):
     if tag:
         ctx.select_tag(tag)
     return ctx
+
+
+def save_credentials(username, password):
+    data = json.dumps([username, password])
+    with local.client() as con:
+        con.setmetadata(local.SRC, 'gmail/credentials', data)
+
+
+def get_credentials():
+    with local.client() as con:
+        res = con.getmetadata(local.SRC, 'gmail/credentials')
+        if len(res) == 1:
+            raise ValueError('no credentials for gmail')
+    data = res[0][1].decode()
+    username, password = json.loads(data)
+    return username, password
 
 
 def fetch_uids(uids, tag):
