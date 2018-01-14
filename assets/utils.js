@@ -9,7 +9,7 @@ export function call(method, url, data) {
   }
   return fetch(url, params).then(response => {
     let res;
-    if (response.headers.get('Content-Length') == '0') {
+    if (response.headers.get('Content-Type') != 'application/json') {
       res = response.text();
     } else {
       res = response.json();

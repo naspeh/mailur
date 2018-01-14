@@ -25,6 +25,7 @@ let Loader = Vue.extend({
   },
   methods: {
     load: function() {
+      this.error = null;
       this.search().then(res => {
         if (res.errors) {
           this.error = res.errors;
