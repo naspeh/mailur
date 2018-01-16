@@ -58,9 +58,10 @@
   }
 
   .icon--ok {
+    display: none;
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0;
     cursor: pointer;
   }
 
@@ -69,10 +70,18 @@
   }
 
   .picker__input {
-    padding-right: 1.5em;
+    width: 9em;
   }
 
   .tags--edited {
+    .icon--ok {
+      display: block;
+    }
+
+    .icon--tags {
+      display: none;
+    }
+
     .picker__header {
       color: @--color--orange;
     }
