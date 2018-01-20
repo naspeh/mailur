@@ -48,14 +48,12 @@ def test_fetch_and_parse(clean_users, gm_client, some):
     ]
 
     gm_client.add_emails()
-    local.parse()
     assert gm_uidnext().endswith(b',2')
     assert mlr_uidnext() == b'2'
     assert lm.select(local.SRC) == [b'1']
     assert lm.select(local.ALL) == [b'1']
 
     gm_client.add_emails([{'txt': '1'}, {'txt': '2'}])
-    local.parse()
     assert gm_uidnext().endswith(b',4')
     assert mlr_uidnext() == b'4'
     assert lm.select(local.SRC) == [b'3']
@@ -71,7 +69,7 @@ def test_fetch_and_parse(clean_users, gm_client, some):
 
 
 def test_origin_msg(clean_users, gm_client, latest):
-    gm_client.add_emails()
+    gm_client.add_emails(parse=False)
     msg = latest(local.SRC)['body']
     # headers
     sha256 = msg.get('X-SHA256')
@@ -85,17 +83,19 @@ def test_origin_msg(clean_users, gm_client, latest):
 
     gm_client.add_emails([
         {'flags': r'\Flagged', 'labels': r'"\\Inbox" "\\Sent" label'}
-    ])
+    ], parse=False)
     flags = latest(local.SRC)['flags']
     assert r'\Flagged #inbox #sent label' == flags
     assert local.saved_tags() == {}
 
-    gm_client.add_emails([{'labels': r'test/#-.,:;!?/'}])
+    gm_client.add_emails([{'labels': r'test/#-.,:;!?/'}], parse=False)
     flags = latest(local.SRC)['flags']
     assert r'test/#-.,:;!?/' == flags
     assert local.saved_tags() == {}
 
-    gm_client.add_emails([{'labels': 'label "another label" (label)'}])
+    gm_client.add_emails([
+        {'labels': 'label "another label" (label)'}
+    ], parse=False)
     flags = latest(local.SRC)['flags']
     assert 'label #12ea23fc #40602c03' == flags
     assert local.saved_tags() == {
@@ -107,7 +107,7 @@ def test_origin_msg(clean_users, gm_client, latest):
     # - flags must be transformed with imap-utf7
     gm_client.add_emails([
         {'labels': r'"\\Important" "\\Sent" "test(&BEIENQRBBEI-)"'}
-    ])
+    ], parse=False)
     flags = latest(local.SRC)['flags']
     assert '#sent #a058c658' == flags
     assert local.saved_tags() == {
@@ -116,11 +116,11 @@ def test_origin_msg(clean_users, gm_client, latest):
         '#a058c658': {'id': '#a058c658', 'name': 'test(тест)'},
     }
 
-    gm_client.add_emails([{}], tag='\\Junk')
+    gm_client.add_emails([{}], tag='\\Junk', parse=False)
     assert latest(local.SRC)['flags'] == '#spam'
 
-    gm_client.add_emails([{}], tag='\\Trash')
+    gm_client.add_emails([{}], tag='\\Trash', parse=False)
     assert latest(local.SRC)['flags'] == '#trash'
 
-    gm_client.add_emails([{}], tag='\\Draft')
+    gm_client.add_emails([{}], tag='\\Draft', parse=False)
     assert latest(local.SRC)['flags'] == '\\Draft'

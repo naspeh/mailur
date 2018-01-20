@@ -2,7 +2,7 @@ from mailur import local
 
 
 def test_uid_pairs(clean_users, gm_client, msgs, patch):
-    gm_client.add_emails([{}, {}])
+    gm_client.add_emails([{}, {}], parse=False)
     assert ['1', '2'] == [i['uid'] for i in msgs(local.SRC)]
 
     assert local.pair_origin_uids(['1', '2']) == ()
@@ -14,13 +14,13 @@ def test_uid_pairs(clean_users, gm_client, msgs, patch):
     assert local.pair_parsed_uids(['1', '2']) == ('1', '2')
 
     local.parse('uid 1')
-    assert ['2', '3'] == [i['uid'] for i in msgs(local.ALL)]
+    assert ['2', '3'] == [i['uid'] for i in msgs()]
     assert local.uid_pairs() == {'1': '3', '2': '2'}
     assert local.pair_origin_uids(['1', '2']) == ('3', '2')
     assert local.pair_parsed_uids(['2', '3']) == ('2', '1')
 
     local.parse('all')
-    assert ['4', '5'] == [i['uid'] for i in msgs(local.ALL)]
+    assert ['4', '5'] == [i['uid'] for i in msgs()]
     assert local.uid_pairs() == {'1': '4', '2': '5'}
     assert local.pair_origin_uids(['1', '2']) == ('4', '5')
     assert local.pair_parsed_uids(['4', '5']) == ('1', '2')
@@ -49,76 +49,70 @@ def test_uid_pairs(clean_users, gm_client, msgs, patch):
 
         m.reset_mock()
         gm_client.add_emails([{}])
-        local.parse()
         assert m.called
         assert m.call_args[0][0] == '9'
 
 
 def test_update_threads(clean_users, gm_client, msgs):
     gm_client.add_emails([{}])
-    local.parse()
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['#latest'] == [i['flags'] for i in res]
 
     local.parse('all')
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['#latest'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{}])
-    local.parse()
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['#latest', '#latest'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
-    local.parse()
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['', '#latest', '#latest'] == [i['flags'] for i in res]
 
     gm_client.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
-    local.parse()
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     local.parse('all')
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     local.parse('uid *')
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     con = local.client()
     local.update_threads(con, 'all')
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     local.update_threads(con, 'UID 1')
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     local.update_threads(con)
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['', '', '', '#latest'] == [i['flags'] for i in res]
 
     gm_client.add_emails([
         {'refs': '<non-exist@mlr>'},
         {'refs': '<non-exist@mlr> <101@mlr>'}
     ])
-    local.parse()
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['flags'] for i in res] == [
         '', '', '', '', '#latest', '#latest'
     ]
 
-    gm_client.add_emails([{'labels': 't1'}, {'labels': 't2'}])
+    gm_client.add_emails([{'labels': 't1'}, {'labels': 't2'}], parse=False)
     local.parse('UID 6:*')
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['flags'] for i in res] == [
         '', '', '', '', '#latest', '#latest', '#latest t1', '#latest t2'
     ]
 
     local.update_threads(con, 'UID *')
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['flags'] for i in res] == [
         '', '', '', '', '#latest', '#latest', '#latest t1', '#latest t2'
     ]
@@ -131,8 +125,7 @@ def thread(box=local.SRC):
 
 def test_link_threads_part1(clean_users, gm_client, msgs):
     gm_client.add_emails([{}, {}])
-    local.parse()
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['1', '2'] == [i['uid'] for i in res]
     assert ['#latest', '#latest'] == [i['flags'] for i in res]
     assert [i['body']['references'] for i in res] == [None, None]
@@ -145,7 +138,7 @@ def test_link_threads_part1(clean_users, gm_client, msgs):
         None, None, '<101@mlr> <102@mlr>'
     ]
 
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['1', '2', '3'] == [i['uid'] for i in res]
     assert ['', '#latest', '#link'] == [i['flags'] for i in res]
     assert [i['body']['references'] for i in res] == [
@@ -156,7 +149,7 @@ def test_link_threads_part1(clean_users, gm_client, msgs):
     res = msgs(local.SRC)
     assert (('1', '2', '3'),) == thread()
     assert ['', '', '#link'] == [i['flags'] for i in res]
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['4', '5', '6'] == [i['uid'] for i in res]
     assert ['', '#latest', '#link'] == [i['flags'] for i in res]
     assert [i['body']['references'] for i in res] == [
@@ -164,7 +157,6 @@ def test_link_threads_part1(clean_users, gm_client, msgs):
     ]
 
     gm_client.add_emails([{}])
-    local.parse()
     local.link_threads(['4', '7'])
     res = msgs(local.SRC)
     assert (('1', '2', '4', '5', '3'),) == thread()
@@ -176,7 +168,7 @@ def test_link_threads_part1(clean_users, gm_client, msgs):
         None, None, '<101@mlr> <102@mlr>', None,
         '<101@mlr> <102@mlr> <103@mlr>'
     ]
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['4', '5', '7', '8'] == [i['uid'] for i in res]
     assert ['', '', '#latest', '#link'] == [i['flags'] for i in res]
     assert [i['body']['references'] for i in res] == [
@@ -184,7 +176,6 @@ def test_link_threads_part1(clean_users, gm_client, msgs):
     ]
 
     gm_client.add_emails([{'refs': '<101@mlr>'}])
-    local.parse()
     res = msgs(local.SRC)
     assert (('1', '2', '4', '5', '3', '6'),) == thread()
     assert ['1', '2', '3', '4', '5', '6'] == [i['uid'] for i in res]
@@ -195,7 +186,7 @@ def test_link_threads_part1(clean_users, gm_client, msgs):
         None, None, '<101@mlr> <102@mlr>', None,
         '<101@mlr> <102@mlr> <103@mlr>', '<101@mlr>'
     ]
-    res = msgs(local.ALL)
+    res = msgs()
     assert ['4', '5', '7', '8', '9'] == [i['uid'] for i in res]
     assert ['', '', '', '#link', '#latest'] == [
         i['flags'] for i in res
@@ -209,14 +200,13 @@ def test_link_threads_part2(clean_users, gm_client, msgs):
     gm_client.add_emails([
         {}, {'refs': '<101@mlr>'}, {}, {'refs': '<103@mlr>'}]
     )
-    local.parse()
     res = msgs(local.SRC)
     assert thread() == (('1', '2'), ('3', '4'))
     assert [i['flags'] for i in res] == ['', '', '', '']
     assert [i['body']['references'] for i in res] == [
         None, '<101@mlr>', None, '<103@mlr>'
     ]
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['uid'] for i in res] == ['1', '2', '3', '4']
     assert [i['flags'] for i in res] == [
         '', '#latest', '', '#latest'
@@ -233,7 +223,7 @@ def test_link_threads_part2(clean_users, gm_client, msgs):
         None, '<101@mlr>', None, '<103@mlr>',
         '<101@mlr> <102@mlr> <103@mlr> <104@mlr>'
     ]
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['uid'] for i in res] == ['1', '2', '3', '4', '5']
     assert [i['flags'] for i in res] == [
         '', '', '', '#latest', '#link'
@@ -244,7 +234,6 @@ def test_link_threads_part2(clean_users, gm_client, msgs):
     ]
 
     gm_client.add_emails([{'refs': '<non-exist@mlr> <102@mlr>'}])
-    local.parse()
     res = msgs(local.SRC)
     assert thread() == (('1', '2', '3', '4', '5', '6'),)
     assert [i['flags'] for i in res] == ['', '', '', '', '#link', '']
@@ -253,7 +242,7 @@ def test_link_threads_part2(clean_users, gm_client, msgs):
         '<101@mlr> <102@mlr> <103@mlr> <104@mlr>',
         '<non-exist@mlr> <102@mlr>'
     ]
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['uid'] for i in res] == ['1', '2', '3', '4', '5', '6']
     assert [i['flags'] for i in res] == [
         '', '', '', '', '#link', '#latest'
@@ -272,7 +261,6 @@ def test_link_threads_part3(clean_users, gm_client, msgs):
         {'refs': '<non-exist@mlr>'},
         {'refs': '<non-exist@mlr> <102@mlr>'}
     ])
-    local.parse()
     res = msgs(local.SRC)
     assert thread() == (('1',), ('3',), ('2', '4'),)
     assert [i['flags'] for i in res] == ['', '', '', '']
@@ -282,7 +270,7 @@ def test_link_threads_part3(clean_users, gm_client, msgs):
         '<non-exist@mlr>',
         '<non-exist@mlr> <102@mlr>',
     ]
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['uid'] for i in res] == ['1', '2', '3', '4']
     assert [i['flags'] for i in res] == [
         '#latest', '', '#latest', '#latest'
@@ -301,7 +289,7 @@ def test_link_threads_part3(clean_users, gm_client, msgs):
         '<non-exist@mlr> <102@mlr>',
         '<101@mlr> <102@mlr> <103@mlr> <104@mlr>'
     ]
-    res = msgs(local.ALL)
+    res = msgs()
     assert [i['uid'] for i in res] == ['1', '2', '3', '4', '5']
     assert [i['flags'] for i in res] == [
         '', '', '', '#latest', '#link'
@@ -318,7 +306,6 @@ def test_bad_msgids(clean_users, gm_client, msgs, some, load_file, latest):
         {'mid': '<42@mlr>'},
         {'mid': '<42@mlr>'},
     ])
-    local.parse()
     res = msgs(local.SRC)[-2:]
     assert [i['uid'] for i in res] == ['9', '10']
     assert [i['body']['message-id'] for i in res] == ['<42@mlr>', '<42@mlr>']
@@ -326,30 +313,28 @@ def test_bad_msgids(clean_users, gm_client, msgs, some, load_file, latest):
         '<zero@mlr>': ['1', '2', '3', '4', '5', '6', '7', '8'],
         '<42@mlr>': ['9', '10']
     }
-    res = msgs(local.ALL)[-2:]
+    res = msgs()[-2:]
     assert [i['uid'] for i in res] == ['9', '10']
     assert [i['body']['message-id'] for i in res] == ['<42@mlr>', some]
     assert some.value.endswith('@mailur.dup>')
 
-    res = msgs(local.ALL)
+    res = msgs()
     assert len(set([i['body']['message-id'] for i in res])) == 10
 
     gm_client.add_emails([
         {'raw': load_file('msg-header-with-no-msgid.txt')}
     ])
-    local.parse()
     msg = latest(local.SRC)
     assert msg['body']['message-id'] is None
-    msg = latest(local.ALL)
+    msg = latest()
     assert msg['body']['message-id'] == '<mailur@noid>'
 
     gm_client.add_emails([
         {'raw': load_file('msg-header-with-nospace-in-msgid.txt')}
     ])
-    local.parse()
     msg = latest(local.SRC)
     assert msg['body']['message-id'] == '<with-no-space-in-msgid@test>'
-    msg = latest(local.ALL)
+    msg = latest()
     assert msg['body']['message-id'] == '<with-no-space-in-msgid@test>'
 
     assert local.msgids() == {

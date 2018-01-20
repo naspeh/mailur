@@ -103,7 +103,7 @@ def gm_fake():
 def gm_client():
     from mailur import local, gmail, parser
 
-    def add_emails(items=None, tag='\\All', fetch=True):
+    def add_emails(items=None, *, tag='\\All', fetch=True, parse=True):
         gmail.client()
         if items is None:
             items = [{}]
@@ -161,6 +161,8 @@ def gm_client():
 
         if fetch:
             gmail.fetch_folder(tag)
+        if parse:
+            local.parse()
 
     gm_client.add_emails = add_emails
     gm_client.uid = 100
@@ -170,7 +172,7 @@ def gm_client():
         yield gm_client
 
 
-def _msgs(box, uids='1:*', *, parsed=False, raw=False):
+def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
     from mailur import local
 
     def flags(m):
@@ -187,7 +189,7 @@ def _msgs(box, uids='1:*', *, parsed=False, raw=False):
         else:
             return email.message_from_bytes(m)
 
-    con = local.client(box)
+    con = local.client(box or local.ALL)
     res = con.fetch(uids, '(uid flags body[%s])' % ('1' if parsed else ''))
     return [{
         'uid': re.search('UID (\d+)', res[i][0].decode()).group(1),
@@ -203,7 +205,7 @@ def msgs():
 
 @pytest.fixture
 def latest():
-    def inner(box, *, parsed=False, raw=False):
+    def inner(box=None, *, parsed=False, raw=False):
         return _msgs(box, '*', parsed=parsed, raw=raw)[0]
     return inner
 

@@ -1,6 +1,5 @@
 import datetime as dt
 
-from mailur import local
 from mailur.parser import addresses
 from mailur.web import from_list
 
@@ -70,7 +69,6 @@ def test_tz(clean_users, gm_client, web, login, some):
     time_dt = dt.datetime.utcnow()
     time = int(time_dt.timestamp())
     gm_client.add_emails([{'labels': '\\Inbox', 'date': time}])
-    local.parse()
 
     web = login(tz='UTC')
     res = web.post_json('/search', {'q': 'all', 'preload': 1}, status=200)
@@ -116,7 +114,6 @@ def test_tags(clean_users, gm_client, login, some):
     }
 
     gm_client.add_emails([{'labels': '\\Inbox test1 "test 2"'}])
-    local.parse()
 
     res = web.get('/tags', status=200)
     assert res.json == {
@@ -132,7 +129,6 @@ def test_tags(clean_users, gm_client, login, some):
     }
 
     gm_client.add_emails([{'labels': '"test 3"', 'flags': '\\Flagged'}])
-    local.parse()
     res = web.get('/tags', status=200)
     assert res.json == {
         'ids': [
@@ -180,7 +176,6 @@ def test_basic(clean_users, gm_client, login, some):
     }
 
     gm_client.add_emails([{}, {'refs': '<101@mlr>'}])
-    local.parse()
     res = web.post_json('/search', {'q': 'all', 'preload': 10}, status=200)
     assert res.json == {
         'uids': ['2', '1'],
@@ -268,22 +263,20 @@ def test_basic(clean_users, gm_client, login, some):
 def test_msgs_flag(clean_users, gm_client, login, msgs):
     def post(uids, **data):
         web.post_json('/msgs/flag', dict(uids=uids, **data), status=200)
-        return [' '.join(sorted(m['flags'].split())) for m in msgs(local.ALL)]
+        return [' '.join(sorted(m['flags'].split())) for m in msgs()]
 
     web = login()
     web.post_json('/msgs/flag', {'new': ['\\Seen']}, status=400)
     web.post_json('/msgs/flag', {'old': ['\\Seen']}, status=400)
 
     gm_client.add_emails([{}])
-    local.parse()
-    assert [m['flags'] for m in msgs(local.ALL)] == ['#latest']
+    assert [m['flags'] for m in msgs()] == ['#latest']
 
     assert post(['1'], new=['\\Seen']) == ['#latest \\Seen']
     assert post(['1'], old=['\\Seen']) == ['#latest']
 
     gm_client.add_emails([{'refs': '<101@mlr>'}])
-    local.parse()
-    assert [m['flags'] for m in msgs(local.ALL)] == ['', '#latest']
+    assert [m['flags'] for m in msgs()] == ['', '#latest']
     assert post(['1', '2'], new=['\\Seen']) == ['\\Seen', '#latest \\Seen']
     assert post(['1'], old=['\\Seen']) == ['', '#latest \\Seen']
     assert post(['1', '2'], old=['\\Seen']) == ['', '#latest']
@@ -306,7 +299,6 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert post('1') == {}
 
     gm_client.add_emails([{}])
-    local.parse()
     res = post('1')
     assert res == {
         'uids': ['1'],
@@ -317,7 +309,6 @@ def test_search_thread(clean_users, gm_client, login, some):
     }
 
     gm_client.add_emails([{'refs': '<101@mlr>'}] * 2)
-    local.parse()
     res = post('1')
     assert len(res['uids']) == 3
     assert len(res['msgs']) == 3
@@ -325,7 +316,6 @@ def test_search_thread(clean_users, gm_client, login, some):
     assert res['same_subject'] == []
 
     gm_client.add_emails([{'refs': '<101@mlr>', 'subj': 'Subj 103'}] * 3)
-    local.parse()
     res = post('1')
     assert len(res['uids']) == 6
     assert len(res['msgs']) == 6

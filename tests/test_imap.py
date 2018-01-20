@@ -31,7 +31,7 @@ def test_batched_uids(clean_users, gm_client):
         con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#2')
     )
 
-    gm_client.add_emails([{} for i in range(1, 22)])
+    gm_client.add_emails([{} for i in range(1, 22)], parse=False)
     assert local.parse(batch=10) is None
 
 
@@ -54,7 +54,7 @@ def test_fn_pack_uids():
 
 
 def test_literal_size_limit(gm_client, raises):
-    gm_client.add_emails([{} for i in range(0, 20)])
+    gm_client.add_emails([{} for i in range(0, 20)], parse=False)
     c = local.client(local.SRC)
     res = c.search('ALL')
     uids = res[0].decode().replace(' ', ',')

@@ -24,8 +24,7 @@ def test_binary_msg():
 
 def test_parsed_msg(clean_users, gm_client, load_file, latest):
     gm_client.add_emails([{'flags': '\\Flagged'}])
-    local.parse()
-    msg = latest(local.ALL)
+    msg = latest()
     assert 'X-UID' in msg['body']
     assert re.match('<\d+>', msg['body']['X-UID'])
     assert '\\Flagged' in msg['flags']
@@ -37,18 +36,15 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
         {'txt': 'some text'},
         {'raw': load_file('msg-header-with-long-addresses.txt')}
     ])
-
-    local.parse()
-    msg = latest(local.ALL)['body']
+    msg = latest()['body']
     assert msg['to'].startswith('primary discussion list')
 
     # should be decoding of headers during parsing
     gm_client.add_emails([
         {'raw': load_file('msg-header-with-encoding.txt')}
-    ])
-
+    ], parse=False)
     local.parse(batch=1)
-    msg = latest(local.ALL, raw=True)['body'].decode()
+    msg = latest(raw=True)['body'].decode()
     expect = '\r\n'.join([
         'X-UID: <4>',
         'Message-Id: <with-encoding@test>',
@@ -61,10 +57,9 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
 
     gm_client.add_emails([
         {'raw': load_file('msg-header-with-no-encoding.txt')}
-    ])
-
+    ], parse=False)
     local.parse(batch=1)
-    msg = latest(local.ALL, raw=True)['body'].decode()
+    msg = latest(raw=True)['body'].decode()
     expect = '\r\n'.join([
         'X-UID: <5>',
         'Message-Id: <with-no-encoding@test>',
@@ -80,8 +75,7 @@ def test_encoding_aliases(gm_client, load_file, latest):
     gm_client.add_emails([
         {'raw': load_file('msg-subject-gb2312.txt')}
     ])
-    local.parse()
-    msg = latest(local.ALL, parsed=True)
+    msg = latest(parsed=True)
     assert msg['body']['subject'] == (
         'Почта Gmail – особенная. Вот что Вам нужно знать.'
     )
