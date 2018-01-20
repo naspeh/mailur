@@ -101,7 +101,7 @@ def gm_fake():
 
 @pytest.fixture
 def gm_client():
-    from mailur import local, gmail
+    from mailur import local, gmail, parser
 
     def add_emails(items=None, tag='\\All', fetch=True):
         gmail.client()
@@ -117,7 +117,7 @@ def gm_client():
                 msg = raw
             else:
                 txt = item.get('txt', '42')
-                msg = local.binary_msg(txt)
+                msg = parser.binary_msg(txt)
 
                 subj = item.get('subj')
                 if not subj:

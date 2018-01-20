@@ -1,6 +1,7 @@
 import datetime as dt
 
 from mailur import local
+from mailur.parser import addresses
 from mailur.web import from_list
 
 
@@ -376,7 +377,7 @@ def test_search_thread(clean_users, gm_client, login, some):
 
 
 def test_from_list(some):
-    res = from_list(local.addresses('test <test@example.com>'))
+    res = from_list(addresses('test <test@example.com>'))
     assert res == [
         {
             'name': 'test',
@@ -387,20 +388,20 @@ def test_from_list(some):
         },
     ]
 
-    res = from_list(local.addresses(
+    res = from_list(addresses(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
     ))
     assert ['test', 'test2'] == [a['name'] for a in res]
 
-    res = from_list(local.addresses(
+    res = from_list(addresses(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
     ))
     assert ['test', 'test2', 'test3'] == [a['name'] for a in res]
 
-    res = from_list(local.addresses(
+    res = from_list(addresses(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
@@ -408,7 +409,7 @@ def test_from_list(some):
     ))
     assert ['test', 'test2', 'test3', 'test4'] == [a['name'] for a in res]
 
-    res = from_list(local.addresses(
+    res = from_list(addresses(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
@@ -419,7 +420,7 @@ def test_from_list(some):
         a if 'expander' in a else a['name'] for a in res
     ]
 
-    res = from_list(local.addresses(
+    res = from_list(addresses(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
@@ -431,7 +432,7 @@ def test_from_list(some):
         a if 'expander' in a else a['name'] for a in res
     ]
 
-    res = from_list(local.addresses(
+    res = from_list(addresses(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
@@ -439,7 +440,7 @@ def test_from_list(some):
     ))
     assert ['test', 'test3', 'test2'] == [a['name'] for a in res]
 
-    res = from_list(local.addresses(
+    res = from_list(addresses(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test <test@example.com>,'
@@ -448,14 +449,14 @@ def test_from_list(some):
     ))
     assert ['test', 'test2', 'test3'] == [a['name'] for a in res]
 
-    res = from_list(local.addresses(','.join(
+    res = from_list(addresses(','.join(
         'test{0} <test{0}@example.com>'.format(i) for i in range(10)
     )))
     assert ['test0', {'expander': 7}, 'test8', 'test9'] == [
         a if 'expander' in a else a['name'] for a in res
     ]
 
-    res = from_list(local.addresses(','.join(
+    res = from_list(addresses(','.join(
         'test <test@example.com>' for i in range(10)
     )))
     assert ['test'] == [a['name'] for a in res]
