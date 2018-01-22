@@ -1,6 +1,6 @@
 import datetime as dt
 
-from mailur.parser import addresses
+from mailur.message import addresses
 from mailur.web import from_list
 
 

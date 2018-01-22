@@ -180,7 +180,7 @@ def msgids(con=None):
 
 @using(SRC)
 def parse_msgs(uids, con=None):
-    from .parser import create_msg
+    from . import message
 
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
 
@@ -195,7 +195,7 @@ def parse_msgs(uids, con=None):
             if flags.count('\\Recent'):
                 flags.remove('\\Recent')
             try:
-                msg_obj = create_msg(m[1], uid, time)
+                msg_obj = message.parsed(m[1], uid, time)
                 if msg_obj['X-Dpulicate']:
                     flags.append('#dup')
                 msg = msg_obj.as_bytes()

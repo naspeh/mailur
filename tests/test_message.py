@@ -1,11 +1,11 @@
 import re
 
 from mailur import local
-from mailur.parser import addresses, binary_msg
+from mailur.message import addresses, binary
 
 
 def test_binary_msg():
-    assert binary_msg('Ответ: 42').as_bytes() == '\n'.join([
+    assert binary('Ответ: 42').as_bytes() == '\n'.join([
         'MIME-Version: 1.0',
         'Content-Transfer-Encoding: binary',
         'Content-Type: text/plain; charset="utf-8"',
@@ -13,7 +13,7 @@ def test_binary_msg():
         'Ответ: 42'
     ]).encode()
 
-    assert binary_msg('Ответ: 42').as_string() == '\n'.join([
+    assert binary('Ответ: 42').as_string() == '\n'.join([
         'MIME-Version: 1.0',
         'Content-Transfer-Encoding: base64',
         'Content-Type: text/plain; charset="utf-8"',

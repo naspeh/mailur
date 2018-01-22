@@ -1,4 +1,4 @@
-from mailur import imap, local, parser
+from mailur import imap, local, message
 
 
 def test_batched_uids(clean_users, gm_client):
@@ -12,7 +12,7 @@ def test_batched_uids(clean_users, gm_client):
     assert [] == con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#')
 
     # with one message
-    msg = parser.binary_msg('42')
+    msg = message.binary('42')
     msg.add_header('Message-Id', local.gen_msgid('test'))
     con.append(local.SRC, None, None, msg.as_bytes())
     con.select(local.SRC, readonly=True)
@@ -71,7 +71,7 @@ def test_literal_size_limit(gm_client, raises):
 
 def test_multiappend(clean_users, patch, msgs):
     new = [
-        (None, None, parser.binary_msg(str(i)).as_bytes())
+        (None, None, message.binary(str(i)).as_bytes())
         for i in range(0, 10)
     ]
     con = local.client(None)

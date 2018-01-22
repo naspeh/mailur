@@ -22,14 +22,6 @@ encodings.aliases.aliases.update({
 })
 
 
-def binary_msg(txt, mimetype='text/plain'):
-    msg = MIMEPart()
-    msg.set_type(mimetype)
-    msg.add_header('Content-Transfer-Encoding', 'binary')
-    msg.set_payload(txt, 'utf-8')
-    return msg
-
-
 def address_name(a):
     if a[0]:
         return a[0]
@@ -75,7 +67,15 @@ def clean_html(htm):
     return txt, htm
 
 
-def create_msg(raw, uid, time):
+def binary(txt, mimetype='text/plain'):
+    msg = MIMEPart()
+    msg.set_type(mimetype)
+    msg.add_header('Content-Transfer-Encoding', 'binary')
+    msg.set_payload(txt, 'utf-8')
+    return msg
+
+
+def parsed(raw, uid, time):
     if isinstance(raw, bytes):
         # TODO: there is a bug with folding mechanism,
         # like this one https://bugs.python.org/issue30788,
@@ -168,6 +168,6 @@ def create_msg(raw, uid, time):
 
     msg.make_mixed()
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
-    msg.attach(binary_msg(meta_txt, 'application/json'))
-    msg.attach(binary_msg(body))
+    msg.attach(binary(meta_txt, 'application/json'))
+    msg.attach(binary(body))
     return msg
