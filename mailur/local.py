@@ -4,13 +4,10 @@ import hashlib
 import imaplib
 import json
 import re
-import uuid
-from email.message import MIMEPart
-from email.utils import formatdate
 
 from gevent import socket
 
-from . import MASTER, USER, fn_time, imap, log
+from . import MASTER, USER, fn_time, imap, log, message
 
 SRC = 'Src'
 ALL = 'All'
@@ -68,10 +65,6 @@ def fn_cache(fn):
 
     inner.cache_clear = lambda: fn.cache.pop(USER, None)
     return inner
-
-
-def gen_msgid(label):
-    return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
 
 
 @fn_cache
@@ -180,9 +173,8 @@ def msgids(con=None):
 
 @using(SRC)
 def parse_msgs(uids, con=None):
-    from . import message
-
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
+    mids = msgids()
 
     def msgs():
         for i in range(0, len(res), 2):
@@ -195,7 +187,7 @@ def parse_msgs(uids, con=None):
             if flags.count('\\Recent'):
                 flags.remove('\\Recent')
             try:
-                msg_obj = message.parsed(m[1], uid, time)
+                msg_obj = message.parsed(m[1], uid, time, mids)
                 if msg_obj['X-Dpulicate']:
                     flags.append('#dup')
                 msg = msg_obj.as_bytes()
@@ -341,22 +333,11 @@ def link_threads(uids, con=None):
         for i in range(0, len(res), 2)
     ]
 
-    msg = create_link(msgids)
+    msg = message.link(msgids)
     uid = con.append(SRC, '#link', None, msg.as_bytes())
     save_msgids([uid])
     parse()
     return uid
-
-
-def create_link(msgids):
-    msgid = gen_msgid('link')
-    msg = MIMEPart(email.policy.SMTPUTF8)
-    msg.add_header('Subject', 'Dummy: linking threads')
-    msg.add_header('References', ' '.join(msgids))
-    msg.add_header('Message-Id', msgid)
-    msg.add_header('From', 'mailur@link')
-    msg.add_header('Date', formatdate())
-    return msg
 
 
 @fn_time

@@ -5,12 +5,12 @@ import encodings
 import hashlib
 import json
 import re
+import uuid
 from email.message import MIMEPart
 from email.parser import BytesParser
-from email.utils import getaddresses, parsedate_to_datetime
+from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 from . import log
-from .local import gen_msgid, msgids
 
 encodings.aliases.aliases.update({
     # Seems Google used gb2312 in some subjects, so there is another symbol
@@ -22,51 +22,6 @@ encodings.aliases.aliases.update({
 })
 
 
-def address_name(a):
-    if a[0]:
-        return a[0]
-    try:
-        index = a[1].index('@')
-    except ValueError:
-        return a[1]
-    return a[1][:index]
-
-
-def addresses(txt):
-    addrs = [
-        {
-            'addr': a[1],
-            'name': address_name(a),
-            'title': '{} <{}>'.format(*a) if a[0] else a[1],
-            'hash': hashlib.md5(a[1].strip().lower().encode()).hexdigest(),
-        } for a in getaddresses([txt])
-    ]
-    return addrs
-
-
-def clean_html(htm):
-    from lxml import html as lhtml
-    from lxml.html.clean import Cleaner
-
-    htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
-    if not htm:
-        return '', ''
-
-    cleaner = Cleaner(
-        links=False,
-        style=True,
-        kill_tags=['head', 'img', 'figure', 'picture'],
-        remove_tags=['html', 'base'],
-        safe_attrs=set(Cleaner.safe_attrs) - {'class'},
-    )
-    htm = lhtml.fromstring(htm)
-    htm = cleaner.clean_html(htm)
-
-    txt = '\n'.join(i.rstrip() for i in htm.xpath('//text()') if i.rstrip())
-    htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
-    return txt, htm
-
-
 def binary(txt, mimetype='text/plain'):
     msg = MIMEPart()
     msg.set_type(mimetype)
@@ -75,7 +30,18 @@ def binary(txt, mimetype='text/plain'):
     return msg
 
 
-def parsed(raw, uid, time):
+def link(msgids):
+    msgid = gen_msgid('link')
+    msg = MIMEPart(email.policy.SMTPUTF8)
+    msg.add_header('Subject', 'Dummy: linking threads')
+    msg.add_header('References', ' '.join(msgids))
+    msg.add_header('Message-Id', msgid)
+    msg.add_header('From', 'mailur@link')
+    msg.add_header('Date', formatdate())
+    return msg
+
+
+def parsed(raw, uid, time, mids):
     if isinstance(raw, bytes):
         # TODO: there is a bug with folding mechanism,
         # like this one https://bugs.python.org/issue30788,
@@ -104,7 +70,6 @@ def parsed(raw, uid, time):
     subj = orig['subject']
     meta['subject'] = str(subj).strip() if subj else subj
 
-    mids = msgids()
     refs = orig['references']
     refs = refs.split() if refs else []
     if not refs:
@@ -171,3 +136,52 @@ def parsed(raw, uid, time):
     msg.attach(binary(meta_txt, 'application/json'))
     msg.attach(binary(body))
     return msg
+
+
+def gen_msgid(label):
+    return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
+
+
+def address_name(a):
+    if a[0]:
+        return a[0]
+    try:
+        index = a[1].index('@')
+    except ValueError:
+        return a[1]
+    return a[1][:index]
+
+
+def addresses(txt):
+    addrs = [
+        {
+            'addr': a[1],
+            'name': address_name(a),
+            'title': '{} <{}>'.format(*a) if a[0] else a[1],
+            'hash': hashlib.md5(a[1].strip().lower().encode()).hexdigest(),
+        } for a in getaddresses([txt])
+    ]
+    return addrs
+
+
+def clean_html(htm):
+    from lxml import html as lhtml
+    from lxml.html.clean import Cleaner
+
+    htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
+    if not htm:
+        return '', ''
+
+    cleaner = Cleaner(
+        links=False,
+        style=True,
+        kill_tags=['head', 'img', 'figure', 'picture'],
+        remove_tags=['html', 'base'],
+        safe_attrs=set(Cleaner.safe_attrs) - {'class'},
+    )
+    htm = lhtml.fromstring(htm)
+    htm = cleaner.clean_html(htm)
+
+    txt = '\n'.join(i.rstrip() for i in htm.xpath('//text()') if i.rstrip())
+    htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
+    return txt, htm
