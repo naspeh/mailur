@@ -40,6 +40,11 @@ Vue.component('msg', {
       let data = {};
       data[msg.is_pinned ? 'old' : 'new'] = ['\\Flagged'];
       return this.editTags(data, [msg.uid]);
+    },
+    extImages: function() {
+      for (let i of document.querySelectorAll('img[data-src]')) {
+        i.src = i.dataset.src;
+      }
     }
   }
 });

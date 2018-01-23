@@ -175,3 +175,20 @@ def test_parts(gm_client, latest, load_email):
         {'filename': '49.png', 'path': '2', 'size': 482},
         {'filename': '50.png', 'path': '3', 'size': 456}
     ]
+
+    # test embeds
+    m = load_email('msg-embeds-one-gmail.txt', parsed=True)
+    assert m['meta']['files'] == [{
+        'content-id': '<ii_jcrlk9sk0_16122eb711c529e8>',
+        'filename': '50.png',
+        'path': '2',
+        'size': 456
+    }]
+    url = '/raw/%s/2' % m['meta']['origin_uid']
+    assert url in m['body']
+
+    m = load_email('msg-embeds-external.txt', parsed=True)
+    assert m['meta']['files'] == []
+    assert 'data-src="/proxy?url=%2F%2Fwww.gravatar.com' in m['body']
+    assert 'data-src="/proxy?url=http%3A%2F%2Fwww.gravatar.com' in m['body']
+    assert 'data-src="/proxy?url=https%3A%2F%2Fwww.gravatar.com' in m['body']

@@ -1,4 +1,4 @@
-<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--detailed': detailed, 'msg--opened': opened}">
+<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--ext-images': msg.ext_images, 'msg--detailed': detailed, 'msg--opened': opened}">
   <div class="msg-line">
     <div
       class="icon--pin"
@@ -10,6 +10,12 @@
       @click="read(msg)"
       :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"
     ></div>
+    <div
+      v-if="msg.files.length"
+      class="icon--attachment"
+      :title="`${msg.files.length} attachments`"
+    ></div>
+    <div class="icon--image" @click="extImages" title="Show external images"></div>
     <div @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
     <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
@@ -61,7 +67,7 @@
     <!-- <a @click.prevent="openInMain(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
   </div>
   <div class="msg__body">
-    <template v-if="!body">Loading...</template>
+    <template v-if="body === undefined">Loading...</template>
     <div v-if="body" v-html="body"/>
   </div>
 </div>

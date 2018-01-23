@@ -6,7 +6,8 @@ import pathlib
 import re
 
 from bottle import (
-    Bottle, abort, redirect, request, response, static_file, template
+    Bottle, abort, redirect, request, response,
+    static_file, template
 )
 
 from gevent.pool import Pool
@@ -15,13 +16,15 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import SECRET, imap, local, log
+from . import DEBUG, SECRET, imap, local, log
 from .schema import validate
 
 
 root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
 app = Bottle()
+if DEBUG:
+    app.catchall = False
 
 
 def session(callback):
@@ -264,6 +267,25 @@ def raw(uid, part=None):
 
     response.content_type = 'text/plain'
     return msg
+
+
+@app.get('/proxy')
+def proxy():
+    url = request.query.get('url')
+    if not url:
+        return abort(400)
+
+    if url.startswith('//'):
+        url = 'https:' + url
+
+    log.debug('proxy: %s', url)
+    http = HTTPClient.from_url(url)
+    res = http.get(url)
+    response.status = res.status_code
+    for key, val in res.headers:
+        if key in ('content-type', 'content-length'):
+            response.set_header(key, val)
+    return bytes(res.read())
 
 
 @app.get('/avatars.css')

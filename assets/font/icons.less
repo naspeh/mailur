@@ -66,6 +66,8 @@
 .icon--archive,
 .icon--trash,
 .icon--reload,
+.icon--image,
+.icon--attachment,
 .icon--spinner {
   .--icon;
 }
@@ -298,6 +300,26 @@
 
 .icon--reload {
   .--icon--reload;
+}
+
+.--icon--image() {
+  &::before {
+    content: "\f03e";
+  }
+}
+
+.icon--image {
+  .--icon--image;
+}
+
+.--icon--attachment() {
+  &::before {
+    content: "\f0c6";
+  }
+}
+
+.icon--attachment {
+  .--icon--attachment;
 }
 
 .--icon--spinner() {

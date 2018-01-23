@@ -12,7 +12,8 @@
   font-size: @--font-size--s;
 
   .icon--pin,
-  .icon--unread {
+  .icon--unread,
+  .icon--attachment {
     display: flex;
     color: @--color--grey;
 
@@ -20,6 +21,14 @@
       margin-top: 0.1em;
       margin-bottom: -0.1em;
       cursor: pointer;
+    }
+  }
+
+  .icon--image {
+    display: none;
+
+    .msg--opened.msg--ext-images & {
+      .icon--pin;
     }
   }
 

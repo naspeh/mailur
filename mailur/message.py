@@ -5,6 +5,7 @@ import hashlib
 import html
 import json
 import re
+import urllib.parse
 import uuid
 from email.message import MIMEPart
 from email.parser import BytesParser
@@ -97,6 +98,17 @@ def parsed(raw, uid, time, mids):
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
     txt, htm, files = parse_part(orig)
+    if txt:
+        txt = html.escape(txt)
+    if htm:
+        embeds = {
+            f['content-id']: '/raw/%s/%s' % (uid, f['path'])
+            for f in files if 'content-id' in f
+        }
+        txt, htm, ext_images = clean_html(htm, embeds)
+        meta['ext_images'] = ext_images
+    elif txt:
+        htm = '<pre>%s</pre>' % txt
     meta['preview'] = re.sub('[\s ]+', ' ', txt[:200])
     meta['files'] = files
 
@@ -128,41 +140,6 @@ def parsed(raw, uid, time, mids):
     return msg
 
 
-def parse_part(part, path=''):
-    txt, htm, files = '', '', []
-    if part.is_multipart():
-        idx = 0
-        for m in part.get_payload():
-            idx += 1
-            path_ = '%s.%s' % (path, idx) if path else str(idx)
-            txt_, htm_, files_ = parse_part(m, path=path_)
-            txt += txt_
-            htm += htm_
-            files += files_
-        return txt, htm, files
-
-    ctype = part.get_content_type()
-    content = part.get_content()
-    if ctype == 'text/html':
-        txt, htm = clean_html(content)
-    elif ctype == 'text/plain':
-        txt = html.escape(content)
-    else:
-        item = {
-            'size': len(content),
-            'path': path
-        }
-        item.update({
-            k: v for k, v in (
-                ('content-id', part.get('Content-ID')),
-                ('filename', part.get_filename()),
-            ) if v
-        })
-        files = [item]
-
-    return txt, htm, files
-
-
 def gen_msgid(label):
     return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
 
@@ -189,7 +166,41 @@ def addresses(txt):
     return addrs
 
 
-def clean_html(htm):
+def parse_part(part, path=''):
+    txt, htm, files = '', '', []
+    if part.is_multipart():
+        idx = 0
+        for m in part.get_payload():
+            idx += 1
+            path_ = '%s.%s' % (path, idx) if path else str(idx)
+            txt_, htm_, files_ = parse_part(m, path=path_)
+            txt += txt_
+            htm += htm_
+            files += files_
+        return txt, htm, files
+
+    ctype = part.get_content_type()
+    content = part.get_content()
+    if ctype == 'text/html':
+        htm = content
+    elif ctype == 'text/plain':
+        txt = content
+    else:
+        item = {
+            'size': len(content),
+            'path': path
+        }
+        item.update({
+            k: v for k, v in (
+                ('content-id', part.get('Content-ID')),
+                ('filename', part.get_filename()),
+            ) if v
+        })
+        files = [item]
+    return txt, htm, files
+
+
+def clean_html(htm, embeds):
     from lxml import html as lhtml
     from lxml.html.clean import Cleaner
 
@@ -200,13 +211,34 @@ def clean_html(htm):
     cleaner = Cleaner(
         links=False,
         style=True,
-        kill_tags=['head', 'img', 'figure', 'picture'],
+        kill_tags=['head'],
         remove_tags=['html', 'base'],
         safe_attrs=set(Cleaner.safe_attrs) - {'class'},
     )
     htm = lhtml.fromstring(htm)
     htm = cleaner.clean_html(htm)
 
+    ext_images = False
+    for img in htm.xpath('//img[@src]'):
+        # clean data-src attribute if exists
+        if img.attrib.get('data-src'):
+            del img.attrib['data-src']
+
+        src = img.attrib.get('src')
+        cid = re.match('^cid:(.*)', src)
+        url = cid and embeds.get('<%s>' % cid.group(1))
+        if url:
+            img.attrib['src'] = url
+        elif re.match('^data:image/.*', src):
+            pass
+        elif re.match('^(https?://|//).*', src):
+            ext_images = True
+            proxy_url = '/proxy?' + urllib.parse.urlencode({'url': src})
+            img.attrib['data-src'] = proxy_url
+            del img.attrib['src']
+        else:
+            del img.attrib['src']
+
     txt = '\n'.join(i.rstrip() for i in htm.xpath('//text()') if i.rstrip())
     htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
-    return txt, htm
+    return txt, htm, ext_images
