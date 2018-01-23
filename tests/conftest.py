@@ -49,6 +49,14 @@ def load_file():
     return inner
 
 
+@pytest.fixture
+def load_email(gm_client, load_file, latest):
+    def inner(name, **opt):
+        gm_client.add_emails([{'raw': load_file(name)}])
+        return latest(**opt)
+    return inner
+
+
 class Some(object):
     "A helper object that compares equal to everything."
 
@@ -181,21 +189,20 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
             res.remove('\\Recent')
         return ' '.join(res)
 
-    def body(m):
+    def msg(res):
+        msg = {
+            'uid': re.search('UID (\d+)', res[0].decode()).group(1),
+            'flags': flags(res[0].decode()),
+            'body': res[1] if raw else email.message_from_bytes(res[1])
+        }
         if parsed:
-            return json.loads(m)
-        elif raw:
-            return m
-        else:
-            return email.message_from_bytes(m)
+            meta = email.message_from_bytes(res[1]).get_payload()[0]
+            msg['meta'] = json.loads(meta.get_payload())
+        return msg
 
     con = local.client(box or local.ALL)
-    res = con.fetch(uids, '(uid flags body[%s])' % ('1' if parsed else ''))
-    return [{
-        'uid': re.search('UID (\d+)', res[i][0].decode()).group(1),
-        'flags': flags(res[i][0].decode()),
-        'body': body(res[i][1])
-    } for i in range(0, len(res), 2)]
+    res = con.fetch(uids, '(uid flags body[])')
+    return [msg(res[i]) for i in range(0, len(res), 2)]
 
 
 @pytest.fixture

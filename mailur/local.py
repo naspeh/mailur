@@ -173,7 +173,7 @@ def msgids(con=None):
 
 @using(SRC)
 def parse_msgs(uids, con=None):
-    res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
+    res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BINARY.PEEK[])')
     mids = msgids()
 
     def msgs():
@@ -342,9 +342,10 @@ def link_threads(uids, con=None):
 
 @fn_time
 @using(None)
-def raw_msg(uid, box, con=None):
+def raw_msg(uid, box, part=None, con=None):
     con.select(box)
-    res = con.fetch(uid, 'body[]')
+    field = 'BODY[]' if part is None else ('BINARY[%s]' % part)
+    res = con.fetch(uid, field)
     if not res:
         return
     return res[0][1]

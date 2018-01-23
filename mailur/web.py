@@ -255,9 +255,10 @@ def msgs_flag():
 
 
 @app.get('/raw/<uid:int>', name='raw')
-def raw(uid):
+@app.get('/raw/<uid:int>/<part>')
+def raw(uid, part=None):
     box = request.query.get('box', local.SRC)
-    msg = local.raw_msg(str(uid), box)
+    msg = local.raw_msg(str(uid), box, part)
     if msg is None:
         return abort(404)
 

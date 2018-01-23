@@ -1,8 +1,8 @@
 import datetime as dt
-import email
 import email.policy
 import encodings
 import hashlib
+import html
 import json
 import re
 import uuid
@@ -42,16 +42,16 @@ def link(msgids):
 
 
 def parsed(raw, uid, time, mids):
+    # TODO: there is a bug with folding mechanism,
+    # like this one https://bugs.python.org/issue30788,
+    # so use `max_line_length=None` by now, not sure if it's needed at all
+    policy = email.policy.SMTPUTF8.clone(max_line_length=None)
     if isinstance(raw, bytes):
-        # TODO: there is a bug with folding mechanism,
-        # like this one https://bugs.python.org/issue30788,
-        # so use `max_line_length=None` by now, not sure if it's needed at all
-        policy = email.policy.SMTPUTF8.clone(max_line_length=None)
         orig = BytesParser(policy=policy).parsebytes(raw)
     else:
         orig = raw
 
-    meta = {'origin_uid': uid}
+    meta = {'origin_uid': uid, 'files': []}
     msg = MIMEPart(policy)
 
     fields = (('from', 1), ('sender', 1), ('to', 0), ('cc', 0), ('bcc', 0))
@@ -96,19 +96,9 @@ def parsed(raw, uid, time, mids):
     date = orig['date']
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
-    txt = orig.get_body(preferencelist=('html', 'plain'))
-    if txt:
-        try:
-            body = txt.get_content()
-            if txt.get_content_subtype() == 'plain':
-                body = '<pre>%s</pre>' % body
-            txt, body = clean_html(body)
-        except Exception as e:
-            txt = 'ERROR(mlr): %s' % e
-            body = txt
-            more = raw[:300].decode()
-            log.error('## UID=%s error on body: %r\n%s', uid, e, more)
+    txt, htm, files = parse_part(orig)
     meta['preview'] = re.sub('[\s ]+', ' ', txt[:200])
+    meta['files'] = files
 
     msg.add_header('X-UID', '<%s>' % uid)
     msg.add_header('Message-Id', mid)
@@ -134,8 +124,43 @@ def parsed(raw, uid, time, mids):
     msg.make_mixed()
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
     msg.attach(binary(meta_txt, 'application/json'))
-    msg.attach(binary(body))
+    msg.attach(binary(htm))
     return msg
+
+
+def parse_part(part, path=''):
+    txt, htm, files = '', '', []
+    if part.is_multipart():
+        idx = 0
+        for m in part.get_payload():
+            idx += 1
+            path_ = '%s.%s' % (path, idx) if path else str(idx)
+            txt_, htm_, files_ = parse_part(m, path=path_)
+            txt += txt_
+            htm += htm_
+            files += files_
+        return txt, htm, files
+
+    ctype = part.get_content_type()
+    content = part.get_content()
+    if ctype == 'text/html':
+        txt, htm = clean_html(content)
+    elif ctype == 'text/plain':
+        txt = html.escape(content)
+    else:
+        item = {
+            'size': len(content),
+            'path': path
+        }
+        item.update({
+            k: v for k, v in (
+                ('content-id', part.get('Content-ID')),
+                ('filename', part.get_filename()),
+            ) if v
+        })
+        files = [item]
+
+    return txt, htm, files
 
 
 def gen_msgid(label):

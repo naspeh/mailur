@@ -1,0 +1,71 @@
+MIME-Version: 1.0
+Received: by 10.194.172.98 with HTTP; Mon, 3 Mar 2014 08:10:08 -0800 (PST)
+Date: Mon, 3 Mar 2014 18:10:08 +0200
+Delivered-To: naspeh@gmail.com
+Message-ID: <CAPoAYQUQ_iR0d847kdudWMnY8xEyeyistMSXHGHot-jGm7Ai0w@mail.gmail.com>
+Subject: =?KOI8-R?B?UmU6INTFzcEgydrNxc7Fzs7B0Q==?=
+From: "Grisha K." <naspeh@gmail.com>
+To: Ne Greh <negreh@gmail.com>
+Content-Type: multipart/mixed; boundary=bcaec54ee220831fa204f3b6058e
+
+--bcaec54ee220831fa204f3b6058e
+Content-Type: multipart/alternative; boundary=bcaec54ee220831f9e04f3b6058c
+
+--bcaec54ee220831f9e04f3b6058c
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: quoted-printable
+
+=CF=D4=D7=C5=D4 =CE=C1 =D4=C5=CC=CF
+
+
+2014-03-03 18:09 GMT+02:00 Ne Greh <negreh@gmail.com>:
+
+> =D4=C5=CC=CF
+>
+
+--bcaec54ee220831f9e04f3b6058c
+Content-Type: text/html; charset=KOI8-R
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">=CF=D4=D7=C5=D4 =CE=C1 =D4=C5=CC=CF<div class=3D"gmail_ext=
+ra"><br><br><div class=3D"gmail_quote">2014-03-03 18:09 GMT+02:00 Ne Greh <=
+span dir=3D"ltr">&lt;<a href=3D"mailto:negreh@gmail.com" target=3D"_blank">=
+negreh@gmail.com</a>&gt;</span>:<br>
+<blockquote class=3D"gmail_quote" style=3D"margin:0 0 0 .8ex;border-left:1p=
+x #ccc solid;padding-left:1ex">=D4=C5=CC=CF<br>
+</blockquote></div><br></div></div>
+
+--bcaec54ee220831f9e04f3b6058c--
+--bcaec54ee220831fa204f3b6058e
+Content-Type: image/png; name="08.png"
+Content-Disposition: attachment; filename="08.png"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hsby4xt51
+
+iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJ
+bWFnZVJlYWR5ccllPAAAActJREFUeNo8Uj1IW1EYPe++98KLmuRFidRGA0K0VTAEDLS4lNhahw7i
+IihCoXUQxIKDUHDJogFXl6CbCKVQC+LkIAFxMEgV26mgNLa0CkHzbGtCkvfj/W4Sh8v9LpzvfOec
+70obU56oq8GXVjWvLskKGJMhSQxU0w06jo3Sbd4o5H/HGYEB6P5QBLKswqqUYFkV2GYZtm0KMDVp
+3oDu1tvSCpNdOm/As5kPdIGz4NfxNrKZT7DKBQGWGBMEWlOLLk/EOxIOZ7nKHqF4c4lGfzuCkWEE
++4Zw/fME5YJRncYPJHDJXDNjCgLhJ7j6cYS91CS+fHwP1e3B09craAp0Vhu4TMcyweoGHw1OY+Dt
+Kp7PbXEmCZn1d0Ji/9gSZFWDJTxZvKGWzE7yBb5uLdZASW6yFcebCTT4g2iPvrqXdT/B19YtwPtr
+b1A0LtDzchZ/vu2IEEKxUQF2eGoUgfAQG19GZGQBrV0D+L6bEszNoSjODzehB3sF2LFtUqOI6P5e
+nqJS/Ifc6QFyZxkxzfMgjP+5rKh9D3tg8pilz/OP87SUukZKw6rXNRlklhKSXW5DoXXzPaRdmqf6
+NYiOfJFU/iYZ1MRJDLN0G78TYAACG87quVcdqAAAAABJRU5ErkJggg==
+--bcaec54ee220831fa204f3b6058e
+Content-Type: image/png; name="09.png"
+Content-Disposition: attachment; filename="09.png"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hsby4xtu2
+
+iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJ
+bWFnZVJlYWR5ccllPAAAAapJREFUeNpMUk8og2EY/+39PqNhPpk1f1dC/h1E/rR22YkIkZSIi+TA
+ZTlJWTk4oBx2woGDQpIoOaglRSIXShEHYRezxRq2b+N93s/w1NP7vvX8/jzP8+ommqXKpBTFk2gw
+KozJYJIMHWPaqWMiv75ieH97Cbw+PzgYFQNQLAWVkBL0UCMfiEbCImNRVRQTKFkxK6kZ2R5ZkvUK
+B6B7fJMOcBZcHW/h4mAVkc+QpsIVo2oYBqNJkZprs1zE8nhziuCLF2mmXBTXNKGouhFPt+f4CPpF
+MSlSMPJKmV9q46AzrE11YW/BCd4T2kbmkW4p0CyqmkUmGuTN1rUMo8O5hL7JPWFj2z0kGBsHZiDr
+k/4AcYXFUTs8Ky5R1MCLUhQz9pfHYOQWS+pbf1UYsRHAlFciijeme/Hme4Kt3Ynr010xhHJ75z9L
+P4CmwTk4elywlttxsuMWzFmFVbg8XIfZWvE7YhZfkO/xGp+hV9xfHYmkMOUUw++9E/fM/DJtzLP9
+Vj8tJT46cf67E7PImIqERENApnVzKe1rcDWK+JegN9kgAAcHwu9Bx7cAAwCwptCPTr0M1AAAAABJ
+RU5ErkJggg==
+--bcaec54ee220831fa204f3b6058e--

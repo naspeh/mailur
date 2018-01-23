@@ -1,0 +1,75 @@
+Delivered-To: naspeh@gmail.com
+Received: by 10.194.172.98 with SMTP id bb2csp53745wjc;
+        Mon, 3 Mar 2014 08:13:07 -0800 (PST)
+Return-Path: <negreh@gmail.com>
+Received-SPF: pass (google.com: domain of negreh@gmail.com designates 10.14.109.201 as permitted sender) client-ip=10.14.109.201
+Authentication-Results: mr.google.com;
+       spf=pass (google.com: domain of negreh@gmail.com designates 10.14.109.201 as permitted sender) smtp.mail=negreh@gmail.com;
+       dkim=pass header.i=@gmail.com
+X-Received: from mr.google.com ([10.14.109.201])
+        by 10.14.109.201 with SMTP id s49mr12245318eeg.88.1393863187332 (num_hops = 1);
+        Mon, 03 Mar 2014 08:13:07 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20120113;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        bh=Wb+1O1/Z3wNq1qND9DxdNWWWboisaoe2rM5LB+A+Vn4=;
+        b=hOO5ZL53dJ923QfnaBvJjMz7jj5LgR4vPW53kcgRqQCFO6fx1+uXOaBzjZ6qt3nzAW
+         vhe1HB3zDVQzGH/J2ncINRoCQkT944Te3Y/kST3KzPlcwh42VmCWWMQdR8/Wl7GE+kR7
+         wlrAR9zFO5qAxuxY8a5oPLZg9gIvy1NG5CL56+CsuISSsbtkeQxrkoWwQRuAPe1nr286
+         gkeUlp5qE3AKq/wUENuZSGJlTqnid5wSk2vwPf4R7Vib7XQOLrtUsHAFxRhdV17xbqTH
+         4rTjZAoPJs/hjez48pswdUCNRyt7kDPsDiehsnVPBG5OSHivCdj30dDI3FCd/7NALdTI
+         hxCw==
+MIME-Version: 1.0
+X-Received: by 10.14.109.201 with SMTP id s49mr12245318eeg.88.1393863187321;
+ Mon, 03 Mar 2014 08:13:07 -0800 (PST)
+Received: by 10.14.4.73 with HTTP; Mon, 3 Mar 2014 08:13:07 -0800 (PST)
+In-Reply-To: <CANS-B10x0D6cTGsLuUbXfExMkn_Xn7gTZuY5Sh1krEcRpqmP6A@mail.gmail.com>
+References: <CAPoAYQUQ_iR0d847kdudWMnY8xEyeyistMSXHGHot-jGm7Ai0w@mail.gmail.com>
+	<CANS-B12K_hnB7p3czYaN5h0LW8hAZcHNOk1So+ei5mASPjBHww@mail.gmail.com>
+	<243441393863109@web4h.yandex.ru>
+	<CANS-B10x0D6cTGsLuUbXfExMkn_Xn7gTZuY5Sh1krEcRpqmP6A@mail.gmail.com>
+Date: Mon, 3 Mar 2014 18:13:07 +0200
+Message-ID: <CANS-B11qWECTejBrYfu_h56c4PU=NLTWU6cxvEdHtvXU6eLq9g@mail.gmail.com>
+Subject: =?KOI8-R?B?UmU6INTFzcEgydrNxc7Fzs7B0Q==?=
+From: Ne Greh <negreh@gmail.com>
+To: naspeh <naspeh@gmail.com>
+Content-Type: multipart/mixed; boundary=001a11c2768c256f8104f3b61088
+
+--001a11c2768c256f8104f3b61088
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Mar 3, 2014 at 6:12 PM, Ne Greh <negreh@gmail.com> wrote:
+> =D1.=D2=D5
+>
+> 2014-03-03 18:11 GMT+02:00 naspeh <naspeh@gmail.com>:
+>> =CF=D4=D7=C5=D4 =D3 =D1=CE=C4=C5=CB=D3=C1
+>>
+>> 03.03.2014, 18:11, "Ne Greh" <negreh@gmail.com>:
+>>> =D4=C5=CD=C1 =D4=C1=D6=C5
+>>>
+>>> On Mon, Mar 3, 2014 at 6:10 PM, Grisha K. <naspeh@gmail.com> wrote:
+>>>
+>>>>  =CF=D4=D7=C5=D4 =CE=C1 =D4=C5=CC=CF
+>>>>
+>>>>  2014-03-03 18:09 GMT+02:00 Ne Greh <negreh@gmail.com>:
+>>>>>  =D4=C5=CC=CF
+
+--001a11c2768c256f8104f3b61088
+Content-Type: image/png; name="20.png"
+Content-Disposition: attachment; filename="20.png"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hsby8u7m0
+
+iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJ
+bWFnZVJlYWR5ccllPAAAAcJJREFUeNpiZC6xMBDg5N3Px84twMLEzMDCzMzAxMjEAGKDaCZGRoZ/
+//8zvPv28cOTj68cmUCKGRgYBAyk1RjYWFgZfvz+xfDrz2+GX39/M/z59wesGKRJjEdIQIpPdD8L
+GzOrAFADw7qEThDFADSFYcPlgwwrLuxm+PbrB1gxyCaQASLcAgLMkm56DSBTTj++xvD801sGGQEx
+Bi9NawYPDUuGc09uMLz//hmsGIRBgAnkZpB7rRT0GM48uc4QtqiKoWjjBAagnxhmhVYxKAlLQzT8
++QN04l8GJpgHc2xCGRZE1DHsSJsEFGRiyFjTATaxxy+PgYOFHeKnv0ANsJCxmZLG0LBzNkSRbx7Q
+k4IMVdumMcjwizH4advCnQW3QUNMHqw4Zmkdw7NPbxiKHKIYtl0/Bg6EEH0ncMhBncQI1MDCMMG/
+iKHBPZXBRtGAYcqRVWCTjWTUGVZd2MOgI6EMVgwKHBaQ6SDOrdePGFREZBiOPbgE5oOAmqgcw723
+T8FsLXFFhhuvHjIwyjf7vQdFCsyNoNBAsCHOgGEuVo4PLKDoBlq1n48DkjQYWBigkcUI9hvIGSDF
+QM0fvvz65ggQYAD0EtEPIjH5KwAAAABJRU5ErkJggg==
+--001a11c2768c256f8104f3b61088--
