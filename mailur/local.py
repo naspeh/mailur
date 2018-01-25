@@ -173,7 +173,7 @@ def msgids(con=None):
 
 @using(SRC)
 def parse_msgs(uids, con=None):
-    res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BINARY.PEEK[])')
+    res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
     mids = msgids()
 
     def msgs():

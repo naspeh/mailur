@@ -1,5 +1,4 @@
 import datetime as dt
-import email.policy
 import encodings
 import hashlib
 import html
@@ -8,19 +7,21 @@ import re
 import urllib.parse
 import uuid
 from email.message import MIMEPart
-from email.parser import BytesParser
+from email.parser import BytesParser, Parser
+from email.policy import SMTPUTF8, compat32
 from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 from . import log
 
-encodings.aliases.aliases.update({
+aliases = {
     # Seems Google used gb2312 in some subjects, so there is another symbol
     # instead of dash, because of next bug:
     # https://bugs.python.org/issue24036
     'gb2312': 'gbk',
     # @naspeh got such encoding in my own mailbox
     'cp-1251': 'cp1251',
-})
+}
+encodings.aliases.aliases.update(aliases)
 
 
 def binary(txt, mimetype='text/plain'):
@@ -33,7 +34,7 @@ def binary(txt, mimetype='text/plain'):
 
 def link(msgids):
     msgid = gen_msgid('link')
-    msg = MIMEPart(email.policy.SMTPUTF8)
+    msg = MIMEPart(SMTPUTF8)
     msg.add_header('Subject', 'Dummy: linking threads')
     msg.add_header('References', ' '.join(msgids))
     msg.add_header('Message-Id', msgid)
@@ -46,27 +47,55 @@ def parsed(raw, uid, time, mids):
     # TODO: there is a bug with folding mechanism,
     # like this one https://bugs.python.org/issue30788,
     # so use `max_line_length=None` by now, not sure if it's needed at all
-    policy = email.policy.SMTPUTF8.clone(max_line_length=None)
-    if isinstance(raw, bytes):
-        orig = BytesParser(policy=policy).parsebytes(raw)
-    else:
-        orig = raw
+    policy = SMTPUTF8.clone(max_line_length=None)
+
+    orig_full = orig = BytesParser(policy=policy).parsebytes(raw)
+    charsets = orig_full.get_charsets()
+    charset = charsets and charsets[0]
+    if charset:
+        # When email is decoded with some charset instead of ASCII or UTF-8
+        # trying to decode message with specific charset to get right headers,
+        # like subject, etc.
+        try:
+            raw_str = raw.decode(aliases.get(charset, charset))
+            orig = Parser(policy=policy).parsestr(raw_str, headersonly=True)
+        except Exception:
+            pass
+
+    def handle_headers(orig):
+        headers = {}
+        for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
+            try:
+                v = orig[n]
+                if v is None:
+                    continue
+                headers[n] = v
+            except IndexError as e:
+                log.error('## UID=%s error on header %r: %r', uid, n, e)
+                raise
+        return headers
+
+    try:
+        # Workaround for bad addresses with ending "@":
+        # > email.errors.HeaderParseError: expected angle-addr but found '@'
+        # > IndexError: string index out of range
+        headers = handle_headers(orig)
+    except IndexError as e:
+        orig = BytesParser(policy=compat32).parsebytes(raw, headersonly=True)
+        headers = handle_headers(orig)
+        headers['X-Err-Parser'] = str(e)
 
     meta = {'origin_uid': uid, 'files': []}
-    msg = MIMEPart(policy)
-
-    fields = (('from', 1), ('sender', 1), ('to', 0), ('cc', 0), ('bcc', 0))
+    fields = (
+        ('From', 1), ('Sender', 1),
+        ('Reply-To', 0), ('To', 0), ('CC', 0), ('BCC', 0)
+    )
     for n, one in fields:
-        try:
-            v = orig[n]
-        except Exception as e:
-            more = raw[:300].decode()
-            log.error('## UID=%s error on header %r: %r\n%s', uid, n, e, more)
-            continue
+        v = headers.get(n)
         if not v:
             continue
         v = addresses(v)
-        meta[n] = v[0] if one else v
+        meta[n.lower()] = v[0] if one else v
 
     subj = orig['subject']
     meta['subject'] = str(subj).strip() if subj else subj
@@ -88,7 +117,7 @@ def parsed(raw, uid, time, mids):
     meta['msgid'] = mid
     if mids[mid][0] != uid:
         log.info('## UID=%s is a duplicate {%r: %r}', uid, mid, mids[mid])
-        msg.add_header('X-Dpulicate', mid)
+        headers['X-Dpulicate'] = mid
         mid = gen_msgid('dup')
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
@@ -97,7 +126,7 @@ def parsed(raw, uid, time, mids):
     date = orig['date']
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
-    txt, htm, files = parse_part(orig)
+    txt, htm, files = parse_part(orig_full)
     if txt:
         txt = html.escape(txt)
     if htm:
@@ -112,21 +141,18 @@ def parsed(raw, uid, time, mids):
     meta['preview'] = re.sub('[\s ]+', ' ', txt[:200])
     meta['files'] = files
 
+    msg = MIMEPart(policy)
     msg.add_header('X-UID', '<%s>' % uid)
     msg.add_header('Message-Id', mid)
     msg.add_header('Subject', meta['subject'])
+    msg.add_header('Date', orig['Date'])
 
-    headers = ('Date', 'From', 'Sender', 'To', 'CC', 'BCC',)
-    for n in headers:
+    for n, v in headers.items():
         try:
-            v = orig[n]
+            msg.add_header(n, v)
         except Exception as e:
-            more = raw[:300].decode()
-            log.error('## UID=%s error on header %r: %r\n%s', uid, n, e, more)
+            log.error('## UID=%s error on header %r: %r', uid, n, e)
             continue
-        if v is None:
-            continue
-        msg.add_header(n, v)
 
     if msg['from'] == 'mailur@link':
         msg.add_header('References', orig['references'])
@@ -168,7 +194,11 @@ def addresses(txt):
 
 def parse_part(part, path=''):
     txt, htm, files = '', '', []
-    if part.is_multipart():
+    ctype = part.get_content_type()
+    if ctype.startswith('message/'):
+        files = [part.as_string()]
+        return txt, htm, files
+    elif part.is_multipart():
         idx = 0
         for m in part.get_payload():
             idx += 1
@@ -179,8 +209,10 @@ def parse_part(part, path=''):
             files += files_
         return txt, htm, files
 
-    ctype = part.get_content_type()
-    content = part.get_content()
+    content = part.get_payload(decode=True)
+    charset = part.get_param('charset') or 'utf8'
+    content = content.decode(aliases.get(charset, charset), errors='replace')
+
     if ctype == 'text/html':
         htm = content
     elif ctype == 'text/plain':
@@ -206,7 +238,7 @@ def clean_html(htm, embeds):
 
     htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
     if not htm:
-        return '', ''
+        return '', '', False
 
     cleaner = Cleaner(
         links=False,

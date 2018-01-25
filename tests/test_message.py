@@ -78,6 +78,10 @@ def test_encoding_aliases(gm_client, load_email):
         'Почта Gmail – особенная. Вот что Вам нужно знать.'
     )
 
+    msg = load_email('msg-encoding-cp-1251.txt', parsed=True)
+    assert msg['meta']['subject'] == 'Обновления музыки на сайте JeTune.ru'
+    assert msg['body'] == '<p>Здравствуйте.<br></p>'
+
 
 def test_addresses():
     res = addresses('test <test@example.com>')
@@ -161,19 +165,19 @@ def test_parts(gm_client, latest, load_email):
     # test some real emails with attachments
     m = load_email('msg-attachments-one-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '20.png', 'path': '2', 'size': 544}
+        {'filename': '20.png', 'path': '2', 'size': 523}
     ]
 
     m = load_email('msg-attachments-two-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '08.png', 'path': '2', 'size': 553},
-        {'filename': '09.png', 'path': '3', 'size': 520}
+        {'filename': '08.png', 'path': '2', 'size': 532},
+        {'filename': '09.png', 'path': '3', 'size': 503}
     ]
 
     m = load_email('msg-attachments-two-yandex.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '49.png', 'path': '2', 'size': 482},
-        {'filename': '50.png', 'path': '3', 'size': 456}
+        {'filename': '49.png', 'path': '2', 'size': 472},
+        {'filename': '50.png', 'path': '3', 'size': 443}
     ]
 
     # test embeds
@@ -182,7 +186,7 @@ def test_parts(gm_client, latest, load_email):
         'content-id': '<ii_jcrlk9sk0_16122eb711c529e8>',
         'filename': '50.png',
         'path': '2',
-        'size': 456
+        'size': 443
     }]
     url = '/raw/%s/2' % m['meta']['origin_uid']
     assert url in m['body']
@@ -192,3 +196,19 @@ def test_parts(gm_client, latest, load_email):
     assert 'data-src="/proxy?url=%2F%2Fwww.gravatar.com' in m['body']
     assert 'data-src="/proxy?url=http%3A%2F%2Fwww.gravatar.com' in m['body']
     assert 'data-src="/proxy?url=https%3A%2F%2Fwww.gravatar.com' in m['body']
+
+    # test some strange cases
+    m = load_email('msg-empty-charset.txt', parsed=True)
+    assert m['body'] == '<p>test</p>'
+
+    m = load_email('msg-from-ending-snail.txt', parsed=True)
+    assert m['meta']['from'] == {
+        'addr': 'grrr@', 'name': 'grrr', 'title': 'grrr@',
+        'hash': '8ea2bc312c94c9596ad95772d6cd579c',
+    }
+    assert m['meta']['to']
+    assert m['meta']['reply-to']
+    assert not m['body_full']['to']
+    assert not m['body_full']['from']
+    assert not m['body_full']['reply-to']
+    assert m['body_full']['x-err-parser']

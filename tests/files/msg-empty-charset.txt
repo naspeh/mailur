@@ -1,0 +1,23 @@
+Message-ID: <564fba90.022d1c0a.8a31f.ffff9bd5@mx.google.com>
+Content-Type: multipart/alternative; boundary="===============2720466624839896923=="
+MIME-Version: 1.0
+From: =?utf-8?b?0JPRgNC40YjQsCDQmi4=?= <grrr@example.com>
+To: =?utf-8?b?0JrQsNGC0Y8g0Jou?= <katya@example.com>
+Date: Sat, 21 Nov 2015 00:27:59 -0000
+Subject: Re: Mailur test
+In-Reply-To: <564fb7d4.61c9c20a.95b95.ffffa8bb@mx.google.com>
+References: <564fb7d4.61c9c20a.95b95.ffffa8bb@mx.google.com> <564fb6cd.444fc20a.f356f.ffffa7d5@mx.google.com> <560af8f1.e2aec20a.d5f35.ffffe779@mx.google.com> <559ed38e.4925980a.04b2.7db1@mx.google.com> <559ed24a.8325980a.f754.7971@mx.google.com>
+
+--===============2720466624839896923==
+Content-Type: text/plain; charset
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+test
+--===============2720466624839896923==
+Content-Type: text/html; charset
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+<p>test</p>
+--===============2720466624839896923==--

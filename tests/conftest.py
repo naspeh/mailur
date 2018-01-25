@@ -196,9 +196,11 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
             'body': res[1] if raw else email.message_from_bytes(res[1])
         }
         if parsed:
-            parts = email.message_from_bytes(res[1]).get_payload()
+            body = email.message_from_bytes(res[1])
+            parts = body.get_payload()
             msg['meta'] = json.loads(parts[0].get_payload())
             msg['body'] = parts[1].get_payload()
+            msg['body_full'] = body
 
         return msg
 
