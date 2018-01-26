@@ -66,7 +66,7 @@ def link(msgids):
 
 
 def parsed(raw, uid, time, mids):
-    def try_decode(raw, charsets, store_err=False):
+    def try_decode(raw, charsets, label=''):
         txt = err = None
         charsets = [aliases.get(c, c) for c in charsets if c]
         for c in charsets:
@@ -74,10 +74,10 @@ def parsed(raw, uid, time, mids):
                 txt = raw.decode(c)
                 break
             except UnicodeDecodeError as e:
-                err = 'UnicodeDecodeError: %s' % e
+                err = 'error on %r: [UnicodeDecodeError] %s' % (label, e)
         return txt, err
 
-    def decode_bytes(raw, charset):
+    def decode_bytes(raw, charset, label):
         if not raw:
             return ''
 
@@ -97,7 +97,7 @@ def parsed(raw, uid, time, mids):
             else:
                 charset = charsets[0] if charsets else 'utf8'
 
-        txt, err = try_decode(raw, [charset])
+        txt, err = try_decode(raw, [charset], label)
         if txt:
             # if decoded without errors add to potential charsets list
             charsets.append(charset)
@@ -107,7 +107,7 @@ def parsed(raw, uid, time, mids):
             txt = raw.decode(charset, 'replace')
         return txt
 
-    def decode_header(raw):
+    def decode_header(raw, label):
         if not raw:
             return ''
 
@@ -116,7 +116,7 @@ def parsed(raw, uid, time, mids):
             if isinstance(raw, str):
                 txt = raw
             else:
-                txt = decode_bytes(raw, charset)
+                txt = decode_bytes(raw, charset, label)
             parts += [txt]
 
         header = ''.join(parts)
@@ -124,11 +124,12 @@ def parsed(raw, uid, time, mids):
         return header
 
     def attachment(part, content, path):
+        label = '%s(%s)' % (part.get_content_type(), path)
         item = {'size': len(content), 'path': path}
         item.update({
             k: v for k, v in (
                 ('content-id', part.get('Content-ID')),
-                ('filename', decode_header(part.get_filename())),
+                ('filename', decode_header(part.get_filename(), label)),
             ) if v
         })
         return item
@@ -158,7 +159,8 @@ def parsed(raw, uid, time, mids):
         if ctype.startswith('text/'):
             content = part.get_payload(decode=True)
             charset = part.get_content_charset()
-            content = decode_bytes(content, charset)
+            label = '%s(%s)' % (ctype, path)
+            content = decode_bytes(content, charset, label)
             if ctype == 'text/html':
                 htm = content
             else:
@@ -193,7 +195,7 @@ def parsed(raw, uid, time, mids):
     meta['files'] = files
 
     for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
-        v = decode_header(orig[n])
+        v = decode_header(orig[n], n)
         if v is None:
             continue
         headers[n] = v
@@ -209,7 +211,7 @@ def parsed(raw, uid, time, mids):
         v = addresses(v)
         meta[n.lower()] = v[0] if one else v
 
-    subj = decode_header(orig['subject'])
+    subj = decode_header(orig['subject'], 'Subject')
     meta['subject'] = str(subj).strip() if subj else subj
 
     refs = orig['references']
@@ -228,7 +230,7 @@ def parsed(raw, uid, time, mids):
         mid = mid.strip()
     meta['msgid'] = mid
     if mids[mid][0] != uid:
-        log.info('## UID=%s is a duplicate {%r: %r}', uid, mid, mids[mid])
+        log.info('## UID=%s duplicate: {%r: %r}', uid, mid, mids[mid])
         meta['duplicate'] = mid
         mid = gen_msgid('dup')
 
@@ -247,13 +249,7 @@ def parsed(raw, uid, time, mids):
     for n, v in headers.items():
         if not v:
             continue
-        try:
-            msg.add_header(n, v)
-        except Exception as e:
-            err = 'UID=%s error on header %r: %r' % (uid, n, e)
-            log.info('## %s', err)
-            meta['errors'].append(err)
-            continue
+        msg.add_header(n, v)
 
     if msg['from'] == 'mailur@link':
         msg.add_header('References', orig['references'])

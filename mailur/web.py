@@ -453,7 +453,7 @@ def wrap_msgs(items):
             'query_thread': ':thread %s' % uid,
             'query_subject': query_header('subject', info['subject']),
             'query_msgid': query_header('message-id', info['msgid']),
-            'url_raw': app.get_url('raw', uid=info['origin_uid']),
+            'url_raw': app.get_url('raw', uid=info['origin_uid'], parsed=''),
             'time_human': humanize_dt(info['date'], tz=tz),
             'time_title': format_dt(info['date'], tz=tz),
             'is_unread': '\\Seen' not in flags,

@@ -201,7 +201,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'time_human': some,
                 'time_title': some,
                 'uid': '1',
-                'url_raw': '/raw/1',
+                'url_raw': '/raw/1?parsed=',
             },
             '2': {
                 'arrived': 1499504910,
@@ -224,7 +224,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
-                'url_raw': '/raw/2',
+                'url_raw': '/raw/2?parsed=',
             }
         },
         'msgs_info': '/msgs/info',
@@ -258,7 +258,7 @@ def test_basic(clean_users, gm_client, login, some):
                 'time_title': some,
                 'uid': '2',
                 'uids': ['1', '2'],
-                'url_raw': '/raw/2',
+                'url_raw': '/raw/2?parsed=',
             }
         },
         'msgs_info': '/thrs/info',

@@ -93,8 +93,8 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     assert msg['body'] == '<pre>\r\nвозможн�\r\n �сти,</pre>'
     assert msg['meta']['errors']
     assert (
-        "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd0 "
-        'in position 16: invalid continuation byte'
+        "error on 'text/plain()': [UnicodeDecodeError] 'utf-8' codec can't "
+        'decode byte 0xd0 in position 16: invalid continuation byte'
         in msg['meta']['errors'][0]
     )
 
