@@ -261,7 +261,10 @@ def msgs_flag():
 @app.get('/raw/<uid:int>/<part>')
 def raw(uid, part=None):
     box = request.query.get('box', local.SRC)
-    msg = local.raw_msg(str(uid), box, part)
+    uid = str(uid)
+    if box == local.ALL:
+        uid = local.pair_origin_uids([uid])[0]
+    msg = local.raw_msg(uid, box, part)
     if msg is None:
         return abort(404)
 

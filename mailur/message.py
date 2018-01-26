@@ -1,4 +1,7 @@
 import datetime as dt
+import email
+import email.header
+import email.policy
 import encodings
 import hashlib
 import html
@@ -7,9 +10,9 @@ import re
 import urllib.parse
 import uuid
 from email.message import MIMEPart
-from email.parser import BytesParser, Parser
-from email.policy import SMTPUTF8, compat32
 from email.utils import formatdate, getaddresses, parsedate_to_datetime
+
+import chardet
 
 from . import log
 
@@ -24,8 +27,27 @@ aliases = {
 encodings.aliases.aliases.update(aliases)
 
 
+class BinaryPolicy(email.policy.Compat32):
+    """+
+    Dovecot understands UTF-8 encoding, so let's save parsed messages
+    without sanitizing.
+    """
+    def _sanitize_header(self, name, value):
+        return value
+
+    def _fold(self, name, value, sanitize=None):
+        return '%s: %s%s' % (name, value, self.linesep)
+
+    def fold_binary(self, name, value):
+        folded = self._fold(name, value)
+        return folded.encode('utf8', 'surrogateescape')
+
+
+policy = BinaryPolicy()
+
+
 def binary(txt, mimetype='text/plain'):
-    msg = MIMEPart()
+    msg = MIMEPart(policy)
     msg.set_type(mimetype)
     msg.add_header('Content-Transfer-Encoding', 'binary')
     msg.set_payload(txt, 'utf-8')
@@ -34,7 +56,7 @@ def binary(txt, mimetype='text/plain'):
 
 def link(msgids):
     msgid = gen_msgid('link')
-    msg = MIMEPart(SMTPUTF8)
+    msg = MIMEPart(policy)
     msg.add_header('Subject', 'Dummy: linking threads')
     msg.add_header('References', ' '.join(msgids))
     msg.add_header('Message-Id', msgid)
@@ -44,46 +66,118 @@ def link(msgids):
 
 
 def parsed(raw, uid, time, mids):
-    # TODO: there is a bug with folding mechanism,
-    # like this one https://bugs.python.org/issue30788,
-    # so use `max_line_length=None` by now, not sure if it's needed at all
-    policy = SMTPUTF8.clone(max_line_length=None)
-
-    orig_full = orig = BytesParser(policy=policy).parsebytes(raw)
-    charsets = orig_full.get_charsets()
-    charset = charsets and charsets[0]
-    if charset:
-        # When email is decoded with some charset instead of ASCII or UTF-8
-        # trying to decode message with specific charset to get right headers,
-        # like subject, etc.
-        try:
-            raw_str = raw.decode(aliases.get(charset, charset))
-            orig = Parser(policy=policy).parsestr(raw_str, headersonly=True)
-        except Exception:
-            pass
-
-    def handle_headers(orig):
-        headers = {}
-        for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
+    def try_decode(raw, charsets):
+        txt = None
+        charsets = [aliases.get(c, c) for c in charsets if c]
+        for c in charsets:
             try:
-                v = orig[n]
-                if v is None:
-                    continue
-                headers[n] = v
-            except IndexError as e:
-                log.error('## UID=%s error on header %r: %r', uid, n, e)
-                raise
-        return headers
+                txt = raw.decode(c)
+                break
+            except UnicodeDecodeError:
+                pass
+        return txt
 
-    try:
-        # Workaround for bad addresses with ending "@":
-        # > email.errors.HeaderParseError: expected angle-addr but found '@'
-        # > IndexError: string index out of range
-        headers = handle_headers(orig)
-    except IndexError as e:
-        orig = BytesParser(policy=compat32).parsebytes(raw, headersonly=True)
-        headers = handle_headers(orig)
-        headers['X-Err-Parser'] = str(e)
+    def decode_bytes(raw, charset):
+        if not raw:
+            return ''
+
+        txt = None
+        charset = charset and charset.lower()
+        if charset == 'unknown-8bit' or not charset:
+            # first trying to decode with charsets detected in message
+            txt = try_decode(raw, charsets) if charsets else None
+            if txt:
+                return txt
+
+            # trying chardet
+            detected = chardet.detect(raw)
+            charset = detected['encoding']
+            if charset:
+                charset = charset.lower()
+            else:
+                charset = charsets[0] if charsets else 'utf8'
+
+        txt = try_decode(raw, [charset])
+        if not txt:
+            err = 'UID=%s UnicodeDecodeError: charset=%s' % (uid, charset)
+            log.error('## %s', err)
+            headers['X-Err-Parsed'] = err
+            txt = raw.decode(charset, 'replace')
+        return txt
+
+    def decode_header(raw):
+        if not raw:
+            return ''
+
+        parts = []
+        for raw, charset in email.header.decode_header(raw):
+            if isinstance(raw, str):
+                txt = raw
+            else:
+                txt = decode_bytes(raw, charset)
+            parts += [txt]
+
+        header = ''.join(parts)
+        header = re.sub('\s+', ' ', header)
+        return header
+
+    def attachment(part, content, path):
+        item = {'size': len(content), 'path': path}
+        item.update({
+            k: v for k, v in (
+                ('content-id', part.get('Content-ID')),
+                ('filename', decode_header(part.get_filename())),
+            ) if v
+        })
+        return item
+
+    def parse_part(part, path=''):
+        txt, htm, files = '', '', []
+        ctype = part.get_content_type()
+        if ctype.startswith('message/'):
+            content = part.as_bytes()
+            files = [attachment(part, content, path)]
+            return txt, htm, files
+        elif part.get_filename():
+            content = part.get_payload(decode=True)
+            files = [attachment(part, content, path)]
+            return txt, htm, files
+        elif part.is_multipart():
+            idx = 0
+            for m in part.get_payload():
+                idx += 1
+                path_ = '%s.%s' % (path, idx) if path else str(idx)
+                txt_, htm_, files_ = parse_part(m, path_)
+                txt += txt_
+                htm += htm_
+                files += files_
+            return txt, htm, files
+
+        if ctype.startswith('text/'):
+            content = part.get_payload(decode=True)
+            charset = part.get_content_charset()
+            content = decode_bytes(content, charset)
+            if ctype == 'text/html':
+                htm = content
+            else:
+                txt = content
+        else:
+            content = part.get_payload(decode=True)
+            files = [attachment(part, content, path)]
+        return txt, htm, files
+
+    # "email.message_from_bytes" uses "email.policy.compat32" policy
+    # and it's by intention, because new policies don't work well
+    # with real emails which have no encodings, badly formated addreses, etc.
+    orig = email.message_from_bytes(raw)
+    charsets = list(set(c.lower() for c in orig.get_charsets() if c))
+
+    headers = {}
+    for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
+        v = decode_header(orig[n])
+        if v is None:
+            continue
+        headers[n] = v
 
     meta = {'origin_uid': uid, 'files': []}
     fields = (
@@ -97,7 +191,7 @@ def parsed(raw, uid, time, mids):
         v = addresses(v)
         meta[n.lower()] = v[0] if one else v
 
-    subj = orig['subject']
+    subj = decode_header(orig['subject'])
     meta['subject'] = str(subj).strip() if subj else subj
 
     refs = orig['references']
@@ -126,7 +220,7 @@ def parsed(raw, uid, time, mids):
     date = orig['date']
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
-    txt, htm, files = parse_part(orig_full)
+    txt, htm, files = parse_part(orig)
     if txt:
         txt = html.escape(txt)
     if htm:
@@ -148,10 +242,14 @@ def parsed(raw, uid, time, mids):
     msg.add_header('Date', orig['Date'])
 
     for n, v in headers.items():
+        if not v:
+            continue
         try:
             msg.add_header(n, v)
         except Exception as e:
-            log.error('## UID=%s error on header %r: %r', uid, n, e)
+            err = 'UID=%s error on header %r: %r' % (uid, n, e)
+            log.error('## %s', err)
+            msg.add_header('X-Err-Parsed', err)
             continue
 
     if msg['from'] == 'mailur@link':
@@ -190,46 +288,6 @@ def addresses(txt):
         } for a in getaddresses([txt])
     ]
     return addrs
-
-
-def parse_part(part, path=''):
-    txt, htm, files = '', '', []
-    ctype = part.get_content_type()
-    if ctype.startswith('message/'):
-        files = [part.as_string()]
-        return txt, htm, files
-    elif part.is_multipart():
-        idx = 0
-        for m in part.get_payload():
-            idx += 1
-            path_ = '%s.%s' % (path, idx) if path else str(idx)
-            txt_, htm_, files_ = parse_part(m, path=path_)
-            txt += txt_
-            htm += htm_
-            files += files_
-        return txt, htm, files
-
-    content = part.get_payload(decode=True)
-    charset = part.get_param('charset') or 'utf8'
-    content = content.decode(aliases.get(charset, charset), errors='replace')
-
-    if ctype == 'text/html':
-        htm = content
-    elif ctype == 'text/plain':
-        txt = content
-    else:
-        item = {
-            'size': len(content),
-            'path': path
-        }
-        item.update({
-            k: v for k, v in (
-                ('content-id', part.get('Content-ID')),
-                ('filename', part.get_filename()),
-            ) if v
-        })
-        files = [item]
-    return txt, htm, files
 
 
 def clean_html(htm, embeds):

@@ -19,7 +19,8 @@ def test_binary_msg():
         'Content-Transfer-Encoding: base64',
         'Content-Type: text/plain; charset="utf-8"',
         '',
-        '0J7RgtCy0LXRgjogNDI=\n'
+        '0J7RgtCy0LXRgjogNDI=',
+        ''
     ])
 
 
@@ -51,10 +52,10 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
         'Message-Id: <with-encoding@test>',
         'Subject: Re: не пора ли подкрепиться?',
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
-        'From: "Катя К." <katya@example.com>',
+        'From: Катя К. <katya@example.com>',
         'To: Grisha <grrr@example.com>',
     ])
-    assert msg.startswith(expect)
+    assert msg.startswith(expect), '%s\n\n%s' % (expect, msg)
 
     gm_client.add_emails([
         {'raw': load_file('msg-header-with-no-encoding.txt')}
@@ -69,11 +70,23 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
         'From: "Катя К." <katya@example.com>',
         'To: Гриша <grrr@example.com>',
     ])
-    assert msg.startswith(expect)
+    assert msg.startswith(expect), '%s\n\n%s' % (expect, msg)
 
 
-def test_encoding_aliases(gm_client, load_email):
-    msg = load_email('msg-subject-gb2312.txt', parsed=True)
+def test_encodings(gm_client, load_email):
+    m = load_email('msg-encoding-empty-charset.txt', parsed=True)
+    assert m['body'] == '<p>test</p>'
+
+    m = load_email('msg-encoding-parts-in-koi8r.txt', parsed=True)
+    assert m['meta']['subject'] == 'Тестим кодировку KOI8-R'
+    assert m['body'] == '<p>тест</p>'
+
+    m = load_email('msg-encoding-saved-in-koi8r.txt', parsed=True)
+    assert m['meta']['subject'] == 'Тестим кодировку KOI8-R'
+    assert m['body'] == '<pre>тест\r\n</pre>'
+
+    # aliases
+    msg = load_email('msg-encoding-subject-gb2312.txt', parsed=True)
     assert msg['meta']['subject'] == (
         'Почта Gmail – особенная. Вот что Вам нужно знать.'
     )
@@ -165,20 +178,26 @@ def test_parts(gm_client, latest, load_email):
     # test some real emails with attachments
     m = load_email('msg-attachments-one-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '20.png', 'path': '2', 'size': 523}
+        {'filename': '20.png', 'path': '2', 'size': 544}
     ]
 
     m = load_email('msg-attachments-two-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '08.png', 'path': '2', 'size': 532},
-        {'filename': '09.png', 'path': '3', 'size': 503}
+        {'filename': '08.png', 'path': '2', 'size': 553},
+        {'filename': '09.png', 'path': '3', 'size': 520}
     ]
 
     m = load_email('msg-attachments-two-yandex.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '49.png', 'path': '2', 'size': 472},
-        {'filename': '50.png', 'path': '3', 'size': 443}
+        {'filename': '49.png', 'path': '2', 'size': 482},
+        {'filename': '50.png', 'path': '3', 'size': 456}
     ]
+
+    m = load_email('msg-attachments-text.txt', parsed=True)
+    assert m['meta']['files'] == [
+        {'filename': 'Дополнение4.txt', 'path': '2', 'size': 11}
+    ]
+    assert m['body'] == '<pre>тест</pre>'
 
     # test embeds
     m = load_email('msg-embeds-one-gmail.txt', parsed=True)
@@ -186,7 +205,7 @@ def test_parts(gm_client, latest, load_email):
         'content-id': '<ii_jcrlk9sk0_16122eb711c529e8>',
         'filename': '50.png',
         'path': '2',
-        'size': 443
+        'size': 456
     }]
     url = '/raw/%s/2' % m['meta']['origin_uid']
     assert url in m['body']
@@ -197,10 +216,6 @@ def test_parts(gm_client, latest, load_email):
     assert 'data-src="/proxy?url=http%3A%2F%2Fwww.gravatar.com' in m['body']
     assert 'data-src="/proxy?url=https%3A%2F%2Fwww.gravatar.com' in m['body']
 
-    # test some strange cases
-    m = load_email('msg-empty-charset.txt', parsed=True)
-    assert m['body'] == '<p>test</p>'
-
     m = load_email('msg-from-ending-snail.txt', parsed=True)
     assert m['meta']['from'] == {
         'addr': 'grrr@', 'name': 'grrr', 'title': 'grrr@',
@@ -208,7 +223,12 @@ def test_parts(gm_client, latest, load_email):
     }
     assert m['meta']['to']
     assert m['meta']['reply-to']
-    assert not m['body_full']['to']
-    assert not m['body_full']['from']
-    assert not m['body_full']['reply-to']
-    assert m['body_full']['x-err-parser']
+    assert m['body_full']['to'] == 'katya@'
+    assert m['body_full']['from'] == 'grrr@'
+    assert m['body_full']['reply-to'] == 'grrr@'
+
+    m = load_email('msg-from-rss2email.txt', parsed=True)
+    assert 'From: БлоGнот: Gray <feeds@yadro.org>' in m['body_raw'].decode()
+
+    m = load_email('msg-rfc822.txt', parsed=True)
+    assert m['meta']['files'] == [{'path': '2', 'size': 463}]

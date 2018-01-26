@@ -193,7 +193,6 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
         msg = {
             'uid': re.search('UID (\d+)', res[0].decode()).group(1),
             'flags': flags(res[0].decode()),
-            'body': res[1] if raw else email.message_from_bytes(res[1])
         }
         if parsed:
             body = email.message_from_bytes(res[1])
@@ -201,6 +200,9 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
             msg['meta'] = json.loads(parts[0].get_payload())
             msg['body'] = parts[1].get_payload()
             msg['body_full'] = body
+            msg['body_raw'] = res[1]
+        else:
+            msg['body'] = res[1] if raw else email.message_from_bytes(res[1])
 
         return msg
 

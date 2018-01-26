@@ -317,6 +317,8 @@ def test_bad_msgids(clean_users, gm_client, msgs, some, load_file, latest):
     assert [i['uid'] for i in res] == ['9', '10']
     assert [i['body']['message-id'] for i in res] == ['<42@mlr>', some]
     assert some.value.endswith('@mailur.dup>')
+    assert res[-1]['body']['X-Dpulicate'] == '<42@mlr>'
+    assert '#dup' in res[-1]['flags']
 
     res = msgs()
     assert len(set([i['body']['message-id'] for i in res])) == 10
