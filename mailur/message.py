@@ -66,16 +66,16 @@ def link(msgids):
 
 
 def parsed(raw, uid, time, mids):
-    def try_decode(raw, charsets):
-        txt = None
+    def try_decode(raw, charsets, store_err=False):
+        txt = err = None
         charsets = [aliases.get(c, c) for c in charsets if c]
         for c in charsets:
             try:
                 txt = raw.decode(c)
                 break
-            except UnicodeDecodeError:
-                pass
-        return txt
+            except UnicodeDecodeError as e:
+                err = 'UnicodeDecodeError: %s' % e
+        return txt, err
 
     def decode_bytes(raw, charset):
         if not raw:
@@ -85,7 +85,7 @@ def parsed(raw, uid, time, mids):
         charset = charset and charset.lower()
         if charset == 'unknown-8bit' or not charset:
             # first trying to decode with charsets detected in message
-            txt = try_decode(raw, charsets) if charsets else None
+            txt = try_decode(raw, charsets)[0] if charsets else None
             if txt:
                 return txt
 
@@ -97,11 +97,13 @@ def parsed(raw, uid, time, mids):
             else:
                 charset = charsets[0] if charsets else 'utf8'
 
-        txt = try_decode(raw, [charset])
+        txt, err = try_decode(raw, [charset])
+        if txt:
+            # if decoded without errors add to potential charsets list
+            charsets.append(charset)
         if not txt:
-            err = 'UID=%s UnicodeDecodeError: charset=%s' % (uid, charset)
-            log.error('## %s', err)
-            headers['X-Err-Parsed'] = err
+            log.info('## UID=%s %s', uid, err)
+            meta['errors'].append(err)
             txt = raw.decode(charset, 'replace')
         return txt
 
@@ -173,13 +175,29 @@ def parsed(raw, uid, time, mids):
     charsets = list(set(c.lower() for c in orig.get_charsets() if c))
 
     headers = {}
+    meta = {'origin_uid': uid, 'files': [], 'errors': []}
+
+    txt, htm, files = parse_part(orig)
+    if txt:
+        txt = html.escape(txt)
+    if htm:
+        embeds = {
+            f['content-id']: '/raw/%s/%s' % (uid, f['path'])
+            for f in files if 'content-id' in f
+        }
+        txt, htm, ext_images = clean_html(htm, embeds)
+        meta['ext_images'] = ext_images
+    elif txt:
+        htm = '<pre>%s</pre>' % txt
+    meta['preview'] = re.sub('[\s ]+', ' ', txt[:200])
+    meta['files'] = files
+
     for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
         v = decode_header(orig[n])
         if v is None:
             continue
         headers[n] = v
 
-    meta = {'origin_uid': uid, 'files': []}
     fields = (
         ('From', 1), ('Sender', 1),
         ('Reply-To', 0), ('To', 0), ('CC', 0), ('BCC', 0)
@@ -211,7 +229,7 @@ def parsed(raw, uid, time, mids):
     meta['msgid'] = mid
     if mids[mid][0] != uid:
         log.info('## UID=%s is a duplicate {%r: %r}', uid, mid, mids[mid])
-        headers['X-Dpulicate'] = mid
+        meta['duplicate'] = mid
         mid = gen_msgid('dup')
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
@@ -219,21 +237,6 @@ def parsed(raw, uid, time, mids):
 
     date = orig['date']
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
-
-    txt, htm, files = parse_part(orig)
-    if txt:
-        txt = html.escape(txt)
-    if htm:
-        embeds = {
-            f['content-id']: '/raw/%s/%s' % (uid, f['path'])
-            for f in files if 'content-id' in f
-        }
-        txt, htm, ext_images = clean_html(htm, embeds)
-        meta['ext_images'] = ext_images
-    elif txt:
-        htm = '<pre>%s</pre>' % txt
-    meta['preview'] = re.sub('[\s ]+', ' ', txt[:200])
-    meta['files'] = files
 
     msg = MIMEPart(policy)
     msg.add_header('X-UID', '<%s>' % uid)
@@ -248,8 +251,8 @@ def parsed(raw, uid, time, mids):
             msg.add_header(n, v)
         except Exception as e:
             err = 'UID=%s error on header %r: %r' % (uid, n, e)
-            log.error('## %s', err)
-            msg.add_header('X-Err-Parsed', err)
+            log.info('## %s', err)
+            meta['errors'].append(err)
             continue
 
     if msg['from'] == 'mailur@link':
@@ -261,7 +264,13 @@ def parsed(raw, uid, time, mids):
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
     msg.attach(binary(meta_txt, 'application/json'))
     msg.attach(binary(htm))
-    return msg
+
+    flags = []
+    if meta['errors']:
+        flags.append('#err')
+    if meta.get('duplicate'):
+        flags.append('#dup')
+    return msg, flags
 
 
 def gen_msgid(label):

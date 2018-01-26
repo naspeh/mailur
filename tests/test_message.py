@@ -72,6 +72,32 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     ])
     assert msg.startswith(expect), '%s\n\n%s' % (expect, msg)
 
+    # msg with UnicodeDecodeError
+    raw = b'\r\n'.join([
+        b'Message-Id: <with-bad-symbol@test>',
+        b'Subject: bad symbol?',
+        b'Date: Wed, 07 Jan 2015 13:23:22 +0000',
+        b'From: katya@example.com',
+        b'To: grrr@example.com',
+        b'Content-type: text/plain; charset=utf-8',
+        b'Content-Transfer-Encoding: 8bit',
+        b'MIME-Version: 1.0',
+        b'',
+        b'',
+        b'\xd0\xb2\xd0\xbe\xd0\xb7\xd0\xbc\xd0\xbe\xd0\xb6\xd0\xbd\xd0\r\n '
+        b'\xbe\xd1\x81\xd1\x82\xd0\xb8,'
+    ])
+    gm_client.add_emails([{'raw': raw}])
+    msg = latest(parsed=True)
+    assert msg['meta']['preview'] == ' возможн� �сти,'
+    assert msg['body'] == '<pre>\r\nвозможн�\r\n �сти,</pre>'
+    assert msg['meta']['errors']
+    assert (
+        "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd0 "
+        'in position 16: invalid continuation byte'
+        in msg['meta']['errors'][0]
+    )
+
 
 def test_encodings(gm_client, load_email):
     m = load_email('msg-encoding-empty-charset.txt', parsed=True)
@@ -91,9 +117,14 @@ def test_encodings(gm_client, load_email):
         'Почта Gmail – особенная. Вот что Вам нужно знать.'
     )
 
-    msg = load_email('msg-encoding-cp-1251.txt', parsed=True)
+    msg = load_email('msg-encoding-cp1251-alias.txt', parsed=True)
     assert msg['meta']['subject'] == 'Обновления музыки на сайте JeTune.ru'
     assert msg['body'] == '<p>Здравствуйте.<br></p>'
+
+    msg = load_email('msg-encoding-cp1251-chardet.txt', parsed=True)
+    assert 'Уважаемый Гриша  !' in msg['body']
+    # subject shoud be decoded properly using charset detected in body
+    assert msg['meta']['subject'] == 'Оплатите, пожалуйста, счет'
 
 
 def test_addresses():
@@ -193,7 +224,7 @@ def test_parts(gm_client, latest, load_email):
         {'filename': '50.png', 'path': '3', 'size': 456}
     ]
 
-    m = load_email('msg-attachments-text.txt', parsed=True)
+    m = load_email('msg-attachments-textfile.txt', parsed=True)
     assert m['meta']['files'] == [
         {'filename': 'Дополнение4.txt', 'path': '2', 'size': 11}
     ]

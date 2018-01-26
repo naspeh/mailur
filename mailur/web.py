@@ -262,7 +262,8 @@ def msgs_flag():
 def raw(uid, part=None):
     box = request.query.get('box', local.SRC)
     uid = str(uid)
-    if box == local.ALL:
+    if request.query.get('parsed'):
+        box = local.ALL
         uid = local.pair_origin_uids([uid])[0]
     msg = local.raw_msg(uid, box, part)
     if msg is None:

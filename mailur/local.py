@@ -187,11 +187,8 @@ def parse_msgs(uids, con=None):
             if flags.count('\\Recent'):
                 flags.remove('\\Recent')
             try:
-                msg_obj = message.parsed(m[1], uid, time, mids)
-                if msg_obj['X-Dpulicate']:
-                    flags.append('#dup')
-                if msg_obj['X-Err-Parsed']:
-                    flags.append('#err')
+                msg_obj, marks = message.parsed(m[1], uid, time, mids)
+                flags += marks
                 msg = msg_obj.as_bytes()
             except Exception as e:
                 msgid = re.findall(b'^(?im)message-id:.*', m[1])
