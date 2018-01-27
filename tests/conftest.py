@@ -200,7 +200,7 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
             msg['meta'] = json.loads(parts[0].get_payload())
             msg['body'] = parts[1].get_payload()
             msg['body_full'] = body
-            msg['body_raw'] = res[1]
+            msg['raw'] = res[1]
         else:
             msg['body'] = res[1] if raw else email.message_from_bytes(res[1])
 

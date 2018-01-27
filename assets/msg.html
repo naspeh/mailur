@@ -15,7 +15,11 @@
       class="icon--attachment"
       :title="`${msg.files.length} attachments`"
     ></div>
-    <div class="icon--image" @click="extImages" title="Show external images"></div>
+    <div
+      class="icon--image"
+      @click="extImages"
+      :title="`Show ${msg.ext_images} external images`"
+    ></div>
     <div @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
     <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
@@ -41,7 +45,7 @@
         :title="`${msg.count} emails in thread`"
       >{{msg.count}}</div>
       <div class="msg-line__subj" :title="msg.subject">{{msg.subject}}</div>
-      <div class="msg-line__text" :title="msg.preview">{{msg.preview}}</div>
+      <div class="msg-line__text" :title="msg.preview" v-html="msg.preview" />
       <div class="msg-line__time" :title="msg.time_title">{{msg.time_human}}</div>
     </a>
     <div class="msg-line__pick">

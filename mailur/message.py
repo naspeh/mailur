@@ -151,8 +151,15 @@ def parsed(raw, uid, time, mids):
                 idx += 1
                 path_ = '%s.%s' % (path, idx) if path else str(idx)
                 txt_, htm_, files_ = parse_part(m, path_)
-                txt += txt_
-                htm += htm_
+                if part.get_content_subtype() == 'alternative':
+                    if htm_:
+                        htm = htm_
+                    elif txt_:
+                        txt = txt_
+                else:
+                    htm += ('<hr>' if htm else '') + htm_
+                    if txt_:
+                        htm += ('<hr>' if htm else '') + text2html(txt_)
                 files += files_
             return txt, htm, files
 
@@ -180,18 +187,17 @@ def parsed(raw, uid, time, mids):
     meta = {'origin_uid': uid, 'files': [], 'errors': []}
 
     txt, htm, files = parse_part(orig)
-    if txt:
-        txt = html.escape(txt)
     if htm:
         embeds = {
             f['content-id']: '/raw/%s/%s' % (uid, f['path'])
             for f in files if 'content-id' in f
         }
-        txt, htm, ext_images = clean_html(htm, embeds)
+        htm, ext_images = clean_html(htm, embeds)
         meta['ext_images'] = ext_images
     elif txt:
-        htm = '<pre>%s</pre>' % txt
-    meta['preview'] = re.sub('[\s ]+', ' ', txt[:200])
+        htm = text2html(txt)
+
+    meta['preview'] = htm and html2line(htm)
     meta['files'] = files
 
     for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
@@ -313,7 +319,7 @@ def clean_html(htm, embeds):
     htm = lhtml.fromstring(htm)
     htm = cleaner.clean_html(htm)
 
-    ext_images = False
+    ext_images = 0
     for img in htm.xpath('//img[@src]'):
         # clean data-src attribute if exists
         if img.attrib.get('data-src'):
@@ -327,13 +333,55 @@ def clean_html(htm, embeds):
         elif re.match('^data:image/.*', src):
             pass
         elif re.match('^(https?://|//).*', src):
-            ext_images = True
+            ext_images += 1
             proxy_url = '/proxy?' + urllib.parse.urlencode({'url': src})
             img.attrib['data-src'] = proxy_url
             del img.attrib['src']
         else:
             del img.attrib['src']
 
-    txt = '\n'.join(i.rstrip() for i in htm.xpath('//text()') if i.rstrip())
+    autolink(htm)
+
     htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
-    return txt, htm, ext_images
+    return htm, ext_images
+
+
+def autolink(doc):
+    from lxml.html.clean import autolink
+
+    autolink(doc)
+    for link in doc.xpath('//a[@href]'):
+        link.attrib['target'] = '_blank'
+    return doc
+
+
+def text2html(txt):
+    from lxml import html as lhtml
+
+    def replace(match):
+        txt = match.group()
+        if '\n' in txt:
+            return '<br>' * txt.count('\n')
+        else:
+            return '&nbsp;' * txt.count(' ')
+
+    htm = html.escape(txt)
+    htm = re.sub('(?m)((\r?\n)*|^[ ]*)', replace, htm)
+
+    htm = lhtml.fromstring(htm)
+    autolink(htm)
+    htm = lhtml.tostring(htm, encoding='utf-8').decode()
+    return htm
+
+
+def html2text(htm):
+    from lxml import html as lhtml
+
+    htm = lhtml.fromstring(htm)
+    return '\n'.join(html.escape(i) for i in htm.xpath('//text()') if i)
+
+
+def html2line(htm, limit=200):
+    txt = html2text(htm)
+    txt = re.sub('([\s ]|&nbsp;)+', ' ', txt)
+    return txt[:limit]

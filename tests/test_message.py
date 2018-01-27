@@ -24,7 +24,7 @@ def test_binary_msg():
     ])
 
 
-def test_parsed_msg(clean_users, gm_client, load_file, latest):
+def test_general(clean_users, gm_client, load_file, latest, load_email):
     gm_client.add_emails([{'flags': '\\Flagged'}])
     msg = latest()
     assert 'X-UID' in msg['body']
@@ -79,7 +79,7 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
         b'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         b'From: katya@example.com',
         b'To: grrr@example.com',
-        b'Content-type: text/plain; charset=utf-8',
+        b'Content-type: text/html; charset=utf-8',
         b'Content-Transfer-Encoding: 8bit',
         b'MIME-Version: 1.0',
         b'',
@@ -89,14 +89,37 @@ def test_parsed_msg(clean_users, gm_client, load_file, latest):
     ])
     gm_client.add_emails([{'raw': raw}])
     msg = latest(parsed=True)
-    assert msg['meta']['preview'] == ' возможн� �сти,'
-    assert msg['body'] == '<pre>\r\nвозможн�\r\n �сти,</pre>'
+    assert msg['meta']['preview'] == 'возможн� �сти,'
+    assert msg['body'] == '<p>возможн�&#13;\r\n �сти,</p>'
     assert msg['meta']['errors']
     assert (
-        "error on 'text/plain()': [UnicodeDecodeError] 'utf-8' codec can't "
+        "error on 'text/html()': [UnicodeDecodeError] 'utf-8' codec can't "
         'decode byte 0xd0 in position 16: invalid continuation byte'
         in msg['meta']['errors'][0]
     )
+
+    m = load_email('msg-from-ending-snail.txt', parsed=True)
+    assert m['meta']['from'] == {
+        'addr': 'grrr@', 'name': 'grrr', 'title': 'grrr@',
+        'hash': '8ea2bc312c94c9596ad95772d6cd579c',
+    }
+    assert m['meta']['to']
+    assert m['meta']['reply-to']
+    assert m['body_full']['to'] == 'katya@'
+    assert m['body_full']['from'] == 'grrr@'
+    assert m['body_full']['reply-to'] == 'grrr@'
+
+    m = load_email('msg-from-rss2email.txt', parsed=True)
+    assert 'From: БлоGнот: Gray <feeds@yadro.org>' in m['raw'].decode()
+
+    # test links
+    m = load_email('msg-links.txt', parsed=True)
+    link = '<a href="{0}" target="_blank">'
+    l1 = link.format('https://github.com/naspeh/mailur')
+    # l2 = link.format('http://bottlepy.org/docs/dev/routing.html#rule-syntax')
+    l2 = link.format('http://bottlepy.org/docs/dev/routing.html')
+    assert m['body'].count(l1) == 3
+    assert m['body'].count(l2) == 2
 
 
 def test_encodings(gm_client, load_email):
@@ -109,22 +132,22 @@ def test_encodings(gm_client, load_email):
 
     m = load_email('msg-encoding-saved-in-koi8r.txt', parsed=True)
     assert m['meta']['subject'] == 'Тестим кодировку KOI8-R'
-    assert m['body'] == '<pre>тест\r\n</pre>'
+    assert m['body'] == '<p>тест<br></p>'
 
     # aliases
-    msg = load_email('msg-encoding-subject-gb2312.txt', parsed=True)
-    assert msg['meta']['subject'] == (
+    m = load_email('msg-encoding-subject-gb2312.txt', parsed=True)
+    assert m['meta']['subject'] == (
         'Почта Gmail – особенная. Вот что Вам нужно знать.'
     )
 
-    msg = load_email('msg-encoding-cp1251-alias.txt', parsed=True)
-    assert msg['meta']['subject'] == 'Обновления музыки на сайте JeTune.ru'
-    assert msg['body'] == '<p>Здравствуйте.<br></p>'
+    m = load_email('msg-encoding-cp1251-alias.txt', parsed=True)
+    assert m['meta']['subject'] == 'Обновления музыки на сайте JeTune.ru'
+    assert m['body'] == '<p>Здравствуйте.<br></p>'
 
-    msg = load_email('msg-encoding-cp1251-chardet.txt', parsed=True)
-    assert 'Уважаемый Гриша  !' in msg['body']
+    m = load_email('msg-encoding-cp1251-chardet.txt', parsed=True)
+    assert 'Уважаемый Гриша  !' in m['body']
     # subject shoud be decoded properly using charset detected in body
-    assert msg['meta']['subject'] == 'Оплатите, пожалуйста, счет'
+    assert m['meta']['subject'] == 'Оплатите, пожалуйста, счет'
 
 
 def test_addresses():
@@ -170,10 +193,35 @@ def test_addresses():
 
 
 def test_parts(gm_client, latest, load_email):
-    msg = binary('1')
+    msg = MIMEPart()
+    msg.make_mixed()
+    msg.attach(binary('plain', 'text/plain'))
+    msg.attach(binary('<p>html</p>', 'text/html'))
     gm_client.add_emails([{'raw': msg.as_bytes()}])
     m = latest(parsed=True)
     assert not m['meta']['files']
+    assert m['meta']['preview'] == 'plain html'
+    assert m['body'] == '<div><p>plain</p><hr><p>html</p></div>'
+
+    msg = MIMEPart()
+    msg.make_alternative()
+    msg.attach(binary('plain', 'text/plain'))
+    msg.attach(binary('<p>html</p>', 'text/html'))
+    gm_client.add_emails([{'raw': msg.as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == 'html'
+    assert m['body'] == '<p>html</p>'
+
+    msg = MIMEPart()
+    msg.make_mixed()
+    msg.attach(binary('<br>plain', 'text/plain'))
+    msg.attach(binary('<p>html</p>', 'text/html'))
+    gm_client.add_emails([{'raw': msg.as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == '&lt;br&gt;plain html'
+    assert m['body'] == '<div><p>&lt;br&gt;plain</p><hr><p>html</p></div>'
 
     msg = MIMEPart()
     msg.make_mixed()
@@ -228,7 +276,10 @@ def test_parts(gm_client, latest, load_email):
     assert m['meta']['files'] == [
         {'filename': 'Дополнение4.txt', 'path': '2', 'size': 11}
     ]
-    assert m['body'] == '<pre>тест</pre>'
+    assert m['body'] == '<p>тест</p>'
+
+    m = load_email('msg-rfc822.txt', parsed=True)
+    assert m['meta']['files'] == [{'path': '2', 'size': 463}]
 
     # test embeds
     m = load_email('msg-embeds-one-gmail.txt', parsed=True)
@@ -246,20 +297,4 @@ def test_parts(gm_client, latest, load_email):
     assert 'data-src="/proxy?url=%2F%2Fwww.gravatar.com' in m['body']
     assert 'data-src="/proxy?url=http%3A%2F%2Fwww.gravatar.com' in m['body']
     assert 'data-src="/proxy?url=https%3A%2F%2Fwww.gravatar.com' in m['body']
-
-    m = load_email('msg-from-ending-snail.txt', parsed=True)
-    assert m['meta']['from'] == {
-        'addr': 'grrr@', 'name': 'grrr', 'title': 'grrr@',
-        'hash': '8ea2bc312c94c9596ad95772d6cd579c',
-    }
-    assert m['meta']['to']
-    assert m['meta']['reply-to']
-    assert m['body_full']['to'] == 'katya@'
-    assert m['body_full']['from'] == 'grrr@'
-    assert m['body_full']['reply-to'] == 'grrr@'
-
-    m = load_email('msg-from-rss2email.txt', parsed=True)
-    assert 'From: БлоGнот: Gray <feeds@yadro.org>' in m['body_raw'].decode()
-
-    m = load_email('msg-rfc822.txt', parsed=True)
-    assert m['meta']['files'] == [{'path': '2', 'size': 463}]
+    assert m['meta']['ext_images'] == 3
