@@ -340,9 +340,15 @@ def raw_msg(uid, box, part=None, con=None):
     con.select(box)
     field = 'BODY[]' if part is None else ('BINARY[%s]' % part)
     res = con.fetch(uid, field)
-    if not res:
-        return
-    return res[0][1]
+    content_type = 'text/plain'
+    if part:
+        hdr = con.fetch(uid, 'BINARY[%s.mime]' % part)
+        msg = email.message_from_bytes(hdr[0][1])
+        content_type = msg.get_content_type()
+
+    if res:
+        res = res[0][1]
+    return res, content_type
 
 
 @fn_time

@@ -50,11 +50,12 @@ Vue.component('msg', {
         i.style = i.dataset.style;
       }
     },
-    slide: function(idx) {
+    slide: function(e, idx) {
+      e.preventDefault();
       new Slider({
         el: '.slider',
         propsData: {
-          slides: this.msg.files.slice(),
+          slides: this.msg.files.filter(i => i.image),
           index: idx
         }
       });

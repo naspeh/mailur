@@ -76,8 +76,9 @@
     <div v-if="msg.files.length" class="msg__body__files">
       <a
         v-for="f, idx of msg.files"
-        @click.prevent="slide(idx)"
         :href="f.url"
+        @click="f.image && slide($event, idx)"
+        target="_blank"
       >{{f.filename}}</a>
     </div>
   </div>

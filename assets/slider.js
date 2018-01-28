@@ -50,8 +50,8 @@ export let Slider = Vue.extend({
       let fix = (x, y) => (!y ? 0 : Math.round((x - y) / 2) + 'px');
       let box = this.$refs.img,
         img = box.firstElementChild;
-      img.style.maxWidth = box.clientWidth;
-      img.style.maxHeight = box.clientHeight;
+      img.style['max-width'] = box.clientWidth + 'px';
+      img.style['max-height'] = box.clientHeight + 'px';
       img.style.top = fix(box.clientHeight, img.clientHeight);
       img.style.left = fix(box.clientWidth, img.clientWidth);
     }

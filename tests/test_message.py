@@ -256,6 +256,16 @@ def test_parts(gm_client, latest, load_email):
     assert m['meta']['preview'] == ''
     assert m['body'] == ''
 
+    msg = binary('', 'application/json')
+    msg.add_header('Content-Disposition', 'attachment; filename="1/f/ /.json"')
+    gm_client.add_emails([{'raw': msg.as_bytes()}])
+    m = latest(parsed=True)
+    assert m['meta']['files'] == [
+        {'filename': '1-f---.json', 'path': '', 'size': 0}
+    ]
+    assert m['meta']['preview'] == '[1-f---.json]'
+    assert m['body'] == ''
+
     msg = MIMEPart()
     msg.make_related()
     msg.attach(binary(' ', 'text/plain'))
@@ -358,21 +368,21 @@ def test_parts(gm_client, latest, load_email):
     # test some real emails with attachments
     m = load_email('msg-attachments-one-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '20.png', 'path': '2', 'size': 544}
+        {'filename': '20.png', 'image': True, 'path': '2', 'size': 544}
     ]
     assert '<hr>' not in m['body']
 
     m = load_email('msg-attachments-two-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '08.png', 'path': '2', 'size': 553},
-        {'filename': '09.png', 'path': '3', 'size': 520}
+        {'filename': '08.png', 'image': True, 'path': '2', 'size': 553},
+        {'filename': '09.png', 'image': True, 'path': '3', 'size': 520}
     ]
     assert '<hr>' not in m['body']
 
     m = load_email('msg-attachments-two-yandex.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '49.png', 'path': '2', 'size': 482},
-        {'filename': '50.png', 'path': '3', 'size': 456}
+        {'filename': '49.png', 'image': True, 'path': '2', 'size': 482},
+        {'filename': '50.png', 'image': True, 'path': '3', 'size': 456}
     ]
 
     m = load_email('msg-attachments-textfile.txt', parsed=True)
@@ -391,6 +401,7 @@ def test_parts(gm_client, latest, load_email):
     assert m['meta']['files'] == [{
         'content-id': '<ii_jcrlk9sk0_16122eb711c529e8>',
         'filename': '50.png',
+        'image': True,
         'path': '2',
         'size': 456
     }]

@@ -259,17 +259,18 @@ def msgs_flag():
 
 @app.get('/raw/<uid:int>', name='raw')
 @app.get('/raw/<uid:int>/<part>')
-def raw(uid, part=None):
+@app.get('/raw/<uid:int>/<part>/<filename>')
+def raw(uid, part=None, filename=None):
     box = request.query.get('box', local.SRC)
     uid = str(uid)
     if request.query.get('parsed'):
         box = local.ALL
         uid = local.pair_origin_uids([uid])[0]
-    msg = local.raw_msg(uid, box, part)
+    msg, content_type = local.raw_msg(uid, box, part)
     if msg is None:
         return abort(404)
 
-    response.content_type = 'text/plain'
+    response.content_type = content_type
     return msg
 
 
@@ -478,7 +479,10 @@ def wrap_msgs(items):
 
 
 def wrap_files(files, url):
-    return [dict(f, url='%s/%s' % (url, f['path'])) for f in files]
+    return [
+        dict(f, url='%s/%s/%s' % (url, f['path'], f['filename']))
+        for f in files
+    ]
 
 
 def from_list(addrs, max=4):

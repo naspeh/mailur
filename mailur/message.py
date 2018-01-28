@@ -123,18 +123,23 @@ def parsed(raw, uid, time, mids):
         return header
 
     def attachment(part, content, path):
-        label = '%s(%s)' % (part.get_content_type(), path)
+        ctype = part.get_content_type()
+        label = '%s(%s)' % (ctype, path)
         item = {'size': len(content), 'path': path}
-        item.update({
-            k: v for k, v in (
-                ('content-id', part.get('Content-ID')),
-                ('filename', decode_header(part.get_filename(), label)),
-            ) if v
-        })
-        if not item.get('filename'):
-            ctype = part.get_content_type()
+        filename = part.get_filename()
+        if filename:
+            filename = decode_header(part.get_filename(), label)
+            filename = re.sub('[^\w.-]', '-', filename)
+        else:
             ext = mimetypes.guess_extension(ctype) or 'txt'
-            item['filename'] = 'unknown-%s%s' % (path, ext)
+            filename = 'unknown-%s%s' % (path, ext)
+        item['filename'] = filename
+
+        content_id = part.get('Content-ID')
+        if content_id:
+            item['content-id'] = content_id
+        if ctype.startswith('image/'):
+            item['image'] = True
         return item
 
     def parse_part(part, path=''):
