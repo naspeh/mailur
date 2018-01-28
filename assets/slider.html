@@ -1,0 +1,10 @@
+<div :class="{slider: 1, 'slider--show': slides.length}">
+  <a :href="slide.url" class="slider__title" target="_blank">{{slide.filename}}</a>
+  <div class="slider__close" @click="close" title="Close" />
+  <div v-if="loading" class="slider__loading" />
+  <div ref="img" class="slider__img">
+    <img @load="fix" @complete="fix" :src="slide.url" />
+  </div>
+  <div class="slider__prev" @click="prev" />
+  <div class="slider__next" @click="next" />
+</div>

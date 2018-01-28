@@ -327,6 +327,7 @@ def test_parts(gm_client, latest, load_email):
         for p in ('1', '2')
     ]
     assert m['body'] == ''
+    assert m['meta']['preview'] == '[unknown-1.json, unknown-2.json]'
 
     msg1 = MIMEPart()
     msg1.make_mixed()
@@ -339,6 +340,7 @@ def test_parts(gm_client, latest, load_email):
         for p in ('2.1', '2.2')
     ]
     assert m['body'] == '<p>1</p>'
+    assert m['meta']['preview'] == '1 [unknown-2.1.json, unknown-2.2.json]'
 
     msg2 = MIMEPart()
     msg2.make_mixed()

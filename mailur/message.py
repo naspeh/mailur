@@ -201,7 +201,12 @@ def parsed(raw, uid, time, mids):
         htm, extra_meta = html.clean(htm, embeds)
         meta.update(extra_meta)
 
-    meta['preview'] = htm and html.to_line(htm)
+    preview = htm and html.to_line(htm, 200)
+    if len(preview) < 200 and files:
+        preview += (' ' if preview else '') + (
+            '[%s]' % ', '.join(f['filename'] for f in files)
+        )
+    meta['preview'] = preview
     meta['files'] = files
 
     for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):

@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import { Slider } from './slider.js';
 import tpl from './msg.html';
 
 Vue.component('msg', {
@@ -48,6 +49,15 @@ Vue.component('msg', {
       for (let i of document.querySelectorAll('*[data-style]')) {
         i.style = i.dataset.style;
       }
+    },
+    slide: function(idx) {
+      new Slider({
+        el: '.slider',
+        propsData: {
+          slides: this.msg.files.slice(),
+          index: idx
+        }
+      });
     }
   }
 });

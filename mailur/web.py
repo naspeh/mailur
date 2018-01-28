@@ -472,8 +472,13 @@ def wrap_msgs(items):
             'is_unread': '\\Seen' not in flags,
             'is_pinned': '\\Flagged' in flags,
         })
+        info['files'] = wrap_files(info['files'], info['url_raw'])
         msgs[uid] = info
     return msgs
+
+
+def wrap_files(files, url):
+    return [dict(f, url='%s/%s' % (url, f['path'])) for f in files]
 
 
 def from_list(addrs, max=4):
