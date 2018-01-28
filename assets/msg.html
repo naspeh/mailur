@@ -1,4 +1,4 @@
-<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--ext-images': msg.ext_images, 'msg--detailed': detailed, 'msg--opened': opened}">
+<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--detailed': detailed, 'msg--opened': opened}">
   <div class="msg-line">
     <div
       class="icon--pin"
@@ -17,8 +17,8 @@
     ></div>
     <div
       class="icon--image"
-      @click="extImages"
-      :title="`Show ${msg.ext_images} external images`"
+      @click="makeRicher"
+      :title="msg.richer"
     ></div>
     <div @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
     <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />

@@ -122,6 +122,63 @@ def test_general(clean_users, gm_client, load_file, latest, load_email):
     assert m['body'].count(l2) == 2
 
 
+def test_richer(gm_client, latest):
+    headers = '\r\n'.join([
+        'Date: Wed, 07 Jan 2015 13:23:22 +0000',
+        'From: katya@example.com',
+        'To: grrr@example.com',
+        'MIME-Version: 1.0',
+        'Content-type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: 8bit',
+    ])
+
+    raw = '\r\n'.join([
+        headers,
+        'Message-Id: <richer-styles@test>',
+        'Subject: styles',
+        ''
+        '<p style="color:red;@import">test html</p>',
+    ])
+    gm_client.add_emails([{'raw': raw.encode()}])
+    m = latest(parsed=True)
+    assert m['body'] == '<p data-style="color:red;">test html</p>'
+    assert m['meta']['richer'] == 'Show styles'
+
+    raw = '\r\n'.join([
+        headers,
+        'Message-Id: <richer-ext-imgs@test>',
+        'Subject: external images',
+        '',
+        '<img src="https://github.com/favicon.ico" />',
+        '<img src="http://github.com/favicon.ico" />',
+        '<img src="//github.com/favicon.ico" />',
+        '<img src="data:image/gif;base64,R0lGODlhEAA">'
+    ])
+    gm_client.add_emails([{'raw': raw.encode()}])
+    m = latest(parsed=True)
+    assert m['meta']['files'] == []
+    assert 'src="data:image/gif' in m['body']
+    assert 'data-src="/proxy?url=%2F%2Fgithub.com' in m['body']
+    assert 'data-src="/proxy?url=http%3A%2F%2Fgithub.com' in m['body']
+    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in m['body']
+    assert m['meta']['richer'] == 'Show 3 external images'
+
+    raw = '\r\n'.join([
+        headers,
+        'Message-Id: <richer-styles-and-imgs@test>',
+        'Subject: styles and images',
+        ''
+        '<p style="color:red">test html</p>',
+        '<img src="https://github.com/favicon.ico" />'
+    ])
+    gm_client.add_emails([{'raw': raw.encode()}])
+    m = latest(parsed=True)
+    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in m['body']
+    assert ' style="color:red"' not in m['body']
+    assert 'data-style="color:red"' in m['body']
+    assert m['meta']['richer'] == 'Show styles and 1 external images'
+
+
 def test_encodings(gm_client, load_email):
     m = load_email('msg-encoding-empty-charset.txt', parsed=True)
     assert m['body'] == '<p>test</p>'
@@ -291,10 +348,3 @@ def test_parts(gm_client, latest, load_email):
     }]
     url = '/raw/%s/2' % m['meta']['origin_uid']
     assert url in m['body']
-
-    m = load_email('msg-embeds-external.txt', parsed=True)
-    assert m['meta']['files'] == []
-    assert 'data-src="/proxy?url=%2F%2Fwww.gravatar.com' in m['body']
-    assert 'data-src="/proxy?url=http%3A%2F%2Fwww.gravatar.com' in m['body']
-    assert 'data-src="/proxy?url=https%3A%2F%2Fwww.gravatar.com' in m['body']
-    assert m['meta']['ext_images'] == 3

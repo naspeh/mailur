@@ -192,8 +192,8 @@ def parsed(raw, uid, time, mids):
             f['content-id']: '/raw/%s/%s' % (uid, f['path'])
             for f in files if 'content-id' in f
         }
-        htm, ext_images = clean_html(htm, embeds)
-        meta['ext_images'] = ext_images
+        htm, extra_meta = clean_html(htm, embeds)
+        meta.update(extra_meta)
     elif txt:
         htm = text2html(txt)
 
@@ -312,9 +312,10 @@ def clean_html(htm, embeds):
     cleaner = Cleaner(
         links=False,
         style=True,
+        inline_style=False,
         kill_tags=['head'],
         remove_tags=['html', 'base'],
-        safe_attrs=set(Cleaner.safe_attrs) - {'class'},
+        safe_attrs=list(set(Cleaner.safe_attrs) - {'class'}) + ['style'],
     )
     htm = lhtml.fromstring(htm)
     htm = cleaner.clean_html(htm)
@@ -340,10 +341,24 @@ def clean_html(htm, embeds):
         else:
             del img.attrib['src']
 
+    styles = False
+    for el in htm.xpath('//*[@style]'):
+        # clean data-src attribute if exists
+        if el.attrib.get('data-style'):
+            del el.attrib['data-style']
+        el.attrib['data-style'] = el.attrib['style']
+        del el.attrib['style']
+        styles = True
+
     autolink(htm)
 
+    richer = ['styles'] if styles else []
+    if ext_images:
+        richer.append('%s external images' % ext_images)
+    richer = ('Show %s' % ' and '.join(richer)) if richer else ''
+
     htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
-    return htm, ext_images
+    return htm, {'richer': richer}
 
 
 def autolink(doc):

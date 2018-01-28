@@ -282,9 +282,22 @@ def proxy():
     if url.startswith('//'):
         url = 'https:' + url
 
-    log.debug('proxy: %s', url)
-    http = HTTPClient.from_url(url)
-    res = http.get(url)
+    def get(url):
+        log.debug('proxy: %s', url)
+        try:
+            http = HTTPClient.from_url(url)
+            res = http.get(url)
+        except Exception as e:
+            log.error(e)
+            abort(503, str(e))
+        return res
+
+    res = get(url)
+    if res.status_code in (301, 302):
+        location = [v for k, v in res.headers if k.lower() == 'location']
+        if location:
+            res = get(location[0])
+
     response.status = res.status_code
     for key, val in res.headers:
         if key in ('content-type', 'content-length'):

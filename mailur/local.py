@@ -186,14 +186,9 @@ def parse_msgs(uids, con=None):
             flags = flags.split()
             if flags.count('\\Recent'):
                 flags.remove('\\Recent')
-            try:
-                msg_obj, marks = message.parsed(m[1], uid, time, mids)
-                flags += marks
-                msg = msg_obj.as_bytes()
-            except Exception as e:
-                msgid = re.findall(b'^(?im)message-id:.*', m[1])
-                log.exception('## %r uid=%s %s', e, uid, msgid)
-                continue
+            msg_obj, marks = message.parsed(m[1], uid, time, mids)
+            flags += marks
+            msg = msg_obj.as_bytes()
             yield time, ' '.join(flags), msg
 
     return con.multiappend(ALL, msgs())
