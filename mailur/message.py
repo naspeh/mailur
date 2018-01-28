@@ -4,18 +4,16 @@ import email.header
 import email.policy
 import encodings
 import hashlib
-import html
 import json
 import mimetypes
 import re
-import urllib.parse
 import uuid
 from email.message import MIMEPart
 from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 import chardet
 
-from . import log
+from . import html, log
 
 aliases = {
     # Seems Google used gb2312 in some subjects, so there is another symbol
@@ -179,7 +177,7 @@ def parsed(raw, uid, time, mids):
             if ctype == 'text/html':
                 htm = content
             else:
-                htm = content and text2html(content)
+                htm = content and html.from_text(content)
         else:
             content = part.get_payload(decode=True)
             files = [attachment(part, content, path)]
@@ -200,10 +198,10 @@ def parsed(raw, uid, time, mids):
             f['content-id']: '/raw/%s/%s' % (uid, f['path'])
             for f in files if 'content-id' in f
         }
-        htm, extra_meta = clean_html(htm, embeds)
+        htm, extra_meta = html.clean(htm, embeds)
         meta.update(extra_meta)
 
-    meta['preview'] = htm and html2line(htm)
+    meta['preview'] = htm and html.to_line(htm)
     meta['files'] = files
 
     for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
@@ -305,104 +303,3 @@ def addresses(txt):
         } for a in getaddresses([txt])
     ]
     return addrs
-
-
-def clean_html(htm, embeds):
-    from lxml import html as lhtml
-    from lxml.html.clean import Cleaner
-
-    htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
-    if not htm:
-        return '', {}
-
-    cleaner = Cleaner(
-        links=False,
-        style=True,
-        inline_style=False,
-        kill_tags=['head'],
-        remove_tags=['html', 'base'],
-        safe_attrs=list(set(Cleaner.safe_attrs) - {'class'}) + ['style'],
-    )
-    htm = lhtml.fromstring(htm)
-    htm = cleaner.clean_html(htm)
-
-    ext_images = 0
-    for img in htm.xpath('//img[@src]'):
-        # clean data-src attribute if exists
-        if img.attrib.get('data-src'):
-            del img.attrib['data-src']
-
-        src = img.attrib.get('src')
-        cid = re.match('^cid:(.*)', src)
-        url = cid and embeds.get('<%s>' % cid.group(1))
-        if url:
-            img.attrib['src'] = url
-        elif re.match('^data:image/.*', src):
-            pass
-        elif re.match('^(https?://|//).*', src):
-            ext_images += 1
-            proxy_url = '/proxy?' + urllib.parse.urlencode({'url': src})
-            img.attrib['data-src'] = proxy_url
-            del img.attrib['src']
-        else:
-            del img.attrib['src']
-
-    styles = False
-    for el in htm.xpath('//*[@style]'):
-        # clean data-src attribute if exists
-        if el.attrib.get('data-style'):
-            del el.attrib['data-style']
-        el.attrib['data-style'] = el.attrib['style']
-        del el.attrib['style']
-        styles = True
-
-    autolink(htm)
-
-    richer = ['styles'] if styles else []
-    if ext_images:
-        richer.append('%s external images' % ext_images)
-    richer = ('Show %s' % ' and '.join(richer)) if richer else ''
-
-    htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
-    htm = re.sub('(^<div>|</div>$)', '', htm)
-    return htm, {'richer': richer} if richer else {}
-
-
-def autolink(doc):
-    from lxml.html.clean import autolink
-
-    autolink(doc)
-    for link in doc.xpath('//a[@href]'):
-        link.attrib['target'] = '_blank'
-    return doc
-
-
-def text2html(txt):
-    from lxml import html as lhtml
-
-    def replace(match):
-        txt = match.group()
-        if '\n' in txt:
-            return '<br>' * txt.count('\n')
-        else:
-            return '&nbsp;' * txt.count(' ')
-
-    htm = html.escape(txt)
-    htm = re.sub('(?m)((\r?\n)*|^[ ]*)', replace, htm)
-    htm = lhtml.fromstring(htm)
-    autolink(htm)
-    htm = lhtml.tostring(htm, encoding='utf-8').decode()
-    return htm
-
-
-def html2text(htm):
-    from lxml import html as lhtml
-
-    htm = lhtml.fromstring(htm)
-    return '\n'.join(html.escape(i) for i in htm.xpath('//text()') if i)
-
-
-def html2line(htm, limit=200):
-    txt = html2text(htm)
-    txt = re.sub('([\s ]|&nbsp;)+', ' ', txt)
-    return txt[:limit]

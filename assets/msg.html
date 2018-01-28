@@ -73,7 +73,7 @@
   <div class="msg__body">
     <template v-if="body === undefined">Loading...</template>
     <div v-if="body" v-html="body"/>
-    <div v-if="msg.files" class="msg__body__files">
+    <div v-if="msg.files.length" class="msg__body__files">
       <a v-for="f of msg.files" :href="`${msg.url_raw}/${f.path}`" target="_blank">
         {{f.filename}}
       </a>
