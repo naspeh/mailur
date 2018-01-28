@@ -16,10 +16,7 @@ sys.path.insert(0, str(root))
 
 @pytest.fixture(scope='session', autouse=True)
 def init():
-    call('''
-    bin/dovecot
-    sleep 2
-    ''', shell=True, cwd=root)
+    clean_users()
 
 
 @pytest.fixture(autouse=True)

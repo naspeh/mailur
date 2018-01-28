@@ -191,7 +191,7 @@ def parse_msgs(uids, con=None):
             msg = msg_obj.as_bytes()
             yield time, ' '.join(flags), msg
 
-    return con.multiappend(ALL, msgs())
+    return con.multiappend(ALL, list(msgs()))
 
 
 def parse(criteria=None, *, batch=1000, threads=10):

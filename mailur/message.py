@@ -6,6 +6,7 @@ import encodings
 import hashlib
 import html
 import json
+import mimetypes
 import re
 import urllib.parse
 import uuid
@@ -132,50 +133,57 @@ def parsed(raw, uid, time, mids):
                 ('filename', decode_header(part.get_filename(), label)),
             ) if v
         })
+        if not item.get('filename'):
+            ctype = part.get_content_type()
+            ext = mimetypes.guess_extension(ctype) or 'txt'
+            item['filename'] = 'unknown-%s%s' % (path, ext)
         return item
 
     def parse_part(part, path=''):
-        txt, htm, files = '', '', []
+        htm, files = '', []
         ctype = part.get_content_type()
         if ctype.startswith('message/'):
             content = part.as_bytes()
             files = [attachment(part, content, path)]
-            return txt, htm, files
+            return htm, files
         elif part.get_filename():
             content = part.get_payload(decode=True)
             files = [attachment(part, content, path)]
-            return txt, htm, files
+            return htm, files
         elif part.is_multipart():
-            idx = 0
+            idx, parts = 0, []
             for m in part.get_payload():
                 idx += 1
                 path_ = '%s.%s' % (path, idx) if path else str(idx)
-                txt_, htm_, files_ = parse_part(m, path_)
-                if part.get_content_subtype() == 'alternative':
-                    if htm_:
-                        htm = htm_
-                    elif txt_:
-                        txt = txt_
-                else:
-                    htm += ('<hr>' if htm else '') + htm_
-                    if txt_:
-                        htm += ('<hr>' if htm else '') + text2html(txt_)
+                htm_, files_ = parse_part(m, path_)
+                if htm_:
+                    parts.append((htm_, m.get_content_type() == 'text/html'))
                 files += files_
-            return txt, htm, files
+
+            if part.get_content_subtype() == 'alternative':
+                htm_ = [c for c, is_htm in parts if is_htm]
+                if htm_:
+                    htm = htm_[0]
+                elif parts:
+                    htm = parts[0][0]
+            else:
+                htm = '<hr>'.join(c for c, h in parts if c)
+            return htm, files
 
         if ctype.startswith('text/'):
             content = part.get_payload(decode=True)
             charset = part.get_content_charset()
             label = '%s(%s)' % (ctype, path)
             content = decode_bytes(content, charset, label)
+            content = content.rstrip()
             if ctype == 'text/html':
                 htm = content
             else:
-                txt = content
+                htm = content and text2html(content)
         else:
             content = part.get_payload(decode=True)
             files = [attachment(part, content, path)]
-        return txt, htm, files
+        return htm, files
 
     # "email.message_from_bytes" uses "email.policy.compat32" policy
     # and it's by intention, because new policies don't work well
@@ -186,7 +194,7 @@ def parsed(raw, uid, time, mids):
     headers = {}
     meta = {'origin_uid': uid, 'files': [], 'errors': []}
 
-    txt, htm, files = parse_part(orig)
+    htm, files = parse_part(orig)
     if htm:
         embeds = {
             f['content-id']: '/raw/%s/%s' % (uid, f['path'])
@@ -194,8 +202,6 @@ def parsed(raw, uid, time, mids):
         }
         htm, extra_meta = clean_html(htm, embeds)
         meta.update(extra_meta)
-    elif txt:
-        htm = text2html(txt)
 
     meta['preview'] = htm and html2line(htm)
     meta['files'] = files
@@ -307,7 +313,7 @@ def clean_html(htm, embeds):
 
     htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
     if not htm:
-        return '', '', False
+        return '', {}
 
     cleaner = Cleaner(
         links=False,
@@ -358,7 +364,8 @@ def clean_html(htm, embeds):
     richer = ('Show %s' % ' and '.join(richer)) if richer else ''
 
     htm = lhtml.tostring(htm, encoding='utf-8').decode().strip()
-    return htm, {'richer': richer}
+    htm = re.sub('(^<div>|</div>$)', '', htm)
+    return htm, {'richer': richer} if richer else {}
 
 
 def autolink(doc):
@@ -382,7 +389,6 @@ def text2html(txt):
 
     htm = html.escape(txt)
     htm = re.sub('(?m)((\r?\n)*|^[ ]*)', replace, htm)
-
     htm = lhtml.fromstring(htm)
     autolink(htm)
     htm = lhtml.tostring(htm, encoding='utf-8').decode()

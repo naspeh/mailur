@@ -189,7 +189,7 @@ def test_encodings(gm_client, load_email):
 
     m = load_email('msg-encoding-saved-in-koi8r.txt', parsed=True)
     assert m['meta']['subject'] == 'Тестим кодировку KOI8-R'
-    assert m['body'] == '<p>тест<br></p>'
+    assert m['body'] == '<p>тест</p>'
 
     # aliases
     m = load_email('msg-encoding-subject-gb2312.txt', parsed=True)
@@ -250,6 +250,32 @@ def test_addresses():
 
 
 def test_parts(gm_client, latest, load_email):
+    gm_client.add_emails([{'raw': binary('').as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == ''
+    assert m['body'] == ''
+
+    msg = MIMEPart()
+    msg.make_related()
+    msg.attach(binary(' ', 'text/plain'))
+    msg.attach(binary(' ', 'text/html'))
+    gm_client.add_emails([{'raw': msg.as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == ''
+    assert m['body'] == ''
+
+    msg = MIMEPart()
+    msg.make_alternative()
+    msg.attach(binary(' ', 'text/plain'))
+    msg.attach(binary(' ', 'text/html'))
+    gm_client.add_emails([{'raw': msg.as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == ''
+    assert m['body'] == ''
+
     msg = MIMEPart()
     msg.make_mixed()
     msg.attach(binary('plain', 'text/plain'))
@@ -258,7 +284,7 @@ def test_parts(gm_client, latest, load_email):
     m = latest(parsed=True)
     assert not m['meta']['files']
     assert m['meta']['preview'] == 'plain html'
-    assert m['body'] == '<div><p>plain</p><hr><p>html</p></div>'
+    assert m['body'] == '<p>plain</p><hr><p>html</p>'
 
     msg = MIMEPart()
     msg.make_alternative()
@@ -270,6 +296,16 @@ def test_parts(gm_client, latest, load_email):
     assert m['meta']['preview'] == 'html'
     assert m['body'] == '<p>html</p>'
 
+    msg1 = MIMEPart()
+    msg1.make_mixed()
+    msg1.attach(msg)
+    msg1.attach(binary('<p>html2</p>', 'text/html'))
+    gm_client.add_emails([{'raw': msg1.as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == 'html html2'
+    assert m['body'] == '<p>html</p><hr><p>html2</p>'
+
     msg = MIMEPart()
     msg.make_mixed()
     msg.attach(binary('<br>plain', 'text/plain'))
@@ -278,7 +314,7 @@ def test_parts(gm_client, latest, load_email):
     m = latest(parsed=True)
     assert not m['meta']['files']
     assert m['meta']['preview'] == '&lt;br&gt;plain html'
-    assert m['body'] == '<div><p>&lt;br&gt;plain</p><hr><p>html</p></div>'
+    assert m['body'] == '<p>&lt;br&gt;plain</p><hr><p>html</p>'
 
     msg = MIMEPart()
     msg.make_mixed()
@@ -287,8 +323,10 @@ def test_parts(gm_client, latest, load_email):
     gm_client.add_emails([{'raw': msg.as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == [
-        {'path': p, 'size': 1} for p in ('1', '2')
+        {'path': p, 'filename': 'unknown-%s.json' % p, 'size': 1}
+        for p in ('1', '2')
     ]
+    assert m['body'] == ''
 
     msg1 = MIMEPart()
     msg1.make_mixed()
@@ -297,31 +335,37 @@ def test_parts(gm_client, latest, load_email):
     gm_client.add_emails([{'raw': msg1.as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == [
-        {'path': p, 'size': 1} for p in ('2.1', '2.2')
+        {'path': p, 'filename': 'unknown-%s.json' % p, 'size': 1}
+        for p in ('2.1', '2.2')
     ]
+    assert m['body'] == '<p>1</p>'
 
     msg2 = MIMEPart()
     msg2.make_mixed()
     msg2.attach(msg)
-    msg2.attach(binary('2'))
+    msg2.attach(binary('0'))
     msg2.attach(msg1)
     gm_client.add_emails([{'raw': msg2.as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == [
-        {'path': p, 'size': 1} for p in ('1.1', '1.2', '3.2.1', '3.2.2')
+        {'path': p, 'filename': 'unknown-%s.json' % p, 'size': 1}
+        for p in ('1.1', '1.2', '3.2.1', '3.2.2')
     ]
+    assert m['body'] == '<p>0</p><hr><p>1</p>'
 
     # test some real emails with attachments
     m = load_email('msg-attachments-one-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
         {'filename': '20.png', 'path': '2', 'size': 544}
     ]
+    assert '<hr>' not in m['body']
 
     m = load_email('msg-attachments-two-gmail.txt', parsed=True)
     assert m['meta']['files'] == [
         {'filename': '08.png', 'path': '2', 'size': 553},
         {'filename': '09.png', 'path': '3', 'size': 520}
     ]
+    assert '<hr>' not in m['body']
 
     m = load_email('msg-attachments-two-yandex.txt', parsed=True)
     assert m['meta']['files'] == [
@@ -336,7 +380,9 @@ def test_parts(gm_client, latest, load_email):
     assert m['body'] == '<p>тест</p>'
 
     m = load_email('msg-rfc822.txt', parsed=True)
-    assert m['meta']['files'] == [{'path': '2', 'size': 463}]
+    assert m['meta']['files'] == [
+        {'filename': 'unknown-2.eml', 'path': '2', 'size': 463}
+    ]
 
     # test embeds
     m = load_email('msg-embeds-one-gmail.txt', parsed=True)

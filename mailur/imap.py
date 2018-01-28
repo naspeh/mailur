@@ -449,6 +449,8 @@ class Uids:
         return [f() for f in self._call(fn, *args)]
 
     def call_async(self, fn, *args):
+        if not self.batches:
+            return self.call(fn, *args)
         pool = Pool(self.threads)
         jobs = [pool.spawn(f) for f in self._call(fn, *args)]
         pool.join(raise_error=True)
