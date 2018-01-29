@@ -56,7 +56,7 @@ def process(args):
     elif args['web']:
         web()
     elif args['test']:
-        run('pytest')
+        run('pytest -n2 -q')
     elif args['lint']:
         ci = args['--ci'] and 1 or ''
         run('ci=%s bin/lint' % ci)

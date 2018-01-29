@@ -3,6 +3,7 @@ import json
 import re
 import sys
 import time
+import uuid
 from email.utils import formatdate
 from pathlib import Path
 from subprocess import call
@@ -13,17 +14,34 @@ import pytest
 root = (Path(__file__).parent / '..').resolve()
 sys.path.insert(0, str(root))
 
+users = []
+test1 = None
+test2 = None
+
 
 @pytest.fixture(scope='session', autouse=True)
-def init():
-    clean_users()
+def init(request):
+    for i in range(len(request.session.items)):
+        users.append([
+            'test1_%s' % uuid.uuid4().hex,
+            'test2_%s' % uuid.uuid4().hex
+        ])
+
+    users_str = ' '.join(sum(users, []))
+    call('''
+    path=/home/vmail/test
+    rm -rf $path
+    user="%s" home=$path append=1 bin/users
+    systemctl restart dovecot
+    sleep 1
+    ''' % users_str, shell=True, cwd=root)
 
 
 @pytest.fixture(autouse=True)
-def setup(gm_client):
+def setup(new_users, gm_client):
     from mailur import local
 
-    with mock.patch('mailur.local.USER', 'test1'):
+    with mock.patch('mailur.local.USER', test1):
         local.uid_pairs.cache_clear()
         local.msgids.cache_clear()
         local.saved_tags.cache_clear()
@@ -32,11 +50,10 @@ def setup(gm_client):
 
 
 @pytest.fixture
-def clean_users():
-    call('''
-    rm -rf /home/vmail/test*
-    bin/users
-    ''', shell=True, cwd=root)
+def new_users():
+    global test1, test2
+
+    test1, test2 = users.pop()
 
 
 @pytest.fixture
@@ -96,7 +113,7 @@ def gm_fake():
             return responces.pop()
         return gm_client._uid(name, *a, **kw)
 
-    con = local.connect('test2')
+    con = local.connect(test2)
 
     gm_client.con = con
     gm_client._uid = con.uid
@@ -239,8 +256,11 @@ def web():
 
 @pytest.fixture
 def login(web):
-    def inner(username='test1', password='user', tz='Asia/Singapore'):
+    def inner(username=test1, password='user', tz='Asia/Singapore'):
         params = {'username': username, 'password': password, 'timezone': tz}
         web.post_json('/login', params, status=200)
         return web
+
+    inner.user1 = test1
+    inner.user2 = test2
     return inner

@@ -1,7 +1,7 @@
 from mailur import imap, local, message
 
 
-def test_batched_uids(clean_users, gm_client):
+def test_batched_uids(gm_client):
     con = local.client()
     bsize = 25000
     assert [] == con.fetch([str(i) for i in range(1, 100, 2)], 'FLAGS')
@@ -69,7 +69,7 @@ def test_literal_size_limit(gm_client, raises):
     assert 'Too long argument' in str(e)
 
 
-def test_multiappend(clean_users, patch, msgs):
+def test_multiappend(patch, msgs):
     new = [
         (None, None, message.binary(str(i)).as_bytes())
         for i in range(0, 10)

@@ -4,7 +4,7 @@ from mailur.message import addresses
 from mailur.web import from_list
 
 
-def test_login_and_themes(web, some):
+def test_login_and_themes(web, some, login):
     res = web.get('/login', status=200)
     assert '/theme-base.css' in res, res.text
     assert '/login.js' in res, res.txt
@@ -16,10 +16,10 @@ def test_login_and_themes(web, some):
     assert '/theme-solarized.css' in res, res.text
     assert '"current_theme": "solarized"' in res, res.text
 
-    login = {'username': 'test1', 'password': 'user', 'timezone': 'UTC'}
-    res = web.post_json('/login', login, status=200)
+    params = {'username': login.user1, 'password': 'user', 'timezone': 'UTC'}
+    res = web.post_json('/login', params, status=200)
     assert web.cookies == {'session': some}
-    assert 'test1' not in some
+    assert login.user1 not in some
     res = web.get('/', status=200)
     assert '/theme-base.css' in res, res.text
     assert '/index.js' in res, res.text
@@ -30,7 +30,7 @@ def test_login_and_themes(web, some):
     assert '/theme-solarized.css' in res, res.text
 
     web.reset()
-    res = web.post_json('/login', dict(login, theme='solarized'), status=200)
+    res = web.post_json('/login', dict(params, theme='solarized'), status=200)
     res = web.get('/', status=200)
     assert '/theme-solarized.css' in res, res.text
 
@@ -53,11 +53,11 @@ def test_login_and_themes(web, some):
     assert 'schema' in res
     assert web.cookies == {}
 
-    res = web.post_json('/login', {'username': 'test1'}, status=400)
+    res = web.post_json('/login', {'username': login.user1}, status=400)
     assert 'errors' in res
     assert 'schema' in res
 
-    res = web.post_json('/login', dict(login, password=''), status=400)
+    res = web.post_json('/login', dict(params, password=''), status=400)
     assert res.json == {
         'errors': ['Authentication failed.'],
         'details': "b'[AUTHENTICATIONFAILED] Authentication failed.'"
@@ -65,7 +65,7 @@ def test_login_and_themes(web, some):
     web.get('/', status=302)
 
 
-def test_tz(clean_users, gm_client, web, login, some):
+def test_tz(gm_client, web, login, some):
     time_dt = dt.datetime.utcnow()
     time = int(time_dt.timestamp())
     gm_client.add_emails([{'labels': '\\Inbox', 'date': time}])
@@ -94,7 +94,7 @@ def test_tz(clean_users, gm_client, web, login, some):
     assert some['time_title'] == time_2h.strftime('%a, %d %b, %Y at %H:%M')
 
 
-def test_tags(clean_users, gm_client, login, some):
+def test_tags(gm_client, login, some):
     def tag(name, **kw):
         id = kw.get('id', name)
         return dict({
@@ -146,7 +146,7 @@ def test_tags(clean_users, gm_client, login, some):
         '#e558c4df': tag('test 3', unread=1, id='#e558c4df'),
     }
 
-    web = login(username='test2')
+    web = login(username=login.user2)
     res = web.get('/tags', status=200)
     assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
     assert some.value == {
@@ -165,7 +165,7 @@ def test_tags(clean_users, gm_client, login, some):
     assert res.json == tag('нью', id='#d44f332a')
 
 
-def test_basic(clean_users, gm_client, login, some):
+def test_basic(gm_client, login, some):
     web = login()
     res = web.post_json('/search', {'q': 'all', 'preload': 10}, status=200)
     assert res.json == {
@@ -266,7 +266,7 @@ def test_basic(clean_users, gm_client, login, some):
     }
 
 
-def test_msgs_flag(clean_users, gm_client, login, msgs):
+def test_msgs_flag(gm_client, login, msgs):
     def post(uids, **data):
         web.post_json('/msgs/flag', dict(uids=uids, **data), status=200)
         return [' '.join(sorted(m['flags'].split())) for m in msgs()]
@@ -296,7 +296,7 @@ def test_msgs_flag(clean_users, gm_client, login, msgs):
     ]
 
 
-def test_search_thread(clean_users, gm_client, login, some):
+def test_search_thread(gm_client, login, some):
     def post(uid, preload=4):
         data = {'q': ':thread %s' % uid, 'preload': preload}
         return web.post_json('/search', data, status=200).json

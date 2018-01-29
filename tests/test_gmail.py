@@ -27,7 +27,7 @@ def test_client(select, some):
         assert m.called
 
 
-def test_fetch_and_parse(clean_users, gm_client, some):
+def test_fetch_and_parse(gm_client, some):
     lm = local.client()
     gmail.fetch_folder()
     local.parse()
@@ -68,7 +68,7 @@ def test_fetch_and_parse(clean_users, gm_client, some):
     assert lm.status(local.ALL, '(UIDNEXT)') == [b'All (UIDNEXT 7)']
 
 
-def test_origin_msg(clean_users, gm_client, latest):
+def test_origin_msg(gm_client, latest):
     gm_client.add_emails(parse=False)
     msg = latest(local.SRC)['body']
     # headers

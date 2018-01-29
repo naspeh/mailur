@@ -1,7 +1,7 @@
 from mailur import local
 
 
-def test_uid_pairs(clean_users, gm_client, msgs, patch):
+def test_uid_pairs(gm_client, msgs, patch):
     gm_client.add_emails([{}, {}], parse=False)
     assert ['1', '2'] == [i['uid'] for i in msgs(local.SRC)]
 
@@ -53,7 +53,7 @@ def test_uid_pairs(clean_users, gm_client, msgs, patch):
         assert m.call_args[0][0] == '9'
 
 
-def test_update_threads(clean_users, gm_client, msgs):
+def test_update_threads(gm_client, msgs):
     gm_client.add_emails([{}])
     res = msgs()
     assert ['#latest'] == [i['flags'] for i in res]
@@ -123,7 +123,7 @@ def thread(box=local.SRC):
         return con.thread('REFS UTF-8 ALL')
 
 
-def test_link_threads_part1(clean_users, gm_client, msgs):
+def test_link_threads_part1(gm_client, msgs):
     gm_client.add_emails([{}, {}])
     res = msgs()
     assert ['1', '2'] == [i['uid'] for i in res]
@@ -196,7 +196,7 @@ def test_link_threads_part1(clean_users, gm_client, msgs):
     ]
 
 
-def test_link_threads_part2(clean_users, gm_client, msgs):
+def test_link_threads_part2(gm_client, msgs):
     gm_client.add_emails([
         {}, {'refs': '<101@mlr>'}, {}, {'refs': '<103@mlr>'}]
     )
@@ -254,7 +254,7 @@ def test_link_threads_part2(clean_users, gm_client, msgs):
     ]
 
 
-def test_link_threads_part3(clean_users, gm_client, msgs):
+def test_link_threads_part3(gm_client, msgs):
     gm_client.add_emails([
         {},
         {'refs': '<non-exist-two@mlr>'},
@@ -300,7 +300,7 @@ def test_link_threads_part3(clean_users, gm_client, msgs):
     ]
 
 
-def test_bad_msgids(clean_users, gm_client, msgs, some, load_file, latest):
+def test_bad_msgids(gm_client, msgs, some, load_file, latest):
     gm_client.add_emails([{'mid': '<zero@mlr>'} for i in range(0, 8)])
     gm_client.add_emails([
         {'mid': '<42@mlr>'},

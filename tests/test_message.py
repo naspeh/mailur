@@ -24,7 +24,7 @@ def test_binary_msg():
     ])
 
 
-def test_general(clean_users, gm_client, load_file, latest, load_email):
+def test_general(gm_client, load_file, latest, load_email):
     gm_client.add_emails([{'flags': '\\Flagged'}])
     msg = latest()
     assert 'X-UID' in msg['body']
