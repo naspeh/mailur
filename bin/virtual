@@ -1,0 +1,33 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+if [ -z "${home:-}" ]; then
+    [ -n "${user:-}" ] || (echo "no \$user and no \$home"; exit 1)
+    home=$(doveadm user -u $user -f home)
+fi
+
+mkdir -p $home/mailboxes/{Src,All}
+
+path=$home/tags
+mkdir -p $path/{INBOX,Trash,Spam,Drafts,Pinned}
+cat <<"EOF" > $path/INBOX/dovecot-virtual
+All
+  KEYWORD #inbox
+EOF
+    cat <<"EOF" > $path/Trash/dovecot-virtual
+All
+  KEYWORD #trash
+EOF
+    cat <<"EOF" > $path/Spam/dovecot-virtual
+All
+  KEYWORD #spam
+EOF
+    cat <<"EOF" > $path/Drafts/dovecot-virtual
+All
+  DRAFT
+EOF
+    cat <<"EOF" > $path/Pinned/dovecot-virtual
+All
+  FLAGGED
+EOF

@@ -6,39 +6,17 @@ set -exuo pipefail
 home=${home:-"/home/vmail"}
 pass=${pass:-\{plain\}user}
 names=${user:-"user"}
+fields=${fields:-}
 append=${append:-}
 
 users=/etc/dovecot/passwd.users
 [ -n "$append" ] || : > $users
 for user in $names; do
-    echo "$user:$pass::::$home/$user::" >> $users
+    echo "$user:$pass::::$home/$user::$fields" >> $users
 done
 
 # virtual mailboxes
 for user in $names; do
-    mkdir -p $home/$user/mailboxes/{Src,All}
-
-    path=$home/$user/tags
-    mkdir -p $path/{INBOX,Trash,Spam,Drafts,Pinned}
-    cat <<"EOF" > $path/INBOX/dovecot-virtual
-All
-  KEYWORD #inbox
-EOF
-    cat <<"EOF" > $path/Trash/dovecot-virtual
-All
-  KEYWORD #trash
-EOF
-    cat <<"EOF" > $path/Spam/dovecot-virtual
-All
-  KEYWORD #spam
-EOF
-    cat <<"EOF" > $path/Drafts/dovecot-virtual
-All
-  DRAFT
-EOF
-    cat <<"EOF" > $path/Pinned/dovecot-virtual
-All
-  FLAGGED
-EOF
+    home=$home/$user bin/virtual
 done
 chown -R vmail:vmail $home
