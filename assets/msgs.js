@@ -219,6 +219,21 @@ let Msgs = Vue.extend({
         this.opened = null;
       } else {
         this.opened = uid;
+        this.$nextTick(() => {
+          let opened = this.$el.querySelector('.msg--opened');
+          if (!opened) {
+            return;
+          }
+          let box = this.$refs.msgs;
+          if (box.clientHeight == box.scrollHeight) {
+            return;
+          }
+          // opened.scrollIntoView()
+          let top = opened.offsetTop - 50;
+          if (top < box.scrollTop) {
+            box.scrollTop = top;
+          }
+        });
       }
     },
     editTags: function(opts, picked = null) {
