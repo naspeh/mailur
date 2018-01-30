@@ -65,16 +65,25 @@ def link(msgids):
 
 
 def parsed(raw, uid, time, mids):
+    def error(e, label):
+        return 'error on %r: [%s] %s' % (label, e.__class__.__name__, e)
+
     def try_decode(raw, charsets, label=''):
         txt = err = None
         charsets = [aliases.get(c, c) for c in charsets if c]
+        charset = charsets[0]
         for c in charsets:
             try:
                 txt = raw.decode(c)
+                charset = c
                 break
             except UnicodeDecodeError as e:
-                err = 'error on %r: [UnicodeDecodeError] %s' % (label, e)
-        return txt, err
+                err = error(e, label)
+            except LookupError as e:
+                err = error(e, label)
+                if len(charsets) == 1:
+                    charset = 'utf8'
+        return txt, charset, err
 
     def decode_bytes(raw, charset, label):
         if not raw:
@@ -96,7 +105,7 @@ def parsed(raw, uid, time, mids):
             else:
                 charset = charsets[0] if charsets else 'utf8'
 
-        txt, err = try_decode(raw, [charset], label)
+        txt, charset, err = try_decode(raw, [charset], label)
         if txt:
             # if decoded without errors add to potential charsets list
             charsets.append(charset)
