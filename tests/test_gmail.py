@@ -124,3 +124,7 @@ def test_origin_msg(gm_client, latest):
 
     gm_client.add_emails([{}], tag='\\Draft', parse=False)
     assert latest(local.SRC)['flags'] == '\\Draft'
+
+    gm_client.add_emails([{}], tag='\\Inbox', fetch=False, parse=False)
+    gmail.fetch(tag='\\Chats', box='INBOX')
+    assert latest(local.SRC)['flags'] == '#chats'

@@ -22,7 +22,8 @@ MAP_LABELS = {
     '\\Junk': '#spam',
     '\\Trash': '#trash',
     '\\Sent': '#sent',
-    '\\Important': ''
+    '\\Chats': '#chats',
+    '\\Important': '',
 }
 
 
@@ -50,9 +51,11 @@ def connect():
     return con
 
 
-def client(tag='\\All'):
+def client(tag='\\All', box=None):
     ctx = imap.client(connect)
-    if tag:
+    if box:
+        ctx.select(box)
+    elif tag:
         ctx.select_tag(tag)
     return ctx
 
@@ -73,14 +76,14 @@ def get_credentials():
     return username, password
 
 
-def fetch_uids(uids, tag):
+def fetch_uids(uids, tag, box):
     fields = (
         '('
         'UID INTERNALDATE FLAGS BODY.PEEK[] '
         'X-GM-LABELS X-GM-MSGID X-GM-THRID'
         ')'
     )
-    with client(tag) as gm:
+    with client(tag, box=box) as gm:
         res = gm.fetch(uids.str, fields)
 
     def flag(m):
@@ -117,6 +120,9 @@ def fetch_uids(uids, tag):
                 r' ?){6}',
                 line.decode()
             ).groupdict()
+            if not raw:
+                # this happens in "[Gmail]/Chats" folder
+                continue
             headers = '\r\n'.join([
                 'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),
                 'X-GM-MSGID: <%s>' % parts['msgid'],
@@ -139,7 +145,7 @@ def fetch_uids(uids, tag):
         return lm.multiappend(local.SRC, msgs())
 
 
-def fetch_folder(tag='\\All', *, batch=1000, threads=8):
+def fetch_folder(tag='\\All', *, box=None, batch=1000, threads=8):
     log.info('## process %r', tag)
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
     with local.client(None) as con:
@@ -150,7 +156,7 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     else:
         uidvalidity = uidnext = None
     log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
-    gm = client(tag)
+    gm = client(tag, box=box)
     res = gm.status(None, '(UIDNEXT UIDVALIDITY)')
     folder = re.search(
         r'(UIDNEXT (?P<uidnext>\d+) ?|UIDVALIDITY (?P<uid>\d+)){2}',
@@ -167,7 +173,7 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
     gm.logout()
     if len(uids):
         uids = imap.Uids(uids, size=batch, threads=threads)
-        uids.call_async(fetch_uids, uids, tag)
+        uids.call_async(fetch_uids, uids, tag, box)
 
     with local.client(None) as lm:
         lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
@@ -175,6 +181,10 @@ def fetch_folder(tag='\\All', *, batch=1000, threads=8):
 
 
 def fetch(**kw):
+    if kw.get('tag') or kw.get('box'):
+        fetch_folder(**kw)
+        return
+
     fetch_folder(**kw)
     fetch_folder('\\Junk', **kw)
     fetch_folder('\\Trash', **kw)
