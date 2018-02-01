@@ -23,8 +23,7 @@ from .schema import validate
 root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
 app = Bottle()
-if DEBUG:
-    app.catchall = False
+app.catchall = not DEBUG
 
 
 def session(callback):
@@ -463,7 +462,7 @@ def wrap_msgs(items):
             'uid': uid,
             'count': len(addrs),
             'tags': clean_tags(flags),
-            'from_list': from_list(addrs, max=3),
+            'from_list': wrap_addresses(addrs, max=3),
             'query_thread': ':thread %s' % uid,
             'query_subject': query_header('subject', info['subject']),
             'query_msgid': query_header('message-id', info['msgid']),
@@ -485,7 +484,7 @@ def wrap_files(files, url):
     ]
 
 
-def from_list(addrs, max=4):
+def wrap_addresses(addrs, max=4):
     if isinstance(addrs, str):
         addrs = [addrs]
 
