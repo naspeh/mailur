@@ -1,11 +1,12 @@
-*.py[co]
-.cache
-.eggs
 *.egg
 *.egg-info
+*.py[co]
+.cache
+.coverage
+.eggs
 
-/env
-/bin/env
-/node_modules
 /assets/dist
+/bin/env
+/env
+/node_modules
 /yarn.lock
