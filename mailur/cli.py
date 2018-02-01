@@ -16,17 +16,20 @@ Options:
   -b <batch>    Batch size [default: 1000].
   -t <threads>  Amount of threads for thread pool [default: 2].
 """
-from pathlib import Path
+import pathlib
+import sys
 
 from docopt import docopt
 
 from . import gmail, local
 
-root = Path(__file__).parent.parent
+root = pathlib.Path(__file__).parent.parent
 
 
-def main():
-    args = docopt(__doc__, version='Mailur 0.3')
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
+    args = docopt(__doc__, args, version='Mailur 0.3')
     try:
         process(args)
     except KeyboardInterrupt:

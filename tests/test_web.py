@@ -165,7 +165,7 @@ def test_tags(gm_client, login, some):
     assert res.json == tag('нью', id='#d44f332a')
 
 
-def test_basic(gm_client, login, some):
+def test_general(gm_client, load_email, login, some):
     web = login()
     res = web.post_json('/search', {'q': 'all', 'preload': 10}, status=200)
     assert res.json == {
@@ -185,7 +185,6 @@ def test_basic(gm_client, login, some):
                 'count': 0,
                 'date': some,
                 'errors': [],
-                'tags': [],
                 'files': [],
                 'from_list': [],
                 'is_pinned': False,
@@ -198,6 +197,7 @@ def test_basic(gm_client, login, some):
                 'query_subject': ':threads header subject "Subj 101"',
                 'query_thread': ':thread 1',
                 'subject': 'Subj 101',
+                'tags': [],
                 'time_human': some,
                 'time_title': some,
                 'uid': '1',
@@ -208,7 +208,6 @@ def test_basic(gm_client, login, some):
                 'count': 0,
                 'date': some,
                 'errors': [],
-                'tags': [],
                 'files': [],
                 'from_list': [],
                 'is_pinned': False,
@@ -221,6 +220,7 @@ def test_basic(gm_client, login, some):
                 'query_subject': ':threads header subject "Subj 102"',
                 'query_thread': ':thread 2',
                 'subject': 'Subj 102',
+                'tags': [],
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
@@ -241,7 +241,6 @@ def test_basic(gm_client, login, some):
                 'count': 2,
                 'date': some,
                 'errors': [],
-                'tags': [],
                 'files': [],
                 'from_list': [],
                 'is_pinned': False,
@@ -254,6 +253,7 @@ def test_basic(gm_client, login, some):
                 'query_subject': ':threads header subject "Subj 102"',
                 'query_thread': ':thread 2',
                 'subject': 'Subj 102',
+                'tags': [],
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
@@ -264,6 +264,48 @@ def test_basic(gm_client, login, some):
         'msgs_info': '/thrs/info',
         'threads': True
     }
+    res = web.get('/raw/2')
+    assert res.content_type == 'text/plain'
+    assert 'Message-ID: <102@mlr>' in res.text
+    res = web.get('/raw/2/1')
+    assert res.content_type == 'text/plain'
+    assert '42' in res.text
+
+    m = load_email('msg-attachments-two-gmail.txt')
+    q = ':threads uid %s' % m['uid']
+    res = web.post_json('/search', {'q': q}, status=200)
+    assert res.json == {
+        'uids': ['3'],
+        'msgs_info': '/thrs/info',
+        'threads': True,
+        'msgs': {'3': some}
+    }
+    assert some['files'] == [
+        {
+            'filename': '08.png',
+            'image': True,
+            'path': '2',
+            'size': 553,
+            'url': '/raw/3/2/08.png'
+        },
+        {
+            'filename': '09.png',
+            'image': True,
+            'path': '3',
+            'size': 520,
+            'url': '/raw/3/3/09.png'
+        }
+    ]
+    assert some['preview'] == (
+        'ответ на тело 2014-03-03 18:09 GMT+02:00 Ne Greh '
+        '&lt; negreh@gmail.com &gt; : тело  [08.png, 09.png]'
+    )
+    res = web.get(some['files'][0]['url'], status=200)
+    assert res.content_type == 'image/png'
+    res = web.get(some['files'][1]['url'], status=200)
+    assert res.content_type == 'image/png'
+    res = web.get('/raw/3')
+    assert res.content_type == 'text/plain'
 
 
 def test_msgs_flag(gm_client, login, msgs):
