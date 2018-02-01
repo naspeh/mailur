@@ -117,7 +117,7 @@ def parsed(raw, uid, time, mids):
 
     def decode_header(raw, label):
         if not raw:
-            return ''
+            return None
 
         parts = []
         for raw, charset in email.header.decode_header(raw):
@@ -137,7 +137,7 @@ def parsed(raw, uid, time, mids):
         item = {'size': len(content), 'path': path}
         filename = part.get_filename()
         if filename:
-            filename = decode_header(part.get_filename(), label)
+            filename = decode_header(part.get_filename(), label) or ''
             filename = re.sub('[^\w.-]', '-', filename)
         else:
             ext = mimetypes.guess_extension(ctype) or 'txt'
@@ -241,7 +241,7 @@ def parsed(raw, uid, time, mids):
         meta[n.lower()] = v[0] if one else v
 
     subj = decode_header(orig['subject'], 'Subject')
-    meta['subject'] = str(subj).strip() if subj else subj
+    meta['subject'] = str(subj).strip() if subj else ''
 
     refs = orig['references']
     refs = refs.split() if refs else []
@@ -276,8 +276,6 @@ def parsed(raw, uid, time, mids):
     msg.add_header('Date', orig['Date'])
 
     for n, v in headers.items():
-        if not v:
-            continue
         msg.add_header(n, v)
 
     if msg['from'] == 'mailur@link':

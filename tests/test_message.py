@@ -5,7 +5,7 @@ from mailur import local
 from mailur.message import addresses, binary
 
 
-def test_binary_msg():
+def test_binary():
     assert binary('Ответ: 42').as_bytes() == '\n'.join([
         'MIME-Version: 1.0',
         'Content-Transfer-Encoding: binary',
@@ -121,16 +121,21 @@ def test_general(gm_client, load_file, latest, load_email):
         in msg['meta']['errors'][0]
     )
 
+    # ending @ symbol and address without @ symbol at all
     m = load_email('msg-from-ending-snail.txt', parsed=True)
     assert m['meta']['from'] == {
         'addr': 'grrr@', 'name': 'grrr', 'title': 'grrr@',
         'hash': '8ea2bc312c94c9596ad95772d6cd579c',
     }
+    assert m['meta']['reply-to'] == [{
+        'addr': 'grrr', 'name': 'grrr', 'title': 'grrr',
+        'hash': 'd4468c0c805f9a0e200c0e916824547a',
+    }]
     assert m['meta']['to']
     assert m['meta']['reply-to']
     assert m['body_full']['to'] == 'katya@'
     assert m['body_full']['from'] == 'grrr@'
-    assert m['body_full']['reply-to'] == 'grrr@'
+    assert m['body_full']['reply-to'] == 'grrr'
 
     m = load_email('msg-from-rss2email.txt', parsed=True)
     assert 'From: БлоGнот: Gray <feeds@yadro.org>' in m['raw'].decode()
