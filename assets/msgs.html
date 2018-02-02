@@ -31,10 +31,10 @@
         @click="link" class="icon--link"
         title="Link threads together"
       ></button>
-      <tags-edit :origin="tags" :edit="editTags" />
+      <tags-edit :origin="allTags" :edit="editTags" />
     </div>
     <div v-if="picked.length" class="msgs__tags">
-      <tags :opts="tags" :edit="editTags" :trancated="true" />
+      <tags :opts="allTags" :edit="editTags" :trancated="true" />
     </div>
     <picker
       v-if="loaded.length"

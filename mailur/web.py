@@ -186,15 +186,20 @@ def search():
 
     msgs = {}
     preload = preload or 200
+    tags = opts.get('tags', [])
     if preload and uids:
         msgs = getattr(local, info)
-        msgs = wrap_msgs(msgs(uids[:preload]))
-    return {
+        msgs = wrap_msgs(msgs(uids[:preload], tags))
+
+    extra = {
+        'threads': opts.get('threads', False),
+        'tags': tags
+    }
+    return dict({
         'uids': uids,
         'msgs': msgs,
-        'msgs_info': app.get_url(info),
-        'threads': opts.get('threads', False)
-    }
+        'msgs_info': app.get_url(info)
+    }, **{k: v for k, v in extra.items() if v})
 
 
 @app.post('/thrs/info', name='thrs_info')
@@ -367,20 +372,60 @@ def themes():
 
 
 def parse_query(q):
+    def replace(match):
+        info = match.groupdict()
+        q = match.group()
+        if info.get('raw'):
+            q = info['raw_val']
+        elif info.get('thread'):
+            opts['thread'] = True
+            q = 'uid %s' % info['thread_id']
+        elif info.get('uid'):
+            q = 'uid %s' % info['uid_val']
+        elif info.get('from'):
+            q = 'from %s' % info['from_val']
+        elif info.get('mid'):
+            q = 'header message-id %s' % info['mid_val']
+        elif info.get('subj'):
+            q = 'header subject %s' % info['subj_val']
+        elif info.get('threads'):
+            opts['threads'] = True
+            q = ''
+        elif info.get('tag'):
+            opts.setdefault('tags', [])
+            opts['tags'].append(info['tag_id'])
+            q = 'keyword %s' % info['tag_id']
+        elif info.get('text'):
+            opts.setdefault('text', [])
+            opts['text'].append(info['text'])
+            q = ''
+        return ('%s ' % q) if q else q
+
     opts = {}
-    if q.startswith(':thread '):
-        q = q[8:]
-        opts['thread'] = True
-    elif q.startswith(':threads '):
-        q = q[9:]
-        opts['threads'] = True
-    else:
-        pass
+    q = re.sub(
+        '(?i)[ ]?('
+        '(?P<raw>:raw)(?P<raw_val>.*)'
+        '|(?P<thread>thr(ead)?:)(?P<thread_id>\d+)'
+        '|(?P<threads>:threads)'
+        '|(?P<tag>(tag|in|has):)(?P<tag_id>[^ ]+)'
+        '|(?P<subj>subj(ect)?:)(?P<subj_val>"[^"]*")'
+        '|(?P<from>from:)(?P<from_val>[^ ]+)'
+        '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
+        '|(?P<uid>uid:)(?P<uid_val>\d+)'
+        '|(?P<text>[^ ]+)'
+        ')( |$)',
+        replace, q
+    )
+    if opts.get('text'):
+        txt = ' '.join(opts.pop('text'))
+        q += 'text %s' % json.dumps(txt.strip(), ensure_ascii=False)
+    q = q.strip()
+    q = q if q else 'all'
     return q, opts
 
 
-def thread(uid, preload=4):
-    uids = local.search_msgs('INTHREAD REFS UID %s' % uid, '(DATE)')
+def thread(q, preload=4):
+    uids = local.search_msgs('INTHREAD REFS %s' % q, '(DATE)')
     if not uids:
         return {}
 
@@ -415,6 +460,7 @@ def thread(uid, preload=4):
         'uids': uids,
         'msgs': msgs,
         'msgs_info': app.get_url('msgs_info'),
+        'thread': True,
         'tags': tags,
         'same_subject': same_subject
     }
@@ -425,7 +471,7 @@ def wrap_tags(tags):
         if tag.startswith('\\'):
             q = tag[1:]
         else:
-            q = 'keyword %s' % json.dumps(tag)
+            q = 'tag:%s' % tag.lower()
         return ':threads %s' % q
 
     def trancate(val, max=14, end='…'):
@@ -455,7 +501,7 @@ def clean_tags(tags):
 def wrap_msgs(items):
     def query_header(name, value):
         value = json.dumps(value, ensure_ascii=False)
-        return ':threads header %s %s' % (name, value)
+        return ':threads %s:%s' % (name, value)
 
     tz = request.session['timezone']
     msgs = {}
@@ -474,9 +520,9 @@ def wrap_msgs(items):
             'count': len(addrs),
             'tags': clean_tags(flags),
             'from_list': wrap_addresses(addrs, max=3),
-            'query_thread': ':thread %s' % uid,
-            'query_subject': query_header('subject', info['subject']),
-            'query_msgid': query_header('message-id', info['msgid']),
+            'query_thread': 'thread:%s' % uid,
+            'query_subject': query_header('subj', info['subject']),
+            'query_msgid': query_header('mid', info['msgid']),
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
             'time_human': humanize_dt(info['date'], tz=tz),
             'time_title': format_dt(info['date'], tz=tz),
@@ -505,7 +551,7 @@ def wrap_addresses(addrs, max=4):
         if not a or a['addr'] in addrs_uniq:
             continue
         addrs_uniq.append(a['addr'])
-        addrs_list.append(dict(a, query=':threads from %s' % a['addr']))
+        addrs_list.append(dict(a, query=':threads from:%s' % a['addr']))
 
     addrs_list = list(reversed(addrs_list))
     if len(addrs_list) <= max:

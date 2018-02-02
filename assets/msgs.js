@@ -33,7 +33,7 @@ let Loader = Vue.extend({
           return this;
         }
         let data = { propsData: Object.assign(res, this.$props) };
-        this.view = res.tags ? new Thread(data) : new Msgs(data);
+        this.view = res.thread ? new Thread(data) : new Msgs(data);
       });
     },
     call: function(method, url, data) {
@@ -125,7 +125,8 @@ let Base = {
 let Msgs = Vue.extend({
   mixins: [Base],
   props: {
-    threads: { type: Boolean, required: true }
+    tags: { type: Array, default: () => [] },
+    threads: { type: Boolean, default: false }
   },
   data: function() {
     return {
@@ -137,11 +138,11 @@ let Msgs = Vue.extend({
     };
   },
   computed: {
-    tags: function() {
+    allTags: function() {
       if (!this.uids.length) {
         return [];
       }
-      let tags = [];
+      let tags = this.tags.slice();
       for (let i of this.picked) {
         tags.push.apply(tags, this.msgs[i].tags);
       }
@@ -155,6 +156,7 @@ let Msgs = Vue.extend({
     },
     set: function(res) {
       this.uids = res.uids;
+      this.tags = res.tags;
       this.setMsgs(res.msgs);
     },
     pick: function(uid) {
@@ -196,9 +198,10 @@ let Msgs = Vue.extend({
           }
         }
       }
-      return this.call('post', this.msgs_info, { uids: uids }).then(
-        this.setMsgs
-      );
+      return this.call('post', this.msgs_info, {
+        uids: uids,
+        hide_tags: this.tags
+      }).then(this.setMsgs);
     },
     details: function(uid) {
       if (this.detailed == uid) {

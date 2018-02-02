@@ -1,7 +1,7 @@
 import datetime as dt
 
 from mailur.message import addresses
-from mailur.web import wrap_addresses, parse_query
+from mailur.web import parse_query, wrap_addresses
 
 
 def test_login_and_themes(web, some, login):
@@ -71,23 +71,21 @@ def test_tz(gm_client, web, login, some):
     gm_client.add_emails([{'labels': '\\Inbox', 'date': time}])
 
     web = login(tz='UTC')
-    res = web.post_json('/search', {'q': 'all', 'preload': 1}, status=200)
+    res = web.post_json('/search', {'q': '', 'preload': 1}, status=200)
     assert res.json == {
         'uids': ['1'],
         'msgs': {'1': some},
         'msgs_info': '/msgs/info',
-        'threads': False
     }
     assert some['time_human'] == time_dt.strftime('%H:%M')
     assert some['time_title'] == time_dt.strftime('%a, %d %b, %Y at %H:%M')
 
     web = login(tz='Asia/Singapore')
-    res = web.post_json('/search', {'q': 'all', 'preload': 1}, status=200)
+    res = web.post_json('/search', {'q': '', 'preload': 1}, status=200)
     assert res.json == {
         'uids': ['1'],
         'msgs': {'1': some},
         'msgs_info': '/msgs/info',
-        'threads': False,
     }
     time_2h = time_dt + dt.timedelta(hours=8)
     assert some['time_human'] == time_2h.strftime('%H:%M')
@@ -101,7 +99,7 @@ def test_tags(gm_client, login, some):
             'id': id,
             'name': name,
             'short_name': name,
-            'query': ':threads keyword "%s"' % id
+            'query': ':threads tag:%s' % id
         }, **kw)
 
     web = login()
@@ -167,16 +165,16 @@ def test_tags(gm_client, login, some):
 
 def test_general(gm_client, load_email, login, some):
     web = login()
-    res = web.post_json('/search', {'q': 'all', 'preload': 10}, status=200)
+    res = web.post_json('/search', {'q': '', 'preload': 10}, status=200)
     assert res.json == {
         'uids': [],
         'msgs': {},
         'msgs_info': '/msgs/info',
-        'threads': False
     }
 
-    gm_client.add_emails([{}, {'refs': '<101@mlr>'}])
-    res = web.post_json('/search', {'q': 'all', 'preload': 10}, status=200)
+    msg = {'labels': '\\Inbox'}
+    gm_client.add_emails([msg, dict(msg, refs='<101@mlr>')])
+    res = web.post_json('/search', {'q': '', 'preload': 10}, status=200)
     assert res.json == {
         'uids': ['2', '1'],
         'msgs': {
@@ -193,11 +191,11 @@ def test_general(gm_client, load_email, login, some):
                 'origin_uid': '1',
                 'parent': None,
                 'preview': '42',
-                'query_msgid': ':threads header message-id "<101@mlr>"',
-                'query_subject': ':threads header subject "Subj 101"',
-                'query_thread': ':thread 1',
+                'query_msgid': ':threads mid:"<101@mlr>"',
+                'query_subject': ':threads subj:"Subj 101"',
+                'query_thread': 'thread:1',
                 'subject': 'Subj 101',
-                'tags': [],
+                'tags': ['#inbox'],
                 'time_human': some,
                 'time_title': some,
                 'uid': '1',
@@ -216,11 +214,11 @@ def test_general(gm_client, load_email, login, some):
                 'origin_uid': '2',
                 'parent': '<101@mlr>',
                 'preview': '42',
-                'query_msgid': ':threads header message-id "<102@mlr>"',
-                'query_subject': ':threads header subject "Subj 102"',
-                'query_thread': ':thread 2',
+                'query_msgid': ':threads mid:"<102@mlr>"',
+                'query_subject': ':threads subj:"Subj 102"',
+                'query_thread': 'thread:2',
                 'subject': 'Subj 102',
-                'tags': [],
+                'tags': ['#inbox'],
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
@@ -228,11 +226,8 @@ def test_general(gm_client, load_email, login, some):
             }
         },
         'msgs_info': '/msgs/info',
-        'threads': False,
     }
-    res = web.post_json(
-        '/search', {'q': ':threads all', 'preload': 10}, status=200
-    )
+    res = web.post_json('/search', {'q': ':threads'}, status=200)
     assert res.json == {
         'uids': ['2'],
         'msgs': {
@@ -249,11 +244,11 @@ def test_general(gm_client, load_email, login, some):
                 'origin_uid': '2',
                 'parent': '<101@mlr>',
                 'preview': '42',
-                'query_msgid': ':threads header message-id "<102@mlr>"',
-                'query_subject': ':threads header subject "Subj 102"',
-                'query_thread': ':thread 2',
+                'query_msgid': ':threads mid:"<102@mlr>"',
+                'query_subject': ':threads subj:"Subj 102"',
+                'query_thread': 'thread:2',
                 'subject': 'Subj 102',
-                'tags': [],
+                'tags': ['#inbox'],
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
@@ -272,13 +267,15 @@ def test_general(gm_client, load_email, login, some):
     assert '42' in res.text
 
     m = load_email('msg-attachments-two-gmail.txt')
-    q = ':threads uid %s' % m['uid']
+    q = 'thread:%s' % m['uid']
     res = web.post_json('/search', {'q': q}, status=200)
     assert res.json == {
         'uids': ['3'],
-        'msgs_info': '/thrs/info',
-        'threads': True,
-        'msgs': {'3': some}
+        'msgs_info': '/msgs/info',
+        'msgs': {'3': some},
+        'same_subject': [],
+        'tags': [],
+        'thread': True,
     }
     assert some['files'] == [
         {
@@ -306,6 +303,10 @@ def test_general(gm_client, load_email, login, some):
     assert res.content_type == 'image/png'
     res = web.get('/raw/3')
     assert res.content_type == 'text/plain'
+
+    res = web.post_json('/search', {'q': 'tag:#inbox'}, status=200)
+    assert res.json['tags'] == ['#inbox']
+    assert [i['tags'] for i in res.json['msgs'].values()] == [[], []]
 
 
 def test_msgs_flag(gm_client, login, msgs):
@@ -340,7 +341,7 @@ def test_msgs_flag(gm_client, login, msgs):
 
 def test_search_thread(gm_client, login, some):
     def post(uid, preload=4):
-        data = {'q': ':thread %s' % uid, 'preload': preload}
+        data = {'q': 'thread:%s' % uid, 'preload': preload}
         return web.post_json('/search', data, status=200).json
 
     web = login()
@@ -354,6 +355,7 @@ def test_search_thread(gm_client, login, some):
         'msgs_info': '/msgs/info',
         'tags': [],
         'same_subject': [],
+        'thread': True,
     }
 
     gm_client.add_emails([{'refs': '<101@mlr>'}] * 2)
@@ -422,7 +424,7 @@ def test_from_list(some):
             'addr': 'test@example.com',
             'hash': '55502f40dc8b7c769880b10874abc9d0',
             'title': 'test <test@example.com>',
-            'query': ':threads from test@example.com',
+            'query': ':threads from:test@example.com',
         },
     ]
 
@@ -501,6 +503,42 @@ def test_from_list(some):
 
 
 def test_query():
-    assert parse_query('all') == ('all', {})
-    assert parse_query(':threads all') == ('all', {'threads': True})
-    assert parse_query(':thread uid 1') == ('uid 1', {'thread': True})
+    assert parse_query('') == ('all', {})
+    assert parse_query('test') == ('text "test"', {})
+    assert parse_query('test1 test2') == ('text "test1 test2"', {})
+
+    assert parse_query('thread:1') == ('uid 1', {'thread': True})
+    assert parse_query('thr:1') == ('uid 1', {'thread': True})
+    assert parse_query('thr:1 test') == ('uid 1 text "test"', {'thread': True})
+    assert parse_query('THR:1') == ('uid 1', {'thread': True})
+
+    assert parse_query(':threads') == ('all', {'threads': True})
+    assert parse_query(':threads test') == ('text "test"', {'threads': True})
+    assert parse_query('test :threads') == ('text "test"', {'threads': True})
+
+    assert parse_query('in:#inbox') == ('keyword #inbox', {'tags': ['#inbox']})
+    assert parse_query('tag:#sent') == ('keyword #sent', {'tags': ['#sent']})
+    assert parse_query('tag:#inbox tag:#work') == (
+        'keyword #inbox keyword #work',
+        {'tags': ['#inbox', '#work']}
+    )
+
+    assert parse_query('uid:1') == ('uid 1', {})
+    assert parse_query('uid:1 :threads') == ('uid 1', {'threads': True})
+
+    assert parse_query('from:t@t.com') == ('from t@t.com', {})
+    assert parse_query('from:t@t.com test') == ('from t@t.com text "test"', {})
+    assert parse_query('subj:"test subj"') == (
+        'header subject "test subj"', {}
+    )
+    assert parse_query('subject:"test subj" test') == (
+        'header subject "test subj" text "test"', {}
+    )
+    assert parse_query('mid:<101@mlr>') == (
+        'header message-id <101@mlr>', {}
+    )
+    assert parse_query('message_id:<101@mlr> test') == (
+        'header message-id <101@mlr> text "test"', {}
+    )
+
+    assert parse_query(':raw text in:#inbox') == ('text in:#inbox', {})
