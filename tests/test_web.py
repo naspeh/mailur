@@ -1,7 +1,7 @@
 import datetime as dt
 
 from mailur.message import addresses
-from mailur.web import wrap_addresses
+from mailur.web import wrap_addresses, parse_query
 
 
 def test_login_and_themes(web, some, login):
@@ -498,3 +498,9 @@ def test_from_list(some):
         'test <test@example.com>' for i in range(10)
     )))
     assert ['test'] == [a['name'] for a in res]
+
+
+def test_query():
+    assert parse_query('all') == ('all', {})
+    assert parse_query(':threads all') == ('all', {'threads': True})
+    assert parse_query(':thread uid 1') == ('uid 1', {'thread': True})

@@ -50,7 +50,7 @@ def endpoint(callback):
             return callback(*args, **kwargs)
         except Exception as e:
             log.exception(e)
-            return {'errors': str(e)}
+            return {'errors': [str(e)]}
     return inner
 
 
@@ -94,6 +94,7 @@ def login_html(theme=None):
 
 
 @app.post('/login', skip=[auth])
+@endpoint
 def login():
     schema = {
         'type': 'object',
@@ -171,31 +172,28 @@ def tag():
 @app.post('/search')
 @endpoint
 def search():
-    q = request.json['q']
-    preload = request.json.get('preload', 200)
+    preload = request.json.get('preload')
+    q, opts = parse_query(request.json['q'])
+    if opts.get('thread'):
+        return thread(q, preload or 4)
 
-    if q.startswith(':threads'):
-        q = q[8:]
+    if opts.get('threads'):
         uids = local.search_thrs(q)
         info = 'thrs_info'
-    elif q.startswith(':thread'):
-        q = q[7:]
-        preload = request.json.get('preload', 4)
-        return thread(q, preload)
     else:
         uids = local.search_msgs(q)
         info = 'msgs_info'
 
+    msgs = {}
+    preload = preload or 200
     if preload and uids:
         msgs = getattr(local, info)
         msgs = wrap_msgs(msgs(uids[:preload]))
-    else:
-        msgs = {}
     return {
         'uids': uids,
         'msgs': msgs,
         'msgs_info': app.get_url(info),
-        'threads': info == 'thrs_info'
+        'threads': opts.get('threads', False)
     }
 
 
@@ -262,7 +260,7 @@ def msgs_flag():
 def raw(uid, part=None, filename=None):
     box = request.query.get('box', local.SRC)
     uid = str(uid)
-    if request.query.get('parsed'):
+    if request.query.get('parsed') or request.query.get('p'):
         box = local.ALL
         uid = local.pair_origin_uids([uid])[0]
     msg, content_type = local.raw_msg(uid, box, part)
@@ -366,6 +364,19 @@ def render_tpl(theme, page, data={}):
 def themes():
     pkg = json.loads((root / 'package.json').read_text())
     return sorted(pkg['mailur']['themes'])
+
+
+def parse_query(q):
+    opts = {}
+    if q.startswith(':thread '):
+        q = q[8:]
+        opts['thread'] = True
+    elif q.startswith(':threads '):
+        q = q[9:]
+        opts['threads'] = True
+    else:
+        pass
+    return q, opts
 
 
 def thread(uid, preload=4):
