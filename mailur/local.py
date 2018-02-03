@@ -437,10 +437,9 @@ def thrs_info(uids, hide_flags=None, con=None):
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
         if hide_flags:
-            flags = sorted(
-                set(i.lower() for i in flags) -
-                set(i.lower() for i in hide_flags)
-            )
+            hide_flags = set(i.lower() for i in hide_flags)
+            flags = set(i for i in flags if i.lower() not in hide_flags)
+            flags = sorted(flags)
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
         yield thrid, all_msgs[thrid], flags, addrs
 

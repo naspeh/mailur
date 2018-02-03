@@ -375,7 +375,11 @@ def parse_query(q):
     def replace(match):
         info = match.groupdict()
         q = match.group()
-        if info.get('raw'):
+        flags = {'flagged', 'unflagged', 'seen', 'unseen'}
+        flags = {k for k in flags if info.get(k)}
+        if flags:
+            q = ' '.join(flags)
+        elif info.get('raw'):
             q = info['raw_val']
         elif info.get('thread'):
             opts['thread'] = True
@@ -412,6 +416,10 @@ def parse_query(q):
         '|(?P<from>from:)(?P<from_val>[^ ]+)'
         '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
         '|(?P<uid>uid:)(?P<uid_val>\d+)'
+        '|(?P<unseen>:(unread|unseen))'
+        '|(?P<seen>:(read|seen))'
+        '|(?P<flagged>:pin(ned)?)'
+        '|(?P<unflagged>:unpin(ned)?)'
         '|(?P<text>[^ ]+)'
         ')( |$)',
         replace, q

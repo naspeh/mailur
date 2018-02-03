@@ -142,7 +142,7 @@ let Msgs = Vue.extend({
       if (!this.uids.length) {
         return [];
       }
-      let tags = this.tags.slice();
+      let tags = this.tags ? this.tags.slice() : [];
       for (let i of this.picked) {
         tags.push.apply(tags, this.msgs[i].tags);
       }

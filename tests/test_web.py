@@ -227,6 +227,11 @@ def test_general(gm_client, load_email, login, some):
         },
         'msgs_info': '/msgs/info',
     }
+
+    web.post_json('/msgs/flag', {'uids': ['1'], 'new': ['\\Seen']}, status=200)
+    res = web.post_json('/search', {'q': 'in:#inbox'}, status=200)
+    assert [i['is_unread'] for i in res.json['msgs'].values()] == [False, True]
+
     res = web.post_json('/search', {'q': ':threads'}, status=200)
     assert res.json == {
         'uids': ['2'],
@@ -259,6 +264,10 @@ def test_general(gm_client, load_email, login, some):
         'msgs_info': '/thrs/info',
         'threads': True
     }
+    web.post_json('/msgs/flag', {'uids': ['2'], 'new': ['\\Seen']}, status=200)
+    res = web.post_json('/search', {'q': ':threads in:#inbox'}, status=200)
+    assert not res.json['msgs']['2']['is_unread']
+
     res = web.get('/raw/2')
     assert res.content_type == 'text/plain'
     assert 'Message-ID: <102@mlr>' in res.text
@@ -542,3 +551,10 @@ def test_query():
     )
 
     assert parse_query(':raw text in:#inbox') == ('text in:#inbox', {})
+
+    assert parse_query(':unread') == ('unseen', {})
+    assert parse_query(':unseen') == ('unseen', {})
+    assert parse_query(':seen') == ('seen', {})
+    assert parse_query(':pinned') == ('flagged', {})
+    assert parse_query(':unpinned') == ('unflagged', {})
+    assert parse_query(':pin :unread') == ('flagged unseen', {})
