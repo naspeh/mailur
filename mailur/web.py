@@ -399,13 +399,12 @@ def parse_query(q):
             opts.setdefault('tags', [])
             opts['tags'].append(info['tag_id'])
             q = 'keyword %s' % info['tag_id']
-        elif info.get('text'):
-            opts.setdefault('text', [])
-            opts['text'].append(info['text'])
-            q = ''
-        return ('%s ' % q) if q else q
+        if q:
+            parts.append(q)
+        return ' '
 
     opts = {}
+    parts = []
     q = re.sub(
         '(?i)[ ]?('
         '(?P<raw>:raw)(?P<raw_val>.*)'
@@ -418,15 +417,27 @@ def parse_query(q):
         '|(?P<uid>uid:)(?P<uid_val>\d+)'
         '|(?P<unseen>:(unread|unseen))'
         '|(?P<seen>:(read|seen))'
-        '|(?P<flagged>:pin(ned)?)'
-        '|(?P<unflagged>:unpin(ned)?)'
-        '|(?P<text>[^ ]+)'
+        '|(?P<flagged>:(pin(ned)?|flagged))'
+        '|(?P<unflagged>:(unpin(ned)?|unflagged))'
         ')( |$)',
         replace, q
     )
-    if opts.get('text'):
-        txt = ' '.join(opts.pop('text'))
-        q += 'text %s' % json.dumps(txt.strip(), ensure_ascii=False)
+    q = re.sub('[ ]+', ' ', q).strip()
+    if q:
+        q = 'text %s' % json.dumps(q, ensure_ascii=False)
+        parts.append(q)
+
+    tags = opts.get('tags', [])
+    thread = opts.get('thread', False)
+    if thread:
+        pass
+    if not thread and '#trash' not in tags:
+        parts.append('unkeyword #trash')
+    if not thread and '#spam' not in tags and '#trash' not in tags:
+        parts.append('unkeyword #spam')
+
+    if parts:
+        q = ' '.join(parts)
     q = q.strip()
     q = q if q else 'all'
     return q, opts

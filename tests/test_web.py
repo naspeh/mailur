@@ -512,49 +512,78 @@ def test_from_list(some):
 
 
 def test_query():
-    assert parse_query('') == ('all', {})
-    assert parse_query('test') == ('text "test"', {})
-    assert parse_query('test1 test2') == ('text "test1 test2"', {})
+    ending = 'unkeyword #trash unkeyword #spam'
+    assert parse_query('') == (ending, {})
+    assert parse_query('test') == ('text "test" ' + ending, {})
+    assert parse_query('test1 test2') == ('text "test1 test2" ' + ending, {})
 
     assert parse_query('thread:1') == ('uid 1', {'thread': True})
     assert parse_query('thr:1') == ('uid 1', {'thread': True})
     assert parse_query('thr:1 test') == ('uid 1 text "test"', {'thread': True})
     assert parse_query('THR:1') == ('uid 1', {'thread': True})
 
-    assert parse_query(':threads') == ('all', {'threads': True})
-    assert parse_query(':threads test') == ('text "test"', {'threads': True})
-    assert parse_query('test :threads') == ('text "test"', {'threads': True})
-
-    assert parse_query('in:#inbox') == ('keyword #inbox', {'tags': ['#inbox']})
-    assert parse_query('tag:#sent') == ('keyword #sent', {'tags': ['#sent']})
+    assert parse_query('in:#inbox') == (
+        'keyword #inbox ' + ending,
+        {'tags': ['#inbox']}
+    )
+    assert parse_query('tag:#sent') == (
+        'keyword #sent ' + ending,
+        {'tags': ['#sent']}
+    )
     assert parse_query('tag:#inbox tag:#work') == (
-        'keyword #inbox keyword #work',
+        'keyword #inbox keyword #work ' + ending,
         {'tags': ['#inbox', '#work']}
     )
 
-    assert parse_query('uid:1') == ('uid 1', {})
-    assert parse_query('uid:1 :threads') == ('uid 1', {'threads': True})
+    assert parse_query('tag:#trash') == (
+        'keyword #trash',
+        {'tags': ['#trash']}
+    )
+    assert parse_query('tag:#spam') == (
+        'keyword #spam unkeyword #trash',
+        {'tags': ['#spam']}
+    )
 
-    assert parse_query('from:t@t.com') == ('from t@t.com', {})
-    assert parse_query('from:t@t.com test') == ('from t@t.com text "test"', {})
+    assert parse_query(':threads') == (ending, {'threads': True})
+    assert parse_query(':threads test') == (
+        'text "test" ' + ending,
+        {'threads': True}
+    )
+    assert parse_query('test :threads') == (
+        'text "test" ' + ending,
+        {'threads': True}
+    )
+
+    assert parse_query('uid:1') == ('uid 1 ' + ending, {})
+    assert parse_query('uid:1 :threads') == (
+        'uid 1 ' + ending, {'threads': True}
+    )
+
+    assert parse_query('from:t@t.com') == ('from t@t.com ' + ending, {})
+    assert parse_query('from:t@t.com test') == (
+        'from t@t.com text "test" ' + ending, {}
+    )
     assert parse_query('subj:"test subj"') == (
-        'header subject "test subj"', {}
+        'header subject "test subj" ' + ending, {}
     )
     assert parse_query('subject:"test subj" test') == (
-        'header subject "test subj" text "test"', {}
+        'header subject "test subj" text "test" ' + ending, {}
     )
     assert parse_query('mid:<101@mlr>') == (
-        'header message-id <101@mlr>', {}
+        'header message-id <101@mlr> ' + ending, {}
     )
     assert parse_query('message_id:<101@mlr> test') == (
-        'header message-id <101@mlr> text "test"', {}
+        'header message-id <101@mlr> text "test" ' + ending, {}
     )
 
-    assert parse_query(':raw text in:#inbox') == ('text in:#inbox', {})
+    assert parse_query(':raw text in:#spam') == ('text in:#spam ' + ending, {})
 
-    assert parse_query(':unread') == ('unseen', {})
-    assert parse_query(':unseen') == ('unseen', {})
-    assert parse_query(':seen') == ('seen', {})
-    assert parse_query(':pinned') == ('flagged', {})
-    assert parse_query(':unpinned') == ('unflagged', {})
-    assert parse_query(':pin :unread') == ('flagged unseen', {})
+    assert parse_query(':unread') == ('unseen ' + ending, {})
+    assert parse_query(':unseen') == ('unseen ' + ending, {})
+    assert parse_query(':seen') == ('seen ' + ending, {})
+    assert parse_query(':read') == ('seen ' + ending, {})
+    assert parse_query(':pinned') == ('flagged ' + ending, {})
+    assert parse_query(':unpinned') == ('unflagged ' + ending, {})
+    assert parse_query(':flagged') == ('flagged ' + ending, {})
+    assert parse_query(':unflagged') == ('unflagged ' + ending, {})
+    assert parse_query(':pin :unread') == ('flagged unseen ' + ending, {})
