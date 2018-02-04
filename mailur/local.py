@@ -448,6 +448,7 @@ def thrs_info(uids, hide_flags=None, con=None):
 @using()
 def tags_info(con=None):
     unread = {}
+    hidden = {}
     res = con.search('UNSEEN')
     uids = res[0].decode().split()
     if uids:
@@ -455,10 +456,22 @@ def tags_info(con=None):
         for line in res:
             flags = re.search(
                 r'FLAGS \(([^)]*)\)', line.decode()
-            ).group(1)
-            for f in flags.split():
+            ).group(1).split()
+            for f in flags:
                 unread.setdefault(f, 0)
                 unread[f] += 1
+                hide_flags = None
+                if '#trash' in flags:
+                    hide_flags = {'#trash'}
+                elif '#spam' in flags:
+                    hide_flags = {'#spam'}
+                if hide_flags and hide_flags - {f}:
+                    hidden.setdefault(f, 0)
+                    hidden[f] += 1
+    unread = {
+        k: v - hidden.get(k, 0)
+        for k, v in unread.items() if hidden.get(k) != v
+    }
     tags = {
         t: dict(get_tag(t), unread=unread.get(t, 0))
         for t in con.flags
