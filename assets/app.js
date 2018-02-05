@@ -66,7 +66,7 @@ Vue.component('app', {
     openFromHash: function() {
       let q = decodeURIComponent(location.hash.slice(1));
       if (!q) {
-        q = ':threads keyword #inbox';
+        q = ':threads tag:#inbox';
       }
       if (!this.main || this.main.query != q) {
         this.openInMain(q);
