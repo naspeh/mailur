@@ -219,21 +219,28 @@
     margin-left: 0.2em;
   }
 }
-
-.msg__actions {
+.msg__details {
   display: none;
+  flex-wrap: nowrap;
+  padding: 0 0.2em;
+  margin-bottom: 0.2em;
+  font-size: @--font-size--xs;
+  white-space: nowrap;
+  overflow: hidden;
 
   .msg--detailed & {
     display: flex;
-    flex-flow: reverse nowrap;
-    margin-bottom: 0.2em;
-    white-space: nowrap;
-    font-size: @--font-size--xs;
+  }
 
-    & [class^="icon--"] {
-      display: flex;
-      margin: 0 0.2em;
-    }
+  .msg__details__from-pic {
+    margin-right: 0.2em;
+  }
+}
+
+.msg__actions {
+  & [class^="icon--"] {
+    display: flex;
+    margin-right: 0.2em;
   }
 
   & .icon--archive,

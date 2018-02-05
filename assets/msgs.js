@@ -185,7 +185,7 @@ let Msgs = Vue.extend({
     },
     link: function() {
       this.call('post', '/thrs/link', { uids: this.picked }).then(() =>
-        this.refresh()
+        this.refresh(this.tags)
       );
     },
     loadMore: function() {
@@ -259,7 +259,7 @@ let Msgs = Vue.extend({
       opts = Object.assign({ uids: uids }, opts);
       return this.call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.refresh();
+          this.refresh(this.tags);
         }
       });
     }

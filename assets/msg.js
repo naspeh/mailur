@@ -32,6 +32,14 @@ Vue.component('msg', {
       }
       window.app.openInSplit(q);
     },
+    archive: function(msg) {
+      let data = { old: ['#inbox'] };
+      return this.editTags(data, [msg.uid]);
+    },
+    del: function(msg) {
+      let data = { new: ['#trash'] };
+      return this.editTags(data, [msg.uid]);
+    },
     read: function(msg) {
       let data = {};
       data[msg.is_unread ? 'new' : 'old'] = ['\\Seen'];

@@ -20,7 +20,7 @@
       @click="makeRicher"
       :title="msg.richer"
     ></div>
-    <div @click.stop="details(msg.uid)" class="icon--more" title="More actions"></div>
+    <div @click.stop="details(msg.uid)" class="icon--more" title="Details and actions"></div>
     <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
       <div class="msg-line__from">
@@ -57,18 +57,54 @@
       title="Open in split pane"
     ></div>
   </div>
-  <div class="msg__actions">
+  <div class="msg__details msg__actions">
     <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
-    <a href="#" class="icon--archive" title="Archive">Archive</a>
-    <a href="#" class="icon--reply" title="Reply">Reply</a>
-    <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a>
-    <a href="#" class="icon--forward" title="Forward">Forward</a>
-    <a href="#" class="icon--trash" title="Move to Trash">Delete</a>
-    <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a>
-    <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a>
-    <a :href="`#${msg.query_subject}`" @click.stop="openInMain(msg.query_subject)" class="icon--ok" >Filter by subject</a>
+    <a href="#" @click.prevent="archive(msg)" class="icon--archive" title="Archive">Archive</a>
+    <a href="#" @click.prevent="del(msg)" class="icon--trash" title="Move to Trash">Delete</a>
+    <!-- <a href="#" class="icon--reply" title="Reply">Reply</a> -->
+    <!-- <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a> -->
+    <!-- <a href="#" class="icon--forward" title="Forward">Forward</a> -->
+    <!-- <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a> -->
+    <!-- <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a> -->
     <a :href="msg.url_raw" class="icon--ok" target="_blank">Show original</a>
-    <!-- <a @click.prevent="openInMain(msg.query_msgid)" href="#" :title="msg.msgid">ID</a> -->
+  </div>
+  <div class="msg__details">
+    <div class="msg__details__from-pic">
+      <img :src="`https://www.gravatar.com/avatar/${msg.from.hash}?d=mm&s=75`" />
+    </div>
+
+    <div class="msg__details__info">
+      <div class="msg__details__subj">
+        Subject:
+        <a :href="`#${msg.query_subject}`" @click.prevent="openInMain(msg.query_subject)">
+          {{msg.subject}}
+        </a>
+      </div>
+      <div class="msg__details__from">
+        From:
+        <b>{{msg.from.name}}</b>
+        <a :href="`#${msg.from.query}`" @click.prevent="openInMain(msg.from.query)">
+          {{msg.from.addr}}
+        </a>
+      </div>
+      <template v-for="field in ['to', 'cc']">
+        <div class="msg__details__to" v-if="msg[field]">
+          {{field[0].toUpperCase()}}{{field.slice(1)}}:
+          <span v-for="addr of msg[field]">
+            <b>{{addr.name}}</b>
+            <a :href="`#${addr.query}`" @click.prevent="openInMain(addr.query)">
+              {{addr.addr}}
+            </a>
+          </span>
+        </div>
+      </template>
+      <div class="msg__details__msgid">
+        Message-ID:
+        <a :href="`#${msg.query_msgid}`" @click.prevent="openInMain(msg.query_msgid)">
+          {{msg.msgid}}
+        </a>
+      </div>
+    </div>
   </div>
   <div class="msg__body">
     <template v-if="body === undefined">Loading...</template>

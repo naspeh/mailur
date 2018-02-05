@@ -199,7 +199,7 @@ def test_general(gm_client, load_email, login, some):
                 'origin_uid': '1',
                 'parent': None,
                 'preview': '42',
-                'query_msgid': ':threads mid:"<101@mlr>"',
+                'query_msgid': 'ref:<101@mlr>',
                 'query_subject': ':threads subj:"Subj 101"',
                 'query_thread': 'thread:1',
                 'subject': 'Subj 101',
@@ -222,7 +222,7 @@ def test_general(gm_client, load_email, login, some):
                 'origin_uid': '2',
                 'parent': '<101@mlr>',
                 'preview': '42',
-                'query_msgid': ':threads mid:"<102@mlr>"',
+                'query_msgid': 'ref:<102@mlr>',
                 'query_subject': ':threads subj:"Subj 102"',
                 'query_thread': 'thread:2',
                 'subject': 'Subj 102',
@@ -257,7 +257,7 @@ def test_general(gm_client, load_email, login, some):
                 'origin_uid': '2',
                 'parent': '<101@mlr>',
                 'preview': '42',
-                'query_msgid': ':threads mid:"<102@mlr>"',
+                'query_msgid': 'ref:<102@mlr>',
                 'query_subject': ':threads subj:"Subj 102"',
                 'query_thread': 'thread:2',
                 'subject': 'Subj 102',
@@ -582,6 +582,9 @@ def test_query():
     )
     assert parse_query('message_id:<101@mlr> test') == (
         'header message-id <101@mlr> text "test" ' + ending, {}
+    )
+    assert parse_query('ref:<_@mlr>') == (
+        'or header message-id <_@mlr> header references <_@mlr> ' + ending, {}
     )
 
     assert parse_query(':raw text in:#spam') == ('text in:#spam ' + ending, {})

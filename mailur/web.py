@@ -390,6 +390,11 @@ def parse_query(q):
             q = 'from %s' % info['from_val']
         elif info.get('mid'):
             q = 'header message-id %s' % info['mid_val']
+        elif info.get('ref'):
+            q = (
+                'or header message-id {0} header references {0}'
+                .format(info['ref_val'])
+            )
         elif info.get('subj'):
             q = 'header subject %s' % info['subj_val']
         elif info.get('threads'):
@@ -414,6 +419,7 @@ def parse_query(q):
         '|(?P<subj>subj(ect)?:)(?P<subj_val>"[^"]*")'
         '|(?P<from>from:)(?P<from_val>[^ ]+)'
         '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
+        '|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
         '|(?P<uid>uid:)(?P<uid_val>\d+)'
         '|(?P<unseen>:(unread|unseen))'
         '|(?P<seen>:(read|seen))'
@@ -534,6 +540,8 @@ def wrap_msgs(items):
 
         if addrs is None:
             addrs = [info['from']] if 'from' in info else []
+        if info.get('from'):
+            info['from'] = wrap_addresses([info['from']])[0]
         info.update({
             'uid': uid,
             'count': len(addrs),
@@ -541,7 +549,7 @@ def wrap_msgs(items):
             'from_list': wrap_addresses(addrs, max=3),
             'query_thread': 'thread:%s' % uid,
             'query_subject': query_header('subj', info['subject']),
-            'query_msgid': query_header('mid', info['msgid']),
+            'query_msgid': 'ref:%s' % info['msgid'],
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
             'time_human': humanize_dt(info['date'], tz=tz),
             'time_title': format_dt(info['date'], tz=tz),
