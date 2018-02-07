@@ -51,10 +51,10 @@ Vue.component('msg', {
       return this.editTags(data, [msg.uid]);
     },
     makeRicher: function() {
-      for (let i of document.querySelectorAll('img[data-src]')) {
+      for (let i of this.$el.querySelectorAll('img[data-src]')) {
         i.src = i.dataset.src;
       }
-      for (let i of document.querySelectorAll('*[data-style]')) {
+      for (let i of this.$el.querySelectorAll('*[data-style]')) {
         i.style = i.dataset.style;
       }
     },

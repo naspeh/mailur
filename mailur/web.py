@@ -372,6 +372,9 @@ def themes():
 
 
 def parse_query(q):
+    def escape(val):
+        return json.dumps(val, ensure_ascii=False)
+
     def replace(match):
         info = match.groupdict()
         q = match.group()
@@ -387,7 +390,7 @@ def parse_query(q):
         elif info.get('uid'):
             q = 'uid %s' % info['uid_val']
         elif info.get('from'):
-            q = 'from %s' % info['from_val']
+            q = 'from %s' % escape(info['from_val'])
         elif info.get('mid'):
             q = 'header message-id %s' % info['mid_val']
         elif info.get('ref'):
@@ -396,7 +399,8 @@ def parse_query(q):
                 .format(info['ref_val'])
             )
         elif info.get('subj'):
-            q = 'header subject %s' % info['subj_val']
+            val = info['subj_val'].strip('"')
+            q = 'header subject %s' % escape(val)
         elif info.get('threads'):
             opts['threads'] = True
             q = ''
@@ -416,7 +420,7 @@ def parse_query(q):
         '|(?P<thread>thr(ead)?:)(?P<thread_id>\d+)'
         '|(?P<threads>:threads)'
         '|(?P<tag>(tag|in|has):)(?P<tag_id>[^ ]+)'
-        '|(?P<subj>subj(ect)?:)(?P<subj_val>"[^"]*")'
+        '|(?P<subj>subj(ect)?:)(?P<subj_val>("[^"]*"|[\S]*))'
         '|(?P<from>from:)(?P<from_val>[^ ]+)'
         '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
         '|(?P<ref>ref:)(?P<ref_val>[^ ]+)'

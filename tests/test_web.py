@@ -567,9 +567,9 @@ def test_query():
         'uid 1 ' + ending, {'threads': True}
     )
 
-    assert parse_query('from:t@t.com') == ('from t@t.com ' + ending, {})
+    assert parse_query('from:t@t.com') == ('from "t@t.com" ' + ending, {})
     assert parse_query('from:t@t.com test') == (
-        'from t@t.com text "test" ' + ending, {}
+        'from "t@t.com" text "test" ' + ending, {}
     )
     assert parse_query('subj:"test subj"') == (
         'header subject "test subj" ' + ending, {}
@@ -577,6 +577,10 @@ def test_query():
     assert parse_query('subject:"test subj" test') == (
         'header subject "test subj" text "test" ' + ending, {}
     )
+    assert parse_query('subj:тест?') == (
+        'header subject "тест?" ' + ending, {}
+    )
+
     assert parse_query('mid:<101@mlr>') == (
         'header message-id <101@mlr> ' + ending, {}
     )
