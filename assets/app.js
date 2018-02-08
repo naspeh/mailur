@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import './favicon.png';
 import './picker.js';
 import './tags.js';
 import './msg.js';

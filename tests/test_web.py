@@ -236,9 +236,10 @@ def test_general(gm_client, load_email, login, some):
         'msgs_info': '/msgs/info',
     }
 
-    web.post_json('/msgs/flag', {'uids': ['1'], 'new': ['\\Seen']}, status=200)
+    web.post_json('/msgs/body', {'uids': ['1']}, status=200)
     res = web.post_json('/search', {'q': 'in:#inbox'}, status=200)
     assert [i['is_unread'] for i in res.json['msgs'].values()] == [False, True]
+    web.post_json('/msgs/body', {'uids': ['1']}, status=200)
 
     res = web.post_json('/search', {'q': ':threads'}, status=200)
     assert res.json == {
@@ -602,3 +603,11 @@ def test_query():
     assert parse_query(':flagged') == ('flagged ' + ending, {})
     assert parse_query(':unflagged') == ('unflagged ' + ending, {})
     assert parse_query(':pin :unread') == ('flagged unseen ' + ending, {})
+
+    assert parse_query('date:2007') == (
+        'since 01-Jan-2007 before 01-Jan-2008 ' + ending, {}
+    )
+    assert parse_query('date:2007-04') == (
+        'since 01-Apr-2007 before 01-May-2007 ' + ending, {}
+    )
+    assert parse_query('date:2007-04-01') == ('on 01-Apr-2007 ' + ending, {})

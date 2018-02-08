@@ -73,7 +73,8 @@ let Base = {
   props: {
     uids: { type: Array, required: true },
     msgs: { type: Object, required: true },
-    msgs_info: { type: String, required: true }
+    msgs_info: { type: String, required: true },
+    tags: { type: Array, default: () => [] }
   },
   created: function() {
     this.mount();
@@ -93,8 +94,8 @@ let Base = {
     }
   },
   methods: {
-    refresh: function(hide_tags) {
-      let data = { uids: this.loaded, hide_tags: hide_tags };
+    refresh: function() {
+      let data = { uids: this.loaded, hide_tags: this.tags };
       this.search().then(res => {
         this.set(res);
         this.call('post', this.msgs_info, data).then(this.setMsgs);
@@ -107,10 +108,7 @@ let Base = {
     fetchBodies: function(uids) {
       return this.call('post', '/msgs/body', { uids: uids }).then(res => {
         this.bodies = Object.assign({}, this.bodies, res);
-        let unread = uids.filter(i => this.msgs[i].is_unread);
-        if (unread.length) {
-          this.editTags({ new: ['\\Seen'] }, unread);
-        }
+        this.refresh();
       });
     },
     archive: function() {
@@ -125,7 +123,6 @@ let Base = {
 let Msgs = Vue.extend({
   mixins: [Base],
   props: {
-    tags: { type: Array, default: () => [] },
     threads: { type: Boolean, default: false }
   },
   data: function() {
@@ -185,7 +182,7 @@ let Msgs = Vue.extend({
     },
     link: function() {
       this.call('post', '/thrs/link', { uids: this.picked }).then(() =>
-        this.refresh(this.tags)
+        this.refresh()
       );
     },
     loadMore: function() {
@@ -259,7 +256,7 @@ let Msgs = Vue.extend({
       opts = Object.assign({ uids: uids }, opts);
       return this.call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.refresh(this.tags);
+          this.refresh();
         }
       });
     }
@@ -329,7 +326,7 @@ let Thread = Vue.extend({
       opts = Object.assign({ uids: picked || this.uids }, opts);
       return this.call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.search(preload).then(() => this.refresh(this.tags));
+          this.search(preload).then(() => this.refresh());
         }
       });
     },

@@ -50,6 +50,7 @@ def endpoint(callback):
             return callback(*args, **kwargs)
         except Exception as e:
             log.exception(e)
+            response.status = 500
             return {'errors': [str(e)]}
     return inner
 
@@ -226,8 +227,13 @@ def msgs_info():
 @endpoint
 def msgs_body():
     uids = request.json['uids']
+    read = request.json.get('read', True)
     if not uids:
         return abort(400)
+    if read:
+        unread = local.search_msgs('uid %s unseen' % ','.join(uids))
+        if unread:
+            local.msgs_flag(unread, [], ['\\Seen'])
     return dict(local.msgs_body(uids))
 
 
@@ -408,6 +414,24 @@ def parse_query(q):
             opts.setdefault('tags', [])
             opts['tags'].append(info['tag_id'])
             q = 'keyword %s' % info['tag_id']
+        elif info.get('date'):
+            val = info['date_val']
+            count = val.count('-')
+            if not count:
+                date = dt.datetime.strptime(val, '%Y')
+                dates = [date, date.replace(year=date.year+1)]
+            elif count == 1:
+                date = dt.datetime.strptime(val, '%Y-%m')
+                dates = [date, date.replace(month=date.month+1)]
+            else:
+                date = dt.datetime.strptime(val, '%Y-%m-%d')
+                dates = [date]
+
+            dates = tuple(i.strftime('%d-%b-%Y') for i in dates)
+            if len(dates) == 1:
+                q = 'on %s' % dates
+            else:
+                q = 'since %s before %s' % dates
         if q:
             parts.append(q)
         return ' '
@@ -425,6 +449,7 @@ def parse_query(q):
         '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
         '|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
         '|(?P<uid>uid:)(?P<uid_val>\d+)'
+        '|(?P<date>date:)(?P<date_val>\d{4}(-\d{2}(-\d{2})?)?)'
         '|(?P<unseen>:(unread|unseen))'
         '|(?P<seen>:(read|seen))'
         '|(?P<flagged>:(pin(ned)?|flagged))'
