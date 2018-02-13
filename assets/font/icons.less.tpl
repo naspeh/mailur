@@ -45,6 +45,7 @@
     }
   }
 }
+
 % for name, symbol in icons[:-1]:
 .icon--{{name}},
 % end

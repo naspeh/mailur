@@ -308,8 +308,12 @@ def proxy():
             res = get(location[0])
 
     response.status = res.status_code
+    keys = (
+        'content-type', 'content-length',
+        'cache-control', 'expires', 'date', 'last-modified'
+    )
     for key, val in res.headers:
-        if key in ('content-type', 'content-length'):
+        if key in keys:
             response.set_header(key, val)
     return bytes(res.read())
 

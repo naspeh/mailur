@@ -68,7 +68,6 @@ http {
 
         location / {
             proxy_pass http://localhost:5000/;
-            expires epoch;
         }
         location /.well-known {
             root /var/tmp;
