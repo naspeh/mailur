@@ -193,6 +193,7 @@ def test_general(gm_client, load_email, login, some):
                 'errors': [],
                 'files': [],
                 'from_list': [],
+                'is_draft': False,
                 'is_pinned': False,
                 'is_unread': True,
                 'msgid': '<101@mlr>',
@@ -216,6 +217,7 @@ def test_general(gm_client, load_email, login, some):
                 'errors': [],
                 'files': [],
                 'from_list': [],
+                'is_draft': False,
                 'is_pinned': False,
                 'is_unread': True,
                 'msgid': '<102@mlr>',
@@ -252,6 +254,7 @@ def test_general(gm_client, load_email, login, some):
                 'errors': [],
                 'files': [],
                 'from_list': [],
+                'is_draft': False,
                 'is_pinned': False,
                 'is_unread': True,
                 'msgid': '<102@mlr>',
@@ -594,6 +597,7 @@ def test_query():
 
     assert parse_query(':raw text in:#spam') == ('text in:#spam ' + ending, {})
 
+    assert parse_query(':draft') == ('draft ' + ending, {})
     assert parse_query(':unread') == ('unseen ' + ending, {})
     assert parse_query(':unseen') == ('unseen ' + ending, {})
     assert parse_query(':seen') == ('seen ' + ending, {})

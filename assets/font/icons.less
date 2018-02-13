@@ -42,7 +42,6 @@
     }
   }
 }
-
 .icon--add,
 .icon--search,
 .icon--ok,
@@ -67,6 +66,7 @@
 .icon--trash,
 .icon--reload,
 .icon--image,
+.icon--draft,
 .icon--attachment,
 .icon--spinner {
   .--icon;
@@ -310,6 +310,16 @@
 
 .icon--image {
   .--icon--image;
+}
+
+.--icon--draft() {
+  &::before {
+    content: "\f044";
+  }
+}
+
+.icon--draft {
+  .--icon--draft;
 }
 
 .--icon--attachment() {

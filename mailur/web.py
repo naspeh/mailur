@@ -384,7 +384,7 @@ def parse_query(q):
     def replace(match):
         info = match.groupdict()
         q = match.group()
-        flags = {'flagged', 'unflagged', 'seen', 'unseen'}
+        flags = {'flagged', 'unflagged', 'seen', 'unseen', 'draft'}
         flags = {k for k in flags if info.get(k)}
         if flags:
             q = ' '.join(flags)
@@ -450,6 +450,7 @@ def parse_query(q):
         '|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
         '|(?P<uid>uid:)(?P<uid_val>\d+)'
         '|(?P<date>date:)(?P<date_val>\d{4}(-\d{2}(-\d{2})?)?)'
+        '|(?P<draft>:(draft))'
         '|(?P<unseen>:(unread|unseen))'
         '|(?P<seen>:(read|seen))'
         '|(?P<flagged>:(pin(ned)?|flagged))'
@@ -501,7 +502,8 @@ def thread(q, preload=4):
 
     if preload is not None and len(uids) > preload * 2:
         msgs_few = {
-            i: m for i, m in msgs.items() if m['is_unread'] or m['is_pinned']
+            i: m for i, m in msgs.items()
+            if any((m['is_unread'], m['is_pinned'], m['is_draft']))
         }
         uids_few = [uids[0]] + uids[-preload+1:]
         for i in uids_few:
@@ -520,10 +522,12 @@ def thread(q, preload=4):
     }
 
 
-def wrap_tags(tags):
+def wrap_tags(tags, whitelist=None):
     def query(tag):
         if tag.startswith('\\'):
-            q = tag[1:]
+            q = {'\\Draft': ':draft', '\\Flagged': ':pinned'}.get(tag)
+            if not q:
+                q = ':raw %s' % tag[1:]
         else:
             q = 'tag:%s' % tag.lower()
         return ':threads %s' % q
@@ -539,7 +543,7 @@ def wrap_tags(tags):
         )
         return 0 if first else 1, tags[key]['name']
 
-    ids = sorted(clean_tags(tags), key=sort)
+    ids = sorted(clean_tags(tags, whitelist), key=sort)
     info = {
         t: dict(tags[t], query=query(t), short_name=trancate(tags[t]['name']))
         for t in ids
@@ -547,9 +551,10 @@ def wrap_tags(tags):
     return {'ids': ids, 'info': info}
 
 
-def clean_tags(tags):
+def clean_tags(tags, whitelist=None):
+    whitelist = whitelist or []
     ignore = re.compile(r'(^\\|#sent|#latest|#link)')
-    return sorted(i for i in tags if not ignore.match(i))
+    return sorted(i for i in tags if i in whitelist or not ignore.match(i))
 
 
 def wrap_msgs(items):
@@ -584,6 +589,7 @@ def wrap_msgs(items):
             'time_title': format_dt(info['date'], tz=tz),
             'is_unread': '\\Seen' not in flags,
             'is_pinned': '\\Flagged' in flags,
+            'is_draft': '\\Draft' in flags,
         })
         info['files'] = wrap_files(info['files'], info['url_raw'])
         msgs[uid] = info
