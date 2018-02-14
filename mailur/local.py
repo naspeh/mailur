@@ -135,6 +135,11 @@ def pair_parsed_uids(uids):
     return tuple(pairs[i] for i in uids if i in pairs)
 
 
+def pair_msgid(mid):
+    origin_uid = msgids().get(mid.lower())
+    return origin_uid and pair_origin_uids(origin_uid)[0]
+
+
 @fn_time
 @using(SRC)
 def save_msgids(uids=None, con=None):
@@ -148,7 +153,7 @@ def save_msgids(uids=None, con=None):
         uid = res[i][0].decode().split()[2]
         line = res[i][1].strip()
         if line:
-            mid = email.message_from_bytes(line)['message-id'].strip()
+            mid = email.message_from_bytes(line)['message-id'].strip().lower()
         else:
             mid = '<mailur@noid>'
         uids = mids.get(mid, [])
@@ -219,6 +224,7 @@ def parse(criteria=None, *, batch=1000, threads=10):
     if count != '0':
         if criteria.lower() == 'all':
             puids = '1:*'
+            save_msgids()
         else:
             puids = pair_origin_uids(uids)
         if puids:

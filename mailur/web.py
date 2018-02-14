@@ -176,7 +176,7 @@ def search():
     preload = request.json.get('preload')
     q, opts = parse_query(request.json['q'])
     if opts.get('thread'):
-        return thread(q, preload or 4)
+        return thread(q, opts, preload or 4)
 
     if opts.get('threads'):
         uids = local.search_thrs(q)
@@ -414,6 +414,9 @@ def parse_query(q):
         elif info.get('threads'):
             opts['threads'] = True
             q = ''
+        elif info.get('edit'):
+            opts['edit'] = info['edit_val']
+            q = ''
         elif info.get('tag'):
             opts.setdefault('tags', [])
             opts['tags'].append(info['tag_id'])
@@ -459,6 +462,7 @@ def parse_query(q):
         '|(?P<seen>:(read|seen))'
         '|(?P<flagged>:(pin(ned)?|flagged))'
         '|(?P<unflagged>:(unpin(ned)?|unflagged))'
+        '|(?P<edit>edit:(?P<edit_val>\d+))'
         ')( |$)',
         replace, q
     )
@@ -483,7 +487,7 @@ def parse_query(q):
     return q, opts
 
 
-def thread(q, preload=4):
+def thread(q, opts, preload=4):
     uids = local.search_msgs('INTHREAD REFS %s' % q, '(DATE)')
     if not uids:
         return {}
@@ -504,10 +508,26 @@ def thread(q, preload=4):
         if subj == prev_subj:
             same_subject.append(uid)
 
+    parents = []
+    for i, m in msgs.items():
+        if m['is_draft']:
+            parent = m['parent'] and local.pair_msgid(m['parent'])
+            if parent and msgs.get(parent):
+                uids.remove(m['uid'])
+                uids.insert(uids.index(parent) + 1, m['uid'])
+                parents.append(parent)
+            if m['uid'] == opts.get('edit'):
+                m['edit'] = True
+
     if preload is not None and len(uids) > preload * 2:
         msgs_few = {
             i: m for i, m in msgs.items()
-            if any((m['is_unread'], m['is_pinned'], m['is_draft']))
+            if any((
+                m['is_unread'],
+                m['is_pinned'],
+                m['is_draft'],
+                m['uid'] in parents
+            ))
         }
         uids_few = [uids[0]] + uids[-preload+1:]
         for i in uids_few:

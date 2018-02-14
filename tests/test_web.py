@@ -437,6 +437,48 @@ def test_search_thread(gm_client, login, some):
     ]
 
 
+def test_drafts(gm_client, login, some):
+    def post(uid, edit=None, preload=4):
+        q = 'thread:%s' % uid
+        q = ('%s edit:%s' % (q, edit)) if edit else q
+        data = {'q': q, 'preload': preload}
+        return web.post_json('/search', data, status=200).json
+
+    web = login()
+    gm_client.add_emails([
+        {'flags': '\\Seen', 'mid': '<101@Mlr>'},
+        {'refs': '<101@MLR>', 'flags': '\\Seen'}
+    ])
+    assert post('1')['uids'] == ['1', '2']
+
+    gm_client.add_emails([{'refs': '<101@MLR>', 'flags': '\\Draft'}])
+    assert post('1')['uids'] == ['1', '3', '2']
+
+    gm_client.add_emails([{'refs': '<102@mlr>', 'flags': '\\Seen'}] * 4)
+    gm_client.add_emails([{'refs': '<104@MLR>', 'flags': '\\Draft'}])
+    res = post('1', preload=2)
+    assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7']
+    assert sorted(res['msgs']) == ['1', '3', '4', '7', '8']
+
+    gm_client.add_emails([
+        {'refs': '<101@mlr>'},
+        {'refs': '<109@mlr>', 'flags': '\\Draft'}
+    ])
+    res = post('1', preload=2)
+    assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
+    assert sorted(res['msgs']) == ['1', '10', '3', '4', '8', '9']
+    assert {'3': None, '8': None, '10': None} == {
+        i['uid']: i.get('edit')
+        for i in res['msgs'].values() if i['is_draft']
+    }
+    res = post('1', '3', preload=2)
+    assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
+    assert {'3': True, '8': None, '10': None} == {
+        i['uid']: i.get('edit')
+        for i in res['msgs'].values() if i['is_draft']
+    }
+
+
 def test_from_list(some):
     res = wrap_addresses(addresses('test <test@example.com>'))
     assert res == [
@@ -615,3 +657,5 @@ def test_query():
         'since 01-Apr-2007 before 01-May-2007 ' + ending, {}
     )
     assert parse_query('date:2007-04-01') == ('on 01-Apr-2007 ' + ending, {})
+
+    assert parse_query('edit:1') == (ending, {'edit': '1'})

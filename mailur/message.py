@@ -244,11 +244,14 @@ def parsed(raw, uid, time, mids):
     meta['subject'] = str(subj).strip() if subj else ''
 
     refs = orig['references']
-    refs = refs.split() if refs else []
-    if not refs:
-        in_reply_to = orig['in-reply-to']
-        refs = [in_reply_to] if in_reply_to else []
-    meta['parent'] = refs[0] if refs else None
+    refs = [i.strip().lower() for i in refs.split()] if refs else []
+    in_reply_to = orig['in-reply-to'] and orig['in-reply-to'].strip().lower()
+    if in_reply_to:
+        meta['parent'] = in_reply_to
+        if not refs:
+            refs = [in_reply_to]
+    if 'parent' not in meta:
+        meta['parent'] = refs[-1] if refs else None
     refs = [r for r in refs if r in mids]
 
     mid = orig['message-id']
@@ -256,7 +259,7 @@ def parsed(raw, uid, time, mids):
         log.info('## UID=%s has no "Message-Id" header', uid)
         mid = '<mailur@noid>'
     else:
-        mid = mid.strip()
+        mid = mid.strip().lower()
     meta['msgid'] = mid
     if mids[mid][0] != uid:
         log.info('## UID=%s duplicate: {%r: %r}', uid, mid, mids[mid])

@@ -300,7 +300,7 @@ def test_link_threads_part3(gm_client, msgs):
     ]
 
 
-def test_bad_msgids(gm_client, msgs, some, load_file, latest):
+def test_msgids(gm_client, msgs, some, load_file, latest):
     gm_client.add_emails([{'mid': '<zero@mlr>'} for i in range(0, 8)])
     gm_client.add_emails([
         {'mid': '<42@mlr>'},
@@ -346,3 +346,20 @@ def test_bad_msgids(gm_client, msgs, some, load_file, latest):
         '<mailur@noid>': ['11'],
         '<with-no-space-in-msgid@test>': ['12']
     }
+
+    # message-id's should be used in lower case
+    gm_client.add_emails([{'refs': '<42@MLR>', 'mid': '<109@MLR>'}])
+    msg = latest(parsed=True)
+    assert msg['body_full']['message-id'] == '<109@mlr>'
+    assert msg['meta']['parent'] == '<42@mlr>'
+    assert msg['meta']['msgid'] == '<109@mlr>'
+    assert '<109@mlr>' in local.msgids()
+    assert local.msgids()['<109@mlr>'] == ['13']
+
+    gm_client.add_emails([{'refs': '<42@mlr>  <109@MLR>'}])
+    msg = latest(parsed=True)
+    assert msg['meta']['parent'] == '<109@mlr>'
+
+    gm_client.add_emails([{'in_reply_to': '<109@MLR>'}])
+    msg = latest(parsed=True)
+    assert msg['meta']['parent'] == '<109@mlr>'
