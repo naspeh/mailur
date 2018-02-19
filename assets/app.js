@@ -2,6 +2,7 @@ import Vue from 'vue';
 import './favicon.png';
 import './picker.js';
 import './tags.js';
+import './editor.js';
 import './msg.js';
 import msgs from './msgs.js';
 import tpl from './app.html';

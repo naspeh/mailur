@@ -414,9 +414,10 @@ def parse_query(q):
         elif info.get('threads'):
             opts['threads'] = True
             q = ''
-        elif info.get('edit'):
-            opts['edit'] = info['edit_val']
-            q = ''
+        elif info.get('draft_edit'):
+            opts['draft'] = info['draft_val']
+            opts['thread'] = True
+            q = 'uid %s' % info['draft_val']
         elif info.get('tag'):
             opts.setdefault('tags', [])
             opts['tags'].append(info['tag_id'])
@@ -462,7 +463,7 @@ def parse_query(q):
         '|(?P<seen>:(read|seen))'
         '|(?P<flagged>:(pin(ned)?|flagged))'
         '|(?P<unflagged>:(unpin(ned)?|unflagged))'
-        '|(?P<edit>edit:(?P<edit_val>\d+))'
+        '|(?P<draft_edit>draft:(?P<draft_val>\d+))'
         ')( |$)',
         replace, q
     )
@@ -508,16 +509,15 @@ def thread(q, opts, preload=4):
         if subj == prev_subj:
             same_subject.append(uid)
 
+    edit = None
     parents = []
     for i, m in msgs.items():
-        if m['is_draft']:
-            parent = m['parent'] and local.pair_msgid(m['parent'])
-            if parent and msgs.get(parent):
-                uids.remove(m['uid'])
-                uids.insert(uids.index(parent) + 1, m['uid'])
-                parents.append(parent)
-            if m['uid'] == opts.get('edit'):
-                m['edit'] = True
+        if m['is_draft'] and m['parent']:
+            uids.remove(m['uid'])
+            uids.insert(uids.index(m['parent']) + 1, m['uid'])
+            parents.append(m['parent'])
+            if m['parent'] == opts.get('draft'):
+                edit = m
 
     if preload is not None and len(uids) > preload * 2:
         msgs_few = {
@@ -542,7 +542,8 @@ def thread(q, opts, preload=4):
         'msgs_info': app.get_url('msgs_info'),
         'thread': True,
         'tags': tags,
-        'same_subject': same_subject
+        'same_subject': same_subject,
+        'edit': edit,
     }
 
 
@@ -602,6 +603,7 @@ def wrap_msgs(items):
             info['from'] = wrap_addresses([info['from']])[0]
         info.update({
             'uid': uid,
+            'parent': info['parent'] and local.pair_msgid(info['parent']),
             'count': len(addrs),
             'tags': clean_tags(flags),
             'from_list': wrap_addresses(addrs, max=3),
@@ -615,6 +617,8 @@ def wrap_msgs(items):
             'is_pinned': '\\Flagged' in flags,
             'is_draft': '\\Draft' in flags,
         })
+        if info['is_draft'] and info['parent']:
+            info['query_edit'] = 'draft:{0}'.format(info['parent'])
         info['files'] = wrap_files(info['files'], info['url_raw'])
         msgs[uid] = info
     return msgs

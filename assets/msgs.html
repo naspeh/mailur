@@ -17,7 +17,7 @@
   <!-- msgs -->
   <template v-if="name == 'msgs'">
   <div class="msgs__header">
-    <div v-if="!loading" class="icon--reload" @click="open(query)" />
+    <div v-if="!loading" class="icon--reload" @click="refresh()" />
     <div v-if="loading" class="icon--spinner" />
     <div class="msgs__search">
       <input v-model="query" @keyup.enter="open(query)">
@@ -75,6 +75,7 @@
       :pick="pick"
       :picked="picked.indexOf(uid) != -1"
       :editTags="editTags"
+      :query="open"
     />
     <a @click.prevent="loadMore()" href="#" v-if="hidden.length">Load more...</a>
   </div>
@@ -83,7 +84,7 @@
   <!-- thread -->
   <template v-if="name == 'thread'">
   <div class="msgs__header">
-    <div v-if="!loading" class="icon--reload" @click="open(query)" />
+    <div v-if="!loading" class="icon--reload" @click="refresh()" />
     <div v-if="loading" class="icon--spinner" />
     <div class="msgs__search">
       <input v-model="query" @keyup.enter="open(query)">
@@ -144,6 +145,8 @@
         :open="openMsg"
         :opened="opened.indexOf(uid) != -1"
         :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"
+        :query="open"
+        :edit="edit && edit.uid == uid ? edit : null"
       />
     </div>
   </div>

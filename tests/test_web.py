@@ -222,7 +222,7 @@ def test_general(gm_client, load_email, login, some):
                 'is_unread': True,
                 'msgid': '<102@mlr>',
                 'origin_uid': '2',
-                'parent': '<101@mlr>',
+                'parent': '1',
                 'preview': '42',
                 'query_msgid': 'ref:<102@mlr>',
                 'query_subject': ':threads subj:"Subj 102"',
@@ -259,7 +259,7 @@ def test_general(gm_client, load_email, login, some):
                 'is_unread': True,
                 'msgid': '<102@mlr>',
                 'origin_uid': '2',
-                'parent': '<101@mlr>',
+                'parent': '1',
                 'preview': '42',
                 'query_msgid': 'ref:<102@mlr>',
                 'query_subject': ':threads subj:"Subj 102"',
@@ -292,6 +292,7 @@ def test_general(gm_client, load_email, login, some):
     res = web.post_json('/search', {'q': q}, status=200)
     assert res.json == {
         'uids': ['3'],
+        'edit': None,
         'msgs_info': '/msgs/info',
         'msgs': {'3': some},
         'same_subject': [],
@@ -372,6 +373,7 @@ def test_search_thread(gm_client, login, some):
     res = post('1')
     assert res == {
         'uids': ['1'],
+        'edit': None,
         'msgs': {'1': some},
         'msgs_info': '/msgs/info',
         'tags': [],
@@ -438,9 +440,9 @@ def test_search_thread(gm_client, login, some):
 
 
 def test_drafts(gm_client, login, some):
-    def post(uid, edit=None, preload=4):
-        q = 'thread:%s' % uid
-        q = ('%s edit:%s' % (q, edit)) if edit else q
+    def post(uid=None, q=None, preload=4):
+        if not q:
+            q = 'thread:%s' % uid
         data = {'q': q, 'preload': preload}
         return web.post_json('/search', data, status=200).json
 
@@ -467,16 +469,16 @@ def test_drafts(gm_client, login, some):
     res = post('1', preload=2)
     assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
     assert sorted(res['msgs']) == ['1', '10', '3', '4', '8', '9']
-    assert {'3': None, '8': None, '10': None} == {
-        i['uid']: i.get('edit')
-        for i in res['msgs'].values() if i['is_draft']
-    }
-    res = post('1', '3', preload=2)
+    assert not res['edit']
+
+    draft = res['msgs']['3']
+    assert draft['is_draft']
+    assert draft['query_edit'] == 'draft:1'
+
+    res = post(q=draft['query_edit'], preload=2)
     assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
-    assert {'3': True, '8': None, '10': None} == {
-        i['uid']: i.get('edit')
-        for i in res['msgs'].values() if i['is_draft']
-    }
+    assert res['edit']
+    assert res['edit']['uid'] == '3'
 
 
 def test_from_list(some):
@@ -658,4 +660,4 @@ def test_query():
     )
     assert parse_query('date:2007-04-01') == ('on 01-Apr-2007 ' + ending, {})
 
-    assert parse_query('edit:1') == (ending, {'edit': '1'})
+    assert parse_query('draft:1') == ('uid 1', {'draft': '1', 'thread': True})

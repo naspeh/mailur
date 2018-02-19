@@ -1,4 +1,4 @@
-<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--detailed': detailed, 'msg--opened': opened}">
+<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--detailed': detailed, 'msg--opened': opened, 'msg--edited': edit}">
   <div class="msg-line">
     <div
       class="icon--pin"
@@ -14,6 +14,7 @@
     <div
       v-if="msg.is_draft"
       class="icon--draft"
+      @click="query(msg.query_edit)"
       title="Edit draft"
     ></div>
     <div
@@ -126,4 +127,5 @@
       >{{f.filename}}</a>
     </div>
   </div>
+  <editor :msg=msg class="msg__editor" />
 </div>

@@ -7,6 +7,8 @@ Vue.component('msg', {
   props: {
     msg: { type: Object, required: true },
     body: { type: String },
+    edit: { type: Object },
+    query: { type: Function, required: true },
     thread: { type: Boolean, default: false },
     opened: { type: Boolean, default: false },
     open: { type: Function, required: true },
@@ -17,7 +19,9 @@ Vue.component('msg', {
     editTags: { type: Function, required: true }
   },
   methods: {
-    openInMain: q => window.app.openInMain(q),
+    openInMain: function(q) {
+      window.app.openInMain(q);
+    },
     openDefault: function() {
       if (this.thread) {
         this.openInMain(this.msg.query_thread);

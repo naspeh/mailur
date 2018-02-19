@@ -2,6 +2,7 @@
 @import './tags.less';
 @import './picker.less';
 @import './slider.less';
+@import './editor.less';
 @import './msg.less';
 @import './msgs.less';
 @import './login.less';
@@ -61,9 +62,11 @@ a {
   }
 }
 
-input {
+input,
+textarea {
   box-sizing: border-box;
-  border: 1px solid @--color--grey;
+  border-bottom: 1px solid @--color--grey;
+  border-width: 0 0 1px 0;
   padding: 0.1em 0.2em;
   font-size: 1em;
   color: @--color--black;

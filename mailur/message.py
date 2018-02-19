@@ -245,14 +245,14 @@ def parsed(raw, uid, time, mids):
 
     refs = orig['references']
     refs = [i.strip().lower() for i in refs.split()] if refs else []
+    parent = refs[-1] if refs else None
     in_reply_to = orig['in-reply-to'] and orig['in-reply-to'].strip().lower()
     if in_reply_to:
-        meta['parent'] = in_reply_to
+        parent = in_reply_to
         if not refs:
             refs = [in_reply_to]
-    if 'parent' not in meta:
-        meta['parent'] = refs[-1] if refs else None
     refs = [r for r in refs if r in mids]
+    meta['parent'] = parent
 
     mid = orig['message-id']
     if mid is None:

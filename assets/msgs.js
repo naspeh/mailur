@@ -94,11 +94,14 @@ let Base = {
     }
   },
   methods: {
-    refresh: function() {
+    refresh: function(preload = undefined) {
       let data = { uids: this.loaded, hide_tags: this.tags };
-      this.search().then(res => {
+      this.search(preload).then(res => {
         this.set(res);
-        this.call('post', this.msgs_info, data).then(this.setMsgs);
+        data.uids = data.uids.filter(item => !res.msgs[item]);
+        if (data.uids.length > 0) {
+          this.call('post', this.msgs_info, data).then(this.setMsgs);
+        }
       });
     },
     setMsgs: function(msgs) {
@@ -267,7 +270,8 @@ let Thread = Vue.extend({
   mixins: [Base],
   props: {
     tags: { type: Array, required: true },
-    same_subject: { type: Array, required: true }
+    same_subject: { type: Array, required: true },
+    edit: { type: Object }
   },
   data: function() {
     return {
@@ -308,15 +312,14 @@ let Thread = Vue.extend({
         this.detailed.splice(idx, 1);
       }
     },
-    openMsg: function(uid) {
+    openMsg: function(uid, force) {
       this.fetchBodies([uid]);
       let idx = this.opened.indexOf(uid);
       if (idx == -1) {
         this.opened.push(uid);
-      } else {
+      } else if (!force) {
         this.opened.splice(idx, 1);
       }
-      this.setMsgs(this.msgs);
     },
     openInSplit: function() {
       window.app.openInSplit(this.query);
@@ -326,7 +329,7 @@ let Thread = Vue.extend({
       opts = Object.assign({ uids: picked || this.uids }, opts);
       return this.call('post', '/msgs/flag', opts).then(res => {
         if (!res.errors) {
-          this.search(preload).then(() => this.refresh());
+          this.refresh(preload);
         }
       });
     },
