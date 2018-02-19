@@ -20,12 +20,15 @@
   font-size: @--font-size--s;
   white-space: nowrap;
 
+  .icon--open-in-split,
   .icon--reload {
+    display: flex;
     cursor: pointer;
     color: @--color--green;
   }
 
   .icon--spinner {
+    display: flex;
     color: @--color--orange;
 
     &::before {
@@ -37,7 +40,7 @@
     display: none;
 
     .opt--split-on .main & {
-      display: block;
+      display: flex;
     }
   }
 }
@@ -120,14 +123,12 @@
     padding-right: 1.2em;
     width: 100%;
     cursor: pointer;
-    border: none;
+    border-color: transparent;
     background-color: inherit;
 
     &::placeholder {
       color: @--color--green;
       text-align: right;
-      opacity: unset;
-      font-weight: normal;
     }
 
   }
@@ -150,6 +151,18 @@
   white-space: nowrap;
 
   .tags__item {
-    border: none;
+    border-color: transparent;
+  }
+
+  @media (max-width: 1400px) {
+    .opt--split-on & {
+      display: none;
+    }
+  }
+
+  @media (max-width: 700px) {
+    :not(.opt--split-on) & {
+      display: none;
+    }
   }
 }

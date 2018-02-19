@@ -120,12 +120,11 @@
         >{{pickerOpts[opt]}}</div>
       </template>
     </picker>
-    <a
-      @click.prevent="openInSplit"
+    <div
+      @click="openInSplit"
       class="icon--open-in-split"
       title="Open in split pane"
-      href="#"
-    ></a>
+    />
   </div>
   <div class="msgs__body">
     <div v-if="error" class="msgs__error">{{error}}</div>

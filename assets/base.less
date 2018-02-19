@@ -1,0 +1,46 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-size: @--font-size;
+  font-family: sans-serif;
+  line-height: @--line-height--s;
+
+  &.opt--bigger {
+    font-size: @--font-size * 1.25;
+  }
+}
+
+a {
+  color: @--color--green;
+  outline: 0;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+input,
+textarea {
+  box-sizing: border-box;
+  border-bottom: 1px solid @--color--grey;
+  border-width: 0 0 1px 0;
+  padding: 0.1em 0.2em;
+  font-size: inherit;
+  line-height: inherit;
+  color: @--color--black;
+  background: @--color--white;
+
+  &:focus {
+    outline: 0;
+    border-left: 3px solid @--color--orange;
+  }
+
+  &::placeholder {
+    font-size: inherit;
+    line-height: inherit;
+    opacity: unset;
+    font-weight: normal;
+  }
+}
