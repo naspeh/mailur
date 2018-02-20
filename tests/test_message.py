@@ -49,7 +49,7 @@ def test_general(gm_client, load_file, latest, load_email):
     msg = latest(raw=True)['body'].decode()
     expect = '\r\n'.join([
         'X-UID: <4>',
-        'Message-Id: <with-encoding@test>',
+        'Message-ID: <with-encoding@test>',
         'Subject: Re: не пора ли подкрепиться?',
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: Катя К. <katya@example.com>',
@@ -64,7 +64,7 @@ def test_general(gm_client, load_file, latest, load_email):
     msg = latest(raw=True)['body'].decode()
     expect = '\r\n'.join([
         'X-UID: <5>',
-        'Message-Id: <with-no-encoding@test>',
+        'Message-ID: <with-no-encoding@test>',
         'Subject: Re: не пора ли подкрепиться?',
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: "Катя К." <katya@example.com>',
@@ -74,7 +74,7 @@ def test_general(gm_client, load_file, latest, load_email):
 
     # msg with UnicodeDecodeError
     raw = b'\r\n'.join([
-        b'Message-Id: <with-bad-symbol@test>',
+        b'Message-ID: <with-bad-symbol@test>',
         b'Subject: bad symbol?',
         b'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         b'From: katya@example.com',
@@ -99,7 +99,7 @@ def test_general(gm_client, load_file, latest, load_email):
     )
 
     raw = b'\r\n'.join([
-        b'Message-Id: <lookup-error@test>',
+        b'Message-ID: <lookup-error@test>',
         b'Subject: bad symbol?',
         b'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         b'From: katya@example.com',
@@ -162,7 +162,7 @@ def test_richer(gm_client, latest):
 
     raw = '\r\n'.join([
         headers,
-        'Message-Id: <richer-styles@test>',
+        'Message-ID: <richer-styles@test>',
         'Subject: styles',
         ''
         '<p style="color:red;@import">test html</p>',
@@ -174,7 +174,7 @@ def test_richer(gm_client, latest):
 
     raw = '\r\n'.join([
         headers,
-        'Message-Id: <richer-ext-imgs@test>',
+        'Message-ID: <richer-ext-imgs@test>',
         'Subject: external images',
         '',
         '<img src="https://github.com/favicon.ico" />',
@@ -193,7 +193,7 @@ def test_richer(gm_client, latest):
 
     raw = '\r\n'.join([
         headers,
-        'Message-Id: <richer-styles-and-imgs@test>',
+        'Message-ID: <richer-styles-and-imgs@test>',
         'Subject: styles and images',
         ''
         '<p style="color:red">test html</p>',

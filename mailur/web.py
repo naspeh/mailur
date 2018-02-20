@@ -16,7 +16,7 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import DEBUG, SECRET, imap, local, log
+from . import DEBUG, SECRET, imap, local, log, message
 from .schema import validate
 
 
@@ -265,6 +265,44 @@ def msgs_flag():
     local.msgs_flag(**data)
 
 
+@app.post('/editor')
+def editor():
+    uid = request.forms['uid']
+    orig = local.raw_msg(uid, local.SRC, parsed=True)
+    txt, _, parts = message.parse_draft(orig)
+    txt = request.forms.get('txt', txt)
+    files = request.files.getall('files')
+
+    msg = message.new()
+    txt = message.binary(txt)
+    if parts or files:
+        msg.make_mixed()
+        msg.attach(txt)
+        for p in parts:
+            msg.attach(p)
+        for f in files:
+            maintype, subtype = f.content_type.split('/')
+            msg.add_attachment(
+                f.file.read(), filename=f.filename,
+                maintype=maintype, subtype=subtype
+            )
+    else:
+        msg = txt
+
+    msg.add_header('Message-ID', message.gen_msgid('draft'))
+    msg.add_header('Date', message.formatdate())
+    headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
+    for h in headers:
+        val = request.forms.get(h.lower())
+        if not val and h in orig:
+            val = orig[h]
+        if val:
+            msg.add_header(h, val)
+
+    local.del_msg(uid)
+    local.new_msg(msg, '\\Draft \\Seen')
+
+
 @app.get('/raw/<uid:int>', name='raw')
 @app.get('/raw/<uid:int>/<part>')
 @app.get('/raw/<uid:int>/<part>/<filename>')
@@ -274,10 +312,15 @@ def raw(uid, part=None, filename=None):
     if request.query.get('parsed') or request.query.get('p'):
         box = local.ALL
         uid = local.pair_origin_uids([uid])[0]
-    msg, content_type = local.raw_msg(uid, box, part)
+
+    if part:
+        msg, content_type = local.raw_part(uid, box, part)
+    else:
+        msg = local.raw_msg(uid, box)
+        content_type = 'text/plain'
+
     if msg is None:
         return abort(404)
-
     response.content_type = content_type
     return msg
 
@@ -517,7 +560,15 @@ def thread(q, opts, preload=4):
             uids.insert(uids.index(m['parent']) + 1, m['uid'])
             parents.append(m['parent'])
             if m['parent'] == opts.get('draft'):
-                edit = m
+                draft = local.raw_msg(m['origin_uid'], local.SRC, parsed=True)
+                txt, headers, _ = message.parse_draft(draft)
+                edit = dict(
+                    headers,
+                    txt=txt,
+                    files=m['files'],
+                    uid=m['uid'],
+                    origin_uid=m['origin_uid']
+                )
 
     if preload is not None and len(uids) > preload * 2:
         msgs_few = {

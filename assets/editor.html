@@ -1,6 +1,17 @@
 <div class="editor">
-  <input class="editor__from" placeholder="From" :value="msg.from.title" />
-  <input class="editor__to" placeholder="To" :value="msg.to[0].title" />
-  <input class="editor__subj" placeholder="Subject" :value="msg.subject" />
-  <textarea class="editor__body"></textarea>
+  <input ref="from" class="editor__from" placeholder="From" :value="msg.from" />
+  <input ref="to" class="editor__to" placeholder="To" :value="msg.to" />
+  <input ref="subject" class="editor__subj" placeholder="Subject" :value="msg.subject" />
+  <textarea ref="txt" class="editor__body">{{msg.txt}}</textarea>
+  <div v-if="msg.files.length" class="editor__files">
+    <a
+      v-for="f, idx of msg.files"
+      :href="f.url"
+      @click="f.image && slide($event, idx)"
+      target="_blank"
+    >{{f.filename}}</a>
+  </div>
+  <input @change="save" class="editor__upload" type="file" value="Files" multiple />
+  <button @click="save" class="editor__save">Save</button>
+  <button @click="cancel" class="editor__cancel">Cancel</button>
 </div>

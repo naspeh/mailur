@@ -21,7 +21,9 @@ a {
   }
 }
 
-input,
+input:not([type]),
+input[type="text"],
+input[type="password"],
 textarea {
   box-sizing: border-box;
   border-bottom: 1px solid @--color--grey;

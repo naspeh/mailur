@@ -31,6 +31,9 @@ class BinaryPolicy(email.policy.Compat32):
     Dovecot understands UTF-8 encoding, so let's save parsed messages
     without sanitizing.
     """
+
+    content_manager = email.policy.raw_data_manager
+
     def _sanitize_header(self, name, value):
         return value
 
@@ -45,8 +48,12 @@ class BinaryPolicy(email.policy.Compat32):
 policy = BinaryPolicy()
 
 
+def new():
+    return MIMEPart(policy)
+
+
 def binary(txt, mimetype='text/plain'):
-    msg = MIMEPart(policy)
+    msg = new()
     msg.set_type(mimetype)
     msg.add_header('Content-Transfer-Encoding', 'binary')
     msg.set_payload(txt, 'utf-8')
@@ -55,10 +62,10 @@ def binary(txt, mimetype='text/plain'):
 
 def link(msgids):
     msgid = gen_msgid('link')
-    msg = MIMEPart(policy)
+    msg = new()
     msg.add_header('Subject', 'Dummy: linking threads')
     msg.add_header('References', ' '.join(msgids))
-    msg.add_header('Message-Id', msgid)
+    msg.add_header('Message-ID', msgid)
     msg.add_header('From', 'mailur@link')
     msg.add_header('Date', formatdate())
     return msg
@@ -256,7 +263,7 @@ def parsed(raw, uid, time, mids):
 
     mid = orig['message-id']
     if mid is None:
-        log.info('## UID=%s has no "Message-Id" header', uid)
+        log.info('## UID=%s has no "Message-ID" header', uid)
         mid = '<mailur@noid>'
     else:
         mid = mid.strip().lower()
@@ -272,9 +279,9 @@ def parsed(raw, uid, time, mids):
     date = orig['date']
     meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
 
-    msg = MIMEPart(policy)
+    msg = new()
     msg.add_header('X-UID', '<%s>' % uid)
-    msg.add_header('Message-Id', mid)
+    msg.add_header('Message-ID', mid)
     msg.add_header('Subject', meta['subject'])
     msg.add_header('Date', orig['Date'])
 
@@ -297,6 +304,31 @@ def parsed(raw, uid, time, mids):
     if meta.get('duplicate'):
         flags.append('#dup')
     return msg, flags
+
+
+def parse_draft(msg):
+    def extract_txt(msg):
+        ctype = msg.get_content_type()
+        if ctype == 'text/plain':
+            txt = msg.get_payload(decode=True)
+            parts = []
+        elif ctype == 'multipart/alternative':
+            txt = msg.get_payload()
+            txt = txt[0].get_payload(decode=True) if txt else ''
+            parts = []
+        elif ctype in ('multipart/mixed', 'multipart/related'):
+            parts = msg.get_payload()
+            txt, _ = extract_txt(parts[0])
+            parts = parts[1:]
+        else:
+            raise ValueError('Wrong content-type: %s' % ctype)
+        return txt, parts
+
+    txt, parts = extract_txt(msg)
+    if isinstance(txt, bytes):
+        txt = txt.decode()
+    headers = {k: msg.get(k, '') for k in ('from', 'to', 'cc', 'subject')}
+    return txt, headers, parts
 
 
 def gen_msgid(label):

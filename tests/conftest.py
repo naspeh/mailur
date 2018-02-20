@@ -162,6 +162,12 @@ def gm_client():
                 refs = item.get('refs')
                 if refs:
                     msg.add_header('References', refs)
+                fr = item.get('from')
+                if fr:
+                    msg.add_header('From', fr)
+                to = item.get('to')
+                if to:
+                    msg.add_header('To', to)
 
                 msg = msg.as_bytes()
             flags = item.get('flags', '').encode()

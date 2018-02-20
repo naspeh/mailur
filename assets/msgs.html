@@ -135,7 +135,7 @@
         @click.prevent="loadAll()" href="#"
         class="msg-hidden"
       >{{hidden.length}} hidden</a>
-      <msg v-if="msgs[uid]"
+      <msg v-if="msgs[uid] && (!edit || edit.uid != uid)"
         :msg="msgs[uid]"
         :editTags="editTags"
         :details="details"
@@ -146,6 +146,12 @@
         :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"
         :query="open"
         :edit="edit && edit.uid == uid ? edit : null"
+      />
+      <editor
+        v-if="edit && edit.uid == uid"
+        :msg="edit"
+        :refresh="refresh"
+        :cancel="() => open(msgs[uid].query_thread)"
       />
     </div>
   </div>

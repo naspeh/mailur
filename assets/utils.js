@@ -1,11 +1,14 @@
-export function call(method, url, data) {
+export function call(method, url, data, headers = null) {
   let params = {
     method: method,
     credentials: 'same-origin'
   };
-  if (method == 'post') {
-    (params.headers = { 'Content-Type': 'application/json' }),
-      (params.body = data && JSON.stringify(data));
+  if (headers) {
+    params.headers = headers;
+    params.body = data;
+  } else if (method == 'post') {
+    params.headers = { 'Content-Type': 'application/json' };
+    params.body = data && JSON.stringify(data);
   }
   return fetch(url, params).then(response => {
     let res;

@@ -291,11 +291,15 @@ let Thread = Vue.extend({
     if (!this.threads && this.uids.length == 1) {
       this.openMsg(this.uids[0]);
     }
+    if (this.edit && this.opened.indexOf(this.edit.uid) == -1) {
+      this.openMsg(this.edit.uid);
+    }
   },
   methods: {
     set: function(res) {
       this.uids = res.uids;
       this.tags = res.tags;
+      this.edit = res.edit;
       this.setMsgs(res.msgs);
     },
     loadAll: function() {

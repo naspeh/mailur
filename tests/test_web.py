@@ -1,5 +1,6 @@
 import datetime as dt
 
+from mailur import local
 from mailur.message import addresses
 from mailur.web import parse_query, wrap_addresses
 
@@ -439,7 +440,7 @@ def test_search_thread(gm_client, login, some):
     ]
 
 
-def test_drafts(gm_client, login, some):
+def test_drafts_part1(gm_client, login):
     def post(uid=None, q=None, preload=4):
         if not q:
             q = 'thread:%s' % uid
@@ -477,8 +478,83 @@ def test_drafts(gm_client, login, some):
 
     res = post(q=draft['query_edit'], preload=2)
     assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
-    assert res['edit']
-    assert res['edit']['uid'] == '3'
+    assert res['edit'] == {
+        'cc': '',
+        'files': [],
+        'from': '',
+        'origin_uid': '3',
+        'subject': 'Subj 103',
+        'to': '',
+        'txt': '42',
+        'uid': '3'
+    }
+
+
+def test_drafts_part2(gm_client, login, msgs, latest):
+    from webtest import Upload
+
+    web = login()
+
+    gm_client.add_emails([
+        {'flags': '\\Seen'},
+        {
+            'refs': '<101@mlr>',
+            'from': 'a@t.com',
+            'to': 'b@t.com',
+            'flags': '\\Draft'
+        }
+    ])
+    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
+    assert [i['uid'] for i in msgs()] == ['1', '2']
+
+    web.post('/editor', {
+        'uid': '2',
+        'txt': 'test it',
+    })
+    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
+    assert [i['uid'] for i in msgs()] == ['1', '3']
+    m = latest(parsed=1)
+    assert m['meta']['files'] == []
+    assert m['body'] == '<p>test it</p>'
+    assert m['meta']['subject'] == 'Subj 102'
+    assert m['meta']['from']['title'] == 'a@t.com'
+    assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']
+
+    web.post('/editor', {
+        'uid': '3',
+        'files': Upload('test.rst', b'txt', 'text/x-rst')
+    })
+    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
+    assert [i['uid'] for i in msgs()] == ['1', '4']
+    m = latest(parsed=1)
+    assert m['meta']['files'] == [
+        {'filename': 'test.rst', 'path': '2', 'size': 3}
+    ]
+    assert m['body'] == '<p>test it</p>'
+    assert m['meta']['subject'] == 'Subj 102'
+    assert m['meta']['from']['title'] == 'a@t.com'
+    assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']
+
+    web.post('/editor', {
+        'uid': '4',
+        'txt': 'test it again',
+        'subject': 'Subj new',
+        'from': '"Alpha" <a@t.com>',
+        'to': 'b@t.com, c@t.com',
+        'files': Upload('test2.rst', b'lol', 'text/x-rst')
+    })
+    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
+    assert [i['uid'] for i in msgs()] == ['1', '5']
+    m = latest(parsed=1)
+    assert m['flags'] == '\\Seen \\Draft #latest'
+    assert m['meta']['files'] == [
+        {'filename': 'test.rst', 'path': '2', 'size': 3},
+        {'filename': 'test2.rst', 'path': '3', 'size': 3},
+    ]
+    assert m['body'] == '<p>test it again</p>'
+    assert m['meta']['subject'] == 'Subj new'
+    assert m['meta']['from']['title'] == 'Alpha <a@t.com>'
+    assert [i['addr'] for i in m['meta']['to']] == ['b@t.com', 'c@t.com']
 
 
 def test_from_list(some):

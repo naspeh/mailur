@@ -342,19 +342,24 @@ def link_threads(uids, con=None):
 
 @fn_time
 @using(None)
-def raw_msg(uid, box, part=None, con=None):
+def raw_msg(uid, box, parsed=False, con=None):
     con.select(box)
-    field = 'BODY[]' if part is None else ('BINARY[%s]' % part)
-    res = con.fetch(uid, field)
-    content_type = 'text/plain'
-    if part:
-        hdr = con.fetch(uid, 'BINARY[%s.mime]' % part)
-        msg = email.message_from_bytes(hdr[0][1])
-        content_type = msg.get_content_type()
+    res = con.fetch(uid, 'BODY[]')
+    res = res[0][1] if res else None
+    if res and parsed:
+        res = email.message_from_bytes(res)
+    return res
 
-    if res:
-        res = res[0][1]
-    return res, content_type
+
+@fn_time
+@using(None)
+def raw_part(uid, box, part, con=None):
+    con.select(box)
+    res = con.fetch(uid, '(BINARY[{0}] BINARY[{0}.mime])'.format(part))
+    body = res[0][1]
+    mime = res[1][1]
+    content_type = email.message_from_bytes(mime).get_content_type()
+    return body, content_type
 
 
 @fn_time
@@ -487,3 +492,21 @@ def tags_info(con=None):
         for t in ('#inbox', '#spam', '#trash')
     })
     return tags
+
+
+@fn_time
+@using(None)
+def del_msg(uid, con=None):
+    pid = pair_origin_uids([uid])[0]
+    for box, uid in ((SRC, uid), (ALL, pid)):
+        con.select(box, readonly=False)
+        con.store([uid], '+FLAGS.SILENT', '\\Deleted')
+        con.expunge()
+
+
+@fn_time
+@using(None, readonly=False)
+def new_msg(msg, flags, con=None):
+    uid = con.append(SRC, flags, None, msg.as_bytes())
+    save_msgids([uid])
+    parse()

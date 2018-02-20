@@ -53,7 +53,6 @@
     }
   }
 
-  .msg--edited &,
   .msg--opened &,
   .msg--detailed & {
     border-top: 1px solid @--color--grey;
@@ -69,16 +68,6 @@
   .msg--pinned & {
     & .icon--pin {
       color: @--color--orange;
-    }
-  }
-
-  .msg--edited & {
-    .msg-line__insight,
-    .icon--pin,
-    .icon--more,
-    .icon--draft,
-    .icon--open-in-split {
-      visibility: hidden;
     }
   }
 }
@@ -321,13 +310,4 @@
   padding-top: 0.2em;
   padding-bottom: 1em;
   border-top: 1px solid @--color--light-grey;
-}
-
-.msg__editor {
-  display: none;
-  margin-top: -1em;
-
-  .msg--edited & {
-    display: block;
-  }
 }
