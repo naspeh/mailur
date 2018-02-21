@@ -14,7 +14,7 @@ Vue.component('editor', {
     save: function(e) {
       let input = e.target;
       let data = new FormData();
-      data.append('uid', this.msg.origin_uid);
+      data.append('uid', this.msg.uid);
       for (let i of ['from', 'to', 'subject', 'txt']) {
         data.append(i, this.$refs[i].value);
       }

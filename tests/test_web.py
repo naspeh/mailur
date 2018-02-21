@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 
 from mailur import local
 from mailur.message import addresses
@@ -509,23 +510,32 @@ def test_drafts_part1(gm_client, login):
 
     draft = res['msgs']['3']
     assert draft['is_draft']
-    assert draft['query_edit'] == 'draft:1'
+    assert draft['query_edit'] == 'draft:%s' % draft['draft_id']
+    assert draft['url_edit'] == '/editor/%s' % draft['draft_id']
 
-    res = post(q=draft['query_edit'], preload=2)
-    assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
-    assert res['edit'] == {
+    expect = {
         'cc': '',
+        'draft_id': draft['draft_id'],
         'files': [],
+        'flags': '\\Draft',
         'from': '',
+        'in-reply-to': '',
         'origin_uid': '3',
+        'references': '<101@mlr>',
         'subject': 'Subj 103',
         'to': '',
         'txt': '42',
-        'uid': '3'
+        'uid': '3',
     }
+    res = web.get(draft['url_edit']).json
+    assert res == expect
+
+    res = post(q=draft['query_edit'], preload=2)
+    assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
+    assert res['edit'] == expect
 
 
-def test_drafts_part2(gm_client, login, msgs, latest, patch, raises):
+def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     from webtest import Upload
 
     web = login()
@@ -542,7 +552,12 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises):
     ])
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['1', '2']
-    assert latest()['flags'] == '\\Seen \\Draft test #latest'
+    m = latest(parsed=True)
+    assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['meta']['draft_id'] == some
+    draft_id = some.value
+    assert re.match('\<.{8}\>', draft_id)
+    assert m['body_full']['x-draft-id'] == draft_id
 
     web.post('/editor', {
         'uid': '2',
@@ -552,11 +567,17 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises):
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['meta']['draft_id'] == draft_id
+    assert m['body_full']['x-draft-id'] == draft_id
     assert m['meta']['files'] == []
     assert m['body'] == '<p>test it</p>'
     assert m['meta']['subject'] == 'Subj 102'
     assert m['meta']['from']['title'] == 'a@t.com'
     assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']
+
+    res = web.search({'q': 'draft:%s' % draft_id})
+    assert res['edit']
+    assert res['edit']['files'] == []
 
     web.post('/editor', {
         'uid': '3',
@@ -566,6 +587,8 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises):
     assert [i['uid'] for i in msgs()] == ['1', '4']
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['meta']['draft_id'] == draft_id
+    assert m['body_full']['x-draft-id'] == draft_id
     assert m['meta']['files'] == [
         {'filename': 'test.rst', 'path': '2', 'size': 3}
     ]
@@ -573,6 +596,15 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises):
     assert m['meta']['subject'] == 'Subj 102'
     assert m['meta']['from']['title'] == 'a@t.com'
     assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']
+
+    res = web.search({'q': 'draft:%s' % draft_id})
+    assert res['edit']
+    assert res['edit']['files'] == [{
+        'filename': 'test.rst',
+        'path': '2',
+        'size': 3,
+        'url': '/raw/4/2/test.rst'
+    }]
 
     web.post('/editor', {
         'uid': '4',
@@ -586,6 +618,8 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises):
     assert [i['uid'] for i in msgs()] == ['1', '5']
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['meta']['draft_id'] == draft_id
+    assert m['body_full']['x-draft-id'] == draft_id
     assert m['meta']['files'] == [
         {'filename': 'test.rst', 'path': '2', 'size': 3},
         {'filename': 'test2.rst', 'path': '3', 'size': 3},
@@ -788,7 +822,7 @@ def test_query():
     )
     assert parse_query('date:2007-04-01') == ('on 01-Apr-2007 ' + ending, {})
 
-    assert parse_query('draft:1') == (
-        'uid 1 ' + ending,
-        {'draft': '1', 'thread': True}
+    assert parse_query('draft:<12345678>') == (
+        'header x-draft-id <12345678> ' + ending,
+        {'draft': '<12345678>', 'thread': True}
     )

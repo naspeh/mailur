@@ -266,15 +266,27 @@ def msgs_flag():
     local.msgs_flag(**data)
 
 
+@app.get('/editor/<id>', name='editor')
 @app.post('/editor')
-def editor():
+def editor(id=None):
+    if request.method == 'GET':
+        uid = local.search_msgs('HEADER X-Draft-ID %s' % id)
+        if not uid:
+            return abort(404)
+        uid = uid[0]
+        return draft_info(uid)
+
     uid = request.forms['uid']
     files = request.files.getall('files')
 
-    origin_uid = local.pair_parsed_uids(uid)[0]
-    orig = local.raw_msg(origin_uid, local.SRC, parsed=True)
-    msg = message.new_draft(orig, request.forms, files and True)
-
+    draft = draft_info(uid)
+    parts = []
+    if draft['files']:
+        orig = local.raw_msg(draft['origin_uid'], local.SRC, parsed=True)
+        parts = orig.get_payload()[1:]
+    msg = message.new_draft(draft, request.forms, files or parts and True)
+    for p in parts:
+        msg.attach(p)
     for f in files:
         maintype, subtype = f.content_type.split('/')
         msg.add_attachment(
@@ -282,9 +294,8 @@ def editor():
             maintype=maintype, subtype=subtype
         )
 
-    flags = local.msg_flags(uid)
-    local.new_msg(msg, flags)
-    local.del_msg(uid)
+    local.new_msg(msg, draft['flags'])
+    local.del_msg(draft['origin_uid'])
 
 
 @app.get('/raw/<uid:int>', name='raw')
@@ -444,7 +455,7 @@ def parse_query(q):
         elif info.get('draft_edit'):
             opts['draft'] = info['draft_val']
             opts['thread'] = True
-            q = 'uid %s' % info['draft_val']
+            q = 'header x-draft-id %s' % info['draft_val']
         elif info.get('tag'):
             opts.setdefault('tags', [])
             opts['tags'].append(info['tag_id'])
@@ -490,7 +501,7 @@ def parse_query(q):
         '|(?P<seen>:(read|seen))'
         '|(?P<flagged>:(pin(ned)?|flagged))'
         '|(?P<unflagged>:(unpin(ned)?|unflagged))'
-        '|(?P<draft_edit>draft:(?P<draft_val>\d+))'
+        '|(?P<draft_edit>draft:(?P<draft_val>\<.{8}\>))'
         ')( |$)',
         replace, q
     )
@@ -518,9 +529,10 @@ def thread(q, opts, preload=4):
     if not uids:
         return {}
 
-    msgs = wrap_msgs(local.msgs_info(uids))
+    tags = opts.get('tags', [])
+    msgs = wrap_msgs(local.msgs_info(uids), tags)
 
-    tags = set()
+    tags = set(tags)
     for m in msgs.values():
         tags.update(m.pop('tags'))
         m['tags'] = []
@@ -537,12 +549,15 @@ def thread(q, opts, preload=4):
     edit = None
     parents = []
     for i, m in msgs.items():
-        if m['is_draft'] and m['parent']:
-            uids.remove(m['uid'])
-            uids.insert(uids.index(m['parent']) + 1, m['uid'])
-            parents.append(m['parent'])
-            if m['parent'] == opts.get('draft'):
-                edit = format_draft(m)
+        if not m['is_draft']:
+            continue
+        if m['draft_id'] == opts.get('draft'):
+            edit = draft_info(m['uid'])
+        if not m['parent'] or m['parent'] not in uids:
+            continue
+        uids.remove(m['uid'])
+        uids.insert(uids.index(m['parent']) + 1, m['uid'])
+        parents.append(m['parent'])
 
     if preload is not None and len(uids) > preload * 2:
         msgs_few = {
@@ -629,9 +644,9 @@ def wrap_msgs(items, hide_tags=None):
         if info.get('from'):
             info['from'] = wrap_addresses([info['from']])[0]
         base_q = ''
-        if '#trash' in flags:
+        if '#trash' in hide_tags:
             base_q = 'tag:#trash '
-        elif '#spam' in flags:
+        elif '#spam' in hide_tags:
             base_q = 'tag:#spam '
         info.update({
             'uid': uid,
@@ -650,7 +665,8 @@ def wrap_msgs(items, hide_tags=None):
             'is_draft': '\\Draft' in flags,
         })
         if info['is_draft'] and info['parent']:
-            info['query_edit'] = 'draft:{0}'.format(info['parent'])
+            info['query_edit'] = base_q + 'draft:%s' % info['draft_id']
+            info['url_edit'] = app.get_url('editor', id=info['draft_id'])
 
         info['files'] = wrap_files(info['files'], info['url_raw'])
         msgs[uid] = info
@@ -751,13 +767,21 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
     return [(i[0], base64.b64encode(i[1]) if b64 else i[1]) for i in res if i]
 
 
-def format_draft(msg):
-    draft = local.raw_msg(msg['origin_uid'], local.SRC, parsed=True)
-    txt, headers, _ = message.parse_draft(draft)
-    return dict(
-        headers,
-        txt=txt,
-        files=msg['files'],
-        uid=msg['uid'],
-        origin_uid=msg['origin_uid']
-    )
+def draft_info(uid):
+    flags, headers, meta, txt = local.draft_info(uid)
+    info = {
+        i: headers.get(i, '')
+        for i in ('from', 'to', 'cc', 'subject', 'in-reply-to', 'references')
+    }
+    info.update({
+        'uid': uid,
+        'txt': txt,
+        'flags': flags,
+        'draft_id': meta['draft_id'],
+        'origin_uid': meta['origin_uid'],
+        'files': [],
+    })
+    if meta['files']:
+        url = app.get_url('raw', uid=info['origin_uid'])
+        info['files'] = wrap_files(meta['files'], url)
+    return info

@@ -191,7 +191,7 @@ def parse_msgs(uids, con=None):
             flags = flags.split()
             if flags.count('\\Recent'):
                 flags.remove('\\Recent')
-            msg_obj, marks = message.parsed(m[1], uid, time, mids)
+            msg_obj, marks = message.parsed(m[1], uid, time, flags, mids)
             flags += marks
             msg = msg_obj.as_bytes()
             yield time, ' '.join(flags), msg
@@ -344,7 +344,7 @@ def link_threads(uids, con=None):
 @using(None)
 def raw_msg(uid, box, parsed=False, con=None):
     con.select(box)
-    res = con.fetch(uid, 'BODY[]')
+    res = con.fetch(uid, 'BODY.PEEK[]')
     body = res[0][1] if res else None
     if body and parsed:
         body = email.message_from_bytes(body)
@@ -355,11 +355,24 @@ def raw_msg(uid, box, parsed=False, con=None):
 @using(None)
 def raw_part(uid, box, part, con=None):
     con.select(box)
-    res = con.fetch(uid, '(BINARY[{0}] BINARY[{0}.mime])'.format(part))
+    fields = '(BINARY.PEEk[{0}] BINARY.PEEK[{0}.mime])'.format(part)
+    res = con.fetch(uid, fields)
     body = res[0][1]
     mime = res[1][1]
     content_type = email.message_from_bytes(mime).get_content_type()
     return body, content_type
+
+
+@fn_time
+@using()
+def draft_info(uid, con=None):
+    fields = '(FLAGS BINARY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[3])'
+    res = con.fetch(uid, fields)
+    flags = re.search(r'FLAGS \(([^)]*)\)', res[0][0].decode()).group(1)
+    headers = email.message_from_bytes(res[0][1])
+    meta = json.loads(res[1][1].decode())
+    txt = res[2][1].decode()
+    return flags, headers, meta, txt
 
 
 @fn_time

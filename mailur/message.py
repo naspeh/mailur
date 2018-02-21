@@ -71,7 +71,7 @@ def link(msgids):
     return msg
 
 
-def parsed(raw, uid, time, mids):
+def parsed(raw, uid, time, flags, mids):
     def error(e, label):
         return 'error on %r: [%s] %s' % (label, e.__class__.__name__, e)
 
@@ -293,10 +293,19 @@ def parsed(raw, uid, time, mids):
     elif refs:
         msg.add_header('References', ' '.join(refs))
 
+    txt = None
+    if '\\Draft' in flags:
+        draft_id = orig['X-Draft-ID'] or gen_draftid()
+        msg.add_header('X-Draft-ID', draft_id)
+        meta['draft_id'] = draft_id
+        txt = parse_draft(orig)[0]
+
     msg.make_mixed()
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
     msg.attach(binary(meta_txt, 'application/json'))
     msg.attach(binary(htm))
+    if txt:
+        msg.attach(binary(txt))
 
     flags = []
     if meta['errors']:
@@ -331,36 +340,35 @@ def parse_draft(msg):
     return txt, headers, parts
 
 
-def new_draft(orig, override, mixed=False):
-    txt, _, parts = parse_draft(orig)
-    if 'txt' in override:
-        txt = override['txt']
-
+def new_draft(draft, override, mixed=False):
     msg = new()
+    txt = override.get('txt', draft['txt'])
     txt = binary(txt)
-    if mixed or parts:
+    if mixed:
         msg.make_mixed()
         msg.attach(txt)
     else:
         msg = txt
 
+    msg.add_header('X-Draft-ID', draft['draft_id'])
     msg.add_header('Message-ID', gen_msgid('draft'))
     msg.add_header('Date', formatdate())
     headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
     for h in headers:
         val = override.get(h.lower())
-        if not val and h in orig:
-            val = orig[h]
+        if not val and h.lower() in draft:
+            val = draft[h.lower()]
         if val:
             msg.add_header(h, val)
-
-    for p in parts:
-        msg.attach(p)
     return msg
 
 
 def gen_msgid(label):
     return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
+
+
+def gen_draftid():
+    return '<%s>' % uuid.uuid4().hex[:8]
 
 
 def address_name(a):
