@@ -331,6 +331,34 @@ def parse_draft(msg):
     return txt, headers, parts
 
 
+def new_draft(orig, override, mixed=False):
+    txt, _, parts = parse_draft(orig)
+    if 'txt' in override:
+        txt = override['txt']
+
+    msg = new()
+    txt = binary(txt)
+    if mixed or parts:
+        msg.make_mixed()
+        msg.attach(txt)
+    else:
+        msg = txt
+
+    msg.add_header('Message-ID', gen_msgid('draft'))
+    msg.add_header('Date', formatdate())
+    headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
+    for h in headers:
+        val = override.get(h.lower())
+        if not val and h in orig:
+            val = orig[h]
+        if val:
+            msg.add_header(h, val)
+
+    for p in parts:
+        msg.attach(p)
+    return msg
+
+
 def gen_msgid(label):
     return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
 

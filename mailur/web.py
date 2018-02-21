@@ -268,39 +268,22 @@ def msgs_flag():
 @app.post('/editor')
 def editor():
     uid = request.forms['uid']
-    orig = local.raw_msg(uid, local.SRC, parsed=True)
-    txt, _, parts = message.parse_draft(orig)
-    txt = request.forms.get('txt', txt)
     files = request.files.getall('files')
 
-    msg = message.new()
-    txt = message.binary(txt)
-    if parts or files:
-        msg.make_mixed()
-        msg.attach(txt)
-        for p in parts:
-            msg.attach(p)
-        for f in files:
-            maintype, subtype = f.content_type.split('/')
-            msg.add_attachment(
-                f.file.read(), filename=f.filename,
-                maintype=maintype, subtype=subtype
-            )
-    else:
-        msg = txt
+    origin_uid = local.pair_parsed_uids(uid)[0]
+    orig = local.raw_msg(origin_uid, local.SRC, parsed=True)
+    msg = message.new_draft(orig, request.forms, files and True)
 
-    msg.add_header('Message-ID', message.gen_msgid('draft'))
-    msg.add_header('Date', message.formatdate())
-    headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
-    for h in headers:
-        val = request.forms.get(h.lower())
-        if not val and h in orig:
-            val = orig[h]
-        if val:
-            msg.add_header(h, val)
+    for f in files:
+        maintype, subtype = f.content_type.split('/')
+        msg.add_attachment(
+            f.file.read(), filename=f.filename,
+            maintype=maintype, subtype=subtype
+        )
 
+    flags = local.msg_flags(uid)
+    local.new_msg(msg, flags)
     local.del_msg(uid)
-    local.new_msg(msg, '\\Draft \\Seen')
 
 
 @app.get('/raw/<uid:int>', name='raw')
@@ -560,15 +543,7 @@ def thread(q, opts, preload=4):
             uids.insert(uids.index(m['parent']) + 1, m['uid'])
             parents.append(m['parent'])
             if m['parent'] == opts.get('draft'):
-                draft = local.raw_msg(m['origin_uid'], local.SRC, parsed=True)
-                txt, headers, _ = message.parse_draft(draft)
-                edit = dict(
-                    headers,
-                    txt=txt,
-                    files=m['files'],
-                    uid=m['uid'],
-                    origin_uid=m['origin_uid']
-                )
+                edit = format_draft(m)
 
     if preload is not None and len(uids) > preload * 2:
         msgs_few = {
@@ -767,3 +742,15 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
     pool = Pool(20)
     res = pool.map(_avatar, hashes)
     return [(i[0], base64.b64encode(i[1]) if b64 else i[1]) for i in res if i]
+
+
+def format_draft(msg):
+    draft = local.raw_msg(msg['origin_uid'], local.SRC, parsed=True)
+    txt, headers, _ = message.parse_draft(draft)
+    return dict(
+        headers,
+        txt=txt,
+        files=msg['files'],
+        uid=msg['uid'],
+        origin_uid=msg['origin_uid']
+    )

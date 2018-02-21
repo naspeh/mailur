@@ -345,10 +345,10 @@ def link_threads(uids, con=None):
 def raw_msg(uid, box, parsed=False, con=None):
     con.select(box)
     res = con.fetch(uid, 'BODY[]')
-    res = res[0][1] if res else None
-    if res and parsed:
-        res = email.message_from_bytes(res)
-    return res
+    body = res[0][1] if res else None
+    if body and parsed:
+        body = email.message_from_bytes(body)
+    return body
 
 
 @fn_time
@@ -393,6 +393,15 @@ def msgs_body(uids, con=None):
     for i in range(0, len(res), 2):
         uid = res[i][0].decode().split()[2]
         yield uid, res[i][1].decode()
+
+
+@fn_time
+@using(None)
+def msg_flags(uid, box=ALL, con=None):
+    con.select(box)
+    res = con.fetch(uid, 'FLAGS')
+    flags = re.search(r'FLAGS \(([^)]*)\)', res[0].decode()).group(1)
+    return flags
 
 
 @fn_time

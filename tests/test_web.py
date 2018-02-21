@@ -490,7 +490,7 @@ def test_drafts_part1(gm_client, login):
     }
 
 
-def test_drafts_part2(gm_client, login, msgs, latest):
+def test_drafts_part2(gm_client, login, msgs, latest, patch, raises):
     from webtest import Upload
 
     web = login()
@@ -501,11 +501,13 @@ def test_drafts_part2(gm_client, login, msgs, latest):
             'refs': '<101@mlr>',
             'from': 'a@t.com',
             'to': 'b@t.com',
-            'flags': '\\Draft'
+            'flags': '\\Draft \\Seen',
+            'labels': 'test'
         }
     ])
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['1', '2']
+    assert latest()['flags'] == '\\Seen \\Draft test #latest'
 
     web.post('/editor', {
         'uid': '2',
@@ -514,6 +516,7 @@ def test_drafts_part2(gm_client, login, msgs, latest):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
+    assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == []
     assert m['body'] == '<p>test it</p>'
     assert m['meta']['subject'] == 'Subj 102'
@@ -527,6 +530,7 @@ def test_drafts_part2(gm_client, login, msgs, latest):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
     assert [i['uid'] for i in msgs()] == ['1', '4']
     m = latest(parsed=1)
+    assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == [
         {'filename': 'test.rst', 'path': '2', 'size': 3}
     ]
@@ -546,7 +550,7 @@ def test_drafts_part2(gm_client, login, msgs, latest):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
     assert [i['uid'] for i in msgs()] == ['1', '5']
     m = latest(parsed=1)
-    assert m['flags'] == '\\Seen \\Draft #latest'
+    assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == [
         {'filename': 'test.rst', 'path': '2', 'size': 3},
         {'filename': 'test2.rst', 'path': '3', 'size': 3},
@@ -555,6 +559,16 @@ def test_drafts_part2(gm_client, login, msgs, latest):
     assert m['meta']['subject'] == 'Subj new'
     assert m['meta']['from']['title'] == 'Alpha <a@t.com>'
     assert [i['addr'] for i in m['meta']['to']] == ['b@t.com', 'c@t.com']
+
+    with patch('mailur.local.new_msg') as m:
+        m.side_effect = ValueError
+        with raises(ValueError):
+            web.post('/editor', {
+                'uid': '5',
+                'txt': 'test it',
+            })
+    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
+    assert [i['uid'] for i in msgs()] == ['1', '5']
 
 
 def test_from_list(some):
