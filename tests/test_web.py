@@ -365,7 +365,7 @@ def test_msgs_flag(gm_client, login, msgs):
 def test_search_thread(gm_client, login, some):
     def post(uid, preload=4):
         data = {'q': 'thread:%s' % uid, 'preload': preload}
-        return web.post_json('/search', data, status=200).json
+        return web.search(data)
 
     web = login()
     assert post('1') == {}
@@ -438,6 +438,41 @@ def test_search_thread(gm_client, login, some):
     assert [res.json[uid]['tags'] for uid in sorted(res.json)] == [
         [], [], [], [], [], []
     ]
+
+    res = web.post_json('/msgs/flag', {
+        'uids': ['2'], 'new': ['#trash']
+    }, status=200)
+    q_thread = 'tag:#trash thread:2'
+    res = web.search({'q': 'tag:#trash'})
+    assert sorted(res['msgs']) == ['2']
+    assert res['tags'] == ['#trash']
+    m = res['msgs']['2']
+    assert m['query_thread'] == q_thread
+
+    res = web.search({'q': ':threads tag:#trash'})
+    assert sorted(res['msgs']) == ['6']
+    assert res['tags'] == ['#trash']
+    m = res['msgs']['6']
+    assert m['query_thread'] == 'tag:#trash thread:6'
+    assert m['count'] == 1
+
+    res = web.search({'q': q_thread})
+    assert sorted(res['msgs']) == ['2']
+    assert res['tags'] == ['#inbox', '#trash', 'test2']
+    m = res['msgs']['2']
+    assert m['query_thread'] == q_thread
+    assert m['tags'] == []
+
+    res = web.search({'q': ':threads'})
+    assert sorted(res['msgs']) == ['6']
+    m = res['msgs']['6']
+    assert m['query_thread'] == 'thread:6'
+    assert m['tags'] == ['#inbox', 'test1']
+    assert m['count'] == 5
+
+    res = post('1', preload=None)
+    assert sorted(res['msgs']) == ['1', '3', '4', '5', '6']
+    assert res['tags'] == ['#inbox', 'test1']
 
 
 def test_drafts_part1(gm_client, login):
@@ -658,15 +693,18 @@ def test_from_list(some):
 
 
 def test_query():
-    ending = 'unkeyword #trash unkeyword #spam'
+    ending = 'unkeyword #link unkeyword #trash unkeyword #spam'
     assert parse_query('') == (ending, {})
     assert parse_query('test') == ('text "test" ' + ending, {})
     assert parse_query('test1 test2') == ('text "test1 test2" ' + ending, {})
 
-    assert parse_query('thread:1') == ('uid 1', {'thread': True})
-    assert parse_query('thr:1') == ('uid 1', {'thread': True})
-    assert parse_query('thr:1 test') == ('uid 1 text "test"', {'thread': True})
-    assert parse_query('THR:1') == ('uid 1', {'thread': True})
+    assert parse_query('thread:1') == ('uid 1 ' + ending, {'thread': True})
+    assert parse_query('thr:1') == ('uid 1 ' + ending, {'thread': True})
+    assert parse_query('THR:1') == ('uid 1 ' + ending, {'thread': True})
+    assert parse_query('thr:1 test') == (
+        'uid 1 text "test" ' + ending,
+        {'thread': True}
+    )
 
     assert parse_query('in:#inbox') == (
         'keyword #inbox ' + ending,
@@ -682,11 +720,11 @@ def test_query():
     )
 
     assert parse_query('tag:#trash') == (
-        'keyword #trash',
+        'keyword #trash unkeyword #link',
         {'tags': ['#trash']}
     )
     assert parse_query('tag:#spam') == (
-        'keyword #spam unkeyword #trash',
+        'keyword #spam unkeyword #link unkeyword #trash',
         {'tags': ['#spam']}
     )
 
@@ -750,4 +788,7 @@ def test_query():
     )
     assert parse_query('date:2007-04-01') == ('on 01-Apr-2007 ' + ending, {})
 
-    assert parse_query('draft:1') == ('uid 1', {'draft': '1', 'thread': True})
+    assert parse_query('draft:1') == (
+        'uid 1 ' + ending,
+        {'draft': '1', 'thread': True}
+    )

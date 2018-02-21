@@ -250,6 +250,10 @@ def web():
 
     app.catchall = False
 
+    class Wrapper(TestApp):
+        def search(self, data, status=200):
+            return self.post_json('/search', data, status=status).json
+
     if not assets.exists():
         assets.mkdir()
         for i in themes():
@@ -257,7 +261,7 @@ def web():
             (assets / filename).write_text('')
         for filename in ('login.js', 'index.js'):
             (assets / filename).write_text('')
-    return TestApp(app)
+    return Wrapper(app)
 
 
 @pytest.fixture

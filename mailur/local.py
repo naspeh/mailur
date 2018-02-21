@@ -365,7 +365,7 @@ def raw_part(uid, box, part, con=None):
 @fn_time
 @using()
 def search_msgs(query, sort='(REVERSE DATE)', con=None):
-    res = con.sort(sort, 'UNKEYWORD #link %s' % query)
+    res = con.sort(sort, query)
     uids = res[0].decode().split()
     log.debug('## query: %r; messages: %s', query, len(uids))
     return uids
@@ -373,7 +373,7 @@ def search_msgs(query, sort='(REVERSE DATE)', con=None):
 
 @fn_time
 @using()
-def msgs_info(uids, hide_flags=None, con=None):
+def msgs_info(uids, con=None):
     res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
         uid, flags = (
@@ -381,8 +381,6 @@ def msgs_info(uids, hide_flags=None, con=None):
             .groups()
         )
         flags = flags.split()
-        if hide_flags:
-            flags = sorted(set(flags) - set(hide_flags))
         yield uid, res[i][1], flags, None
 
 
@@ -416,8 +414,17 @@ def search_thrs(query, con=None):
 
 @fn_time
 @using()
-def thrs_info(uids, hide_flags=None, con=None):
-    thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
+def thrs_info(uids, tags=None, con=None):
+    special_tag = None
+    if not tags:
+        pass
+    elif '#trash' in tags:
+        special_tag = '#trash'
+    elif '#spam' in tags:
+        special_tag = '#spam'
+
+    q = 'REFS UTF-8 INTHREAD REFS UID %s UNKEYWORD #link' % ','.join(uids)
+    thrs = con.thread(q)
     all_flags = {}
     all_msgs = {}
     res = con.fetch(thrs.all_uids, '(FLAGS BINARY.PEEK[1])')
@@ -426,8 +433,6 @@ def thrs_info(uids, hide_flags=None, con=None):
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
         ).groups()
         flags = flags.split()
-        if '#link' in flags:
-            continue
         all_flags[uid] = flags
         all_msgs[uid] = json.loads(res[i][1])
 
@@ -439,27 +444,27 @@ def thrs_info(uids, hide_flags=None, con=None):
         for uid in thr:
             if uid not in all_msgs:
                 continue
+            msg_flags = all_flags[uid]
+            if '#latest' in msg_flags:
+                thrid = uid
+            if not special_tag and {'#trash', '#spam'}.intersection(msg_flags):
+                continue
+            elif special_tag and special_tag not in msg_flags:
+                continue
             info = all_msgs[uid]
             info['uids'] = thr
-            msg_flags = all_flags[uid]
             thr_from.append((info['date'], info.get('from')))
             if not msg_flags:
                 continue
             if '\\Seen' not in msg_flags:
                 unseen = True
             thr_flags.extend(msg_flags)
-            if '#latest' in msg_flags:
-                thrid = uid
         if thrid is None:
             raise ValueError('No #latest for %s' % thr)
 
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
-        if hide_flags:
-            hide_flags = set(i.lower() for i in hide_flags)
-            flags = set(i for i in flags if i.lower() not in hide_flags)
-            flags = sorted(flags)
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
         yield thrid, all_msgs[thrid], flags, addrs
 

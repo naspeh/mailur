@@ -180,17 +180,18 @@ def search():
 
     if opts.get('threads'):
         uids = local.search_thrs(q)
-        info = 'thrs_info'
+        info = ft.partial(local.thrs_info, tags=opts.get('tags'))
+        info_url = app.get_url('thrs_info')
     else:
         uids = local.search_msgs(q)
-        info = 'msgs_info'
+        info = local.msgs_info
+        info_url = app.get_url('msgs_info')
 
     msgs = {}
     preload = preload or 200
     tags = opts.get('tags', [])
     if preload and uids:
-        msgs = getattr(local, info)
-        msgs = wrap_msgs(msgs(uids[:preload], tags))
+        msgs = wrap_msgs(info(uids[:preload]), tags)
 
     extra = {
         'threads': opts.get('threads', False),
@@ -199,7 +200,7 @@ def search():
     return dict({
         'uids': uids,
         'msgs': msgs,
-        'msgs_info': app.get_url(info)
+        'msgs_info': info_url
     }, **{k: v for k, v in extra.items() if v})
 
 
@@ -210,7 +211,7 @@ def thrs_info():
     hide_tags = request.json.get('hide_tags', [])
     if not uids:
         return abort(400)
-    return wrap_msgs(local.thrs_info(uids, hide_tags))
+    return wrap_msgs(local.thrs_info(uids, hide_tags), hide_tags)
 
 
 @app.post('/msgs/info', name='msgs_info')
@@ -220,7 +221,7 @@ def msgs_info():
     hide_tags = request.json.get('hide_tags', [])
     if not uids:
         return abort(400)
-    return wrap_msgs(local.msgs_info(uids, hide_tags))
+    return wrap_msgs(local.msgs_info(uids), hide_tags)
 
 
 @app.post('/msgs/body', name='msgs_body')
@@ -498,13 +499,11 @@ def parse_query(q):
         q = 'text %s' % json.dumps(q, ensure_ascii=False)
         parts.append(q)
 
+    parts.append('unkeyword #link')
     tags = opts.get('tags', [])
-    thread = opts.get('thread', False)
-    if thread:
-        pass
-    if not thread and '#trash' not in tags:
+    if '#trash' not in tags:
         parts.append('unkeyword #trash')
-    if not thread and '#spam' not in tags and '#trash' not in tags:
+    if '#spam' not in tags and '#trash' not in tags:
         parts.append('unkeyword #spam')
 
     if parts:
@@ -602,13 +601,15 @@ def wrap_tags(tags, whitelist=None):
     return {'ids': ids, 'info': info}
 
 
-def clean_tags(tags, whitelist=None):
+def clean_tags(tags, whitelist=None, blacklist=None):
     whitelist = whitelist or []
-    ignore = re.compile(r'(^\\|#sent|#latest|#link)')
+    blacklist = '|'.join(re.escape(i) for i in blacklist) if blacklist else ''
+    blacklist = blacklist and '|%s' % blacklist
+    ignore = re.compile(r'(^\\|#sent|#latest|#link%s)' % blacklist)
     return sorted(i for i in tags if i in whitelist or not ignore.match(i))
 
 
-def wrap_msgs(items):
+def wrap_msgs(items, hide_tags=None):
     def query_header(name, value):
         value = json.dumps(value, ensure_ascii=False)
         return ':threads %s:%s' % (name, value)
@@ -627,15 +628,20 @@ def wrap_msgs(items):
             addrs = [info['from']] if 'from' in info else []
         if info.get('from'):
             info['from'] = wrap_addresses([info['from']])[0]
+        base_q = ''
+        if '#trash' in flags:
+            base_q = 'tag:#trash '
+        elif '#spam' in flags:
+            base_q = 'tag:#spam '
         info.update({
             'uid': uid,
             'parent': info['parent'] and local.pair_msgid(info['parent']),
             'count': len(addrs),
-            'tags': clean_tags(flags),
+            'tags': clean_tags(flags, blacklist=hide_tags),
             'from_list': wrap_addresses(addrs, max=3),
-            'query_thread': 'thread:%s' % uid,
-            'query_subject': query_header('subj', info['subject']),
-            'query_msgid': 'ref:%s' % info['msgid'],
+            'query_thread': base_q + 'thread:%s' % uid,
+            'query_subject': base_q + query_header('subj', info['subject']),
+            'query_msgid': base_q + 'ref:%s' % info['msgid'],
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
             'time_human': humanize_dt(info['date'], tz=tz),
             'time_title': format_dt(info['date'], tz=tz),
@@ -645,6 +651,7 @@ def wrap_msgs(items):
         })
         if info['is_draft'] and info['parent']:
             info['query_edit'] = 'draft:{0}'.format(info['parent'])
+
         info['files'] = wrap_files(info['files'], info['url_raw'])
         msgs[uid] = info
     return msgs
