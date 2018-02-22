@@ -146,8 +146,8 @@ def test_general(gm_client, load_file, latest, load_email):
     l1 = link.format('https://github.com/naspeh/mailur')
     # l2 = link.format('http://bottlepy.org/docs/dev/routing.html#rule-syntax')
     l2 = link.format('http://bottlepy.org/docs/dev/routing.html')
-    assert m['body'].count(l1) == 3
-    assert m['body'].count(l2) == 2
+    assert m['body'].count(l1) == 3, '%s\n%s' % (l1, m['body'])
+    assert m['body'].count(l2) == 2, '%s\n%s' % (l2, m['body'])
 
 
 def test_richer(gm_client, latest):
@@ -230,7 +230,7 @@ def test_encodings(gm_client, load_email):
     assert m['body'] == '<p>Здравствуйте.<br></p>'
 
     m = load_email('msg-encoding-cp1251-chardet.txt', parsed=True)
-    assert 'Уважаемый Гриша  !' in m['body']
+    assert 'Уважаемый Гриша\xa0\xa0!' in m['body']
     # subject shoud be decoded properly using charset detected in body
     assert m['meta']['subject'] == 'Оплатите, пожалуйста, счет'
 
@@ -283,6 +283,31 @@ def test_parts(gm_client, latest, load_email):
     assert not m['meta']['files']
     assert m['meta']['preview'] == ''
     assert m['body'] == ''
+
+    raw = '<?xml version="1.0" encoding="UTF-8"?>'
+    gm_client.add_emails([{'raw': binary(raw, 'text/html').as_bytes()}])
+    m = latest(parsed=True)
+    assert m['meta']['preview'] == ''
+    assert m['body'] == ''
+
+    gm_client.add_emails([{'raw': binary(' a  b\n   c d').as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == ' a b c d'
+    assert m['body'] == '<p>\xa0a\xa0\xa0b<br>\xa0\xa0\xa0c d</p>'
+
+    raw = (
+        '<p>'
+        '<img data-style="test" />'
+        '<img data-src="test" />'
+        '<img data-style="color:blue" style="color:red" />'
+        '<img src="test" />'
+        '</p>'
+    )
+    gm_client.add_emails([{'raw': binary(raw, 'text/html').as_bytes()}])
+    m = latest(parsed=True)
+    assert m['meta']['preview'] == ''
+    assert m['body'] == '<p><img><img><img data-style="color:red"><img></p>'
 
     msg = binary('', 'application/json')
     msg.add_header('Content-Disposition', 'attachment; filename="1/f/ /.json"')

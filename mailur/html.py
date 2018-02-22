@@ -24,10 +24,6 @@ def clean(htm, embeds):
 
     ext_images = 0
     for img in htm.xpath('//img[@src]'):
-        # clean data-src attribute if exists
-        if img.attrib.get('data-src'):
-            del img.attrib['data-src']
-
         src = img.attrib.get('src')
         cid = re.match('^cid:(.*)', src)
         url = cid and embeds.get('<%s>' % cid.group(1))
@@ -45,9 +41,6 @@ def clean(htm, embeds):
 
     styles = False
     for el in htm.xpath('//*[@style]'):
-        # clean data-src attribute if exists
-        if el.attrib.get('data-style'):
-            del el.attrib['data-style']
         el.attrib['data-style'] = el.attrib['style']
         del el.attrib['style']
         styles = True
@@ -79,11 +72,14 @@ def from_text(txt):
         else:
             return '&nbsp;' * txt.count(' ')
 
+    tpl = '<p>%s</p>'
     htm = escape(txt)
-    htm = re.sub('(?m)((\r?\n)*|^[ ]*)', replace, htm)
-    htm = fromstring(htm)
+    htm = fromstring(tpl % htm)
     fix_links(htm)
     htm = tostring(htm, encoding='utf-8').decode()
+    htm = htm[3:-4]
+    htm = re.sub('(?m)((\r?\n)+| [ ]+|^ )', replace, htm)
+    htm = tpl % htm
     return htm
 
 
