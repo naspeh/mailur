@@ -211,6 +211,7 @@ def test_general(gm_client, load_email, login, some):
                 'time_title': some,
                 'uid': '1',
                 'url_raw': '/raw/1',
+                'url_reply': '/reply/1',
             },
             '2': {
                 'arrived': 1499504910,
@@ -235,6 +236,7 @@ def test_general(gm_client, load_email, login, some):
                 'time_title': some,
                 'uid': '2',
                 'url_raw': '/raw/2',
+                'url_reply': '/reply/2',
             }
         },
         'msgs_info': '/msgs/info',
@@ -273,6 +275,7 @@ def test_general(gm_client, load_email, login, some):
                 'uid': '2',
                 'uids': ['1', '2'],
                 'url_raw': '/raw/2',
+                'url_reply': '/reply/2',
             }
         },
         'msgs_info': '/thrs/info',
@@ -462,6 +465,37 @@ def test_search_thread(gm_client, login, some):
     res = post('1', preload=None)
     assert sorted(res['msgs']) == ['1', '3', '4', '5', '6']
     assert res['tags'] == ['#inbox', 'test1']
+
+
+def test_drafts_part0(gm_client, login):
+    web = login()
+    gm_client.add_emails([
+        {'from': '"From" from@t.com', 'to': 'to1@t.com, to2@t.com'}
+    ])
+    res = web.search({'q': 'thread:1'})
+    assert res['uids'] == ['1']
+    url_reply = res['msgs']['1']['url_reply']
+    assert url_reply == '/reply/1'
+    res = web.get(url_reply, status=200).json
+    query_edit = res['query_edit']
+    assert re.match(r'draft:\<[^>]{8}\>', query_edit)
+
+    res = web.search({'q': 'thread:1'})
+    assert res['uids'] == ['1', '2']
+    draft = res['msgs']['2']
+    assert 'url_reply' not in draft
+    assert draft['is_draft']
+    assert not draft['is_unread']
+    assert draft['parent'] == '1'
+    assert draft['query_edit'] == query_edit
+
+    res = web.search({'q': query_edit})
+    assert res['uids'] == ['1', '2']
+    draft = res['edit']
+    assert draft['txt'] == ''
+    assert draft['subject'] == 'Re: Subj 101'
+    assert draft['from'] == 'to1@t.com'
+    assert draft['to'] == '"From" from@t.com'
 
 
 def test_drafts_part1(gm_client, login):

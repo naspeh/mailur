@@ -12,6 +12,12 @@
       :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"
     ></div>
     <div
+      v-if="!thread && !msg.is_draft"
+      class="icon--reply"
+      @click="reply(msg)"
+      title="Reply"
+    ></div>
+    <div
       v-if="msg.is_draft"
       class="icon--draft"
       @click="query(msg.query_edit)"
@@ -68,7 +74,7 @@
     <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
     <a href="#" @click.prevent="archive(msg)" class="icon--archive" title="Archive">Archive</a>
     <a href="#" @click.prevent="del(msg)" class="icon--trash" title="Move to Trash">Delete</a>
-    <!-- <a href="#" class="icon--reply" title="Reply">Reply</a> -->
+    <a v-if="!thread && !msg.is_draft" href="#" @click.prevent="reply(msg)" class="icon--reply" title="Reply">Reply</a>
     <!-- <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a> -->
     <!-- <a href="#" class="icon--forward" title="Forward">Forward</a> -->
     <!-- <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a> -->

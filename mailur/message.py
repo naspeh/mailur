@@ -342,7 +342,7 @@ def parse_draft(msg):
 
 def new_draft(draft, override, mixed=False):
     msg = new()
-    txt = override.get('txt', draft['txt'])
+    txt = override.get('txt', draft.get('txt', ''))
     txt = binary(txt)
     if mixed:
         msg.make_mixed()

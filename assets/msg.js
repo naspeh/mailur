@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import { call } from './utils.js';
 import { Slider } from './slider.js';
 import tpl from './msg.html';
 
@@ -53,6 +54,9 @@ Vue.component('msg', {
       let data = {};
       data[msg.is_pinned ? 'old' : 'new'] = ['\\Flagged'];
       return this.editTags(data, [msg.uid]);
+    },
+    reply: function(msg) {
+      call('get', msg.url_reply).then(res => this.query(res.query_edit));
     },
     makeRicher: function() {
       for (let i of this.$el.querySelectorAll('img[data-src]')) {

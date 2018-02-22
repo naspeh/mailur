@@ -365,8 +365,11 @@ def raw_part(uid, box, part, con=None):
 
 @fn_time
 @using()
-def draft_info(uid, con=None):
-    fields = '(FLAGS BINARY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[3])'
+def fetch_msg(uid, draft=False, con=None):
+    fields = (
+        '(FLAGS BINARY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[%s])'
+        % (3 if draft else 2)
+    )
     res = con.fetch(uid, fields)
     flags = re.search(r'FLAGS \(([^)]*)\)', res[0][0].decode()).group(1)
     headers = email.message_from_bytes(res[0][1])

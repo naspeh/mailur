@@ -272,7 +272,7 @@ def editor(id=None):
     if request.method == 'GET':
         uid = local.search_msgs('HEADER X-Draft-ID %s' % id)
         if not uid:
-            return abort(404)
+            return abort(400)
         uid = uid[0]
         return draft_info(uid)
 
@@ -296,6 +296,26 @@ def editor(id=None):
 
     local.new_msg(msg, draft['flags'])
     local.del_msg(draft['origin_uid'])
+
+
+@app.get('/reply/<uid>', name='reply')
+def reply(uid):
+    flags, headers, meta, htm = local.fetch_msg(uid)
+    subj = meta['subject']
+    if not re.search('(?i)^re:', subj):
+        subj = 'Re: %s' % subj
+    draft_id = message.gen_draftid()
+    draft = {
+        'draft_id': draft_id,
+        'subject': subj,
+        'to': headers['reply-to'] or headers['from'],
+        'from': meta.get('to') and meta['to'][0]['title'],
+        'in-reply-to': meta['msgid'],
+        'references': meta['msgid'],
+    }
+    msg = message.new_draft(draft, {})
+    local.new_msg(msg, '\\Draft \\Seen')
+    return {'query_edit': 'draft:%s' % draft_id}
 
 
 @app.get('/raw/<uid:int>', name='raw')
@@ -644,7 +664,9 @@ def wrap_msgs(items, hide_tags=None):
         if info.get('from'):
             info['from'] = wrap_addresses([info['from']])[0]
         base_q = ''
-        if '#trash' in hide_tags:
+        if not hide_tags:
+            pass
+        elif '#trash' in hide_tags:
             base_q = 'tag:#trash '
         elif '#spam' in hide_tags:
             base_q = 'tag:#spam '
@@ -664,9 +686,11 @@ def wrap_msgs(items, hide_tags=None):
             'is_pinned': '\\Flagged' in flags,
             'is_draft': '\\Draft' in flags,
         })
-        if info['is_draft'] and info['parent']:
+        if info['is_draft']:
             info['query_edit'] = base_q + 'draft:%s' % info['draft_id']
             info['url_edit'] = app.get_url('editor', id=info['draft_id'])
+        else:
+            info['url_reply'] = app.get_url('reply', uid=uid)
 
         info['files'] = wrap_files(info['files'], info['url_raw'])
         msgs[uid] = info
@@ -768,7 +792,7 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
 
 
 def draft_info(uid):
-    flags, headers, meta, txt = local.draft_info(uid)
+    flags, headers, meta, txt = local.fetch_msg(uid, draft=True)
     info = {
         i: headers.get(i, '')
         for i in ('from', 'to', 'cc', 'subject', 'in-reply-to', 'references')
