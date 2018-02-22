@@ -73,8 +73,8 @@ def test_tz(gm_client, web, login, some):
     gm_client.add_emails([{'labels': '\\Inbox', 'date': time}])
 
     web = login(tz='UTC')
-    res = web.post_json('/search', {'q': '', 'preload': 1}, status=200)
-    assert res.json == {
+    res = web.search({'q': '', 'preload': 1})
+    assert res == {
         'uids': ['1'],
         'msgs': {'1': some},
         'msgs_info': '/msgs/info',
@@ -83,8 +83,8 @@ def test_tz(gm_client, web, login, some):
     assert some['time_title'] == time_dt.strftime('%a, %d %b, %Y at %H:%M')
 
     web = login(tz='Asia/Singapore')
-    res = web.post_json('/search', {'q': '', 'preload': 1}, status=200)
-    assert res.json == {
+    res = web.search({'q': '', 'preload': 1})
+    assert res == {
         'uids': ['1'],
         'msgs': {'1': some},
         'msgs_info': '/msgs/info',
@@ -175,8 +175,8 @@ def test_tags(gm_client, login, some):
 
 def test_general(gm_client, load_email, login, some):
     web = login()
-    res = web.post_json('/search', {'q': '', 'preload': 10}, status=200)
-    assert res.json == {
+    res = web.search({'q': '', 'preload': 10})
+    assert res == {
         'uids': [],
         'msgs': {},
         'msgs_info': '/msgs/info',
@@ -184,8 +184,8 @@ def test_general(gm_client, load_email, login, some):
 
     msg = {'labels': '\\Inbox'}
     gm_client.add_emails([msg, dict(msg, refs='<101@mlr>')])
-    res = web.post_json('/search', {'q': '', 'preload': 10}, status=200)
-    assert res.json == {
+    res = web.search({'q': '', 'preload': 10})
+    assert res == {
         'uids': ['2', '1'],
         'msgs': {
             '1': {
@@ -241,12 +241,12 @@ def test_general(gm_client, load_email, login, some):
     }
 
     web.post_json('/msgs/body', {'uids': ['1']}, status=200)
-    res = web.post_json('/search', {'q': 'in:#inbox'}, status=200)
-    assert [i['is_unread'] for i in res.json['msgs'].values()] == [False, True]
+    res = web.search({'q': 'in:#inbox'})
+    assert [i['is_unread'] for i in res['msgs'].values()] == [False, True]
     web.post_json('/msgs/body', {'uids': ['1']}, status=200)
 
-    res = web.post_json('/search', {'q': ':threads'}, status=200)
-    assert res.json == {
+    res = web.search({'q': ':threads'})
+    assert res == {
         'uids': ['2'],
         'msgs': {
             '2': {
@@ -278,9 +278,9 @@ def test_general(gm_client, load_email, login, some):
         'msgs_info': '/thrs/info',
         'threads': True
     }
-    web.post_json('/msgs/flag', {'uids': ['2'], 'new': ['\\Seen']}, status=200)
-    res = web.post_json('/search', {'q': ':threads in:#inbox'}, status=200)
-    assert not res.json['msgs']['2']['is_unread']
+    web.flag({'uids': ['2'], 'new': ['\\Seen']})
+    res = web.search({'q': ':threads in:#inbox'})
+    assert not res['msgs']['2']['is_unread']
 
     res = web.get('/raw/2')
     assert res.content_type == 'text/plain'
@@ -291,8 +291,8 @@ def test_general(gm_client, load_email, login, some):
 
     m = load_email('msg-attachments-two-gmail.txt')
     q = 'thread:%s' % m['uid']
-    res = web.post_json('/search', {'q': q}, status=200)
-    assert res.json == {
+    res = web.search({'q': q})
+    assert res == {
         'uids': ['3'],
         'edit': None,
         'msgs_info': '/msgs/info',
@@ -328,19 +328,19 @@ def test_general(gm_client, load_email, login, some):
     res = web.get('/raw/3')
     assert res.content_type == 'text/plain'
 
-    res = web.post_json('/search', {'q': 'tag:#inbox'}, status=200)
-    assert res.json['tags'] == ['#inbox']
-    assert [i['tags'] for i in res.json['msgs'].values()] == [[], []]
+    res = web.search({'q': 'tag:#inbox'})
+    assert res['tags'] == ['#inbox']
+    assert [i['tags'] for i in res['msgs'].values()] == [[], []]
 
 
 def test_msgs_flag(gm_client, login, msgs):
     def post(uids, **data):
-        web.post_json('/msgs/flag', dict(uids=uids, **data), status=200)
+        web.flag(dict(uids=uids, **data))
         return [' '.join(sorted(m['flags'].split())) for m in msgs()]
 
     web = login()
-    web.post_json('/msgs/flag', {'new': ['\\Seen']}, status=400)
-    web.post_json('/msgs/flag', {'old': ['\\Seen']}, status=400)
+    web.flag({'new': ['\\Seen']}, status=400)
+    web.flag({'old': ['\\Seen']}, status=400)
 
     gm_client.add_emails([{}])
     assert [m['flags'] for m in msgs()] == ['#latest']
@@ -397,9 +397,7 @@ def test_search_thread(gm_client, login, some):
     assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
-    res = web.post_json('/msgs/flag', {
-        'uids': res['uids'], 'new': ['\\Seen']
-    }, status=200)
+    web.flag({'uids': res['uids'], 'new': ['\\Seen']})
 
     res = post('1', preload=2)
     assert len(res['uids']) == 6
@@ -407,9 +405,7 @@ def test_search_thread(gm_client, login, some):
     assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
-    res = web.post_json('/msgs/flag', {
-        'uids': ['2'], 'new': ['\\Flagged']
-    }, status=200)
+    web.flag({'uids': ['2'], 'new': ['\\Flagged']})
 
     res = post('1', preload=2)
     assert len(res['uids']) == 6
@@ -417,12 +413,8 @@ def test_search_thread(gm_client, login, some):
     assert res['tags'] == []
     assert res['same_subject'] == ['4', '5', '6']
 
-    res = web.post_json('/msgs/flag', {
-        'uids': ['2'], 'new': ['#inbox', '#sent', 'test2']
-    }, status=200)
-    res = web.post_json('/msgs/flag', {
-        'uids': ['1'], 'new': ['#inbox', 'test1']
-    }, status=200)
+    web.flag({'uids': ['2'], 'new': ['#inbox', '#sent', 'test2']})
+    web.flag({'uids': ['1'], 'new': ['#inbox', 'test1']})
 
     res = post('1', preload=None)
     assert len(res['uids']) == 6
@@ -432,17 +424,13 @@ def test_search_thread(gm_client, login, some):
         [], [], [], [], [], []
     ]
 
-    res = web.post_json(res['msgs_info'], {
-        'uids': res['uids'],
-        'hide_tags': res['tags']
-    })
-    assert [res.json[uid]['tags'] for uid in sorted(res.json)] == [
+    data = {'uids': res['uids'], 'hide_tags': res['tags']}
+    res = web.post_json(res['msgs_info'], data, status=200).json
+    assert [res[uid]['tags'] for uid in sorted(res)] == [
         [], [], [], [], [], []
     ]
 
-    res = web.post_json('/msgs/flag', {
-        'uids': ['2'], 'new': ['#trash']
-    }, status=200)
+    web.flag({'uids': ['2'], 'new': ['#trash']})
     q_thread = 'tag:#trash thread:2'
     res = web.search({'q': 'tag:#trash'})
     assert sorted(res['msgs']) == ['2']
@@ -477,25 +465,20 @@ def test_search_thread(gm_client, login, some):
 
 
 def test_drafts_part1(gm_client, login):
-    def post(uid=None, q=None, preload=4):
-        if not q:
-            q = 'thread:%s' % uid
-        data = {'q': q, 'preload': preload}
-        return web.post_json('/search', data, status=200).json
-
     web = login()
     gm_client.add_emails([
         {'flags': '\\Seen', 'mid': '<101@Mlr>'},
         {'refs': '<101@MLR>', 'flags': '\\Seen'}
     ])
-    assert post('1')['uids'] == ['1', '2']
+    query = 'thread:1'
+    assert web.search({'q': query})['uids'] == ['1', '2']
 
     gm_client.add_emails([{'refs': '<101@MLR>', 'flags': '\\Draft'}])
-    assert post('1')['uids'] == ['1', '3', '2']
+    assert web.search({'q': query})['uids'] == ['1', '3', '2']
 
     gm_client.add_emails([{'refs': '<102@mlr>', 'flags': '\\Seen'}] * 4)
     gm_client.add_emails([{'refs': '<104@MLR>', 'flags': '\\Draft'}])
-    res = post('1', preload=2)
+    res = web.search({'q': query, 'preload': 2})
     assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7']
     assert sorted(res['msgs']) == ['1', '3', '4', '7', '8']
 
@@ -503,7 +486,7 @@ def test_drafts_part1(gm_client, login):
         {'refs': '<101@mlr>'},
         {'refs': '<109@mlr>', 'flags': '\\Draft'}
     ])
-    res = post('1', preload=2)
+    res = web.search({'q': query, 'preload': 2})
     assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
     assert sorted(res['msgs']) == ['1', '10', '3', '4', '8', '9']
     assert not res['edit']
@@ -530,7 +513,7 @@ def test_drafts_part1(gm_client, login):
     res = web.get(draft['url_edit']).json
     assert res == expect
 
-    res = post(q=draft['query_edit'], preload=2)
+    res = web.search({'q': draft['query_edit'], 'preload': 2})
     assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
     assert res['edit'] == expect
 
@@ -562,7 +545,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     web.post('/editor', {
         'uid': '2',
         'txt': 'test it',
-    })
+    }, status=200)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
@@ -582,7 +565,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     web.post('/editor', {
         'uid': '3',
         'files': Upload('test.rst', b'txt', 'text/x-rst')
-    })
+    }, status=200)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
     assert [i['uid'] for i in msgs()] == ['1', '4']
     m = latest(parsed=1)
@@ -613,7 +596,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
         'from': '"Alpha" <a@t.com>',
         'to': 'b@t.com, c@t.com',
         'files': Upload('test2.rst', b'lol', 'text/x-rst')
-    })
+    }, status=200)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
     assert [i['uid'] for i in msgs()] == ['1', '5']
     m = latest(parsed=1)

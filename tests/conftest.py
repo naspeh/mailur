@@ -254,6 +254,9 @@ def web():
         def search(self, data, status=200):
             return self.post_json('/search', data, status=status).json
 
+        def flag(self, data, status=200):
+            return self.post_json('/msgs/flag', data, status=status)
+
     if not assets.exists():
         assets.mkdir()
         for i in themes():
