@@ -596,7 +596,14 @@ def parse_query(q):
 def thread(q, opts, preload=4):
     uids = local.search_msgs('INTHREAD REFS %s' % q, '(DATE)')
     if not uids:
-        return {}
+        return {
+            'uids': [],
+            'msgs': {},
+            'msgs_info': app.get_url('msgs_info'),
+            'thread': True,
+            'tags': [],
+            'same_subject': []
+        }
 
     tags = opts.get('tags', [])
     msgs = wrap_msgs(local.msgs_info(uids), tags)

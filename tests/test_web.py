@@ -373,7 +373,14 @@ def test_search_thread(gm_client, login, some):
         return web.search(data)
 
     web = login()
-    assert post('1') == {}
+    assert post('1') == {
+        'uids': [],
+        'msgs': {},
+        'msgs_info': '/msgs/info',
+        'same_subject': [],
+        'tags': [],
+        'thread': True,
+    }
 
     gm_client.add_emails([{}])
     res = post('1')
@@ -538,35 +545,22 @@ def test_drafts_part0(gm_client, login, load_email, some):
         'To: Ne Greh <negreh@gmail.com>\r\n'
         '```\r\n'
     )
-    assert draft == {
-        'cc': '',
-        'draft_id': some,
-        'files': [
-            {
-                'filename': '08.png',
-                'image': True,
-                'path': '2.2',
-                'size': 553,
-                'url': '/raw/7/2.2/08.png'
-            },
-            {
-                'filename': '09.png',
-                'image': True,
-                'path': '2.3',
-                'size': 520,
-                'url': '/raw/7/2.3/09.png'
-            }
-        ],
-        'flags': '\\Seen \\Draft #latest',
-        'from': 'The Two <two@t.com>',
-        'in-reply-to': '',
-        'origin_uid': '7',
-        'references': some,
-        'subject': 'Re: тема измененная',
-        'to': 'Grisha K. <naspeh@gmail.com>,Ne Greh <negreh@gmail.com>',
-        'txt': some,
-        'uid': '7'
-    }
+    assert draft['files'] == [
+        {
+            'filename': '08.png',
+            'image': True,
+            'path': '2.2',
+            'size': 553,
+            'url': '/raw/7/2.2/08.png'
+        },
+        {
+            'filename': '09.png',
+            'image': True,
+            'path': '2.3',
+            'size': 520,
+            'url': '/raw/7/2.3/09.png'
+        }
+    ]
 
 
 def test_drafts_part1(gm_client, login):
