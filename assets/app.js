@@ -4,6 +4,7 @@ import './picker.js';
 import './tags.js';
 import './editor.js';
 import './msg.js';
+import { call } from './utils.js';
 import msgs from './msgs.js';
 import tpl from './app.html';
 
@@ -64,6 +65,9 @@ Vue.component('app', {
       if (!this.split && this.opts.split && this.opts.splitQuery) {
         this.openInSplit(this.opts.splitQuery);
       }
+    },
+    compose: function() {
+      call('get', '/compose').then(res => this.openInMain(res.query_edit));
     },
     openFromHash: function() {
       let q = decodeURIComponent(location.hash.slice(1));

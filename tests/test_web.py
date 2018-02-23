@@ -469,8 +469,9 @@ def test_search_thread(gm_client, login, some):
 
 def test_drafts_part0(gm_client, login):
     web = login()
+    web.get('/set/addrs', {'v': 'two@t.com'})
     gm_client.add_emails([
-        {'from': '"From" from@t.com', 'to': 'to1@t.com, to2@t.com'}
+        {'from': '"The One" <one@t.com>', 'to': 'two@t.com, three@t.com'}
     ])
     res = web.search({'q': 'thread:1'})
     assert res['uids'] == ['1']
@@ -494,8 +495,25 @@ def test_drafts_part0(gm_client, login):
     draft = res['edit']
     assert draft['txt'] == ''
     assert draft['subject'] == 'Re: Subj 101'
-    assert draft['from'] == 'to1@t.com'
-    assert draft['to'] == '"From" from@t.com'
+    assert draft['from'] == 'two@t.com'
+    assert draft['to'] == 'The One <one@t.com>,three@t.com'
+
+    web.get('/set/addrs', {'v': '"The Two" <two@t.com>'})
+    res = web.get(url_reply, status=200).json
+    res = web.search({'q': res['query_edit']})
+    assert res['uids'] == ['1', '3', '2']
+    draft = res['edit']
+    assert draft['from'] == 'The Two <two@t.com>'
+    assert draft['to'] == 'The One <one@t.com>,three@t.com'
+
+    res = web.get('/compose').json
+    res = web.search({'q': res['query_edit']})
+    assert res['uids'] == ['4']
+    draft = res['edit']
+    assert draft['from'] == 'The Two <two@t.com>'
+    assert draft['to'] == ''
+    assert draft['txt'] == ''
+    assert draft['subject'] == ''
 
 
 def test_drafts_part1(gm_client, login):

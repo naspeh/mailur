@@ -64,6 +64,8 @@ def save_credentials(username, password):
     data = json.dumps([username, password])
     with local.client() as con:
         con.setmetadata(local.SRC, 'gmail/credentials', data)
+    email = username if username.count('@') else '%s@gmail.com' % username
+    local.save_addrs([email])
 
 
 def get_credentials():

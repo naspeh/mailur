@@ -176,6 +176,23 @@ def msgids(con=None):
     return json.loads(res[0][1].decode())
 
 
+@fn_time
+@using(None)
+def save_addrs(addrs, con=None):
+    data = json.dumps(addrs)
+    con.setmetadata(SRC, 'user/addresses', data)
+
+
+@using(None)
+def get_addrs(con=None):
+    res = con.getmetadata(SRC, 'user/addresses')
+    if len(res) == 1:
+        raise ValueError('no user email addresses')
+    data = res[0][1].decode()
+    addrs = json.loads(data)
+    return addrs
+
+
 @using(SRC)
 def parse_msgs(uids, con=None):
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')

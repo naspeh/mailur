@@ -298,21 +298,38 @@ def editor(id=None):
     local.del_msg(draft['origin_uid'])
 
 
+@app.get('/set/addrs')
+def set_addrs():
+    addrs = request.query['v']
+    addrs = message.addresses(addrs)
+    local.save_addrs(addrs)
+
+
+@app.get('/compose')
 @app.get('/reply/<uid>', name='reply')
-def reply(uid):
-    flags, headers, meta, htm = local.fetch_msg(uid)
-    subj = meta['subject']
-    if not re.search('(?i)^re:', subj):
-        subj = 'Re: %s' % subj
+def reply(uid=None):
     draft_id = message.gen_draftid()
+    addr = local.get_addrs()[0]
     draft = {
         'draft_id': draft_id,
-        'subject': subj,
-        'to': headers['reply-to'] or headers['from'],
-        'from': meta.get('to') and meta['to'][0]['title'],
-        'in-reply-to': meta['msgid'],
-        'references': meta['msgid'],
+        'subject': '',
+        'to': '',
+        'from': addr['title'],
     }
+    if uid:
+        flags, head, meta, htm = local.fetch_msg(uid)
+        subj = meta['subject']
+        if not re.search('(?i)^re:', subj):
+            subj = 'Re: %s' % subj
+        to = [head['reply-to'] or head['from'], head['to'], head['cc']]
+        to = message.addresses(','.join(a for a in to if a))
+        to = ','.join([a['title'] for a in to if addr['addr'] != a['addr']])
+        draft.update({
+            'subject': subj,
+            'to': to,
+            'in-reply-to': meta['msgid'],
+            'references': meta['msgid'],
+        })
     msg = message.new_draft(draft, {})
     local.new_msg(msg, '\\Draft \\Seen')
     return {'query_edit': 'draft:%s' % draft_id}

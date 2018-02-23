@@ -128,3 +128,15 @@ def test_origin_msg(gm_client, latest):
     gm_client.add_emails([{}], tag='\\Inbox', fetch=False, parse=False)
     gmail.fetch(tag='\\Chats', box='INBOX')
     assert latest(local.SRC)['flags'] == '#chats'
+
+
+def test_credentials():
+    name, pwd = 'test', 'test'
+    gmail.save_credentials(name, pwd)
+    assert gmail.get_credentials() == (name, pwd)
+    assert local.get_addrs() == ['test@gmail.com']
+
+    name, pwd = 'test@test.com', 'test'
+    gmail.save_credentials(name, pwd)
+    assert gmail.get_credentials() == (name, pwd)
+    assert local.get_addrs() == ['test@test.com']

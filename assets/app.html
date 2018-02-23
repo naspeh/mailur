@@ -5,6 +5,7 @@
       <tags :opts="tagIds.slice(0, tagCount)" :trancated="true" :unread="true" />
     </div>
     <div class="header__actions">
+      <a @click.prevent="compose" href="#" class="icon--draft" title="Compose new message"></a>
       <a @click.prevent="toggleOpt('bigger')" href="#" class="icon--font" title="Bigger font"></a>
       <a @click.prevent="toggleOpt('split')" href="#" class="icon--split" title="Open split pane"></a>
       <a @click.prevent="logout" href="#" class="icon--logout" title="Logout"></a>
