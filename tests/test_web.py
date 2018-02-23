@@ -1,5 +1,6 @@
 import datetime as dt
 import re
+import time
 
 from mailur import local
 from mailur.message import addresses
@@ -467,7 +468,7 @@ def test_search_thread(gm_client, login, some):
     assert res['tags'] == ['#inbox', 'test1']
 
 
-def test_drafts_part0(gm_client, login):
+def test_drafts_part0(gm_client, login, load_email, some):
     web = login()
     web.get('/set/addrs', {'v': 'two@t.com'})
     gm_client.add_emails([
@@ -506,14 +507,64 @@ def test_drafts_part0(gm_client, login):
     assert draft['from'] == 'The Two <two@t.com>'
     assert draft['to'] == 'The One <one@t.com>,three@t.com'
 
+    gm_client.add_emails([{'refs': '<101@mlr>', 'date': time.time() + 1}])
+    res = web.search({'q': 'thread:1'})
+    assert res['uids'] == ['1', '3', '2', '4']
+    draft = res['msgs']['3']
+    res = web.search({'q': ':threads'})
+    assert res['uids'] == ['4']
+    assert res['msgs']['4']['query_edit'] == draft['query_edit']
+
     res = web.get('/compose').json
     res = web.search({'q': res['query_edit']})
-    assert res['uids'] == ['4']
+    assert res['uids'] == ['5']
     draft = res['edit']
     assert draft['from'] == 'The Two <two@t.com>'
     assert draft['to'] == ''
     assert draft['txt'] == ''
     assert draft['subject'] == ''
+
+    m = load_email('msg-attachments-two-gmail.txt')
+    res = web.get('/reply/%s' % m['uid'], {'forward': 1}).json
+    res = web.search({'q': res['query_edit']})
+    assert res['uids'] == ['6', '7']
+    assert res['edit'] == {
+        'cc': '',
+        'draft_id': some,
+        'files': [
+            {
+                'filename': '08.png',
+                'image': True,
+                'path': '2.2',
+                'size': 553,
+                'url': '/raw/7/2.2/08.png'
+            },
+            {
+                'filename': '09.png',
+                'image': True,
+                'path': '2.3',
+                'size': 520,
+                'url': '/raw/7/2.3/09.png'
+            }
+        ],
+        'flags': '\\Seen \\Draft #latest',
+        'from': 'The Two <two@t.com>',
+        'in-reply-to': '',
+        'origin_uid': '7',
+        'references': some,
+        'subject': 'Re: тема измененная',
+        'to': 'Grisha K. <naspeh@gmail.com>,Ne Greh <negreh@gmail.com>',
+        'txt': some,
+        'uid': '7'
+    }
+    assert res['edit']['txt'] == (
+        '\r\n\r\n'
+        '---------- Forwarded message ----------\r\n'
+        'Subject: Re: тема измененная\r\n'
+        'Date: Mon, 3 Mar 2014 18:10:08 +0200\r\n'
+        'From: "Grisha K." <naspeh@gmail.com>\r\n'
+        'To: Ne Greh <negreh@gmail.com>\r\n'
+    )
 
 
 def test_drafts_part1(gm_client, login):

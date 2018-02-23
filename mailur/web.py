@@ -308,6 +308,7 @@ def set_addrs():
 @app.get('/compose')
 @app.get('/reply/<uid>', name='reply')
 def reply(uid=None):
+    forward = uid and request.query.get('forward')
     draft_id = message.gen_draftid()
     addr = local.get_addrs()[0]
     draft = {
@@ -330,9 +331,18 @@ def reply(uid=None):
             'in-reply-to': meta['msgid'],
             'references': meta['msgid'],
         })
-    msg = message.new_draft(draft, {})
-    local.new_msg(msg, '\\Draft \\Seen')
-    return {'query_edit': 'draft:%s' % draft_id}
+    inner = None
+    if forward:
+        inner = local.raw_msg(meta['origin_uid'], local.SRC, parsed=True)
+        for name, val in inner.items():
+            if not name.lower().startswith('content-'):
+                del inner[name]
+        draft['txt'] = template(quote_tpl, type='Forwarded', msg=head)
+    msg = message.new_draft(draft, {}, inner)
+    if inner:
+        msg.attach(inner)
+    new_uid = local.new_msg(msg, '\\Draft \\Seen')
+    return {'uid': new_uid, 'query_edit': 'draft:%s' % draft_id}
 
 
 @app.get('/raw/<uid:int>', name='raw')
@@ -431,6 +441,18 @@ tpl = '''
   <script type="text/javascript" src="/{{js}}?{{mtime}}"></script>
 </body>
 </html>
+'''
+
+quote_tpl = '''
+
+---------- {{type}} message ----------
+Subject: {{msg['subject']}}
+Date: {{msg['date']}}
+From: {{!msg['from']}}
+To: {{!msg['to']}}
+% if msg['cc']:
+CC: {{!msg['cc']}}
+% end
 '''
 
 

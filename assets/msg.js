@@ -55,8 +55,9 @@ Vue.component('msg', {
       data[msg.is_pinned ? 'old' : 'new'] = ['\\Flagged'];
       return this.editTags(data, [msg.uid]);
     },
-    reply: function(msg) {
-      call('get', msg.url_reply).then(res => this.query(res.query_edit));
+    reply: function(msg, forward = null) {
+      let end = forward ? '?forward=1' : '';
+      call('get', msg.url_reply + end).then(res => this.query(res.query_edit));
     },
     makeRicher: function() {
       for (let i of this.$el.querySelectorAll('img[data-src]')) {

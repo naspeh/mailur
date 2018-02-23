@@ -384,15 +384,15 @@ def raw_part(uid, box, part, con=None):
 @using()
 def fetch_msg(uid, draft=False, con=None):
     fields = (
-        '(FLAGS BINARY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[%s])'
+        '(FLAGS BODY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[%s])'
         % (3 if draft else 2)
     )
     res = con.fetch(uid, fields)
     flags = re.search(r'FLAGS \(([^)]*)\)', res[0][0].decode()).group(1)
-    headers = email.message_from_bytes(res[0][1])
+    head = email.message_from_string(res[0][1].decode())
     meta = json.loads(res[1][1].decode())
     txt = res[2][1].decode()
-    return flags, headers, meta, txt
+    return flags, head, meta, txt
 
 
 @fn_time
@@ -474,6 +474,7 @@ def thrs_info(uids, tags=None, con=None):
         thr_flags = []
         thr_from = []
         unseen = False
+        draft_id = None
         for uid in thr:
             if uid not in all_msgs:
                 continue
@@ -491,6 +492,8 @@ def thrs_info(uids, tags=None, con=None):
                 continue
             if '\\Seen' not in msg_flags:
                 unseen = True
+            if '\\Draft' in msg_flags:
+                draft_id = info['draft_id']
             thr_flags.extend(msg_flags)
         if thrid is None:
             raise ValueError('No #latest for %s' % thr)
@@ -499,7 +502,11 @@ def thrs_info(uids, tags=None, con=None):
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
-        yield thrid, all_msgs[thrid], flags, addrs
+        info = all_msgs[thrid]
+        info['uids'] = thr
+        if draft_id:
+            info['draft_id'] = draft_id
+        yield thrid, info, flags, addrs
 
 
 @fn_time
@@ -557,3 +564,4 @@ def new_msg(msg, flags, con=None):
     uid = con.append(SRC, flags, None, msg.as_bytes())
     save_msgids([uid])
     parse()
+    return pair_origin_uids([uid])[0]
