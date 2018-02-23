@@ -5,6 +5,26 @@ from urllib.parse import urlencode
 from lxml.html import fromstring, tostring
 from lxml.html.clean import Cleaner, autolink
 
+import mistune
+
+from pygments import highlight
+from pygments.formatters import html
+from pygments.lexers import get_lexer_by_name
+
+
+class HighlightRenderer(mistune.Renderer):
+    def block_code(self, code, lang):
+        if not lang:
+            return '\n<pre><code>%s</code></pre>\n' % \
+                mistune.escape(code)
+        lexer = get_lexer_by_name(lang, stripall=True)
+        formatter = html.HtmlFormatter()
+        return highlight(code, lexer, formatter)
+
+
+renderer = HighlightRenderer(escape=False, hard_wrap=True)
+markdown = mistune.Markdown(renderer=renderer)
+
 
 def clean(htm, embeds):
     htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()

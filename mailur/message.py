@@ -342,8 +342,12 @@ def parse_draft(msg):
 
 def new_draft(draft, override, mixed=False):
     msg = new()
-    txt = override.get('txt', draft.get('txt', ''))
-    txt = binary(txt)
+    txt = new()
+    txt.make_alternative()
+    plain = override.get('txt', draft.get('txt', ''))
+    txt.attach(binary(plain))
+    htm = html.markdown(plain)
+    txt.attach(binary(htm, 'text/html'))
     if mixed:
         msg.make_mixed()
         msg.attach(txt)

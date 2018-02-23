@@ -524,11 +524,21 @@ def test_drafts_part0(gm_client, login, load_email, some):
     assert draft['txt'] == ''
     assert draft['subject'] == ''
 
-    m = load_email('msg-attachments-two-gmail.txt')
+    m = load_email('msg-attachments-two-gmail.txt', 'koi8-r')
     res = web.get('/reply/%s' % m['uid'], {'forward': 1}).json
     res = web.search({'q': res['query_edit']})
-    assert res['uids'] == ['6', '7']
-    assert res['edit'] == {
+    draft = res['edit']
+    assert draft['txt'] == (
+        '\r\n\r\n'
+        '```\r\n'
+        '---------- Forwarded message ----------\r\n'
+        'Subject: Re: тема измененная\r\n'
+        'Date: Mon, 3 Mar 2014 18:10:08 +0200\r\n'
+        'From: "Grisha K." <naspeh@gmail.com>\r\n'
+        'To: Ne Greh <negreh@gmail.com>\r\n'
+        '```\r\n'
+    )
+    assert draft == {
         'cc': '',
         'draft_id': some,
         'files': [
@@ -557,14 +567,6 @@ def test_drafts_part0(gm_client, login, load_email, some):
         'txt': some,
         'uid': '7'
     }
-    assert res['edit']['txt'] == (
-        '\r\n\r\n'
-        '---------- Forwarded message ----------\r\n'
-        'Subject: Re: тема измененная\r\n'
-        'Date: Mon, 3 Mar 2014 18:10:08 +0200\r\n'
-        'From: "Grisha K." <naspeh@gmail.com>\r\n'
-        'To: Ne Greh <negreh@gmail.com>\r\n'
-    )
 
 
 def test_drafts_part1(gm_client, login):
@@ -645,10 +647,12 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     assert re.match('\<.{8}\>', draft_id)
     assert m['body_full']['x-draft-id'] == draft_id
 
-    web.post('/editor', {
+    res = web.post('/editor', {
         'uid': '2',
-        'txt': 'test it',
-    }, status=200)
+        'txt': '**test it**',
+    }, status=200).json
+    assert res['uid'] == '3'
+    assert res['html'] == '<p><strong>test it</strong></p>'
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
@@ -656,7 +660,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
     assert m['meta']['files'] == []
-    assert m['body'] == '<p>test it</p>'
+    assert m['body'] == '<p><strong>test it</strong></p>'
     assert m['meta']['subject'] == 'Subj 102'
     assert m['meta']['from']['title'] == 'a@t.com'
     assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']
@@ -678,7 +682,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     assert m['meta']['files'] == [
         {'filename': 'test.rst', 'path': '2', 'size': 3}
     ]
-    assert m['body'] == '<p>test it</p>'
+    assert m['body'] == '<p><strong>test it</strong></p>'
     assert m['meta']['subject'] == 'Subj 102'
     assert m['meta']['from']['title'] == 'a@t.com'
     assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']

@@ -58,15 +58,16 @@ def new_users():
 
 @pytest.fixture
 def load_file():
-    def inner(name):
-        return (root / 'tests/files' / name).read_bytes()
+    def inner(name, encoding=None):
+        txt = (root / 'tests/files' / name).read_bytes()
+        return txt.decode(encoding).encode() if encoding else txt
     return inner
 
 
 @pytest.fixture
 def load_email(gm_client, load_file, latest):
-    def inner(name, **opt):
-        gm_client.add_emails([{'raw': load_file(name)}])
+    def inner(name, encoding=None, **opt):
+        gm_client.add_emails([{'raw': load_file(name, encoding=encoding)}])
         return latest(**opt)
     return inner
 

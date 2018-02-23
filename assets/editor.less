@@ -3,6 +3,24 @@
   border-top: 1px solid @--color--orange;
   border-radius: 0.5em;
   font-size: @--font-size--s;
+
+  &.editor--preview {
+    .editor__edit {
+      display: inline;
+    }
+    .editor__html {
+      display: block;
+    }
+    .editor__preview,
+    .editor__body {
+      display: none;
+    }
+  }
+}
+
+.editor__edit,
+.editor__html {
+  display: none;
 }
 
 .editor__files {

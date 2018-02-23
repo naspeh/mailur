@@ -10,6 +10,12 @@ Vue.component('editor', {
     refresh: { type: Function, required: true },
     cancel: { type: Function, required: true }
   },
+  data: function() {
+    return {
+      edit: true,
+      html: ''
+    };
+  },
   methods: {
     save: function(e) {
       let input = e.target;
@@ -32,6 +38,12 @@ Vue.component('editor', {
           index: idx
         }
       });
+    },
+    preview: function() {
+      this.edit = false;
+      call('post', '/markdown', { txt: this.$refs.txt.value }).then(
+        res => (this.html = res)
+      );
     }
   }
 });

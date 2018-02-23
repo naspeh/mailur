@@ -372,7 +372,7 @@ def raw_msg(uid, box, parsed=False, con=None):
 @using(None)
 def raw_part(uid, box, part, con=None):
     con.select(box)
-    fields = '(BINARY.PEEk[{0}] BINARY.PEEK[{0}.mime])'.format(part)
+    fields = '(BINARY.PEEK[{0}] BINARY.PEEK[{0}.mime])'.format(part)
     res = con.fetch(uid, fields)
     body = res[0][1]
     mime = res[1][1]
@@ -384,7 +384,7 @@ def raw_part(uid, box, part, con=None):
 @using()
 def fetch_msg(uid, draft=False, con=None):
     fields = (
-        '(FLAGS BODY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[%s])'
+        '(FLAGS BINARY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[%s])'
         % (3 if draft else 2)
     )
     res = con.fetch(uid, fields)

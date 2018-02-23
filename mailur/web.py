@@ -16,7 +16,7 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import DEBUG, SECRET, imap, local, log, message
+from . import DEBUG, SECRET, html, imap, local, log, message
 from .schema import validate
 
 
@@ -294,8 +294,10 @@ def editor(id=None):
             maintype=maintype, subtype=subtype
         )
 
-    local.new_msg(msg, draft['flags'])
+    new_uid = local.new_msg(msg, draft['flags'])
     local.del_msg(draft['origin_uid'])
+    flags, head, meta, htm = local.fetch_msg(new_uid)
+    return dict(draft_info(new_uid), html=htm)
 
 
 @app.get('/set/addrs')
@@ -365,6 +367,12 @@ def raw(uid, part=None, filename=None):
         return abort(404)
     response.content_type = content_type
     return msg
+
+
+@app.post('/markdown')
+def markdown():
+    txt = request.json.get('txt')
+    return html.markdown(txt)
 
 
 @app.get('/proxy')
@@ -445,6 +453,7 @@ tpl = '''
 
 quote_tpl = '''
 
+```
 ---------- {{type}} message ----------
 Subject: {{msg['subject']}}
 Date: {{msg['date']}}
@@ -453,6 +462,7 @@ To: {{!msg['to']}}
 % if msg['cc']:
 CC: {{!msg['cc']}}
 % end
+```
 '''
 
 

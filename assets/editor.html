@@ -1,8 +1,9 @@
-<div class="editor">
+<div :class="{editor:1, 'editor--preview': !edit && html}">
   <input ref="from" class="editor__from" placeholder="From" :value="msg.from" />
   <input ref="to" class="editor__to" placeholder="To" :value="msg.to" />
   <input ref="subject" class="editor__subj" placeholder="Subject" :value="msg.subject" />
   <textarea ref="txt" class="editor__body">{{msg.txt}}</textarea>
+  <div class="editor__html" v-html="html" />
   <div v-if="msg.files.length" class="editor__files">
     <a
       v-for="f, idx of msg.files"
@@ -12,6 +13,8 @@
     >{{f.filename}}</a>
   </div>
   <input @change="save" class="editor__upload" type="file" value="Files" multiple />
+  <button @click="preview" class="editor__preview">Preview</button>
+  <button @click="edit = true" class="editor__edit">Edit</button>
   <button @click="save" class="editor__save">Save</button>
   <button @click="cancel" class="editor__cancel">Cancel</button>
 </div>
