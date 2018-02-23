@@ -1,7 +1,7 @@
 Message-ID: <564fba90.022d1c0a.8a31f.ffff9bd5@mx.google.com>
-From: "Гриша" <grrr@example.com>
-To: "Катя" <katya@example.com>
+From: "п⌠я─п╦я┬п╟" <grrr@example.com>
+To: "п п╟я┌я▐" <katya@example.com>
 Date: Sat, 21 Nov 2015 00:27:59 -0000
-Subject: Тестим кодировку KOI8-R
+Subject: п╒п╣я│я┌п╦п╪ п╨п╬п╢п╦я─п╬п╡п╨я┐ KOI8-R
 
-тест
+я┌п╣я│я┌

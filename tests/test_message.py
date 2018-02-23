@@ -211,11 +211,11 @@ def test_encodings(gm_client, load_email):
     m = load_email('msg-encoding-empty-charset.txt', parsed=True)
     assert m['body'] == '<p>test</p>'
 
-    m = load_email('msg-encoding-parts-in-koi8r.txt', parsed=True)
+    m = load_email('msg-encoding-parts-in-koi8r.txt', 'koi8-r', parsed=True)
     assert m['meta']['subject'] == 'Тестим кодировку KOI8-R'
     assert m['body'] == '<p>тест</p>'
 
-    m = load_email('msg-encoding-saved-in-koi8r.txt', parsed=True)
+    m = load_email('msg-encoding-saved-in-koi8r.txt', 'koi8-r', parsed=True)
     assert m['meta']['subject'] == 'Тестим кодировку KOI8-R'
     assert m['body'] == '<p>тест</p>'
 
@@ -225,11 +225,11 @@ def test_encodings(gm_client, load_email):
         'Почта Gmail – особенная. Вот что Вам нужно знать.'
     )
 
-    m = load_email('msg-encoding-cp1251-alias.txt', parsed=True)
+    m = load_email('msg-encoding-cp1251-alias.txt', 'cp1251', parsed=True)
     assert m['meta']['subject'] == 'Обновления музыки на сайте JeTune.ru'
     assert m['body'] == '<p>Здравствуйте.<br></p>'
 
-    m = load_email('msg-encoding-cp1251-chardet.txt', parsed=True)
+    m = load_email('msg-encoding-cp1251-chardet.txt', 'cp1251', parsed=True)
     assert 'Уважаемый Гриша\xa0\xa0!' in m['body']
     # subject shoud be decoded properly using charset detected in body
     assert m['meta']['subject'] == 'Оплатите, пожалуйста, счет'
@@ -419,26 +419,29 @@ def test_parts(gm_client, latest, load_email):
     assert m['body'] == '<p>0</p><hr><p>1</p>'
 
     # test some real emails with attachments
-    m = load_email('msg-attachments-one-gmail.txt', parsed=True)
+    m = load_email('msg-attachments-one-gmail.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
         {'filename': '20.png', 'image': True, 'path': '2', 'size': 544}
     ]
     assert '<hr>' not in m['body']
+    assert 'ответ на тело' in m['body']
 
-    m = load_email('msg-attachments-two-gmail.txt', parsed=True)
+    m = load_email('msg-attachments-two-gmail.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
         {'filename': '08.png', 'image': True, 'path': '2', 'size': 553},
         {'filename': '09.png', 'image': True, 'path': '3', 'size': 520}
     ]
     assert '<hr>' not in m['body']
+    assert 'ответ на тело' in m['body']
 
-    m = load_email('msg-attachments-two-yandex.txt', parsed=True)
+    m = load_email('msg-attachments-two-yandex.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
         {'filename': '49.png', 'image': True, 'path': '2', 'size': 482},
         {'filename': '50.png', 'image': True, 'path': '3', 'size': 456}
     ]
+    assert 'ответ на тело' in m['body']
 
-    m = load_email('msg-attachments-textfile.txt', parsed=True)
+    m = load_email('msg-attachments-textfile.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
         {'filename': 'Дополнение4.txt', 'path': '2', 'size': 11}
     ]

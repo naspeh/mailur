@@ -524,7 +524,7 @@ def test_drafts_part0(gm_client, login, load_email, some):
     assert draft['txt'] == ''
     assert draft['subject'] == ''
 
-    m = load_email('msg-attachments-two-gmail.txt', 'koi8-r')
+    m = load_email('msg-attachments-two-gmail.txt')
     res = web.get('/reply/%s' % m['uid'], {'forward': 1}).json
     res = web.search({'q': res['query_edit']})
     draft = res['edit']

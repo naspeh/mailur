@@ -1,4 +1,4 @@
-Subject: Обновления музыки на сайте JeTune.ru
+Subject: РћР±РЅРѕРІР»РµРЅРёСЏ РјСѓР·С‹РєРё РЅР° СЃР°Р№С‚Рµ JeTune.ru
 From: news@jetune.ru
 To: TEST@MAIL.RU
 Content-type: text/html; charset=cp-1251
@@ -7,4 +7,4 @@ Date: Mon, 23 Jul 2007 03:55:55 +0400 (MSD)
 X-Spam: Not detected
 
 
-<p>Здравствуйте.<br></p>
+<p>Р—РґСЂР°РІСЃС‚РІСѓР№С‚Рµ.<br></p>
