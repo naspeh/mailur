@@ -477,7 +477,6 @@ def test_search_thread(gm_client, login, some):
 
 def test_drafts_part0(gm_client, login, load_email, some):
     web = login()
-    web.get('/set/addrs', {'v': 'two@t.com'})
     gm_client.add_emails([
         {'from': '"The One" <one@t.com>', 'to': 'two@t.com, three@t.com'}
     ])
@@ -503,8 +502,8 @@ def test_drafts_part0(gm_client, login, load_email, some):
     draft = res['edit']
     assert draft['txt'] == ''
     assert draft['subject'] == 'Re: Subj 101'
-    assert draft['from'] == 'two@t.com'
-    assert draft['to'] == 'The One <one@t.com>,three@t.com'
+    assert draft['from'] == ''
+    assert draft['to'] == 'The One <one@t.com>,two@t.com,three@t.com'
 
     web.get('/set/addrs', {'v': '"The Two" <two@t.com>'})
     res = web.get(url_reply, status=200).json
@@ -593,9 +592,10 @@ def test_drafts_part1(gm_client, login):
     draft = res['msgs']['3']
     assert draft['is_draft']
     assert draft['query_edit'] == 'draft:%s' % draft['draft_id']
-    assert draft['url_edit'] == '/editor/%s' % draft['draft_id']
 
-    expect = {
+    res = web.search({'q': draft['query_edit'], 'preload': 2})
+    assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
+    assert res['edit'] == {
         'cc': '',
         'draft_id': draft['draft_id'],
         'files': [],
@@ -609,15 +609,9 @@ def test_drafts_part1(gm_client, login):
         'txt': '42',
         'uid': '3',
     }
-    res = web.get(draft['url_edit']).json
-    assert res == expect
-
-    res = web.search({'q': draft['query_edit'], 'preload': 2})
-    assert res['uids'] == ['1', '3', '2', '4', '8', '5', '6', '7', '9', '10']
-    assert res['edit'] == expect
 
 
-def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
+def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     from webtest import Upload
 
     web = login()
@@ -645,24 +639,32 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
         'uid': '2',
         'txt': '**test it**',
     }, status=200).json
-    assert res['uid'] == '3'
-    assert res['html'] == '<p><strong>test it</strong></p>'
+    assert res == {'uid': '3'}
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['meta']['files'] == []
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
-    assert m['meta']['files'] == []
+    assert m['body_full']['from'] == 'a@t.com'
+    assert m['body_full']['to'] == 'b@t.com'
+    assert m['body_full']['subject'] == 'Subj 102'
     assert m['body'] == '<p><strong>test it</strong></p>'
-    assert m['meta']['subject'] == 'Subj 102'
-    assert m['meta']['from']['title'] == 'a@t.com'
-    assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']
 
     res = web.search({'q': 'draft:%s' % draft_id})
     assert res['edit']
     assert res['edit']['files'] == []
+    assert local.get_addrs() == [
+        {
+            'addr': 'a@t.com',
+            'hash': '671fc7fb9f958db9fdd252dfaf2325db',
+            'name': 'a',
+            'title': 'a@t.com'
+        }
+    ]
 
+    web.get('/set/addrs', {'v': 'a@t.com, a@s.com'})
     web.post('/editor', {
         'uid': '3',
         'files': Upload('test.rst', b'txt', 'text/x-rst')
@@ -671,15 +673,15 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     assert [i['uid'] for i in msgs()] == ['1', '4']
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
-    assert m['meta']['draft_id'] == draft_id
-    assert m['body_full']['x-draft-id'] == draft_id
     assert m['meta']['files'] == [
         {'filename': 'test.rst', 'path': '2', 'size': 3}
     ]
+    assert m['meta']['draft_id'] == draft_id
+    assert m['body_full']['x-draft-id'] == draft_id
+    assert m['body_full']['from'] == 'a@t.com'
+    assert m['body_full']['to'] == 'b@t.com'
+    assert m['body_full']['subject'] == 'Subj 102'
     assert m['body'] == '<p><strong>test it</strong></p>'
-    assert m['meta']['subject'] == 'Subj 102'
-    assert m['meta']['from']['title'] == 'a@t.com'
-    assert [i['addr'] for i in m['meta']['to']] == ['b@t.com']
 
     res = web.search({'q': 'draft:%s' % draft_id})
     assert res['edit']
@@ -702,24 +704,37 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, raises, some):
     assert [i['uid'] for i in msgs()] == ['1', '5']
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
-    assert m['meta']['draft_id'] == draft_id
-    assert m['body_full']['x-draft-id'] == draft_id
     assert m['meta']['files'] == [
         {'filename': 'test.rst', 'path': '2', 'size': 3},
         {'filename': 'test2.rst', 'path': '3', 'size': 3},
     ]
+    assert m['meta']['draft_id'] == draft_id
+    assert m['body_full']['x-draft-id'] == draft_id
+    assert m['body_full']['from'] == '"Alpha" <a@t.com>'
+    assert m['body_full']['to'] == 'b@t.com, c@t.com'
+    assert m['body_full']['subject'] == 'Subj new'
     assert m['body'] == '<p>test it again</p>'
-    assert m['meta']['subject'] == 'Subj new'
-    assert m['meta']['from']['title'] == 'Alpha <a@t.com>'
-    assert [i['addr'] for i in m['meta']['to']] == ['b@t.com', 'c@t.com']
+    assert local.get_addrs() == [
+        {
+            'addr': 'a@t.com',
+            'hash': '671fc7fb9f958db9fdd252dfaf2325db',
+            'name': 'Alpha',
+            'title': 'Alpha <a@t.com>'
+        },
+        {
+            'addr': 'a@s.com',
+            'hash': '9c2a3451dc5cbbee7c82cab115b8bc67',
+            'name': 'a',
+            'title': 'a@s.com'
+        },
+    ]
 
     with patch('mailur.local.new_msg') as m:
         m.side_effect = ValueError
-        with raises(ValueError):
-            web.post('/editor', {
-                'uid': '5',
-                'txt': 'test it',
-            })
+        web.post('/editor', {
+            'uid': '5',
+            'txt': 'test it',
+        }, status=500)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
     assert [i['uid'] for i in msgs()] == ['1', '5']
 

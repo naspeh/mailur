@@ -266,16 +266,9 @@ def msgs_flag():
     local.msgs_flag(**data)
 
 
-@app.get('/editor/<id>', name='editor')
 @app.post('/editor')
+@endpoint
 def editor(id=None):
-    if request.method == 'GET':
-        uid = local.search_msgs('HEADER X-Draft-ID %s' % id)
-        if not uid:
-            return abort(400)
-        uid = uid[0]
-        return draft_info(uid)
-
     uid = request.forms['uid']
     files = request.files.getall('files')
 
@@ -293,11 +286,23 @@ def editor(id=None):
             f.file.read(), filename=f.filename,
             maintype=maintype, subtype=subtype
         )
+    if msg['from']:
+        addr = message.addresses(msg['from'])[0]
+        addrs = local.get_addrs()
+        if addrs:
+            match = [a for a in addrs if addr['addr'] == a['addr']]
+            match = match and match[0]
+            if match and match != addr:
+                idx = addrs.index(match)
+                addrs.remove(match)
+                addrs.insert(idx, addr)
+        else:
+            addrs = [addr]
+        local.save_addrs(addrs)
 
     new_uid = local.new_msg(msg, draft['flags'])
     local.del_msg(draft['origin_uid'])
-    flags, head, meta, htm = local.fetch_msg(new_uid)
-    return dict(draft_info(new_uid), html=htm)
+    return {'uid': new_uid}
 
 
 @app.get('/set/addrs')
@@ -305,6 +310,8 @@ def set_addrs():
     addrs = request.query['v']
     addrs = message.addresses(addrs)
     local.save_addrs(addrs)
+    response.content_type = 'application/json'
+    return json.dumps(addrs, ensure_ascii=False, indent=2)
 
 
 @app.get('/compose')
@@ -312,12 +319,13 @@ def set_addrs():
 def reply(uid=None):
     forward = uid and request.query.get('forward')
     draft_id = message.gen_draftid()
-    addr = local.get_addrs()[0]
+    addrs = local.get_addrs()
+    addr = addrs[0] if addrs else {}
     draft = {
         'draft_id': draft_id,
         'subject': '',
         'to': '',
-        'from': addr['title'],
+        'from': addr.get('title', ''),
     }
     if uid:
         flags, head, meta, htm = local.fetch_msg(uid)
@@ -326,7 +334,7 @@ def reply(uid=None):
             subj = 'Re: %s' % subj
         to = [head['reply-to'] or head['from'], head['to'], head['cc']]
         to = message.addresses(','.join(a for a in to if a))
-        to = ','.join([a['title'] for a in to if addr['addr'] != a['addr']])
+        to = ','.join(a['title'] for a in to if addr.get('addr') != a['addr'])
         draft.update({
             'subject': subj,
             'to': to,
@@ -744,7 +752,6 @@ def wrap_msgs(items, hide_tags=None):
         })
         if info['is_draft']:
             info['query_edit'] = base_q + 'draft:%s' % info['draft_id']
-            info['url_edit'] = app.get_url('editor', id=info['draft_id'])
         else:
             info['url_reply'] = app.get_url('reply', uid=uid)
 

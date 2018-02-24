@@ -187,7 +187,7 @@ def save_addrs(addrs, con=None):
 def get_addrs(con=None):
     res = con.getmetadata(SRC, 'user/addresses')
     if len(res) == 1:
-        raise ValueError('no user email addresses')
+        return None
     data = res[0][1].decode()
     addrs = json.loads(data)
     return addrs
