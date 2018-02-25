@@ -826,7 +826,7 @@ def test_from_list(some):
 
 
 def test_query():
-    ending = 'unkeyword #link unkeyword #trash unkeyword #spam'
+    ending = 'unkeyword #trash unkeyword #spam unkeyword #link'
     assert parse_query('') == (ending, {})
     assert parse_query('test') == ('text "test" ' + ending, {})
     assert parse_query('test1 test2') == ('text "test1 test2" ' + ending, {})
@@ -857,8 +857,12 @@ def test_query():
         {'tags': ['#trash']}
     )
     assert parse_query('tag:#spam') == (
-        'keyword #spam unkeyword #link unkeyword #trash',
+        'keyword #spam unkeyword #trash unkeyword #link',
         {'tags': ['#spam']}
+    )
+    assert parse_query('in:#inbox test') == (
+        'text "test" keyword #inbox ' + ending,
+        {'tags': ['#inbox']}
     )
 
     assert parse_query(':threads') == (ending, {'threads': True})

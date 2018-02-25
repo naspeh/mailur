@@ -536,7 +536,7 @@ def parse_query(q):
         elif info.get('tag'):
             opts.setdefault('tags', [])
             opts['tags'].append(info['tag_id'])
-            q = 'keyword %s' % info['tag_id']
+            q = ''
         elif info.get('date'):
             val = info['date_val']
             count = val.count('-')
@@ -587,12 +587,14 @@ def parse_query(q):
         q = 'text %s' % json.dumps(q, ensure_ascii=False)
         parts.append(q)
 
-    parts.append('unkeyword #link')
     tags = opts.get('tags', [])
+    if tags:
+        parts.append(' '.join('keyword %s' % t for t in tags))
     if '#trash' not in tags:
         parts.append('unkeyword #trash')
     if '#spam' not in tags and '#trash' not in tags:
         parts.append('unkeyword #spam')
+    parts.append('unkeyword #link')
 
     if parts:
         q = ' '.join(parts)
