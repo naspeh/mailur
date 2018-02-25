@@ -11,12 +11,11 @@ let Tags = {
     edit: { type: Function },
     name: { type: String, default: 'tags' }
   },
-  data: function() {
-    return {
-      info: window.app.tags
-    };
-  },
   computed: {
+    info: function() {
+      this.opts || true;
+      return window.app.tags;
+    },
     optsInfo: function() {
       let tags = [];
       for (let id of this.opts) {
@@ -74,9 +73,13 @@ let TagsEdit = {
   },
   data: function() {
     return {
-      picked: this.origin.slice(),
+      new: {},
+      picked: null,
       failed: null
     };
+  },
+  created: function() {
+    this.cancel();
   },
   watch: {
     origin: function() {
@@ -84,6 +87,16 @@ let TagsEdit = {
     }
   },
   computed: {
+    info: function() {
+      this.opts || true;
+      let info = window.app.tags;
+      for (let i in this.new) {
+        if (info[i]) {
+          delete this.new[i];
+        }
+      }
+      return Object.assign({}, this.new, info);
+    },
     noChanges: function() {
       if (this.origin.length == this.picked.length) {
         let picked = this.picked.sort();
@@ -117,7 +130,8 @@ let TagsEdit = {
             this.$refs.picker.filter = id;
             return;
           }
-          window.app.tags[res.id] = res;
+          this.new[res.id] = res;
+          this.new = Object.assign({}, this.new);
           this.opts.splice(0, 0, res.id);
           this.update(res.id);
         });
@@ -132,7 +146,9 @@ let TagsEdit = {
     },
     apply: function() {
       if (this.noChanges) return;
-      this.edit({ old: this.origin, new: this.picked });
+      this.edit({ old: this.origin, new: this.picked }).then(() =>
+        window.app.refreshTags()
+      );
       this.$refs.picker.cancel(true);
     }
   }

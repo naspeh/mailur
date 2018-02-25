@@ -23,6 +23,7 @@ Vue.component('app', {
   },
   created: function() {
     window.app = this;
+    window.setInterval(this.refreshTags, 10000);
   },
   mounted: function() {
     let opts = window.localStorage.getItem(this.optsKey);
@@ -50,6 +51,12 @@ Vue.component('app', {
     }
   },
   methods: {
+    refreshTags: function() {
+      call('get', '/tags').then(res => {
+        this.tags = Object.assign({}, res.info);
+        this.tagIds = res.ids;
+      });
+    },
     setOpt: function(name, value) {
       this.opts[name] = value;
       window.localStorage.setItem(this.optsKey, JSON.stringify(this.opts));
