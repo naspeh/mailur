@@ -226,6 +226,8 @@ def parse(criteria=None, *, batch=1000, threads=10):
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
+    link_threads_by_headers(con, criteria)
+
     res = con.sort('(DATE)', criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
@@ -248,7 +250,7 @@ def parse(criteria=None, *, batch=1000, threads=10):
             con.select(ALL, readonly=False)
             puids = imap.Uids(puids)
             log.info('## deleting %s from %r', puids, ALL)
-            con.store(puids, '+FLAGS.SILENT', '\Deleted')
+            con.store(puids, '+FLAGS.SILENT', '\\Deleted')
             con.expunge()
 
     con.logout()
@@ -261,6 +263,49 @@ def parse(criteria=None, *, batch=1000, threads=10):
         con.setmetadata(ALL, 'uidnext', str(uidnext))
         save_uid_pairs(puids)
         update_threads(con, 'UID %s' % uids.str)
+
+
+def link_threads_by_headers(con, criteria):
+    res = con.search('%s HEADER X-Thread-ID <' % criteria)
+    thrs = res[0].decode().split()
+    if not thrs:
+        return
+
+    res = con.fetch(thrs, 'BODY.PEEK[HEADER.FIELDS (X-Thread-ID Message-ID)]')
+    thrs = {}
+    for i in range(0, len(res), 2):
+        uid = res[i][0].decode().split()[2]
+        hdr = email.message_from_bytes(res[i][1])
+        msgid = hdr['Message-ID']
+        thrid = hdr['X-Thread-ID']
+        thrs.setdefault(thrid, [])
+        thrs[thrid].append(msgid)
+
+    mids = msgids()
+    clean = []
+    msgs = []
+    for thrid, ids in thrs.items():
+        linkid = thrid.lower()
+        uid = mids.get(linkid)
+        if uid:
+            clean += uid
+            res = con.fetch(uid, 'BODY.PEEK[HEADER.FIELDS (References)]')
+            refs = email.message_from_bytes(res[0][1])['References'].split()
+            ids = ids + refs
+        msg = message.link(ids, linkid)
+        msgs.append(msg)
+
+    if clean:
+        with client(ALL, readonly=False) as c:
+            c.store(pair_origin_uids(clean), '+FLAGS.SILENT', '\\Deleted')
+            c.expunge()
+        con.select(SRC, readonly=False)
+        con.store(clean, '+FLAGS.SILENT', '\\Deleted')
+        con.expunge()
+        con.select(SRC)
+
+    con.multiappend(SRC, [(None, '#link', m.as_bytes()) for m in msgs])
+    save_msgids()
 
 
 @fn_time
@@ -339,6 +384,7 @@ def link_threads(uids, con=None):
         if src_refs:
             with client(SRC, readonly=False) as c:
                 c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
+                c.expunge()
         con.select(ALL, readonly=False)
         con.store(refs, '+FLAGS.SILENT', '\\Deleted')
         con.expunge()
@@ -456,7 +502,7 @@ def thrs_info(uids, tags=None, con=None):
     elif '#spam' in tags:
         special_tag = '#spam'
 
-    q = 'REFS UTF-8 INTHREAD REFS UID %s UNKEYWORD #link' % ','.join(uids)
+    q = 'REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids)
     thrs = con.thread(q)
     all_flags = {}
     all_msgs = {}
@@ -466,6 +512,8 @@ def thrs_info(uids, tags=None, con=None):
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
         ).groups()
         flags = flags.split()
+        if '#link' in flags:
+            continue
         all_flags[uid] = flags
         all_msgs[uid] = json.loads(res[i][1])
 

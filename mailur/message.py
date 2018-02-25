@@ -60,8 +60,8 @@ def binary(txt, mimetype='text/plain'):
     return msg
 
 
-def link(msgids):
-    msgid = gen_msgid('link')
+def link(msgids, msgid=None):
+    msgid = msgid or gen_msgid('link')
     msg = new()
     msg.add_header('Subject', 'Dummy: linking threads')
     msg.add_header('References', ' '.join(msgids))

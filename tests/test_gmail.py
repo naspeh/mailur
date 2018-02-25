@@ -27,6 +27,18 @@ def test_client(select, some):
         assert m.called
 
 
+def test_credentials():
+    name, pwd = 'test', 'test'
+    gmail.save_credentials(name, pwd)
+    assert gmail.get_credentials() == (name, pwd)
+    assert local.get_addrs() == ['test@gmail.com']
+
+    name, pwd = 'test@test.com', 'test'
+    gmail.save_credentials(name, pwd)
+    assert gmail.get_credentials() == (name, pwd)
+    assert local.get_addrs() == ['test@test.com']
+
+
 def test_fetch_and_parse(gm_client, some):
     lm = local.client()
     gmail.fetch_folder()
@@ -130,13 +142,14 @@ def test_origin_msg(gm_client, latest):
     assert latest(local.SRC)['flags'] == '#chats'
 
 
-def test_credentials():
-    name, pwd = 'test', 'test'
-    gmail.save_credentials(name, pwd)
-    assert gmail.get_credentials() == (name, pwd)
-    assert local.get_addrs() == ['test@gmail.com']
+def test_thrid(gm_client, msgs):
+    gm_client.add_emails([
+        {'labels': 'mlr/thrid mlr/thrid/1516806882952089676'},
+        {'labels': 'mlr/thrid mlr/thrid/1516806882952089676'}
+    ], parse=False)
 
-    name, pwd = 'test@test.com', 'test'
-    gmail.save_credentials(name, pwd)
-    assert gmail.get_credentials() == (name, pwd)
-    assert local.get_addrs() == ['test@test.com']
+    assert [i['flags'] for i in msgs(local.SRC)] == ['mlr/thrid', 'mlr/thrid']
+    assert [i['body']['X-Thread-ID'] for i in msgs(local.SRC)] == [
+        '<mlr/thrid/1516806882952089676@mailur.link>',
+        '<mlr/thrid/1516806882952089676@mailur.link>'
+    ]

@@ -53,6 +53,9 @@ Vue.component('app', {
   methods: {
     refreshTags: function() {
       call('get', '/tags').then(res => {
+        if (res.errors) {
+          return;
+        }
         this.tags = Object.assign({}, res.info);
         this.tagIds = res.ids;
       });

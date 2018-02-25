@@ -125,22 +125,31 @@ def fetch_uids(uids, tag, box):
             if not raw:
                 # this happens in "[Gmail]/Chats" folder
                 continue
-            headers = '\r\n'.join([
-                'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),
-                'X-GM-MSGID: <%s>' % parts['msgid'],
-                'X-GM-THRID: <%s>' % parts['thrid'],
-                'X-GM-UID: <%s>' % parts['uid'],
-                # line break should be in the end, so an empty string here
-                ''
-            ])
-            raw = headers.encode() + raw
-
             flags = re.sub(r'([^ ])*', flag, parts['flags'])
             flags = ' '.join([
                 flags,
                 re.sub(r'("[^"]*"|[^" ]*)', label, parts['labels']),
                 MAP_LABELS.get(tag, ''),
             ]).strip()
+
+            headers = [
+                'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),
+                'X-GM-MSGID: <%s>' % parts['msgid'],
+                'X-GM-THRID: <%s>' % parts['thrid'],
+                'X-GM-UID: <%s>' % parts['uid'],
+            ]
+            thrid_re = '(^| )mlr/thrid/\d+'
+            thrid = re.search(thrid_re, flags)
+            if thrid:
+                flags = re.sub(thrid_re, '', flags)
+                thrid = thrid.group().strip()
+                headers.append('X-Thread-ID: <%s@mailur.link>' % thrid)
+
+            # line break should be in the end, so an empty string here
+            headers.append('')
+            headers = '\r\n'.join(headers)
+
+            raw = headers.encode() + raw
             yield parts['time'], flags, raw
 
     with local.client(None) as lm:
