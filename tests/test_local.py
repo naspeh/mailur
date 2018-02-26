@@ -364,25 +364,37 @@ def test_msgids(gm_client, msgs, some, load_file, latest):
 
 
 def test_thrid_header(gm_client, msgs):
-    raw = '\r\n'.join([
-        'X-Thread-ID: <mlr/thrid/1516806882952089676@mailur.link>',
-        'Date: Wed, 07 Jan 2015 13:23:2{0} +0000',
-        'From: katya@example.com',
-        'To: grrr@example.com',
-        'MIME-Version: 1.0',
-        'Content-type: text/html; charset=utf-8',
-        'Content-Transfer-Encoding: 8bit',
-        'Message-ID: <thrid-{0}@test>',
-        'Subject: thrid',
-        ''
-        'thrid',
-    ])
-    gm_client.add_emails([{'raw': raw.format(i).encode()} for i in range(3)])
-    assert thread() == (('1', '2', '3', '4'),)
-    assert [i['flags'] for i in msgs()] == ['', '', '#latest', '#link']
+    def raw(num, refs=None):
+        refs = ('\r\nReferences: %s' % refs) if refs else ''
+        return '\r\n'.join([
+            'X-Thread-ID: <mlr/thrid/1516806882952089676@mailur.link>',
+            'Date: Wed, 07 Jan 2015 13:23:{num:02d} +0000',
+            'From: katya@example.com',
+            'To: grrr@example.com',
+            'MIME-Version: 1.0',
+            'Content-type: text/html; charset=utf-8',
+            'Content-Transfer-Encoding: 8bit',
+            'Message-ID: <thrid-{num:02d}@mlr>',
+            'Subject: thrid' + refs,
+            ''
+            'thrid',
+        ]).format(num=num, refs=refs).encode()
+    gm_client.add_emails([{'raw': raw(i)} for i in range(3)])
+    assert thread(local.ALL) == (('1', '2', '3'),)
+    assert [i['flags'] for i in msgs()] == ['', '', '#latest']
     assert [i[0] for i in local.thrs_info(['1'])] == ['3']
 
-    gm_client.add_emails([{'raw': raw.format(4).encode()}])
-    assert thread() == (('5', '1', '2', '3', '6'),)
-    assert [i['flags'] for i in msgs()] == ['', '', '', '#latest', '#link']
-    assert [i[0] for i in local.thrs_info(['1'])] == ['5']
+    gm_client.add_emails([{'refs': '<thrid-01@mlr> <thrid-04@mlr>'}])
+    assert thread(local.ALL) == (('1', '2', '4', '3'),)
+    assert [i['flags'] for i in msgs()] == ['', '', '', '#latest']
+    assert [i[0] for i in local.thrs_info(['1'])] == ['4']
+
+    gm_client.add_emails([{'raw': raw(4)}])
+    assert thread(local.ALL) == (('1', '2', '4', '3', '5'),)
+    assert [i['flags'] for i in msgs()] == ['', '', '', '#latest', '']
+    assert [i[0] for i in local.thrs_info(['1'])] == ['4']
+
+    gm_client.add_emails([{'raw': raw(5, '<thrid-03@mlr> <thrid-06@mlr>')}])
+    assert thread(local.ALL) == (('1', '2', '4', '3', '5', '6'),)
+    assert [i['flags'] for i in msgs()] == ['', '', '', '#latest', '', '']
+    assert [i[0] for i in local.thrs_info(['1'])] == ['4']

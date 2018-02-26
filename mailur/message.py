@@ -288,6 +288,11 @@ def parsed(raw, uid, time, flags, mids):
     for n, v in headers.items():
         msg.add_header(n, v)
 
+    thrid = orig['X-Thread-ID']
+    if thrid:
+        msg.add_header('X-Thread-ID', thrid)
+        refs.append(thrid)
+
     if msg['from'] == 'mailur@link':
         msg.add_header('References', orig['references'])
     elif refs:
