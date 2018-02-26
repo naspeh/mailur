@@ -4,16 +4,20 @@ set -exuo pipefail
 . bin/activate
 
 home=${home:-"/home/vmail"}
-pass=${pass:-\{plain\}user}
-names=${user:-"user"}
+pass=${pass-\{plain\}user}
+names=${user-"user"}
 fields=${fields:-}
 append=${append:-}
 
-users=/etc/dovecot/passwd.users
-[ -n "$append" ] || : > $users
-for user in $names; do
-    echo "$user:$pass::::$home/$user::$fields" >> $users
-done
+[ -n "$names" ] || exit 0
+
+if [ -n "$pass" ]; then
+    users=/etc/dovecot/passwd.users
+    [ -n "$append" ] || : > $users
+    for user in $names; do
+        echo "$user:$pass::::$home/$user::$fields" >> $users
+    done
+fi
 
 # virtual mailboxes
 for user in $names; do
