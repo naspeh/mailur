@@ -151,6 +151,7 @@
         v-if="edit && edit.uid == uid"
         :msg="edit"
         :refresh="refresh"
+        :query="open"
         :cancel="() => open(msgs[uid].query_thread)"
       />
     </div>

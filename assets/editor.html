@@ -1,4 +1,4 @@
-<div :class="{editor:1, 'editor--preview': !edit && html}">
+<div :class="{editor:1, 'editor--preview': !edit && html, 'editor--sending': countdown !== null}">
   <input ref="from" class="editor__from" placeholder="From" :value="msg.from" />
   <input ref="to" class="editor__to" placeholder="To" :value="msg.to" />
   <input ref="subject" class="editor__subj" placeholder="Subject" :value="msg.subject" />
@@ -12,9 +12,19 @@
       target="_blank"
     >{{f.filename}}</a>
   </div>
-  <input @change="save" class="editor__upload" type="file" value="Files" multiple />
-  <button @click="preview" class="editor__preview">Preview</button>
-  <button @click="edit = true" class="editor__edit">Edit</button>
-  <button @click="save" class="editor__save">Save</button>
-  <button @click="cancel" class="editor__cancel">Cancel</button>
+  <div class="editor__buttons">
+    <input ref="upload" @change="save" class="editor__upload" type="file" multiple />
+    <button @click="preview" class="editor__preview">Preview</button>
+    <button @click="edit = true" class="editor__edit">Edit</button>
+    <button @click="save" class="editor__save">Save</button>
+    <button @click="send" class="editor__send">Send</button>
+    <button @click="cancel" class="editor__cancel">Cancel</button>
+  </div>
+  <div v-if="countdown > 0" class="editor__sending">
+    Sending in {{countdown}} seconds...
+    <button @click="countdown = null" class="editor__cancel">Cancel</button>
+  </div>
+  <div v-if="countdown === 0" class="editor__sending">
+    Sending...
+  </div>
 </div>

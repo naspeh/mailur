@@ -5,7 +5,7 @@ import re
 
 from gevent import socket, ssl
 
-from . import imap, imap_utf7, local, log
+from . import imap, imap_utf7, local, log, message
 
 MAP_FLAGS = {
     '\\Answered': '\\Answered',
@@ -65,7 +65,7 @@ def save_credentials(username, password):
     with local.client() as con:
         con.setmetadata(local.SRC, 'gmail/credentials', data)
     email = username if username.count('@') else '%s@gmail.com' % username
-    local.save_addrs([email])
+    local.save_addrs(message.addresses(email))
 
 
 def get_credentials():

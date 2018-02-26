@@ -16,11 +16,25 @@
       display: none;
     }
   }
+
+  &.editor--sending {
+    .editor__buttons {
+      display: none;
+    }
+    .editor__sending {
+      display: block;
+    }
+  }
+}
+
+.editor__sending {
+  display: none;
 }
 
 .editor__edit {
   display: none;
 }
+
 .editor__html {
   display: none;
   padding-bottom: 0.2em;

@@ -4,6 +4,7 @@ import functools as ft
 import json
 import pathlib
 import re
+import smtplib
 
 from bottle import (
     Bottle, abort, redirect, request, response,
@@ -353,6 +354,33 @@ def reply(uid=None):
         msg.attach(inner)
     new_uid = local.new_msg(msg, '\\Draft \\Seen')
     return {'uid': new_uid, 'query_edit': 'draft:%s' % draft_id}
+
+
+@app.get('/send/<uid:int>', name='send')
+def send(uid):
+    from . import gmail
+
+    # TODO: send emails over gmail for now
+    uid = str(uid)
+    msg = local.raw_msg(uid, local.SRC, parsed=True)
+    msgid = message.gen_msgid('sent')
+    msg.replace_header('Message-ID', msgid)
+
+    login, pwd = gmail.get_credentials()
+    con = smtplib.SMTP('smtp.gmail.com', 587)
+    con.ehlo()
+    con.starttls()
+    con.login(login, pwd)
+    con.send_message(msg)
+    gmail.fetch_folder()
+    local.parse()
+
+    uids = local.search_msgs('HEADER Message-ID %s KEYWORD #sent' % msgid)
+    if uids:
+        local.del_msg(uid)
+        uid = uids[0]
+        return {'query': 'thread:%s' % uid}
+    return {'query': ':threads mid:%s' % msgid}
 
 
 @app.get('/raw/<uid:int>', name='raw')
@@ -869,6 +897,7 @@ def draft_info(uid):
         'draft_id': meta['draft_id'],
         'origin_uid': meta['origin_uid'],
         'files': [],
+        'url_send': app.get_url('send', uid=meta['origin_uid']),
     })
     if meta['files']:
         url = app.get_url('raw', uid=info['origin_uid'])

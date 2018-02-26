@@ -562,7 +562,7 @@ def test_drafts_part0(gm_client, login, load_email, some):
     ]
 
 
-def test_drafts_part1(gm_client, login):
+def test_drafts_part1(gm_client, login, patch, some):
     web = login()
     gm_client.add_emails([
         {'flags': '\\Seen', 'mid': '<101@Mlr>'},
@@ -608,7 +608,15 @@ def test_drafts_part1(gm_client, login):
         'to': '',
         'txt': '42',
         'uid': '3',
+        'url_send': '/send/3',
     }
+
+    with patch('mailur.gmail.get_credentials') as c:
+        c.return_value = ('test', 'test')
+        with patch('mailur.web.smtplib.SMTP'):
+            res = web.get('/send/3', status=200).json
+    assert res == {'query': some}
+    assert re.match(r'^:threads mid:\<.*@mailur\.sent\>', some.value)
 
 
 def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
