@@ -27,6 +27,7 @@
       <template slot="opts" slot-scope="_">
         <div
           v-for="opt of _.opts"
+          v-if="info[opt]"
           @click="_.set(opt)"
           :data-value="opt"
           :class="`${_.cls(opt)} ${info[opt].unread ? 'tags__item--unread' : ''}`"

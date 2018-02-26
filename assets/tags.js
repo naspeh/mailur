@@ -19,7 +19,7 @@ let Tags = {
     optsInfo: function() {
       let tags = [];
       for (let id of this.opts) {
-        tags.push(this.info[id]);
+        this.info[id] && tags.push(this.info[id]);
       }
       return tags;
     }
@@ -146,9 +146,7 @@ let TagsEdit = {
     },
     apply: function() {
       if (this.noChanges) return;
-      this.edit({ old: this.origin, new: this.picked }).then(() =>
-        window.app.refreshTags()
-      );
+      this.edit({ old: this.origin, new: this.picked });
       this.$refs.picker.cancel(true);
     }
   }

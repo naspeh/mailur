@@ -37,6 +37,8 @@ let Loader = Vue.extend({
       });
     },
     call: function(method, url, data) {
+      window.app.refreshTags();
+
       this.loading = true;
       return call(method, url, data).then(res => {
         this.loading = false;

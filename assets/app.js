@@ -23,7 +23,6 @@ Vue.component('app', {
   },
   created: function() {
     window.app = this;
-    window.setInterval(this.refreshTags, 10000);
   },
   mounted: function() {
     let opts = window.localStorage.getItem(this.optsKey);
