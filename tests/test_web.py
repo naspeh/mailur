@@ -937,3 +937,42 @@ def test_query():
         'header x-draft-id <12345678> ' + ending,
         {'draft': '<12345678>', 'thread': True}
     )
+
+
+def test_nginx(web, login, patch):
+    web.get('/nginx', status=400)
+
+    res = web.get('/nginx', status=200, headers={
+        'Auth-User': login.user1,
+        'Auth-Pass': 'user'
+    })
+    assert dict(res.headers) == {
+        'Auth-Port': '143',
+        'Auth-Server': '127.0.0.1',
+        'Auth-Status': 'OK',
+        'Content-Length': '0',
+        'Content-Type': 'text/html; charset=UTF-8'
+    }
+
+    res = web.get('/nginx', status=200, headers={
+        'Auth-User': login.user1,
+        'Auth-Pass': 'wrong'
+    })
+    assert dict(res.headers) == {
+        'Auth-Status': "b'[AUTHENTICATIONFAILED] Authentication failed.'",
+        'Auth-Wait': '3',
+        'Content-Length': '0',
+        'Content-Type': 'text/html; charset=UTF-8'
+    }
+
+    with patch('mailur.web.IMAP_OFF', [login.user1]):
+        res = web.get('/nginx', status=200, headers={
+            'Auth-User': login.user1,
+            'Auth-Pass': 'user'
+        })
+    assert dict(res.headers) == {
+        'Auth-Status': 'Disabled',
+        'Auth-Wait': '3',
+        'Content-Length': '0',
+        'Content-Type': 'text/html; charset=UTF-8'
+    }

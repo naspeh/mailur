@@ -17,7 +17,7 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import DEBUG, SECRET, html, imap, local, log, message
+from . import DEBUG, IMAP_OFF, SECRET, html, imap, local, log, message
 from .schema import validate
 
 
@@ -134,7 +134,17 @@ def logout():
 def nginx():
     h = request.headers
     try:
-        local.connect(h['Auth-User'], h['Auth-Pass'])
+        login, pw = h['Auth-User'], h['Auth-Pass']
+    except KeyError as e:
+        return abort(400, repr(e))
+
+    if IMAP_OFF and login in IMAP_OFF:
+        response.set_header('Auth-Status', 'Disabled')
+        response.set_header('Auth-Wait', 3)
+        return ''
+
+    try:
+        local.connect(login, pw)
         response.set_header('Auth-Status', 'OK')
         response.set_header('Auth-Server', '127.0.0.1')
         response.set_header('Auth-Port', '143')

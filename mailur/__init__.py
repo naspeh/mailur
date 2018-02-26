@@ -9,6 +9,7 @@ from contextlib import contextmanager
 
 DEBUG = os.environ.get('MLR_DEBUG', True)
 DEBUG_IMAP = os.environ.get('MLR_DEBUG_IMAP', 0)
+IMAP_OFF = os.environ.get('MLR_IMAP_OFF', '').split()
 SECRET = os.environ.get('MLR_SECRET', uuid.uuid4().hex)
 MASTER = os.environ.get('MLR_MASTER', 'root:root').split(':')
 USER = os.environ.get('MLR_USER', 'user')
