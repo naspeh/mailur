@@ -192,6 +192,7 @@ def test_link_threads_part1(gm_client, msgs):
     assert [i['body']['references'] for i in res] == [
         None, None, None, '<101@mlr> <102@mlr> <103@mlr>', '<101@mlr>'
     ]
+    assert local.search_thrs('uid 4') == [i[0] for i in local.thrs_info(['4'])]
 
 
 def test_link_threads_part2(gm_client, msgs):
@@ -250,6 +251,7 @@ def test_link_threads_part2(gm_client, msgs):
         '<101@mlr> <102@mlr> <103@mlr> <104@mlr>',
         '<102@mlr>'
     ]
+    assert local.search_thrs('uid 1') == [i[0] for i in local.thrs_info(['1'])]
 
 
 def test_link_threads_part3(gm_client, msgs):
@@ -296,6 +298,7 @@ def test_link_threads_part3(gm_client, msgs):
         None, None, None, '<102@mlr>',
         '<101@mlr> <102@mlr> <103@mlr> <104@mlr>'
     ]
+    assert local.search_thrs('uid 1') == [i[0] for i in local.thrs_info(['1'])]
 
 
 def test_msgids(gm_client, msgs, some, load_file, latest):

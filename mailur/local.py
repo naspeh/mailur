@@ -457,7 +457,7 @@ def thrs_info(uids, tags=None, con=None):
     elif '#spam' in tags:
         special_tag = '#spam'
 
-    q = 'REFS UTF-8 INTHREAD REFS UID %s UNKEYWORD #link' % ','.join(uids)
+    q = 'REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids)
     thrs = con.thread(q)
     all_flags = {}
     all_msgs = {}
@@ -467,6 +467,8 @@ def thrs_info(uids, tags=None, con=None):
             r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
         ).groups()
         flags = flags.split()
+        if '#link' in flags:
+            continue
         all_flags[uid] = flags
         all_msgs[uid] = json.loads(res[i][1])
 
@@ -487,7 +489,6 @@ def thrs_info(uids, tags=None, con=None):
             elif special_tag and special_tag not in msg_flags:
                 continue
             info = all_msgs[uid]
-            info['uids'] = thr
             thr_from.append((info['date'], info.get('from')))
             if not msg_flags:
                 continue
