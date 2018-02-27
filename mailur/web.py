@@ -5,6 +5,7 @@ import json
 import pathlib
 import re
 import smtplib
+import ssl
 
 from bottle import (
     Bottle, abort, redirect, request, response,
@@ -436,8 +437,12 @@ def proxy():
 
     def get(url):
         log.debug('proxy: %s', url)
+        opts = dict(
+            insecure=True,
+            ssl_options={'cert_reqs': ssl.CERT_NONE}
+        )
         try:
-            http = HTTPClient.from_url(url, insecure=True)
+            http = HTTPClient.from_url(url, **opts)
             res = http.get(url)
         except Exception as e:
             log.error(e)
