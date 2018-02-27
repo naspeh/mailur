@@ -359,6 +359,19 @@ def test_parts(gm_client, latest, load_email):
     assert m['meta']['preview'] == 'html'
     assert m['body'] == '<p>html</p>'
 
+    msg = MIMEPart()
+    msg.make_alternative()
+    msg.attach(binary('plain', 'text/plain'))
+    htm = MIMEPart()
+    htm.make_related()
+    htm.attach(binary('<p>html</p>', 'text/html'))
+    msg.attach(htm)
+    gm_client.add_emails([{'raw': msg.as_bytes()}])
+    m = latest(parsed=True)
+    assert not m['meta']['files']
+    assert m['meta']['preview'] == 'html'
+    assert m['body'] == '<p>html</p>'
+
     msg1 = MIMEPart()
     msg1.make_mixed()
     msg1.attach(msg)

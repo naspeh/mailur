@@ -159,24 +159,25 @@ def parsed(raw, uid, time, flags, mids):
         return item
 
     def parse_part(part, path=''):
-        htm, files = '', []
+        htm, is_htm, files = '', False, []
         ctype = part.get_content_type()
         if ctype.startswith('message/'):
             content = part.as_bytes()
             files = [attachment(part, content, path)]
-            return htm, files
+            return htm, is_htm, files
         elif part.get_filename():
             content = part.get_payload(decode=True)
             files = [attachment(part, content, path)]
-            return htm, files
+            return htm, False, files
         elif part.is_multipart():
             idx, parts = 0, []
             for m in part.get_payload():
                 idx += 1
                 path_ = '%s.%s' % (path, idx) if path else str(idx)
-                htm_, files_ = parse_part(m, path_)
+                htm_, is_htm_, files_ = parse_part(m, path_)
                 if htm_:
-                    parts.append((htm_, m.get_content_type() == 'text/html'))
+                    parts.append((htm_, is_htm_))
+                is_htm = is_htm or is_htm_
                 files += files_
 
             if part.get_content_subtype() == 'alternative':
@@ -187,7 +188,7 @@ def parsed(raw, uid, time, flags, mids):
                     htm = parts[0][0]
             else:
                 htm = '<hr>'.join(c for c, h in parts if c)
-            return htm, files
+            return htm, is_htm, files
 
         if ctype.startswith('text/'):
             content = part.get_payload(decode=True)
@@ -197,12 +198,13 @@ def parsed(raw, uid, time, flags, mids):
             content = content.rstrip()
             if ctype == 'text/html':
                 htm = content
+                is_htm = True
             else:
                 htm = content and html.from_text(content)
         else:
             content = part.get_payload(decode=True)
             files = [attachment(part, content, path)]
-        return htm, files
+        return htm, is_htm, files
 
     # "email.message_from_bytes" uses "email.policy.compat32" policy
     # and it's by intention, because new policies don't work well
@@ -213,7 +215,7 @@ def parsed(raw, uid, time, flags, mids):
     headers = {}
     meta = {'origin_uid': uid, 'files': [], 'errors': []}
 
-    htm, files = parse_part(orig)
+    htm, is_htm, files = parse_part(orig)
     if htm:
         embeds = {
             f['content-id']: '/raw/%s/%s' % (uid, f['path'])
