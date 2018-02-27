@@ -80,6 +80,10 @@ def index(theme=None):
         login_url = '%s%s' % (prefix, app.get_url('login'))
         return redirect(login_url)
 
+    # TODO: it needs a better way to keep this stuff up to update
+    local.save_msgids()
+    local.save_uid_pairs()
+
     return render_tpl(theme or request.session['theme'], 'index', {
         'user': request.session['username'],
         'tags': wrap_tags(local.tags_info())
@@ -433,11 +437,11 @@ def proxy():
     def get(url):
         log.debug('proxy: %s', url)
         try:
-            http = HTTPClient.from_url(url)
+            http = HTTPClient.from_url(url, insecure=True)
             res = http.get(url)
         except Exception as e:
             log.error(e)
-            abort(503, str(e))
+            abort(500, repr(e))
         return res
 
     res = get(url)

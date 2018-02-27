@@ -134,10 +134,10 @@ service imap-login {
     process_min_avail = 1
 }
 service imap {
-    vsz_limit = 2G
+    vsz_limit = 1G
 }
 service indexer-worker {
-    vsz_limit = 2G
+    vsz_limit = 1G
 }
 service doveadm {
     inet_listener {
@@ -155,7 +155,7 @@ cat <<EOF > /etc/dovecot/passwd.masters
 root:{plain}$secret
 EOF
 cat <<"EOF" > /etc/dovecot/acl
-* owner lr
+* owner lrst
 All owner lrst
 Src owner lrpi
 * user=root lrwstipe

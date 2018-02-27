@@ -308,7 +308,7 @@ def parsed(raw, uid, time, flags, mids):
     msg.make_mixed()
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
     msg.attach(binary(meta_txt, 'application/json'))
-    msg.attach(binary(htm))
+    msg.attach(binary(htm, 'text/html'))
     if txt:
         msg.attach(binary(txt))
 
