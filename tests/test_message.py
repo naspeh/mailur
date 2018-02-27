@@ -39,7 +39,7 @@ def test_general(gm_client, load_file, latest, load_email):
         {'raw': load_file('msg-header-with-long-addresses.txt')}
     ])
     msg = latest()['body']
-    assert msg['to'].startswith('primary discussion list')
+    assert msg['to'].startswith('"primary discussion list')
 
     # should be decoding of headers during parsing
     gm_client.add_emails([
@@ -52,8 +52,8 @@ def test_general(gm_client, load_file, latest, load_email):
         'Message-ID: <with-encoding@test>',
         'Subject: Re: не пора ли подкрепиться?',
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
-        'From: Катя К. <katya@example.com>',
-        'To: Grisha <grrr@example.com>',
+        'From: "Катя К." <katya@example.com>',
+        'To: "Grisha" <grrr@example.com>',
     ])
     assert msg.startswith(expect), '%s\n\n%s' % (expect, msg)
 
@@ -68,7 +68,7 @@ def test_general(gm_client, load_file, latest, load_email):
         'Subject: Re: не пора ли подкрепиться?',
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: "Катя К." <katya@example.com>',
-        'To: Гриша <grrr@example.com>',
+        'To: "Гриша" <grrr@example.com>',
     ])
     assert msg.startswith(expect), '%s\n\n%s' % (expect, msg)
 
@@ -137,8 +137,8 @@ def test_general(gm_client, load_file, latest, load_email):
     assert m['body_full']['from'] == 'grrr@'
     assert m['body_full']['reply-to'] == 'grrr'
 
-    m = load_email('msg-from-rss2email.txt', parsed=True)
-    assert 'From: БлоGнот: Gray <feeds@yadro.org>' in m['raw'].decode()
+    raw = load_email('msg-from-rss2email.txt', parsed=True)['raw'].decode()
+    assert 'From: "БлоGнот: Gray" <feeds@yadro.org>' in raw, raw
 
     # test links
     m = load_email('msg-links.txt', parsed=True)
@@ -241,7 +241,7 @@ def test_addresses():
         'name': 'test',
         'addr': 'test@example.com',
         'hash': '55502f40dc8b7c769880b10874abc9d0',
-        'title': 'test <test@example.com>'
+        'title': '"test" <test@example.com>'
     }]
 
     res = addresses('test <TEST@example.com>')
@@ -249,7 +249,7 @@ def test_addresses():
         'name': 'test',
         'addr': 'TEST@example.com',
         'hash': '55502f40dc8b7c769880b10874abc9d0',
-        'title': 'test <TEST@example.com>'
+        'title': '"test" <TEST@example.com>'
     }]
 
     res = addresses('test@example.com')
@@ -272,7 +272,7 @@ def test_addresses():
             'name': 'test2',
             'addr': 'test2@example.com',
             'hash': '43b05f394d5611c54a1a9e8e20baee21',
-            'title': 'test2 <test2@example.com>'
+            'title': '"test2" <test2@example.com>'
         },
     ]
 

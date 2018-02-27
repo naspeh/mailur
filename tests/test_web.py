@@ -503,15 +503,15 @@ def test_drafts_part0(gm_client, login, load_email, some):
     assert draft['txt'] == ''
     assert draft['subject'] == 'Re: Subj 101'
     assert draft['from'] == ''
-    assert draft['to'] == 'The One <one@t.com>,two@t.com,three@t.com'
+    assert draft['to'] == '"The One" <one@t.com>, two@t.com, three@t.com'
 
     web.get('/set/addrs', {'v': '"The Two" <two@t.com>'})
     res = web.get(url_reply, status=200).json
     res = web.search({'q': res['query_edit']})
     assert res['uids'] == ['1', '3', '2']
     draft = res['edit']
-    assert draft['from'] == 'The Two <two@t.com>'
-    assert draft['to'] == 'The One <one@t.com>,three@t.com'
+    assert draft['from'] == '"The Two" <two@t.com>'
+    assert draft['to'] == '"The One" <one@t.com>, three@t.com'
 
     gm_client.add_emails([{'refs': '<101@mlr>', 'date': time.time() + 1}])
     res = web.search({'q': 'thread:1'})
@@ -525,7 +525,7 @@ def test_drafts_part0(gm_client, login, load_email, some):
     res = web.search({'q': res['query_edit']})
     assert res['uids'] == ['5']
     draft = res['edit']
-    assert draft['from'] == 'The Two <two@t.com>'
+    assert draft['from'] == '"The Two" <two@t.com>'
     assert draft['to'] == ''
     assert draft['txt'] == ''
     assert draft['subject'] == ''
@@ -541,7 +541,7 @@ def test_drafts_part0(gm_client, login, load_email, some):
         'Subject: Re: тема измененная\r\n'
         'Date: Mon, 3 Mar 2014 18:10:08 +0200\r\n'
         'From: "Grisha K." <naspeh@gmail.com>\r\n'
-        'To: Ne Greh <negreh@gmail.com>\r\n'
+        'To: "Ne Greh" <negreh@gmail.com>\r\n'
         '```\r\n'
     )
     assert draft['files'] == [
@@ -727,7 +727,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
             'addr': 'a@t.com',
             'hash': '671fc7fb9f958db9fdd252dfaf2325db',
             'name': 'Alpha',
-            'title': 'Alpha <a@t.com>'
+            'title': '"Alpha" <a@t.com>'
         },
         {
             'addr': 'a@s.com',
@@ -754,7 +754,7 @@ def test_from_list(some):
             'name': 'test',
             'addr': 'test@example.com',
             'hash': '55502f40dc8b7c769880b10874abc9d0',
-            'title': 'test <test@example.com>',
+            'title': '"test" <test@example.com>',
             'query': ':threads from:test@example.com',
         },
     ]

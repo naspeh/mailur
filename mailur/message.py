@@ -133,10 +133,24 @@ def parsed(raw, uid, time, flags, mids):
             else:
                 txt = decode_bytes(raw, charset, label)
             parts += [txt]
-
         header = ''.join(parts)
         header = re.sub('\s+', ' ', header)
         return header
+
+    def decode_addresses(raw, label):
+        if not raw:
+            return None
+
+        decoded = False
+        if not isinstance(raw, str):
+            decoded = True
+            raw = decode_header(raw, label)
+        parts = []
+        for name, addr in getaddresses([raw]):
+            if not decoded:
+                name, addr = [decode_header(i, label) for i in (name, addr)]
+            parts.append(('"%s" <%s>' % (name, addr)) if name else addr)
+        return ', '.join(p for p in parts if p)
 
     def attachment(part, content, path):
         ctype = part.get_content_type()
@@ -233,7 +247,7 @@ def parsed(raw, uid, time, flags, mids):
     meta['files'] = files
 
     for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
-        v = decode_header(orig[n], n)
+        v = decode_addresses(orig[n], n)
         if v is None:
             continue
         headers[n] = v
@@ -397,7 +411,7 @@ def addresses(txt):
         {
             'addr': a[1],
             'name': address_name(a),
-            'title': '{} <{}>'.format(*a) if a[0] else a[1],
+            'title': '"{}" <{}>'.format(*a) if a[0] else a[1],
             'hash': hashlib.md5(a[1].strip().lower().encode()).hexdigest(),
         } for a in getaddresses([txt])
     ]
