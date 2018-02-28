@@ -19,7 +19,7 @@ Vue.component('editor', {
     };
   },
   methods: {
-    save: function() {
+    save: function(refresh = true) {
       let data = new FormData();
       data.append('uid', this.msg.uid);
       for (let i of ['from', 'to', 'subject', 'txt']) {
@@ -29,7 +29,7 @@ Vue.component('editor', {
         data.append('files', file, file.name);
       }
       return call('post', '/editor', data, {}).then(res => {
-        this.refresh();
+        refresh && this.refresh();
         return res;
       });
     },
@@ -52,14 +52,14 @@ Vue.component('editor', {
     send: function() {
       this.preview();
       this.countdown = 5;
-      this.sending();
+      this.save(false).then(res => this.sending(res.url_send));
     },
-    sending: function() {
+    sending: function(url_send) {
       if (this.countdown > 0) {
         this.countdown = this.countdown - 1;
-        setTimeout(() => this.sending(), 1000);
+        setTimeout(() => this.sending(url_send), 1000);
       } else if (this.countdown == 0) {
-        call('get', this.msg.url_send).then(res => this.query(res.query));
+        call('get', url_send).then(res => this.query(res.query));
       } else {
         this.countdown = null;
       }

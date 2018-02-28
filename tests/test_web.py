@@ -647,7 +647,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         'uid': '2',
         'txt': '**test it**',
     }, status=200).json
-    assert res == {'uid': '3'}
+    assert res == {'uid': '3', 'url_send': '/send/3'}
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)

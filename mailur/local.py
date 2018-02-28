@@ -566,4 +566,4 @@ def new_msg(msg, flags, con=None):
     uid = con.append(SRC, flags, None, msg.as_bytes())
     save_msgids([uid])
     parse()
-    return pair_origin_uids([uid])[0]
+    return uid, pair_origin_uids([uid])[0]

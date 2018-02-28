@@ -319,9 +319,9 @@ def editor(id=None):
             addrs = [addr]
         local.save_addrs(addrs)
 
-    new_uid = local.new_msg(msg, draft['flags'])
+    oid, pid = local.new_msg(msg, draft['flags'])
     local.del_msg(draft['origin_uid'])
-    return {'uid': new_uid}
+    return {'uid': pid, 'url_send': app.get_url('send', uid=oid)}
 
 
 @app.get('/set/addrs')
@@ -370,7 +370,7 @@ def reply(uid=None):
     msg = message.new_draft(draft, {}, inner)
     if inner:
         msg.attach(inner)
-    new_uid = local.new_msg(msg, '\\Draft \\Seen')
+    _, new_uid = local.new_msg(msg, '\\Draft \\Seen')
     return {'uid': new_uid, 'query_edit': 'draft:%s' % draft_id}
 
 
