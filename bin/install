@@ -5,11 +5,10 @@ set -exuo pipefail
 
 pacman --noconfirm -Syy
 
-# smtp server for testing with Thunderbird
-# pacman --noconfirm -S opensmtpd
-# sed -i 's/^listen.*/listen on 0.0.0.0/' /etc/smtpd/smtpd.conf
-# systemctl enable smtpd
-# systemctl restart smtpd
+# smtp server for testing
+pacman --noconfirm -S opensmtpd
+systemctl enable smtpd
+systemctl restart smtpd
 
 bin/dovecot
 

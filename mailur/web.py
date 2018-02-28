@@ -140,6 +140,7 @@ def nginx():
     h = request.headers
     try:
         login, pw = h['Auth-User'], h['Auth-Pass']
+        protocol = h['Auth-Protocol']
     except KeyError as e:
         return abort(400, repr(e))
 
@@ -148,11 +149,13 @@ def nginx():
         response.set_header('Auth-Wait', 3)
         return ''
 
+    port = {'imap': '143', 'smtp': '25'}[protocol]
+
     try:
         local.connect(login, pw)
         response.set_header('Auth-Status', 'OK')
         response.set_header('Auth-Server', '127.0.0.1')
-        response.set_header('Auth-Port', '143')
+        response.set_header('Auth-Port', port)
     except imap.Error as e:
         response.set_header('Auth-Status', str(e))
         response.set_header('Auth-Wait', 3)

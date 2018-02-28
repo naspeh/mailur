@@ -944,7 +944,8 @@ def test_nginx(web, login, patch):
 
     res = web.get('/nginx', status=200, headers={
         'Auth-User': login.user1,
-        'Auth-Pass': 'user'
+        'Auth-Pass': 'user',
+        'Auth-Protocol': 'imap'
     })
     assert dict(res.headers) == {
         'Auth-Port': '143',
@@ -956,7 +957,21 @@ def test_nginx(web, login, patch):
 
     res = web.get('/nginx', status=200, headers={
         'Auth-User': login.user1,
-        'Auth-Pass': 'wrong'
+        'Auth-Pass': 'user',
+        'Auth-Protocol': 'smtp'
+    })
+    assert dict(res.headers) == {
+        'Auth-Port': '25',
+        'Auth-Server': '127.0.0.1',
+        'Auth-Status': 'OK',
+        'Content-Length': '0',
+        'Content-Type': 'text/html; charset=UTF-8'
+    }
+
+    res = web.get('/nginx', status=200, headers={
+        'Auth-User': login.user1,
+        'Auth-Pass': 'wrong',
+        'Auth-Protocol': 'imap'
     })
     assert dict(res.headers) == {
         'Auth-Status': "b'[AUTHENTICATIONFAILED] Authentication failed.'",
@@ -965,14 +980,22 @@ def test_nginx(web, login, patch):
         'Content-Type': 'text/html; charset=UTF-8'
     }
 
-    with patch('mailur.web.IMAP_OFF', [login.user1]):
-        res = web.get('/nginx', status=200, headers={
-            'Auth-User': login.user1,
-            'Auth-Pass': 'user'
-        })
-    assert dict(res.headers) == {
+    disabled = {
         'Auth-Status': 'Disabled',
         'Auth-Wait': '3',
         'Content-Length': '0',
         'Content-Type': 'text/html; charset=UTF-8'
     }
+    with patch('mailur.web.IMAP_OFF', [login.user1]):
+        res = web.get('/nginx', status=200, headers={
+            'Auth-User': login.user1,
+            'Auth-Pass': 'user',
+            'Auth-Protocol': 'imap'
+        })
+        assert dict(res.headers) == disabled
+        res = web.get('/nginx', status=200, headers={
+            'Auth-User': login.user1,
+            'Auth-Pass': 'user',
+            'Auth-Protocol': 'smtp'
+        })
+        assert dict(res.headers) == disabled

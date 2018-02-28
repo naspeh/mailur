@@ -14,9 +14,9 @@ useradd -m -d /home/vmail -s /bin/false -u 5000 -g vmail vmail
 
 [ -d '/etc/dovecot.bak' ] || (
     mv /etc/dovecot{,.bak}
+    rm -rf /etc/dovecot
+    mkdir /etc/dovecot
 )
-rm -rf /etc/dovecot
-mkdir /etc/dovecot
 cat <<EOF > /etc/dovecot/dovecot.conf
 auth_debug=yes
 auth_debug_passwords=yes

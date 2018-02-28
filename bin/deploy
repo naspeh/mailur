@@ -102,6 +102,12 @@ mail {
         listen   993;
         protocol imap;
     }
+
+    server {
+        listen    465;
+        protocol  smtp;
+        smtp_auth plain;
+    }
 }
 EOF
 
