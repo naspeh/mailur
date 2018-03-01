@@ -2,17 +2,17 @@
 
 Usage:
   mlr gmail <login> set <username> <password>
-  mlr gmail <login> [--tag=<tag> --box=<box> --parse -t<threads> -b<batch>]
-  mlr parse <login> [<criteria> -t<threads> -b<batch>]
+  mlr gmail <login> [--tag=<tag> --box=<box> --parse --idle] [options]
+  mlr parse <login> [<criteria>] [options]
   mlr threads <login> [<criteria>]
   mlr icons
   mlr web
   mlr lint [--ci]
   mlr test
+  mlr -h | --help
+  mlr --version
 
 Options:
-  -h --help     Show this screen.
-  --version     Show version.
   -b <batch>    Batch size [default: 1000].
   -t <threads>  Amount of threads for thread pool [default: 2].
 """
@@ -21,7 +21,7 @@ import sys
 
 from docopt import docopt
 
-from . import gmail, local
+from . import conf, gmail, local
 
 root = pathlib.Path(__file__).parent.parent
 
@@ -37,7 +37,7 @@ def main(args=None):
 
 
 def process(args):
-    local.USER = args['<login>']
+    conf['USER'] = args['<login>']
     opts = {
         'batch': int(args.get('-b')),
         'threads': int(args.get('-t')),
@@ -45,11 +45,21 @@ def process(args):
     if args['gmail'] and args['set']:
         gmail.save_credentials(args['<username>'], args['<password>'])
     elif args['gmail']:
-        fetch_opts = dict(opts, tag=args.get('--tag'), box=args.get('--box'))
+        select_opts = dict(tag=args['--tag'], box=args['--box'])
+        fetch_opts = dict(opts, **select_opts)
         fetch_opts = {k: v for k, v in fetch_opts.items() if v}
-        gmail.fetch(**fetch_opts)
-        if args.get('--parse'):
-            local.parse(**opts)
+
+        def handler():
+            gmail.fetch(**fetch_opts)
+            if args['--parse']:
+                local.parse(**opts)
+
+        handler()
+        if args['--idle']:
+            select_opts.setdefault('tag', '\\All')
+            with gmail.client(**select_opts) as con:
+                con.idle(handler)
+            return
     elif args['parse']:
         # local.save_msgids()
         # local.save_uid_pairs()

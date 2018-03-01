@@ -986,7 +986,7 @@ def test_nginx(web, login, patch):
         'Content-Length': '0',
         'Content-Type': 'text/html; charset=UTF-8'
     }
-    with patch('mailur.web.IMAP_OFF', [login.user1]):
+    with patch.dict('mailur.web.conf', {'IMAP_OFF': [login.user1]}):
         res = web.get('/nginx', status=200, headers={
             'Auth-User': login.user1,
             'Auth-Pass': 'user',

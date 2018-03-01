@@ -1,3 +1,4 @@
+import email
 import hashlib
 import imaplib
 import json
@@ -5,7 +6,7 @@ import re
 
 from gevent import socket, ssl
 
-from . import imap, imap_utf7, local, log, message
+from . import imap, imap_utf7, local, log, message, user_lock
 
 MAP_FLAGS = {
     '\\Answered': '\\Answered',
@@ -79,6 +80,17 @@ def get_credentials():
 
 
 def fetch_uids(uids, tag, box):
+    exists = {}
+    with local.client(local.SRC) as con:
+        res = con.fetch('1:*', 'BODY.PEEK[HEADER.FIELDS (X-GM-MSGID)]')
+        for i in range(0, len(res), 2):
+            uid = res[i][0].decode().split()[2]
+            line = res[i][1].strip()
+            if not line:
+                continue
+            gid = email.message_from_bytes(line)['X-GM-MSGID'].strip()
+            exists[gid.strip('<>')] = uid
+
     fields = (
         '('
         'UID INTERNALDATE FLAGS BODY.PEEK[] '
@@ -122,7 +134,7 @@ def fetch_uids(uids, tag, box):
                 r' ?){6}',
                 line.decode()
             ).groupdict()
-            if not raw:
+            if not raw or parts['msgid'] in exists:
                 # this happens in "[Gmail]/Chats" folder
                 continue
             flags = re.sub(r'([^ ])*', flag, parts['flags'])
@@ -152,11 +164,16 @@ def fetch_uids(uids, tag, box):
             raw = headers.encode() + raw
             yield parts['time'], flags, raw
 
+    msgs = list(msgs())
+    if not msgs:
+        return None
+
     with local.client(None) as lm:
-        return lm.multiappend(local.SRC, msgs())
+        return lm.multiappend(local.SRC, msgs)
 
 
-def fetch_folder(tag='\\All', *, box=None, batch=1000, threads=8):
+@user_lock('gmail-fetch')
+def fetch_folder(tag='\\All', *, box=None, **opts):
     log.info('## process %r', tag)
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
     with local.client(None) as con:
@@ -183,7 +200,7 @@ def fetch_folder(tag='\\All', *, box=None, batch=1000, threads=8):
     log.info('## box(%s): %s new uids', gm.box, len(uids))
     gm.logout()
     if len(uids):
-        uids = imap.Uids(uids, size=batch, threads=threads)
+        uids = imap.Uids(uids, **opts)
         uids.call_async(fetch_uids, uids, tag, box)
 
     with local.client(None) as lm:

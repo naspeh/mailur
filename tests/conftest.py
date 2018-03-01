@@ -38,10 +38,10 @@ def init(request):
 
 
 @pytest.fixture(autouse=True)
-def setup(new_users, gm_client):
+def setup(new_users, gm_client, patch):
     from mailur import local
 
-    with mock.patch('mailur.local.USER', test1):
+    with patch.dict('mailur.conf', {'USER': test1}):
         local.uid_pairs.cache_clear()
         local.msgids.cache_clear()
         local.saved_tags.cache_clear()
@@ -134,7 +134,7 @@ def gm_client():
         for item in items:
             gm_client.uid += 1
             uid = gm_client.uid
-            gid = 100 * uid
+            gid = item.get('gid', 100 * uid)
             raw = item.get('raw')
             if raw:
                 msg = raw

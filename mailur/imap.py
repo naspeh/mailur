@@ -9,7 +9,7 @@ from imaplib import CRLF, Time2Internaldate
 from gevent.lock import RLock
 from gevent.pool import Pool
 
-from . import DEBUG_IMAP, fn_desc, fn_time, log
+from . import conf, fn_desc, fn_time, log
 
 commands = {}
 
@@ -134,10 +134,10 @@ class Ctx:
         self.logout()
 
 
-def client(connect, *, writable=False, dovecot=False, debug=DEBUG_IMAP):
+def client(connect, *, writable=False, dovecot=False, debug=None):
     def start():
         con = connect()
-        con.debug = debug
+        con.debug = conf['DEBUG_IMAP'] if debug is None else debug
         con.lock = RLock()
         con.new = new
         return con
@@ -175,7 +175,7 @@ def _cmd(con, name):
     def start(args):
         if isinstance(args, str):
             args = args.encode()
-        return con.send(b'%s %s %s' % (tag, name.encode(), args))
+        return con.send(b'%s %s%s' % (tag, name.encode(), args))
     yield tag, start, lambda: con._command_complete(name, tag)
 
 
@@ -189,7 +189,7 @@ def _mdkey(key):
 def setmetadata(con, box, key, value):
     key = _mdkey(key)
     with _cmd(con, 'SETMETADATA') as (tag, start, complete):
-        args = '%s (%s %s)' % (box, key, json.dumps(value))
+        args = ' %s (%s %s)' % (box, key, json.dumps(value))
         start(args.encode() + CRLF)
         typ, data = complete()
         return check(con._untagged_response(typ, data, 'METADATA'))
@@ -199,7 +199,7 @@ def setmetadata(con, box, key, value):
 def getmetadata(con, box, key):
     key = _mdkey(key)
     with _cmd(con, 'GETMETADATA') as (tag, start, complete):
-        args = '%s (%s)' % (box, key)
+        args = ' %s (%s)' % (box, key)
         start(args.encode() + CRLF)
         typ, data = complete()
         return check(con._untagged_response(typ, data, 'METADATA'))
@@ -213,7 +213,7 @@ def _multiappend(con, box, msgs):
                 date_time = Time2Internaldate(time.time())
             args = (' (%s) %s %s' % (flags, date_time, '{%s}' % len(msg)))
             if send == start:
-                args = '%s %s' % (box, args)
+                args = ' %s %s' % (box, args)
             send(args.encode() + CRLF)
             send = con.send
             while con._get_response():
@@ -262,6 +262,32 @@ def thread(con, *criteria):
 @command(dovecot=True)
 def sort(con, fields, *criteria, charset='UTF-8'):
     return check(con.uid('SORT', fields, charset, *criteria))
+
+
+@command()
+def idle(con, handler, code='EXISTS'):
+    def match():
+        return con._untagged_response('OK', [None], code)
+
+    match()
+    log.info('## start idling...')
+    with _cmd(con, 'IDLE') as (tag, start, complete):
+        start(CRLF)
+        while 1:
+            res = con._get_response()
+            if res:
+                log.debug('## received: %r', res.decode())
+            bad = con.tagged_commands[tag]
+            if bad:
+                raise Error(bad)
+            typ, dat = match()
+            if not dat[-1]:
+                continue
+
+            try:
+                handler()
+            except Exception as e:
+                log.error(e)
 
 
 @command()
@@ -414,16 +440,16 @@ def pack_uids(uids):
 class Uids:
     __slots__ = ['val', 'batches', 'threads']
 
-    def __init__(self, uids, *, size=10000, threads=10):
+    def __init__(self, uids, *, batch=10000, threads=10):
         if isinstance(uids, Uids):
             uids = uids.val
         self.threads = threads
         self.val = uids
         self.batches = None
-        if not self.is_str and len(uids) > size:
+        if not self.is_str and len(uids) > batch:
             self.batches = tuple(
-                Uids(uids[i:i+size], size=size)
-                for i in range(0, len(uids), size)
+                Uids(uids[i:i+batch], batch=batch)
+                for i in range(0, len(uids), batch)
             )
 
     @property

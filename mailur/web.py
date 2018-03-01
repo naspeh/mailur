@@ -18,21 +18,21 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import DEBUG, IMAP_OFF, SECRET, html, imap, local, log, message
+from . import conf, html, imap, local, log, message
 from .schema import validate
 
 
 root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
 app = Bottle()
-app.catchall = not DEBUG
+app.catchall = not conf['DEBUG']
 
 
 def session(callback):
     def inner(*args, **kwargs):
-        session = request.get_cookie('session', secret=SECRET)
+        session = request.get_cookie('session', secret=conf['SECRET'])
         if session:
-            local.USER = session['username']
+            conf['USER'] = session['username']
         request.session = session
         return callback(*args, **kwargs)
     return inner
@@ -125,7 +125,7 @@ def login():
         return {'errors': ['Authentication failed.'], 'details': str(e)}
 
     del data['password']
-    response.set_cookie('session', data, SECRET)
+    response.set_cookie('session', data, conf['SECRET'])
     return {}
 
 
@@ -144,7 +144,7 @@ def nginx():
     except KeyError as e:
         return abort(400, repr(e))
 
-    if IMAP_OFF and login in IMAP_OFF:
+    if login in conf['IMAP_OFF']:
         response.set_header('Auth-Status', 'Disabled')
         response.set_header('Auth-Wait', 3)
         return ''

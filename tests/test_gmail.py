@@ -9,7 +9,7 @@ def test_client(select, some):
     con = gmail.client()
     assert select.call_args == call(some, b'All', True)
     assert set(con.__dict__.keys()) == set(
-        '_con logout list select select_tag status search fetch'
+        '_con idle logout list select select_tag status search fetch'
         .split()
     )
 
@@ -167,3 +167,12 @@ def test_thrid(gm_client, msgs):
         '<mlr/thrid/1516806882952089676@mailur.link>',
         '<mlr/thrid/1516806882952089676@mailur.link>'
     ]
+
+
+def test_unique(gm_client, msgs):
+    gm_client.add_emails([{}], parse=False)
+
+    m = msgs(local.SRC)[-1]
+    gid = m['body']['X-GM-MSGID']
+    gm_client.add_emails([{'gid': int(gid.strip('<>'))}], parse=False)
+    assert [i['body']['X-GM-THRID'] for i in msgs(local.SRC)] == [gid]

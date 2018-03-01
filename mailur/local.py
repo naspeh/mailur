@@ -7,7 +7,7 @@ import re
 
 from gevent import socket
 
-from . import MASTER, USER, fn_time, imap, log, message
+from . import conf, fn_time, imap, log, message, user_lock
 
 SRC = 'Src'
 ALL = 'All'
@@ -23,13 +23,13 @@ class Local(imaplib.IMAP4, imap.Conn):
         return socket.create_connection((self.host, self.port))
 
     def login_root(self):
-        master, pwd = MASTER
+        master, pwd = conf['MASTER']
         username = '%s*%s' % (self.username, master)
         return imap.login(self, username, pwd)
 
 
 def connect(username=None, password=None):
-    con = Local(username or USER)
+    con = Local(username or conf['USER'])
     if password is None:
         con.login_root()
     else:
@@ -53,17 +53,18 @@ def using(box=ALL, readonly=True):
 
 def fn_cache(fn):
     fn.cache = {}
+    user = conf['USER']
 
     @ft.wraps(fn)
     def inner(*a, **kw):
         key = a, tuple((k, kw[k]) for k in sorted(kw))
-        if key not in fn.cache.get(USER, {}):
+        if key not in fn.cache.get(user, {}):
             res = fn(*a, **kw)
-            fn.cache.setdefault(USER, {})
-            fn.cache[USER][key] = res
-        return fn.cache[USER][key]
+            fn.cache.setdefault(user, {})
+            fn.cache[user][key] = res
+        return fn.cache[user][key]
 
-    inner.cache_clear = lambda: fn.cache.pop(USER, None)
+    inner.cache_clear = lambda: fn.cache.pop(user, None)
     return inner
 
 
@@ -216,7 +217,8 @@ def parse_msgs(uids, con=None):
     return con.multiappend(ALL, list(msgs()))
 
 
-def parse(criteria=None, *, batch=1000, threads=10):
+@user_lock('parse')
+def parse(criteria=None, **opts):
     con = client(SRC)
     uidnext = 1
     if criteria is None:
@@ -252,7 +254,7 @@ def parse(criteria=None, *, batch=1000, threads=10):
             con.expunge()
 
     con.logout()
-    uids = imap.Uids(uids, size=batch, threads=threads)
+    uids = imap.Uids(uids, **opts)
     puids = ','.join(uids.call_async(parse_msgs, uids))
     if criteria.lower() == 'all' or count == '0':
         puids = '1:*'
