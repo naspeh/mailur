@@ -2,7 +2,7 @@
 
 Usage:
   mlr gmail <login> set <username> <password>
-  mlr gmail <login> [--tag=<tag> --box=<box> --parse --idle] [options]
+  mlr gmail <login> [--tag=<tag> --box=<box> --idle=<idle> --parse] [options]
   mlr parse <login> [<criteria>] [options]
   mlr threads <login> [<criteria>]
   mlr icons
@@ -18,10 +18,11 @@ Options:
 """
 import pathlib
 import sys
+import time
 
 from docopt import docopt
 
-from . import conf, gmail, local
+from . import conf, gmail, local, log
 
 root = pathlib.Path(__file__).parent.parent
 
@@ -54,12 +55,22 @@ def process(args):
             if args['--parse']:
                 local.parse(**opts)
 
-        handler()
-        if args['--idle']:
-            select_opts.setdefault('tag', '\\All')
-            with gmail.client(**select_opts) as con:
-                con.idle(handler)
+        if not args['--idle']:
+            handler()
             return
+
+        timeout = int(args['--idle'])
+        select_opts['tag'] = select_opts.get('tag') or '\\All'
+        # Gmail connections get stuck when open over several minuts with
+        # no actions, so there is timeout used in loop
+        while 1:
+            try:
+                handler()
+                with gmail.client(**select_opts) as con:
+                    con.idle(handler, timeout=timeout)
+            except Exception as e:
+                log.exception(e)
+                time.sleep(10)
     elif args['parse']:
         # local.save_msgids()
         # local.save_uid_pairs()
@@ -81,7 +92,6 @@ def process(args):
 
 
 def web():
-    import time
     from gevent.subprocess import run
     from gevent.pool import Pool
 

@@ -98,3 +98,12 @@ def test_multiappend(patch, msgs):
 
     con.multiappend(local.SRC, new, batch=3)
     assert len(msgs(local.SRC)) == 20
+
+
+def test_idle():
+    def handler():
+        raise ValueError
+
+    con = local.client()
+    # just check if timeout works
+    assert not con.idle(handler, timeout=1)

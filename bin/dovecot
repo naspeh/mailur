@@ -23,7 +23,6 @@ auth_debug_passwords=yes
 auth_verbose_passwords=sha1
 mail_debug=yes
 verbose_ssl=yes
-log_path = /var/log/dovecot.log
 
 # ssl = required
 # ssl_key = </etc/ssl/dovecot/server.key

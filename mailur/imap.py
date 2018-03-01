@@ -6,6 +6,7 @@ import time
 from contextlib import contextmanager
 from imaplib import CRLF, Time2Internaldate
 
+from gevent import Timeout
 from gevent.lock import RLock
 from gevent.pool import Pool
 
@@ -265,34 +266,41 @@ def sort(con, fields, *criteria, charset='UTF-8'):
 
 
 @command()
-def idle(con, handler, code='EXISTS'):
+def idle(con, handler, code='EXISTS', timeout=None):
     def match():
         return con._untagged_response('OK', [None], code)
+
+    def inner():
+        res = con._get_response()
+        if res:
+            log.debug('## received: %r', res.decode())
+        bad = con.tagged_commands[tag]
+        if bad:
+            raise Error(bad)
+        typ, dat = match()
+        if not dat[-1]:
+            return
+        return dat
 
     match()
     log.info('## start idling...')
     with _cmd(con, 'IDLE') as (tag, start, complete):
         start(CRLF)
         while 1:
-            res = con._get_response()
-            if res:
-                log.debug('## received: %r', res.decode())
-            bad = con.tagged_commands[tag]
-            if bad:
-                raise Error(bad)
-            typ, dat = match()
-            if not dat[-1]:
-                continue
-
             try:
-                handler()
-            except Exception as e:
-                log.error(e)
+                with Timeout(timeout):
+                    res = inner()
+                if res:
+                    handler()
+            except Timeout:
+                log.debug('## timeout reached: %ss', timeout)
+                return
 
 
 @command()
-def logout(con):
-    return con.logout()
+def logout(con, timeout=1):
+    with Timeout(timeout):
+        return con.logout()
 
 
 @command(name='list')

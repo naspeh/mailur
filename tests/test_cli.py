@@ -3,10 +3,15 @@ from subprocess import check_output
 from mailur import cli, local
 
 
-def test_general(gm_client, login, msgs):
+def test_general():
     stdout = check_output('mlr -h', shell=True)
     assert b'Mailur CLI' in stdout
 
+    stdout = check_output('mlr icons', shell=True)
+    assert b'assets/font/icons.less updated\n' in stdout
+
+
+def test_fetch_and_parse(gm_client, login, msgs, patch, raises):
     stdout = check_output('mlr parse %s' % login.user1, shell=True)
     assert b'## all parsed already' in stdout
 
@@ -33,3 +38,9 @@ def test_general(gm_client, login, msgs):
     cli.main('parse %s all' % login.user1)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['3', '4']
+
+    with patch('mailur.gmail.fetch') as m, raises(SystemExit):
+        m.side_effect = SystemExit
+        cli.main('gmail %s --parse --idle=10' % login.user1)
+    assert len(msgs(local.SRC)) == 2
+    assert len(msgs()) == 2
