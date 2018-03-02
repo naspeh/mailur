@@ -7,7 +7,7 @@ import re
 
 from gevent import socket
 
-from . import conf, fn_time, imap, log, message, user_lock
+from . import conf, fn_time, html, imap, log, message, user_lock
 
 SRC = 'Src'
 ALL = 'All'
@@ -387,8 +387,8 @@ def raw_part(uid, box, part, con=None):
 @using()
 def fetch_msg(uid, draft=False, con=None):
     fields = (
-        '(FLAGS BINARY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[%s])'
-        % (3 if draft else 2)
+        '(FLAGS BINARY.PEEK[HEADER] BINARY.PEEK[1] BINARY.PEEK[2.%s])'
+        % ('2' if draft else '1')
     )
     res = con.fetch(uid, fields)
     flags = re.search(r'FLAGS \(([^)]*)\)', res[0][0].decode()).group(1)
@@ -422,11 +422,14 @@ def msgs_info(uids, con=None):
 
 @fn_time
 @using()
-def msgs_body(uids, con=None):
-    res = con.fetch(uids, '(UID BINARY.PEEK[2])')
+def msgs_body(uids, fix_privacy=False, con=None):
+    res = con.fetch(uids, '(UID BINARY.PEEK[2.1])')
     for i in range(0, len(res), 2):
         uid = res[i][0].decode().split()[2]
-        yield uid, res[i][1].decode()
+        body = res[i][1].decode()
+        if fix_privacy:
+            body = html.fix_privacy(body)
+        yield uid, body
 
 
 @fn_time

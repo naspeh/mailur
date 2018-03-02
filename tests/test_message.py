@@ -150,7 +150,9 @@ def test_general(gm_client, load_file, latest, load_email):
     assert m['body'].count(l2) == 2, '%s\n%s' % (l2, m['body'])
 
 
-def test_richer(gm_client, latest):
+def test_richer(gm_client, latest, login):
+    web = login()
+
     headers = '\r\n'.join([
         'Date: Wed, 07 Jan 2015 13:23:22 +0000',
         'From: katya@example.com',
@@ -169,8 +171,13 @@ def test_richer(gm_client, latest):
     ])
     gm_client.add_emails([{'raw': raw.encode()}])
     m = latest(parsed=True)
-    assert m['body'] == '<p data-style="color:red;">test html</p>'
-    assert m['meta']['richer'] == 'Show styles'
+    assert m['body'] == '<p style="color:red;">test html</p>'
+    assert m['meta']['styles']
+    assert 'ext_images' not in m['meta']
+    info = web.search({'q': 'uid:%s' % m['uid']})['msgs'][m['uid']]
+    assert info['richer'] == 'Show styles'
+    body = web.body(m['uid'])
+    assert body == '<p data-style="color:red;">test html</p>'
 
     raw = '\r\n'.join([
         headers,
@@ -185,11 +192,16 @@ def test_richer(gm_client, latest):
     gm_client.add_emails([{'raw': raw.encode()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == []
-    assert 'src="data:image/gif' in m['body']
-    assert 'data-src="/proxy?url=%2F%2Fgithub.com' in m['body']
-    assert 'data-src="/proxy?url=http%3A%2F%2Fgithub.com' in m['body']
-    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in m['body']
-    assert m['meta']['richer'] == 'Show 3 external images'
+    assert m['meta']['ext_images'] == 3
+    assert 'styles' not in m['meta']
+    assert m['body'].count('<img src="') == 4
+    info = web.search({'q': 'uid:%s' % m['uid']})['msgs'][m['uid']]
+    assert info['richer'] == 'Show 3 external images'
+    body = web.body(m['uid'])
+    assert 'src="data:image/gif' in body
+    assert 'data-src="/proxy?url=%2F%2Fgithub.com' in body
+    assert 'data-src="/proxy?url=http%3A%2F%2Fgithub.com' in body
+    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in body
 
     raw = '\r\n'.join([
         headers,
@@ -201,10 +213,16 @@ def test_richer(gm_client, latest):
     ])
     gm_client.add_emails([{'raw': raw.encode()}])
     m = latest(parsed=True)
-    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in m['body']
-    assert ' style="color:red"' not in m['body']
-    assert 'data-style="color:red"' in m['body']
-    assert m['meta']['richer'] == 'Show styles and 1 external images'
+    assert m['meta']['ext_images'] == 1
+    assert m['meta']['styles']
+    assert m['body'].count('<img src="') == 1
+    assert m['body'].count('<p style="') == 1
+    info = web.search({'q': 'uid:%s' % m['uid']})['msgs'][m['uid']]
+    assert info['richer'] == 'Show styles and 1 external images'
+    body = web.body(m['uid'])
+    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in body
+    assert ' style="color:red"' not in body
+    assert 'data-style="color:red"' in body
 
 
 def test_encodings(gm_client, load_email):
@@ -230,7 +248,7 @@ def test_encodings(gm_client, load_email):
     assert m['body'] == '<p>Здравствуйте.<br></p>'
 
     m = load_email('msg-encoding-cp1251-chardet.txt', 'cp1251', parsed=True)
-    assert 'Уважаемый Гриша\xa0\xa0!' in m['body']
+    assert 'Уважаемый Гриша&nbsp;&nbsp;!' in m['body']
     # subject shoud be decoded properly using charset detected in body
     assert m['meta']['subject'] == 'Оплатите, пожалуйста, счет'
 
@@ -283,6 +301,11 @@ def test_parts(gm_client, latest, load_email):
     assert not m['meta']['files']
     assert m['meta']['preview'] == ''
     assert m['body'] == ''
+    assert m['body_txt'] is None
+    assert m['body_end'] == '\r\n'.join([
+        '<hr>',
+        '<a href="http://localhost/raw/1">Origin message</a>'
+    ])
 
     raw = '<?xml version="1.0" encoding="UTF-8"?>'
     gm_client.add_emails([{'raw': binary(raw, 'text/html').as_bytes()}])
@@ -294,7 +317,7 @@ def test_parts(gm_client, latest, load_email):
     m = latest(parsed=True)
     assert not m['meta']['files']
     assert m['meta']['preview'] == ' a b c d'
-    assert m['body'] == '<p>\xa0a\xa0\xa0b<br>\xa0\xa0\xa0c d</p>'
+    assert m['body'] == '<p>&nbsp;a&nbsp;&nbsp;b<br>&nbsp;&nbsp;&nbsp;c d</p>'
 
     raw = (
         '<p>'
@@ -307,14 +330,19 @@ def test_parts(gm_client, latest, load_email):
     gm_client.add_emails([{'raw': binary(raw, 'text/html').as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['preview'] == ''
-    assert m['body'] == '<p><img><img><img data-style="color:red"><img></p>'
+    assert m['body'] == '<p><img><img><img style="color:red"><img></p>'
 
     msg = binary('', 'application/json')
     msg.add_header('Content-Disposition', 'attachment; filename="1/f/ /.json"')
     gm_client.add_emails([{'raw': msg.as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '1-f---.json', 'path': '', 'size': 0}
+        {
+            'filename': '1-f---.json',
+            'path': '',
+            'size': 0,
+            'url': '/raw/5/1-f---.json',
+        }
     ]
     assert m['meta']['preview'] == '[1-f---.json]'
     assert m['body'] == ''
@@ -348,6 +376,7 @@ def test_parts(gm_client, latest, load_email):
     assert not m['meta']['files']
     assert m['meta']['preview'] == 'plain html'
     assert m['body'] == '<p>plain</p><hr><p>html</p>'
+    assert m['body_txt'] is None
 
     msg = MIMEPart()
     msg.make_alternative()
@@ -358,6 +387,7 @@ def test_parts(gm_client, latest, load_email):
     assert not m['meta']['files']
     assert m['meta']['preview'] == 'html'
     assert m['body'] == '<p>html</p>'
+    assert m['body_txt'] == 'plain'
 
     msg = MIMEPart()
     msg.make_alternative()
@@ -371,6 +401,7 @@ def test_parts(gm_client, latest, load_email):
     assert not m['meta']['files']
     assert m['meta']['preview'] == 'html'
     assert m['body'] == '<p>html</p>'
+    assert m['body_txt'] == 'plain'
 
     msg1 = MIMEPart()
     msg1.make_mixed()
@@ -381,6 +412,7 @@ def test_parts(gm_client, latest, load_email):
     assert not m['meta']['files']
     assert m['meta']['preview'] == 'html html2'
     assert m['body'] == '<p>html</p><hr><p>html2</p>'
+    assert m['body_txt'] is None
 
     msg = MIMEPart()
     msg.make_mixed()
@@ -391,6 +423,7 @@ def test_parts(gm_client, latest, load_email):
     assert not m['meta']['files']
     assert m['meta']['preview'] == '&lt;br&gt;plain html'
     assert m['body'] == '<p>&lt;br&gt;plain</p><hr><p>html</p>'
+    assert m['body_txt'] is None
 
     msg = MIMEPart()
     msg.make_mixed()
@@ -399,8 +432,12 @@ def test_parts(gm_client, latest, load_email):
     gm_client.add_emails([{'raw': msg.as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == [
-        {'path': p, 'filename': 'unknown-%s.json' % p, 'size': 1}
-        for p in ('1', '2')
+        {
+            'filename': 'unknown-%s.json' % p,
+            'path': p,
+            'size': 1,
+            'url': '/raw/%s/%s/unknown-%s.json' % (m['uid'], p, p),
+        } for p in ('1', '2')
     ]
     assert m['body'] == ''
     assert m['meta']['preview'] == '[unknown-1.json, unknown-2.json]'
@@ -412,11 +449,21 @@ def test_parts(gm_client, latest, load_email):
     gm_client.add_emails([{'raw': msg1.as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == [
-        {'path': p, 'filename': 'unknown-%s.json' % p, 'size': 1}
-        for p in ('2.1', '2.2')
+        {
+            'filename': 'unknown-%s.json' % p,
+            'path': p,
+            'size': 1,
+            'url': '/raw/%s/%s/unknown-%s.json' % (m['uid'], p, p),
+        } for p in ('2.1', '2.2')
     ]
     assert m['body'] == '<p>1</p>'
     assert m['meta']['preview'] == '1 [unknown-2.1.json, unknown-2.2.json]'
+    assert m['body_end'] == '\r\n'.join([
+        '<hr>',
+        '<a href="{0}/2.1/unknown-2.1.json">unknown-2.1.json</a><br>',
+        '<a href="{0}/2.2/unknown-2.2.json">unknown-2.2.json</a><br>',
+        '<a href="{0}">Origin message</a>',
+    ]).format('http://localhost/raw/14')
 
     msg2 = MIMEPart()
     msg2.make_mixed()
@@ -426,43 +473,93 @@ def test_parts(gm_client, latest, load_email):
     gm_client.add_emails([{'raw': msg2.as_bytes()}])
     m = latest(parsed=True)
     assert m['meta']['files'] == [
-        {'path': p, 'filename': 'unknown-%s.json' % p, 'size': 1}
-        for p in ('1.1', '1.2', '3.2.1', '3.2.2')
+        {
+            'filename': 'unknown-%s.json' % p,
+            'path': p,
+            'size': 1,
+            'url': '/raw/%s/%s/unknown-%s.json' % (m['uid'], p, p),
+        } for p in ('1.1', '1.2', '3.2.1', '3.2.2')
     ]
-    assert m['body'] == '<p>0</p><hr><p>1</p>'
+    assert m['body'] == '<p>0<br><br>1</p>'
 
     # test some real emails with attachments
     m = load_email('msg-attachments-one-gmail.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '20.png', 'image': True, 'path': '2', 'size': 544}
+        {
+            'filename': '20.png',
+            'image': True,
+            'path': '2',
+            'size': 544,
+            'url': '/raw/16/2/20.png',
+        }
     ]
     assert '<hr>' not in m['body']
     assert 'ответ на тело' in m['body']
 
     m = load_email('msg-attachments-two-gmail.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '08.png', 'image': True, 'path': '2', 'size': 553},
-        {'filename': '09.png', 'image': True, 'path': '3', 'size': 520}
+        {
+            'filename': '08.png',
+            'image': True,
+            'path': '2',
+            'size': 553,
+            'url': '/raw/17/2/08.png',
+        },
+        {
+            'filename': '09.png',
+            'image': True,
+            'path': '3',
+            'size': 520,
+            'url': '/raw/17/3/09.png',
+        }
     ]
     assert '<hr>' not in m['body']
     assert 'ответ на тело' in m['body']
+    assert m['body_end'] == '\r\n'.join([
+        '<hr>',
+        '<a href="{0}/2/08.png">08.png</a><br>',
+        '<a href="{0}/3/09.png">09.png</a><br>',
+        '<a href="{0}">Origin message</a>',
+    ]).format('http://localhost/raw/17')
 
     m = load_email('msg-attachments-two-yandex.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': '49.png', 'image': True, 'path': '2', 'size': 482},
-        {'filename': '50.png', 'image': True, 'path': '3', 'size': 456}
+        {
+            'filename': '49.png',
+            'image': True,
+            'path': '2',
+            'size': 482,
+            'url': '/raw/18/2/49.png',
+        },
+        {
+            'filename': '50.png',
+            'image': True,
+            'path': '3',
+            'size': 456,
+            'url': '/raw/18/3/50.png',
+        }
     ]
     assert 'ответ на тело' in m['body']
 
     m = load_email('msg-attachments-textfile.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': 'Дополнение4.txt', 'path': '2', 'size': 11}
+        {
+            'filename': 'Дополнение4.txt',
+            'path': '2',
+            'size': 11,
+            'url': '/raw/19/2/Дополнение4.txt',
+        }
     ]
     assert m['body'] == '<p>тест</p>'
 
     m = load_email('msg-rfc822.txt', parsed=True)
     assert m['meta']['files'] == [
-        {'filename': 'unknown-2.eml', 'path': '2', 'size': 463}
+        {
+            'filename': 'unknown-2.eml',
+            'path': '2',
+            'size': 463,
+            'url': '/raw/20/2/unknown-2.eml',
+        }
     ]
 
     # test embeds
@@ -472,7 +569,8 @@ def test_parts(gm_client, latest, load_email):
         'filename': '50.png',
         'image': True,
         'path': '2',
-        'size': 456
+        'size': 456,
+        'url': '/raw/21/2/50.png',
     }]
     url = '/raw/%s/2' % m['meta']['origin_uid']
     assert url in m['body']

@@ -17,7 +17,7 @@ Vue.component('app', {
       addrs: [],
       picSize: 20,
       tagCount: 7,
-      opts: { split: false, splitQuery: null, bigger: false },
+      opts: { split: false, splitQuery: null, bigger: false, fixPrivacy: true },
       optsKey: `${window.data.user}:opts`
     };
   },
@@ -68,9 +68,9 @@ Vue.component('app', {
       this.setOpt(name, !this.opts[name]);
     },
     reloadOpts: function() {
-      document
-        .querySelector('html')
-        .classList.toggle('opt--bigger', this.opts.bigger);
+      let html = document.querySelector('html');
+      html.classList.toggle('opt--bigger', this.opts.bigger);
+      html.classList.toggle('opt--fix-privacy', this.opts.fixPrivacy);
       if (!this.split && this.opts.split && this.opts.splitQuery) {
         this.openInSplit(this.opts.splitQuery);
       }

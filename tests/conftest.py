@@ -217,9 +217,12 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
         }
         if parsed:
             body = email.message_from_bytes(res[1])
-            parts = body.get_payload()
-            msg['meta'] = json.loads(parts[0].get_payload())
-            msg['body'] = parts[1].get_payload()
+            parts = [p.get_payload() for p in body.get_payload()]
+            txt = [p.get_payload() for p in parts[1]]
+            msg['meta'] = json.loads(parts[0])
+            msg['body'] = txt[0]
+            msg['body_txt'] = txt[1] if len(txt) > 1 else None
+            msg['body_end'] = parts[2] if len(parts) > 2 else None
             msg['body_full'] = body
             msg['raw'] = res[1]
         else:
@@ -257,6 +260,11 @@ def web():
 
         def flag(self, data, status=200):
             return self.post_json('/msgs/flag', data, status=status)
+
+        def body(self, uid, fix_privacy=True):
+            data = {'uids': [uid], 'fix_privacy': fix_privacy}
+            res = self.post_json('/msgs/body', data, status=200).json
+            return res[uid]
 
     if not assets.exists():
         assets.mkdir()

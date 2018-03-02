@@ -17,6 +17,7 @@ conf = {
     'SECRET': os.environ.get('MLR_SECRET', uuid.uuid4().hex),
     'MASTER': os.environ.get('MLR_MASTER', 'root:root').split(':'),
     'USER': os.environ.get('MLR_USER', 'user'),
+    'HOST': os.environ.get('MLR_HOST', 'http://localhost').rstrip('/'),
 }
 
 log = logging.getLogger(__name__)

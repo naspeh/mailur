@@ -248,13 +248,14 @@ def msgs_info():
 def msgs_body():
     uids = request.json['uids']
     read = request.json.get('read', True)
+    fix_privacy = request.json.get('fix_privacy', True)
     if not uids:
         return abort(400)
     if read:
         unread = local.search_msgs('uid %s unseen' % ','.join(uids))
         if unread:
             local.msgs_flag(unread, [], ['\\Seen'])
-    return dict(local.msgs_body(uids))
+    return dict(local.msgs_body(uids, fix_privacy))
 
 
 @app.post('/thrs/link')
@@ -807,16 +808,15 @@ def wrap_msgs(items, hide_tags=None):
         else:
             info['url_reply'] = app.get_url('reply', uid=uid)
 
-        info['files'] = wrap_files(info['files'], info['url_raw'])
+        styles, ext_images = info.get('styles'), info.get('ext_images')
+        if styles or ext_images:
+            richer = ['styles'] if styles else []
+            if ext_images:
+                richer.append('%s external images' % ext_images)
+            richer = ('Show %s' % ' and '.join(richer)) if richer else ''
+            info['richer'] = richer
         msgs[uid] = info
     return msgs
-
-
-def wrap_files(files, url):
-    return [
-        dict(f, url='%s/%s/%s' % (url, f['path'], f['filename']))
-        for f in files
-    ]
 
 
 def wrap_addresses(addrs, max=4):
@@ -918,10 +918,7 @@ def draft_info(uid):
         'flags': flags,
         'draft_id': meta['draft_id'],
         'origin_uid': meta['origin_uid'],
-        'files': [],
+        'files': meta['files'],
         'url_send': app.get_url('send', uid=meta['origin_uid']),
     })
-    if meta['files']:
-        url = app.get_url('raw', uid=info['origin_uid'])
-        info['files'] = wrap_files(meta['files'], url)
     return info

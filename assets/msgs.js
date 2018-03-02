@@ -111,7 +111,8 @@ let Base = {
       this.pics(msgs);
     },
     fetchBodies: function(uids) {
-      return this.call('post', '/msgs/body', { uids: uids }).then(res => {
+      let data = { uids: uids, fix_privacy: window.app.opts.fixPrivacy };
+      return this.call('post', '/msgs/body', data).then(res => {
         this.bodies = Object.assign({}, this.bodies, res);
         this.refresh();
       });

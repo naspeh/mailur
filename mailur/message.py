@@ -13,7 +13,7 @@ from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 import chardet
 
-from . import html, log
+from . import conf, html, log
 
 aliases = {
     # Seems Google used gb2312 in some subjects, so there is another symbol
@@ -163,6 +163,8 @@ def parsed(raw, uid, time, flags, mids):
         else:
             ext = mimetypes.guess_extension(ctype) or 'txt'
             filename = 'unknown-%s%s' % (path, ext)
+        end = '/'.join(i for i in (path, filename) if i)
+        item['url'] = '/raw/%s/%s' % (uid, end)
         item['filename'] = filename
 
         content_id = part.get('Content-ID')
@@ -173,36 +175,42 @@ def parsed(raw, uid, time, flags, mids):
         return item
 
     def parse_part(part, path=''):
-        htm, is_htm, files = '', False, []
+        htm, txt, files = '', '', []
         ctype = part.get_content_type()
         if ctype.startswith('message/'):
             content = part.as_bytes()
             files = [attachment(part, content, path)]
-            return htm, is_htm, files
+            return htm, txt, files
         elif part.get_filename():
             content = part.get_payload(decode=True)
             files = [attachment(part, content, path)]
-            return htm, False, files
+            return htm, txt, files
         elif part.is_multipart():
             idx, parts = 0, []
             for m in part.get_payload():
                 idx += 1
                 path_ = '%s.%s' % (path, idx) if path else str(idx)
-                htm_, is_htm_, files_ = parse_part(m, path_)
-                if htm_:
-                    parts.append((htm_, is_htm_))
-                is_htm = is_htm or is_htm_
+                htm_, txt_, files_ = parse_part(m, path_)
+                parts.append((htm_, txt_))
                 files += files_
 
+            htm = [h for h, t in parts if h]
+            txt = [t for h, t in parts if t]
             if part.get_content_subtype() == 'alternative':
-                htm_ = [c for c, is_htm in parts if is_htm]
-                if htm_:
-                    htm = htm_[0]
-                elif parts:
-                    htm = parts[0][0]
+                htm = htm[0] if htm else ''
+                txt = txt[0] if txt else ''
             else:
-                htm = '<hr>'.join(c for c, h in parts if c)
-            return htm, is_htm, files
+                if htm:
+                    htm = '<hr>'.join(
+                        h if h else html.from_text(t)
+                        for h, t in parts if h or t
+                    )
+                    txt = ''
+                elif txt:
+                    txt = '\n\n'.join(txt)
+                else:
+                    htm = txt = ''
+            return htm, txt, files
 
         if ctype.startswith('text/'):
             content = part.get_payload(decode=True)
@@ -212,13 +220,12 @@ def parsed(raw, uid, time, flags, mids):
             content = content.rstrip()
             if ctype == 'text/html':
                 htm = content
-                is_htm = True
             else:
-                htm = content and html.from_text(content)
+                txt = content
         else:
             content = part.get_payload(decode=True)
             files = [attachment(part, content, path)]
-        return htm, is_htm, files
+        return htm, txt, files
 
     # "email.message_from_bytes" uses "email.policy.compat32" policy
     # and it's by intention, because new policies don't work well
@@ -229,14 +236,16 @@ def parsed(raw, uid, time, flags, mids):
     headers = {}
     meta = {'origin_uid': uid, 'files': [], 'errors': []}
 
-    htm, is_htm, files = parse_part(orig)
+    htm, txt, files = parse_part(orig)
     if htm:
         embeds = {
-            f['content-id']: '/raw/%s/%s' % (uid, f['path'])
+            f['content-id']: f['url']
             for f in files if 'content-id' in f
         }
         htm, extra_meta = html.clean(htm, embeds)
         meta.update(extra_meta)
+    elif txt:
+        htm = html.from_text(txt)
 
     preview = htm and html.to_line(htm, 200)
     if len(preview) < 200 and files:
@@ -245,6 +254,13 @@ def parsed(raw, uid, time, flags, mids):
         )
     meta['preview'] = preview
     meta['files'] = files
+
+    links = [(f['filename'], f['url']) for f in files]
+    links.append(('Origin message', '/raw/%s' % uid))
+    links = '<hr>\n' + '<br>\n'.join(
+        ('<a href="%s%s">%s</a>' % (conf['HOST'], url, name))
+        for name, url in links
+    )
 
     for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
         v = decode_addresses(orig[n], n)
@@ -314,19 +330,24 @@ def parsed(raw, uid, time, flags, mids):
     elif refs:
         msg.add_header('References', ' '.join(refs))
 
-    txt = None
     if '\\Draft' in flags:
         draft_id = orig['X-Draft-ID'] or gen_draftid()
         msg.add_header('X-Draft-ID', draft_id)
         meta['draft_id'] = draft_id
         txt = parse_draft(orig)[0]
+        links = ''
 
     msg.make_mixed()
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
     msg.attach(binary(meta_txt, 'application/json'))
-    msg.attach(binary(htm, 'text/html'))
+    body = new()
+    body.make_alternative()
+    body.attach(binary(htm, 'text/html'))
     if txt:
-        msg.attach(binary(txt))
+        body.attach(binary(txt))
+    msg.attach(body)
+    if links:
+        msg.attach(binary(links, 'text/html'))
 
     flags = []
     if meta['errors']:

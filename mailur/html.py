@@ -53,28 +53,40 @@ def clean(htm, embeds):
             pass
         elif re.match('^(https?://|//).*', src):
             ext_images += 1
-            proxy_url = '/proxy?' + urlencode({'url': src})
-            img.attrib['data-src'] = proxy_url
-            del img.attrib['src']
         else:
             del img.attrib['src']
 
     styles = False
     for el in htm.xpath('//*[@style]'):
-        el.attrib['data-style'] = el.attrib['style']
-        del el.attrib['style']
         styles = True
+        break
 
     fix_links(htm)
 
-    richer = ['styles'] if styles else []
-    if ext_images:
-        richer.append('%s external images' % ext_images)
-    richer = ('Show %s' % ' and '.join(richer)) if richer else ''
+    richer = (('styles', styles), ('ext_images', ext_images))
+    richer = {k: v for k, v in richer if v}
 
     htm = tostring(htm, encoding='utf-8').decode().strip()
     htm = re.sub('(^<div>|</div>$)', '', htm)
-    return htm, {'richer': richer} if richer else {}
+    return htm, richer
+
+
+def fix_privacy(htm):
+    htm = fromstring(htm)
+
+    for img in htm.xpath('//img[@src]'):
+        src = img.attrib['src']
+        if re.match('^(https?://|//).*', src):
+            proxy_url = '/proxy?' + urlencode({'url': src})
+            img.attrib['data-src'] = proxy_url
+            del img.attrib['src']
+
+    for el in htm.xpath('//*[@style]'):
+        el.attrib['data-style'] = el.attrib['style']
+        del el.attrib['style']
+
+    htm = tostring(htm, encoding='utf-8').decode().strip()
+    return htm
 
 
 def fix_links(doc):

@@ -311,14 +311,14 @@ def test_general(gm_client, load_email, login, some):
             'image': True,
             'path': '2',
             'size': 553,
-            'url': '/raw/3/2/08.png'
+            'url': '/raw/3/2/08.png',
         },
         {
             'filename': '09.png',
             'image': True,
             'path': '3',
             'size': 520,
-            'url': '/raw/3/3/09.png'
+            'url': '/raw/3/3/09.png',
         }
     ]
     assert some['preview'] == (
@@ -682,7 +682,12 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == [
-        {'filename': 'test.rst', 'path': '2', 'size': 3}
+        {
+            'filename': 'test.rst',
+            'path': '2',
+            'size': 3,
+            'url': '/raw/4/2/test.rst',
+        }
     ]
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
@@ -697,7 +702,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         'filename': 'test.rst',
         'path': '2',
         'size': 3,
-        'url': '/raw/4/2/test.rst'
+        'url': '/raw/4/2/test.rst',
     }]
 
     web.post('/editor', {
@@ -713,8 +718,18 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     m = latest(parsed=1)
     assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == [
-        {'filename': 'test.rst', 'path': '2', 'size': 3},
-        {'filename': 'test2.rst', 'path': '3', 'size': 3},
+        {
+            'filename': 'test.rst',
+            'path': '2',
+            'size': 3,
+            'url': '/raw/5/2/test.rst',
+        },
+        {
+            'filename': 'test2.rst',
+            'path': '3',
+            'size': 3,
+            'url': '/raw/5/3/test2.rst',
+        },
     ]
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
@@ -999,3 +1014,37 @@ def test_nginx(web, login, patch):
             'Auth-Protocol': 'smtp'
         })
         assert dict(res.headers) == disabled
+
+
+def test_privacy(gm_client, login):
+    web = login()
+
+    headers = '\r\n'.join([
+        'Date: Wed, 07 Jan 2015 13:23:22 +0000',
+        'From: katya@example.com',
+        'To: grrr@example.com',
+        'MIME-Version: 1.0',
+        'Content-type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: 8bit',
+    ])
+
+    raw = '\r\n'.join([
+        headers,
+        'Message-ID: <richer-styles-and-imgs@test>',
+        'Subject: styles and images',
+        ''
+        '<p style="color:red">test html</p>',
+        '<img src="https://github.com/favicon.ico" />'
+    ])
+    gm_client.add_emails([{'raw': raw.encode()}])
+    uid, info = web.search({'q': ':raw all'})['msgs'].popitem()
+    assert info['richer'] == 'Show styles and 1 external images'
+    body = web.body(uid)
+    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in body
+    assert ' style="color:red"' not in body
+    assert 'data-style="color:red"' in body
+    body = web.body(uid, False)
+    assert body == (
+        '<p style="color:red">test html</p>&#13;\r\n'
+        '<img src="https://github.com/favicon.ico">'
+    )
