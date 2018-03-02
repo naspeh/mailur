@@ -304,8 +304,8 @@ def test_parts(gm_client, latest, load_email):
     assert m['body_txt'] is None
     assert m['body_end'] == '\r\n'.join([
         '<hr>',
-        '<a href="http://localhost/raw/1">Origin message</a>'
-    ])
+        '<a href="{0}/original-msg.eml">Original message</a>'
+    ]).format('http://localhost/raw/1')
 
     raw = '<?xml version="1.0" encoding="UTF-8"?>'
     gm_client.add_emails([{'raw': binary(raw, 'text/html').as_bytes()}])
@@ -462,7 +462,7 @@ def test_parts(gm_client, latest, load_email):
         '<hr>',
         '<a href="{0}/2.1/unknown-2.1.json">unknown-2.1.json</a><br>',
         '<a href="{0}/2.2/unknown-2.2.json">unknown-2.2.json</a><br>',
-        '<a href="{0}">Origin message</a>',
+        '<a href="{0}/original-msg.eml">Original message</a>',
     ]).format('http://localhost/raw/14')
 
     msg2 = MIMEPart()
@@ -519,7 +519,7 @@ def test_parts(gm_client, latest, load_email):
         '<hr>',
         '<a href="{0}/2/08.png">08.png</a><br>',
         '<a href="{0}/3/09.png">09.png</a><br>',
-        '<a href="{0}">Origin message</a>',
+        '<a href="{0}/original-msg.eml">Original message</a>',
     ]).format('http://localhost/raw/17')
 
     m = load_email('msg-attachments-two-yandex.txt', 'koi8-r', parsed=True)

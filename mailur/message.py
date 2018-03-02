@@ -256,7 +256,7 @@ def parsed(raw, uid, time, flags, mids):
     meta['files'] = files
 
     links = [(f['filename'], f['url']) for f in files]
-    links.append(('Origin message', '/raw/%s' % uid))
+    links.append(('Original message', '/raw/%s/original-msg.eml' % uid))
     links = '<hr>\n' + '<br>\n'.join(
         ('<a href="%s%s">%s</a>' % (conf['HOST'], url, name))
         for name, url in links

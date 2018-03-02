@@ -402,22 +402,28 @@ def send(uid):
     return {'query': ':threads mid:%s' % msgid}
 
 
-@app.get('/raw/<uid:int>', name='raw')
-@app.get('/raw/<uid:int>/<part>')
-@app.get('/raw/<uid:int>/<part>/<filename>')
-def raw(uid, part=None, filename=None):
+@app.get('/raw/<uid:int>')
+@app.get('/raw/<uid:int>/original-msg.eml', name='raw')
+def raw(uid):
     box = request.query.get('box', local.SRC)
     uid = str(uid)
     if request.query.get('parsed') or request.query.get('p'):
         box = local.ALL
         uid = local.pair_origin_uids([uid])[0]
 
-    if part:
-        msg, content_type = local.raw_part(uid, box, part)
-    else:
-        msg = local.raw_msg(uid, box)
-        content_type = 'text/plain'
+    msg = local.raw_msg(uid, box)
+    if msg is None:
+        return abort(404)
+    response.content_type = 'text/plain'
+    return msg
 
+
+@app.get('/raw/<uid:int>/<part>')
+@app.get('/raw/<uid:int>/<part>/<filename>')
+def raw_part(uid, part, filename=None):
+    box = request.query.get('box', local.SRC)
+    uid = str(uid)
+    msg, content_type = local.raw_part(uid, box, part)
     if msg is None:
         return abort(404)
     response.content_type = content_type

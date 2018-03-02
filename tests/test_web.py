@@ -211,7 +211,7 @@ def test_general(gm_client, load_email, login, some):
                 'time_human': some,
                 'time_title': some,
                 'uid': '1',
-                'url_raw': '/raw/1',
+                'url_raw': '/raw/1/original-msg.eml',
                 'url_reply': '/reply/1',
             },
             '2': {
@@ -236,7 +236,7 @@ def test_general(gm_client, load_email, login, some):
                 'time_human': some,
                 'time_title': some,
                 'uid': '2',
-                'url_raw': '/raw/2',
+                'url_raw': '/raw/2/original-msg.eml',
                 'url_reply': '/reply/2',
             }
         },
@@ -275,7 +275,7 @@ def test_general(gm_client, load_email, login, some):
                 'time_title': some,
                 'uid': '2',
                 'uids': ['1', '2'],
-                'url_raw': '/raw/2',
+                'url_raw': '/raw/2/original-msg.eml',
                 'url_reply': '/reply/2',
             }
         },
