@@ -99,6 +99,7 @@ def fetch_uids(uids, tag, box):
     )
     with client(tag, box=box) as gm:
         res = gm.fetch(uids.str, fields)
+        login = gm.username
 
     def flag(m):
         flag = m.group()
@@ -146,9 +147,10 @@ def fetch_uids(uids, tag, box):
 
             headers = [
                 'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),
+                'X-GM-UID: <%s>' % parts['uid'],
                 'X-GM-MSGID: <%s>' % parts['msgid'],
                 'X-GM-THRID: <%s>' % parts['thrid'],
-                'X-GM-UID: <%s>' % parts['uid'],
+                'X-GM-Login: <%s>' % login,
             ]
             thrid_re = '(^| )mlr/thrid/\d+'
             thrid = re.search(thrid_re, flags)

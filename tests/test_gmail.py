@@ -94,7 +94,7 @@ def test_fetch_and_parse(gm_client, some):
     assert lm.status(local.ALL, '(UIDNEXT)') == [b'All (UIDNEXT 7)']
 
 
-def test_origin_msg(gm_client, latest):
+def test_origin_msg(gm_client, latest, login):
     gm_client.add_emails(parse=False)
     msg = latest(local.SRC)['body']
     # headers
@@ -106,6 +106,8 @@ def test_origin_msg(gm_client, latest):
     assert msgid and msgid == '<10100>'
     thrid = msg.get('X-GM-THRID')
     assert thrid and thrid == '<10100>'
+    user = msg.get('X-GM-Login')
+    assert user == '<%s>' % login.user2
 
     gm_client.add_emails([
         {'flags': r'\Flagged', 'labels': r'"\\Inbox" "\\Sent" label'}

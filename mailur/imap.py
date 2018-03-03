@@ -121,6 +121,10 @@ class Ctx:
         return 'Ctx:%s' % (self._con)
 
     @property
+    def username(self):
+        return self._con.username
+
+    @property
     def box(self):
         return self._con.current_box
 
