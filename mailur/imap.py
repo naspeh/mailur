@@ -489,9 +489,22 @@ class Uids:
     def call_async(self, fn, *args):
         if not self.batches:
             return self.call(fn, *args)
+
+        def get_exceptions():
+            return [j.exception for j in jobs if j.exception]
+
+        jobs = []
         pool = Pool(self.threads)
-        jobs = [pool.spawn(f) for f in self._call(fn, *args)]
-        pool.join(raise_error=True)
+        for f in self._call(fn, *args):
+            if pool.wait_available():
+                if get_exceptions():
+                    break
+                jobs.append(pool.spawn(f))
+        pool.join()
+
+        exceptions = get_exceptions()
+        if exceptions:
+            raise ValueError('Exception in the pool: %s' % exceptions)
         return (f.value for f in jobs)
 
     def __repr__(self):
