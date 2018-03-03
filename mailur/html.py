@@ -73,7 +73,7 @@ def clean(htm, embeds):
     return htm, richer
 
 
-def fix_privacy(htm):
+def fix_privacy(htm, only_proxy=False):
     htm = fromstring(htm)
 
     for img in htm.xpath('//img[@src]'):
@@ -82,14 +82,20 @@ def fix_privacy(htm):
             pass
         elif re.match('^(https?://|//).*', src):
             proxy_url = '/proxy?' + urlencode({'url': src})
-            img.attrib['data-src'] = proxy_url
-            del img.attrib['src']
+            if only_proxy:
+                img.attrib['src'] = proxy_url
+            else:
+                img.attrib['data-src'] = proxy_url
+                del img.attrib['src']
 
-    for el in htm.xpath('//*[@style]'):
-        el.attrib['data-style'] = el.attrib['style']
-        del el.attrib['style']
+    if not only_proxy:
+        # style could contain "background-image", etc.
+        for el in htm.xpath('//*[@style]'):
+            el.attrib['data-style'] = el.attrib['style']
+            del el.attrib['style']
 
     htm = tostring(htm, encoding='utf-8').decode().strip()
+    htm = re.sub('(^<div>|</div>$)', '', htm)
     return htm
 
 

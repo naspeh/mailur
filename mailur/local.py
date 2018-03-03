@@ -427,8 +427,7 @@ def msgs_body(uids, fix_privacy=False, con=None):
     for i in range(0, len(res), 2):
         uid = res[i][0].decode().split()[2]
         body = res[i][1].decode()
-        if fix_privacy:
-            body = html.fix_privacy(body)
+        body = html.fix_privacy(body, only_proxy=not fix_privacy)
         yield uid, body
 
 

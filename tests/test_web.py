@@ -1045,8 +1045,8 @@ def test_privacy(gm_client, login, load_email):
     assert 'data-style="color:red"' in body
     body = web.body(uid, False)
     assert body == (
-        '<p style="color:red">test html</p>&#13;\r\n'
-        '<img src="https://github.com/favicon.ico">'
+        '<p style="color:red">test html</p>\r\r\n'
+        '<img src="/proxy?url=https%3A%2F%2Fgithub.com%2Ffavicon.ico">'
     )
 
     # embend shouldn't be replaced with proxy url
