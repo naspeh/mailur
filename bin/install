@@ -6,9 +6,9 @@ set -exuo pipefail
 pacman --noconfirm -Syy
 
 # smtp server for testing
-pacman --noconfirm -S opensmtpd
-systemctl enable smtpd
-systemctl restart smtpd
+#pacman --noconfirm -S opensmtpd
+#systemctl enable smtpd
+#systemctl restart smtpd
 
 bin/dovecot
 

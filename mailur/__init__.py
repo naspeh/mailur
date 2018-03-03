@@ -20,13 +20,23 @@ conf = {
     'HOST': os.environ.get('MLR_HOST', 'http://localhost').rstrip('/'),
 }
 
+
+class UserFilter(logging.Filter):
+    def filter(self, record):
+        record.user = conf['USER']
+        return True
+
+
 log = logging.getLogger(__name__)
+log.addFilter(UserFilter())
 logging.config.dictConfig({
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {'f': {
         'datefmt': '%Y-%m-%d %H:%M:%S%Z',
-        'format': '[%(asctime)s][%(process)s][%(levelname).3s] %(message)s',
+        'format': (
+            '[%(asctime)s][%(process)s][%(user)s][%(levelname).3s] %(message)s'
+        ),
     }},
     'handlers': {'h': {
         'class': 'logging.StreamHandler',

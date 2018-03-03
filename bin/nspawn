@@ -12,10 +12,11 @@ bin=${bin:-install-nspawn}
 # losetup --show --find /var/lib/machines.raw
 # mkfs -t btrfs /dev/loop0
 # mount /dev/loop0 /var/lib/machines
-# base_url=https://uk.images.linuxcontainers.org/images/archlinux/current/amd64/default
-# machinectl pull-tar --verify=no $base_url/20180105_01:27/rootfs.tar.xz $tpl
+# machinectl pull-tar --verify=no $file_url $tpl
 base_url=https://uk.images.linuxcontainers.org/images/archlinux/current/amd64/default
-curl -o /tmp/arch.tar.xz $base_url/20180105_01:27/rootfs.tar.xz
+time_dir=$(curl -s https://uk.images.linuxcontainers.org/images/archlinux/current/amd64/default/ | grep -o '/20[^/]*/' | tail -n1)
+file_url=${base_url}${time_dir}rootfs.tar.xz
+curl -o /tmp/arch.tar.xz $file_url
 cd /var/lib/machines
 sudo mkdir $tpl
 sudo tar xf /tmp/arch.tar.xz -C $tpl
