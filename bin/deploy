@@ -53,37 +53,7 @@ http {
     access_log /var/log/nginx/access.log;
     error_log /var/log/nginx/error.log;
 
-    include /etc/nginx/params.conf;
-
-    server {
-        listen 80 default;
-
-        return 301 https://$domain\$request_uri;
-    }
-    server {
-        listen 443 ssl;
-
-        ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
-
-        location / {
-            proxy_pass http://localhost:5000/;
-        }
-        location /.well-known {
-            root /var/tmp;
-        }
-    }
-    server {
-        listen 9003 ssl;
-
-        ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
-
-        location / {
-            proxy_pass http://localhost:9000/;
-            expires epoch;
-        }
-    }
+    include /etc/nginx/conf.d/*.conf;
 }
 
 mail {
@@ -111,7 +81,40 @@ mail {
 }
 EOF
 
-cat <<EOF > /etc/nginx/params.conf
+mkdir -p /etc/nginx/conf.d/
+cat <<EOF > /etc/nginx/conf.d/mailur.conf
+server {
+    listen 80 default;
+
+    return 301 https://$domain\$request_uri;
+}
+server {
+    listen 443 ssl;
+
+    ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:5000/;
+    }
+    location /.well-known {
+        root /var/tmp;
+    }
+}
+server {
+    listen 9003 ssl;
+
+    ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:9000/;
+        expires epoch;
+    }
+}
+EOF
+
+cat <<EOF > /etc/nginx/conf.d/params.conf
 tcp_nopush on;
 tcp_nodelay on;
 output_buffers 1 256k;
