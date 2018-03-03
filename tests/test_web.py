@@ -1016,7 +1016,7 @@ def test_nginx(web, login, patch):
         assert dict(res.headers) == disabled
 
 
-def test_privacy(gm_client, login):
+def test_privacy(gm_client, login, load_email):
     web = login()
 
     headers = '\r\n'.join([
@@ -1048,3 +1048,12 @@ def test_privacy(gm_client, login):
         '<p style="color:red">test html</p>&#13;\r\n'
         '<img src="https://github.com/favicon.ico">'
     )
+
+    # embend shouldn't be replaced with proxy url
+    m = load_email('msg-embeds-one-gmail.txt', parsed=True)
+    uid, info = web.search({'q': 'uid:%s' % m['uid']})['msgs'].popitem()
+    assert 'richer' not in info
+
+    body = web.body(uid)
+    url = 'http://localhost/raw/%s/2' % m['meta']['origin_uid']
+    assert url in body

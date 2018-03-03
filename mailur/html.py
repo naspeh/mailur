@@ -11,6 +11,8 @@ from pygments import highlight
 from pygments.formatters import html
 from pygments.lexers import get_lexer_by_name
 
+from . import conf
+
 
 class HighlightRenderer(mistune.Renderer):
     def block_code(self, code, lang):
@@ -76,7 +78,9 @@ def fix_privacy(htm):
 
     for img in htm.xpath('//img[@src]'):
         src = img.attrib['src']
-        if re.match('^(https?://|//).*', src):
+        if src.startswith(conf['HOST']):
+            pass
+        elif re.match('^(https?://|//).*', src):
             proxy_url = '/proxy?' + urlencode({'url': src})
             img.attrib['data-src'] = proxy_url
             del img.attrib['src']

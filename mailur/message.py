@@ -239,7 +239,7 @@ def parsed(raw, uid, time, flags, mids):
     htm, txt, files = parse_part(orig)
     if htm:
         embeds = {
-            f['content-id']: f['url']
+            f['content-id']: '%s%s' % (conf['HOST'], f['url'])
             for f in files if 'content-id' in f
         }
         htm, extra_meta = html.clean(htm, embeds)

@@ -572,5 +572,5 @@ def test_parts(gm_client, latest, load_email):
         'size': 456,
         'url': '/raw/21/2/50.png',
     }]
-    url = '/raw/%s/2' % m['meta']['origin_uid']
+    url = 'http://localhost/raw/%s/2' % m['meta']['origin_uid']
     assert url in m['body']
