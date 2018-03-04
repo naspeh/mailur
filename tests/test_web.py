@@ -337,6 +337,33 @@ def test_general(gm_client, load_email, login, some):
     assert res['tags'] == ['#inbox']
     assert [i['tags'] for i in res['msgs'].values()] == [[], []]
 
+    # one message from thread is going to #trash
+    gm_client.add_emails([{'labels': '\\Inbox', 'from': 'one@t.com'}])
+    res = web.search({'q': ':threads tag:#inbox'})
+    assert res['uids'] == ['4', '2']
+    res = web.post_json('/thrs/link', {'uids': res['uids']})
+    res = web.search({'q': ':threads tag:#inbox'})
+    assert res['uids'] == ['4']
+    web.flag({'uids': ['4'], 'new': ['#trash']})
+    res = web.search({'q': ':threads tag:#inbox'})
+    assert res['uids'] == ['4']
+    assert res['msgs']['4']['subject'] == 'Subj 102'
+    assert 'from' not in res['msgs']['4']
+    res = web.search({'q': 'thread:4'})
+    assert res['uids'] == ['1', '2']
+    res = web.search({'q': ':threads tag:#trash'})
+    assert res['uids'] == ['4']
+    assert res['msgs']['4']['subject'] == 'Subj 104'
+    assert res['msgs']['4']['from'] == {
+        'addr': 'one@t.com',
+        'hash': 'bc11cf997156ef71c34c23457e67fd65',
+        'name': 'one',
+        'query': ':threads from:one@t.com',
+        'title': 'one@t.com'
+    }
+    res = web.search({'q': 'tag:#trash thread:4'})
+    assert res['uids'] == ['4']
+
 
 def test_msgs_flag(gm_client, login, msgs):
     def post(uids, **data):

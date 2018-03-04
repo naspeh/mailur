@@ -444,7 +444,7 @@ def msg_flags(uid, box=ALL, con=None):
 @fn_time
 @using()
 def search_thrs(query, con=None):
-    criteria = 'INTHREAD REFS %s KEYWORD #latest' % query
+    criteria = 'INTHREAD REFS (%s) KEYWORD #latest' % query
     res = con.sort('(REVERSE DATE)', criteria)
     uids = res[0].decode().split()
     log.debug('## query: %r; threads: %s', query, len(uids))
@@ -489,10 +489,13 @@ def thrs_info(uids, tags=None, con=None):
             msg_flags = all_flags[uid]
             if '#latest' in msg_flags:
                 thrid = uid
+                latest_skipped = True
             if not special_tag and {'#trash', '#spam'}.intersection(msg_flags):
                 continue
             elif special_tag and special_tag not in msg_flags:
                 continue
+            if '#latest' in msg_flags:
+                latest_skipped = False
             info = all_msgs[uid]
             thr_from.append((info['date'], info.get('from')))
             if not msg_flags:
@@ -504,12 +507,12 @@ def thrs_info(uids, tags=None, con=None):
             thr_flags.extend(msg_flags)
         if thrid is None:
             raise ValueError('No #latest for %s' % thr)
-
+        if not latest_skipped:
+            info = all_msgs[thrid]
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
         addrs = [v for k, v in sorted(thr_from, key=lambda i: i[0])]
-        info = all_msgs[thrid]
         info['uids'] = thr
         if draft_id:
             info['draft_id'] = draft_id
