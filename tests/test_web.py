@@ -504,6 +504,7 @@ def test_drafts_part0(gm_client, login, load_email, some):
     assert draft['subject'] == 'Re: Subj 101'
     assert draft['from'] == ''
     assert draft['to'] == '"The One" <one@t.com>, two@t.com, three@t.com'
+    assert web.body('2') == ''
 
     web.get('/set/addrs', {'v': '"The Two" <two@t.com>'})
     res = web.get(url_reply, status=200).json

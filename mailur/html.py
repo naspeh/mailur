@@ -74,8 +74,10 @@ def clean(htm, embeds):
 
 
 def fix_privacy(htm, only_proxy=False):
-    htm = fromstring(htm)
+    if not htm.strip():
+        return htm
 
+    htm = fromstring(htm)
     for img in htm.xpath('//img[@src]'):
         src = img.attrib['src']
         if src.startswith(conf['HOST']):
