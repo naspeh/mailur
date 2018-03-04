@@ -20,7 +20,7 @@ class HighlightRenderer(mistune.Renderer):
             return '\n<pre><code>%s</code></pre>\n' % \
                 mistune.escape(code)
         lexer = get_lexer_by_name(lang, stripall=True)
-        formatter = html.HtmlFormatter()
+        formatter = html.HtmlFormatter(noclasses=True)
         return highlight(code, lexer, formatter)
 
 
@@ -33,6 +33,7 @@ def clean(htm, embeds):
     if not htm:
         return '', {}
 
+    htm = htm.replace('\r\n', '\n')
     cleaner = Cleaner(
         links=False,
         style=True,
@@ -68,7 +69,7 @@ def clean(htm, embeds):
     richer = (('styles', styles), ('ext_images', ext_images))
     richer = {k: v for k, v in richer if v}
 
-    htm = tostring(htm, encoding='utf-8').decode().strip()
+    htm = tostring(htm, encoding='unicode').strip()
     htm = re.sub('(^<div>|</div>$)', '', htm)
     return htm, richer
 
@@ -96,7 +97,7 @@ def fix_privacy(htm, only_proxy=False):
             el.attrib['data-style'] = el.attrib['style']
             del el.attrib['style']
 
-    htm = tostring(htm, encoding='utf-8').decode().strip()
+    htm = tostring(htm, encoding='unicode').strip()
     htm = re.sub('(^<div>|</div>$)', '', htm)
     return htm
 
@@ -120,7 +121,7 @@ def from_text(txt):
     htm = escape(txt)
     htm = fromstring(tpl % htm)
     fix_links(htm)
-    htm = tostring(htm, encoding='utf-8').decode()
+    htm = tostring(htm, encoding='unicode')
     htm = htm[3:-4]
     htm = re.sub('(?m)((\r?\n)+| [ ]+|^ )', replace, htm)
     htm = tpl % htm

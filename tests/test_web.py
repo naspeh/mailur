@@ -1,4 +1,5 @@
 import datetime as dt
+import email
 import re
 import time
 
@@ -475,7 +476,7 @@ def test_search_thread(gm_client, login, some):
     assert res['tags'] == ['#inbox', 'test1']
 
 
-def test_drafts_part0(gm_client, login, load_email, some):
+def test_drafts_part0(gm_client, login, latest, load_email, some):
     web = login()
     gm_client.add_emails([
         {'from': '"The One" <one@t.com>', 'to': 'two@t.com, three@t.com'}
@@ -561,6 +562,15 @@ def test_drafts_part0(gm_client, login, load_email, some):
             'url': '/raw/7/2.3/09.png'
         }
     ]
+
+    gm_client.add_emails([{'from': 'two@t.com', 'to': 'two@t.com'}])
+    m = latest(parsed=True)
+    res = web.get('/reply/%s' % m['uid']).json
+    res = web.search({'q': res['query_edit']})
+    draft = res['edit']
+    assert draft['from'] == '"The Two" <two@t.com>'
+    assert draft['to'] == 'two@t.com'
+    assert draft['txt'] == ''
 
 
 def test_drafts_part1(gm_client, login, patch, some):
@@ -710,13 +720,13 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         'uid': '4',
         'txt': 'test it again',
         'subject': 'Subj new',
-        'from': '"Alpha" <a@t.com>',
-        'to': 'b@t.com, c@t.com',
+        'from': '"Альфа" <a@t.com>',
+        'to': '"Бета" <b@t.com>, c@t.com',
         'files': Upload('test2.rst', b'lol', 'text/x-rst')
     }, status=200)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
     assert [i['uid'] for i in msgs()] == ['1', '5']
-    m = latest(parsed=1)
+    m = latest(parsed=1, policy=email.policy.default)
     assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == [
         {
@@ -734,16 +744,16 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     ]
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
-    assert m['body_full']['from'] == '"Alpha" <a@t.com>'
-    assert m['body_full']['to'] == 'b@t.com, c@t.com'
+    assert m['body_full']['from'] == 'Альфа <a@t.com>'
+    assert m['body_full']['to'] == 'Бета <b@t.com>, c@t.com'
     assert m['body_full']['subject'] == 'Subj new'
     assert m['body'] == '<p>test it again</p>'
     assert local.get_addrs() == [
         {
             'addr': 'a@t.com',
             'hash': '671fc7fb9f958db9fdd252dfaf2325db',
-            'name': 'Alpha',
-            'title': '"Alpha" <a@t.com>'
+            'name': 'Альфа',
+            'title': '"Альфа" <a@t.com>'
         },
         {
             'addr': 'a@s.com',
@@ -752,6 +762,14 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
             'title': 'a@s.com'
         },
     ]
+
+    with patch('mailur.gmail.get_credentials') as c:
+        c.return_value = ('test', 'test')
+        with patch('mailur.web.smtplib.SMTP.sendmail'):
+            with patch('mailur.web.smtplib.SMTP.login'):
+                res = web.get('/send/5', status=200).json
+    assert res == {'query': some}
+    assert re.match(r'^:threads mid:\<.*@mailur\.sent\>', some.value)
 
     with patch('mailur.local.new_msg') as m:
         m.side_effect = ValueError
@@ -1046,7 +1064,7 @@ def test_privacy(gm_client, login, load_email):
     assert 'data-style="color:red"' in body
     body = web.body(uid, False)
     assert body == (
-        '<p style="color:red">test html</p>\r\r\n'
+        '<p style="color:red">test html</p>\r\n'
         '<img src="/proxy?url=https%3A%2F%2Fgithub.com%2Ffavicon.ico">'
     )
 

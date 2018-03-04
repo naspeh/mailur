@@ -90,7 +90,7 @@ def test_general(gm_client, load_file, latest, load_email):
     gm_client.add_emails([{'raw': raw}])
     msg = latest(parsed=True)
     assert msg['meta']['preview'] == 'возможн� �сти,'
-    assert msg['body'] == '<p>возможн�&#13;\r\n �сти,</p>'
+    assert msg['body'] == '<p>возможн�\r\n �сти,</p>'
     assert msg['meta']['errors']
     assert (
         "error on 'text/html()': [UnicodeDecodeError] 'utf-8' codec can't "

@@ -1,5 +1,6 @@
 import base64
 import datetime as dt
+import email.policy
 import functools as ft
 import json
 import pathlib
@@ -354,11 +355,13 @@ def reply(uid=None):
         if not re.search('(?i)^re:', subj):
             subj = 'Re: %s' % subj
         to = [head['reply-to'] or head['from'], head['to'], head['cc']]
-        to = message.addresses(','.join(a for a in to if a))
-        to = ','.join(a['title'] for a in to if addr.get('addr') != a['addr'])
+        to_all = message.addresses(','.join(a for a in to if a))
+        to = [a['title'] for a in to_all if addr.get('addr') != a['addr']]
+        if not to:
+            to = [to_all[0]['title']]
         draft.update({
             'subject': subj,
-            'to': to,
+            'to': ','.join(to),
             'in-reply-to': meta['msgid'],
             'references': meta['msgid'],
         })
@@ -382,7 +385,8 @@ def send(uid):
 
     # TODO: send emails over gmail for now
     uid = str(uid)
-    msg = local.raw_msg(uid, local.SRC, parsed=True)
+    raw = local.raw_msg(uid, local.SRC)
+    msg = email.message_from_bytes(raw, policy=email.policy.SMTPUTF8)
     msgid = message.gen_msgid('sent')
     msg.replace_header('Message-ID', msgid)
 

@@ -205,8 +205,8 @@ def gm_client():
         yield gm_client
 
 
-def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
-    from mailur import local
+def _msgs(box=None, uids='1:*', *, parsed=False, raw=False, policy=None):
+    from mailur import local, message
 
     def flags(m):
         res = re.search('FLAGS \(([^)]*)\)', m).group(1).split()
@@ -220,7 +220,7 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
             'flags': flags(res[0].decode()),
         }
         if parsed:
-            body = email.message_from_bytes(res[1])
+            body = email.message_from_bytes(res[1], policy=policy)
             parts = [p.get_payload() for p in body.get_payload()]
             txt = [p.get_payload() for p in parts[1]]
             msg['meta'] = json.loads(parts[0])
@@ -230,10 +230,14 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False):
             msg['body_full'] = body
             msg['raw'] = res[1]
         else:
-            msg['body'] = res[1] if raw else email.message_from_bytes(res[1])
+            body = res[1]
+            if not raw:
+                body = email.message_from_bytes(res[1], policy=policy)
+            msg['body'] = body
 
         return msg
 
+    policy = policy if policy else message.policy
     con = local.client(box or local.ALL)
     res = con.fetch(uids, '(uid flags body[])')
     return [msg(res[i]) for i in range(0, len(res), 2)]
@@ -246,8 +250,8 @@ def msgs():
 
 @pytest.fixture
 def latest():
-    def inner(box=None, *, parsed=False, raw=False):
-        return _msgs(box, '*', parsed=parsed, raw=raw)[0]
+    def inner(box=None, *, parsed=False, raw=False, policy=None):
+        return _msgs(box, '*', parsed=parsed, raw=raw, policy=policy)[0]
     return inner
 
 
