@@ -91,14 +91,31 @@ def fetch_uids(uids, tag, box):
             gid = email.message_from_bytes(line)['X-GM-MSGID'].strip()
             exists[gid.strip('<>')] = uid
 
-    fields = (
-        '('
-        'UID INTERNALDATE FLAGS BODY.PEEK[] '
-        'X-GM-LABELS X-GM-MSGID X-GM-THRID'
-        ')'
-    )
+    new_uids = []
     with client(tag, box=box) as gm:
-        res = gm.fetch(uids.str, fields)
+        res = gm.fetch(uids.str, 'X-GM-MSGID')
+        for line in res:
+            parts = re.search(
+                r'('
+                r'UID (?P<uid>\d+)'
+                r' ?|'
+                r'X-GM-MSGID (?P<msgid>\d+)'
+                r' ?){2}',
+                line.decode()
+            ).groupdict()
+            if parts['msgid'] in exists:
+                continue
+            new_uids.append(parts['uid'])
+        if not new_uids:
+            log.debug('## %s are alredy imported' % uids)
+            return
+        fields = (
+            '('
+            'INTERNALDATE FLAGS BODY.PEEK[] '
+            'X-GM-LABELS X-GM-MSGID X-GM-THRID'
+            ')'
+        )
+        res = gm.fetch(new_uids, fields)
         login = gm.username
 
     def flag(m):

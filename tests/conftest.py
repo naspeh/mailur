@@ -131,7 +131,7 @@ def gm_client():
         gmail.client()
         if items is None:
             items = [{}]
-        gm_client.fetch = [('OK', [])]
+        gm_client.fetch = [('OK', []), ('OK', [])]
         for item in items:
             gm_client.uid += 1
             uid = gm_client.uid
@@ -179,6 +179,9 @@ def gm_client():
             )
             if res[0] != 'OK':
                 raise Exception(res)
+            gm_client.fetch[1][1].append(
+                (b'1 (X-GM-MSGID %d UID %d )' % (gid, uid))
+            )
             gm_client.fetch[0][1].extend([
                 (
                     b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '
