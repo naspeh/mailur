@@ -127,8 +127,8 @@ def test_origin_msg(gm_client, latest, login):
     flags = latest(local.SRC)['flags']
     assert 'label #12ea23fc #40602c03' == flags
     assert local.saved_tags() == {
-        '#12ea23fc': {'id': '#12ea23fc', 'name': 'another label'},
-        '#40602c03': {'id': '#40602c03', 'name': '(label)'},
+        '#12ea23fc': {'name': 'another label'},
+        '#40602c03': {'name': '(label)'},
     }
 
     # - "\Important" must be skiped
@@ -139,9 +139,9 @@ def test_origin_msg(gm_client, latest, login):
     flags = latest(local.SRC)['flags']
     assert '#sent #a058c658' == flags
     assert local.saved_tags() == {
-        '#12ea23fc': {'id': '#12ea23fc', 'name': 'another label'},
-        '#40602c03': {'id': '#40602c03', 'name': '(label)'},
-        '#a058c658': {'id': '#a058c658', 'name': 'test(тест)'},
+        '#12ea23fc': {'name': 'another label'},
+        '#40602c03': {'name': '(label)'},
+        '#a058c658': {'name': 'test(тест)'},
     }
 
     gm_client.add_emails([{}], tag='\\Junk', parse=False)

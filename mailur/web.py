@@ -84,6 +84,7 @@ def index(theme=None):
     # TODO: it needs a better way to keep this stuff up to update
     local.save_msgids()
     local.save_uid_pairs()
+    local.saved_tags.cache_clear()
 
     return render_tpl(theme or request.session['theme'], 'index', {
         'user': request.session['username'],

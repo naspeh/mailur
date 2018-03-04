@@ -70,7 +70,7 @@ def fn_cache(fn):
 
 @fn_cache
 @using(None)
-def saved_tags(reverse=False, con=None):
+def saved_tags(con=None):
     res = con.getmetadata(SRC, 'tags')
     if len(res) == 1:
         return {}
@@ -92,6 +92,7 @@ def get_tag(name):
             with client(None) as con:
                 con.setmetadata(SRC, 'tags', json.dumps(tags))
             log.info('## new tag %s: %r', tag, name)
+            saved_tags.cache_clear()
     info.update(id=tag)
     return info
 
