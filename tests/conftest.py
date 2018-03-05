@@ -39,13 +39,11 @@ def init(request):
 
 @pytest.fixture(autouse=True)
 def setup(new_users, gm_client, patch):
-    from mailur import local
+    from mailur import cache
 
     conf = {'USER': test1, 'BASE_URL': 'http://localhost'}
     with patch.dict('mailur.conf', conf):
-        local.uid_pairs.cache_clear()
-        local.msgids.cache_clear()
-        local.saved_tags.cache_clear()
+        cache.clear()
 
         yield
 

@@ -22,7 +22,7 @@ import time
 
 from docopt import docopt
 
-from . import conf, gmail, local, log
+from . import LockError, conf, gmail, local, log
 
 root = pathlib.Path(__file__).parent.parent
 
@@ -51,9 +51,12 @@ def process(args):
         fetch_opts = {k: v for k, v in fetch_opts.items() if v}
 
         def handler():
-            gmail.fetch(**fetch_opts)
-            if args['--parse']:
-                local.parse(**opts)
+            try:
+                gmail.fetch(**fetch_opts)
+                if args['--parse']:
+                    local.parse(**opts)
+            except LockError as e:
+                log.warn(e)
 
         if not args['--idle']:
             handler()
@@ -61,8 +64,6 @@ def process(args):
 
         timeout = int(args['--idle'])
         select_opts['tag'] = select_opts.get('tag') or '\\All'
-        # Gmail connections get stuck when open over several minuts with
-        # no actions, so there is timeout used in loop
         while 1:
             try:
                 handler()

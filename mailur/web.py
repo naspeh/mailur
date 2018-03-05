@@ -7,6 +7,7 @@ import pathlib
 import re
 import smtplib
 import ssl
+import time
 
 from bottle import (
     Bottle, abort, redirect, request, response,
@@ -19,7 +20,7 @@ from geventhttpclient import HTTPClient
 
 from pytz import common_timezones, timezone, utc
 
-from . import conf, html, imap, local, log, message
+from . import LockError, conf, html, imap, local, log, message, user_cache
 from .schema import validate
 
 
@@ -34,6 +35,7 @@ def session(callback):
         session = request.get_cookie('session', secret=conf['SECRET'])
         if session:
             conf['USER'] = session['username']
+            user_cache().clear()
         request.session = session
         return callback(*args, **kwargs)
     return inner
@@ -83,10 +85,6 @@ def index(theme=None):
         prefix = ('/' + theme) if theme else ''
         login_url = '%s%s' % (prefix, app.get_url('login'))
         return redirect(login_url)
-
-    # TODO: it needs a better way to keep this stuff up to update
-    local.save_msgids()
-    local.save_uid_pairs()
 
     return render_tpl(theme or request.session['theme'], 'index', {
         'user': request.session['username'],
@@ -397,8 +395,12 @@ def send(uid):
     con.starttls()
     con.login(login, pwd)
     con.send_message(msg)
-    gmail.fetch_folder()
-    local.parse()
+    try:
+        gmail.fetch_folder()
+        local.parse()
+    except LockError as e:
+        log.warn(e)
+        time.sleep(5)
 
     uids = local.search_msgs('HEADER Message-ID %s KEYWORD #sent' % msgid)
     if uids:

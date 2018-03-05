@@ -10,6 +10,7 @@ import uuid
 from contextlib import contextmanager
 
 
+cache = {}
 conf = {
     'DEBUG': os.environ.get('MLR_DEBUG', True),
     'DEBUG_IMAP': os.environ.get('MLR_DEBUG_IMAP', 0),
@@ -97,6 +98,37 @@ def fn_time(func, desc=None):
     return ft.wraps(func)(inner)
 
 
+def fn_cache(fn):
+    def get_cache():
+        cache = user_cache()
+        cache.setdefault(fn, {})
+        return cache[fn]
+
+    @ft.wraps(fn)
+    def inner(*a, **kw):
+        cache = get_cache()
+        key = a, tuple((k, kw[k]) for k in sorted(kw))
+        if key not in cache:
+            res = fn(*a, **kw)
+            cache[key] = res
+        return cache[key]
+
+    inner.cache_clear = lambda: get_cache().clear()
+    return inner
+
+
+def user_cache():
+    global cache
+
+    user = conf['USER']
+    cache.setdefault(user, {})
+    return cache[user]
+
+
+class LockError(Exception):
+    pass
+
+
 @contextmanager
 def global_lock(target, timeout=10, force=False):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
@@ -127,7 +159,7 @@ def global_lock(target, timeout=10, force=False):
             '## %r is locked (for %.2f minutes). Remove file %r to run'
             % (target, minutes_out, path)
         )
-        raise ValueError(msg)
+        raise LockError(msg)
 
     is_locked()
     try:

@@ -1,5 +1,4 @@
 import email
-import functools as ft
 import hashlib
 import imaplib
 import json
@@ -7,7 +6,7 @@ import re
 
 from gevent import socket
 
-from . import conf, fn_time, html, imap, log, message, user_lock
+from . import conf, fn_cache, fn_time, html, imap, log, message, user_lock
 
 SRC = 'Src'
 ALL = 'All'
@@ -49,23 +48,6 @@ def client(box=ALL, readonly=True):
 
 def using(box=ALL, readonly=True):
     return imap.using(client, box, readonly)
-
-
-def fn_cache(fn):
-    fn.cache = {}
-    user = conf['USER']
-
-    @ft.wraps(fn)
-    def inner(*a, **kw):
-        key = a, tuple((k, kw[k]) for k in sorted(kw))
-        if key not in fn.cache.get(user, {}):
-            res = fn(*a, **kw)
-            fn.cache.setdefault(user, {})
-            fn.cache[user][key] = res
-        return fn.cache[user][key]
-
-    inner.cache_clear = lambda: fn.cache.pop(user, None)
-    return inner
 
 
 @fn_cache
