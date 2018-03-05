@@ -105,20 +105,11 @@ server {
     location / {
         proxy_pass http://localhost:5000/;
     }
+    location /assets {
+        alias /opt/mailur/assets/dist;
+    }
     location /.well-known {
         root /var/tmp;
-    }
-}
-server {
-    listen 9003 ssl;
-    server_name $domain;
-
-    ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
-
-    location / {
-        proxy_pass http://localhost:9000/;
-        expires epoch;
     }
 }
 EOF

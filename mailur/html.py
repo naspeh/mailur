@@ -81,7 +81,7 @@ def fix_privacy(htm, only_proxy=False):
     htm = fromstring(htm)
     for img in htm.xpath('//img[@src]'):
         src = img.attrib['src']
-        if src.startswith(conf['HOST']):
+        if src.startswith(conf['BASE_URL']):
             pass
         elif re.match('^(https?://|//).*', src):
             proxy_url = '/proxy?' + urlencode({'url': src})

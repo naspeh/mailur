@@ -10,14 +10,14 @@ from mailur.web import parse_query, wrap_addresses
 
 def test_login_and_themes(web, some, login):
     res = web.get('/login', status=200)
-    assert '/theme-base.css' in res, res.text
-    assert '/login.js' in res, res.txt
+    assert '/assets/theme-base.css' in res, res.text
+    assert '/assets/login.js' in res, res.txt
     assert '"themes": ["base", "indigo", "mint", "solarized"]' in res, res.text
     assert '"Europe/Kiev"' in res, res.text
     assert '"current_theme": "base"' in res, res.text
 
     res = web.get('/solarized/login', status=200)
-    assert '/theme-solarized.css' in res, res.text
+    assert '/assets/theme-solarized.css' in res, res.text
     assert '"current_theme": "solarized"' in res, res.text
 
     params = {'username': login.user1, 'password': 'user', 'timezone': 'UTC'}
@@ -25,18 +25,18 @@ def test_login_and_themes(web, some, login):
     assert web.cookies == {'session': some}
     assert login.user1 not in some
     res = web.get('/', status=200)
-    assert '/theme-base.css' in res, res.text
-    assert '/index.js' in res, res.text
+    assert '/assets/theme-base.css' in res, res.text
+    assert '/assets/index.js' in res, res.text
     assert '"tags": {' in res, res.text
     assert '"current_theme": "base"' in res, res.text
 
     res = web.get('/solarized/', status=200)
-    assert '/theme-solarized.css' in res, res.text
+    assert '/assets/theme-solarized.css' in res, res.text
 
     web.reset()
     res = web.post_json('/login', dict(params, theme='solarized'), status=200)
     res = web.get('/', status=200)
-    assert '/theme-solarized.css' in res, res.text
+    assert '/assets/theme-solarized.css' in res, res.text
 
     res = web.get('/logout', status=302)
     assert web.cookies == {}

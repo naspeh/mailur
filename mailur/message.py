@@ -239,7 +239,7 @@ def parsed(raw, uid, time, flags, mids):
     htm, txt, files = parse_part(orig)
     if htm:
         embeds = {
-            f['content-id']: '%s%s' % (conf['HOST'], f['url'])
+            f['content-id']: '%s%s' % (conf['BASE_URL'], f['url'])
             for f in files if 'content-id' in f
         }
         htm, extra_meta = html.clean(htm, embeds)
@@ -258,7 +258,7 @@ def parsed(raw, uid, time, flags, mids):
     links = [(f['filename'], f['url']) for f in files]
     links.append(('Original message', '/raw/%s/original-msg.eml' % uid))
     links = '<hr>\n' + '<br>\n'.join(
-        ('<a href="%s%s">%s</a>' % (conf['HOST'], url, name))
+        ('<a href="%s%s">%s</a>' % (conf['BASE_URL'], url, name))
         for name, url in links
     )
 

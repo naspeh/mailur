@@ -494,9 +494,9 @@ def avatars():
     ) for h, i in fetch_avatars(hashes, size, default))
 
 
-@app.get('/<filepath:path>', skip=[auth])
-def serve_assets(filepath):
-    return static_file(filepath, root=assets)
+@app.get('/assets/<path:path>', skip=[auth])
+def serve_assets(path):
+    return static_file(path, root=assets)
 
 
 # Helpers bellow
@@ -506,16 +506,16 @@ tpl = '''
 <head>
   <meta charset="utf-8">
   <title>Mailur: {{title}}</title>
-  <link rel="shortcut icon" href="/favicon.png">
-  <link href="/{{css}}?{{mtime}}" rel="stylesheet">
+  <link rel="shortcut icon" href="/assets/favicon.png">
+  <link href="/assets/{{css}}?{{mtime}}" rel="stylesheet">
   <script>
     window.data={{!data}};
   </script>
 </head>
 <body>
   <div id="app"/>
-  <script type="text/javascript" src="/vendor.js?{{mtime}}"></script>
-  <script type="text/javascript" src="/{{js}}?{{mtime}}"></script>
+  <script type="text/javascript" src="/assets/vendor.js?{{mtime}}"></script>
+  <script type="text/javascript" src="/assets/{{js}}?{{mtime}}"></script>
 </body>
 </html>
 '''
