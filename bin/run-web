@@ -3,7 +3,8 @@
 set -exuo pipefail
 . bin/activate
 
+workers=${workers:-4}
 
-exec gunicorn mailur.web:app -b :5000 \
+exec gunicorn mailur.web:app -b :5000 -w $workers \
  -k gevent --timeout=300 --reload --access-logfile=- \
  --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"

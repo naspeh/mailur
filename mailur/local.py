@@ -465,6 +465,7 @@ def thrs_info(uids, tags=None, con=None):
         thr_from = []
         unseen = False
         draft_id = None
+        info = None
         for uid in thr:
             if uid not in all_msgs:
                 continue
@@ -491,6 +492,8 @@ def thrs_info(uids, tags=None, con=None):
             raise ValueError('No #latest for %s' % thr)
         if not latest_skipped:
             info = all_msgs[thrid]
+        if not info:
+            continue
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')

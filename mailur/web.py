@@ -795,6 +795,14 @@ def wrap_msgs(items, hide_tags=None):
         value = json.dumps(value, ensure_ascii=False)
         return ':threads %s:%s' % (name, value)
 
+    base_q = ''
+    if not hide_tags:
+        pass
+    elif '#trash' in hide_tags:
+        base_q = 'tag:#trash '
+    elif '#spam' in hide_tags:
+        base_q = 'tag:#spam '
+
     tz = request.session['timezone']
     msgs = {}
     for uid, txt, flags, addrs in items:
@@ -804,14 +812,6 @@ def wrap_msgs(items, hide_tags=None):
             info = json.loads(txt)
         else:
             info = txt
-
-        base_q = ''
-        if not hide_tags:
-            pass
-        elif '#trash' in hide_tags:
-            base_q = 'tag:#trash '
-        elif '#spam' in hide_tags:
-            base_q = 'tag:#spam '
 
         if addrs is None:
             addrs = [info['from']] if 'from' in info else []

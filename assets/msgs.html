@@ -150,9 +150,9 @@
       <editor
         v-if="edit && edit.uid == uid"
         :msg="edit"
-        :refresh="refresh"
         :query="open"
-        :cancel="() => open(msgs[uid].query_thread)"
+        :query_thread="msgs[uid].query_thread"
+        :refresh="refresh"
       />
     </div>
   </div>

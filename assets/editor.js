@@ -8,8 +8,8 @@ Vue.component('editor', {
   props: {
     msg: { type: Object, required: true },
     query: { type: Function, required: true },
-    refresh: { type: Function, required: true },
-    cancel: { type: Function, required: true }
+    query_thread: { type: String, required: true },
+    refresh: { type: Function, required: true }
   },
   data: function() {
     return {
@@ -25,7 +25,7 @@ Vue.component('editor', {
   created: function() {
     let data = window.localStorage.getItem(this.msg.draft_id);
     data = (data && JSON.parse(data)) || {};
-    if (data && data.time > this.msg.time) {
+    if (data && data.time > this.msg.time * 1000) {
       Object.assign(this, data);
     }
   },
@@ -34,6 +34,10 @@ Vue.component('editor', {
       let data = this.values();
       data.time = new Date().getTime();
       window.localStorage.setItem(this.msg.draft_id, JSON.stringify(data));
+    },
+    cancel: function() {
+      window.localStorage.removeItem(this.msg.draft_id);
+      this.query(this.query_thread);
     },
     values: function() {
       let values = {};
@@ -44,13 +48,14 @@ Vue.component('editor', {
     },
     save: function(refresh = true) {
       let data = new FormData();
-      data.append('uid', this.msg.uid);
-      for (let i in this.values()) {
-        data.append(i, this.values[i]);
+      let values = this.values();
+      for (let i in values) {
+        data.append(i, values[i]);
       }
       for (let file of Array.from(this.$refs.upload.files || [])) {
         data.append('files', file, file.name);
       }
+      data.append('uid', this.msg.uid);
       return call('post', '/editor', data, {}).then(res => {
         refresh && this.refresh();
         return res;

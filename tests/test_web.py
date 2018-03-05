@@ -181,7 +181,7 @@ def test_tags(gm_client, login, some, load_file):
     assert res.json == tag('нью', id='#d44f332a')
 
 
-def test_general(gm_client, load_email, login, some):
+def test_general(gm_client, load_email, latest, login, some):
     web = login()
     res = web.search({'q': '', 'preload': 10})
     assert res == {
@@ -370,6 +370,12 @@ def test_general(gm_client, load_email, login, some):
     }
     res = web.search({'q': 'tag:#trash thread:4'})
     assert res['uids'] == ['4']
+
+    # thread in #trash
+    gm_client.add_emails([{'labels': '\\Trash'}])
+    m = latest(parsed=True)
+    res = web.post_json('/thrs/info', {'uids': [m['uid']]}, status=200).json
+    assert res == {}
 
 
 def test_msgs_flag(gm_client, login, msgs):
