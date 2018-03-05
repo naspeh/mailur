@@ -85,7 +85,6 @@ def index(theme=None):
     # TODO: it needs a better way to keep this stuff up to update
     local.save_msgids()
     local.save_uid_pairs()
-    local.saved_tags.cache_clear()
 
     return render_tpl(theme or request.session['theme'], 'index', {
         'user': request.session['username'],
@@ -578,6 +577,8 @@ def parse_query(q):
             q = 'uid %s' % info['uid_val']
         elif info.get('from'):
             q = 'from %s' % escape(info['from_val'])
+        elif info.get('to'):
+            q = 'to %s' % escape(info['to_val'])
         elif info.get('mid'):
             q = 'header message-id %s' % info['mid_val']
         elif info.get('ref'):
@@ -631,6 +632,7 @@ def parse_query(q):
         '|(?P<tag>(tag|in|has):)(?P<tag_id>[^ ]+)'
         '|(?P<subj>subj(ect)?:)(?P<subj_val>("[^"]*"|[\S]*))'
         '|(?P<from>from:)(?P<from_val>[^ ]+)'
+        '|(?P<to>to:)(?P<to_val>[^ ]+)'
         '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
         '|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
         '|(?P<uid>uid:)(?P<uid_val>\d+)'

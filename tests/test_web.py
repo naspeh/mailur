@@ -949,6 +949,7 @@ def test_query():
         'uid 1 ' + ending, {'threads': True}
     )
 
+    assert parse_query('to:t@t.com') == ('to "t@t.com" ' + ending, {})
     assert parse_query('from:t@t.com') == ('from "t@t.com" ' + ending, {})
     assert parse_query('from:t@t.com test') == (
         'from "t@t.com" text "test" ' + ending, {}

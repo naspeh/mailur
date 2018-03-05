@@ -13,7 +13,7 @@ path=$home/tags
 mkdir -p $path/{INBOX,Trash,Spam,Drafts,Pinned}
 cat <<"EOF" > $path/INBOX/dovecot-virtual
 All
-  KEYWORD #inbox
+  KEYWORD #inbox UNKEYWORD #trash UNKEYWORD #spam
 EOF
     cat <<"EOF" > $path/Trash/dovecot-virtual
 All
@@ -21,13 +21,13 @@ All
 EOF
     cat <<"EOF" > $path/Spam/dovecot-virtual
 All
-  KEYWORD #spam
+  KEYWORD #spam UNKEYWORD #trash
 EOF
     cat <<"EOF" > $path/Drafts/dovecot-virtual
 All
-  DRAFT
+  DRAFT UNKEYWORD #trash UNKEYWORD #spam
 EOF
     cat <<"EOF" > $path/Pinned/dovecot-virtual
 All
-  FLAGGED
+  FLAGGED UNKEYWORD #trash UNKEYWORD #spam
 EOF

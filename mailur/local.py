@@ -522,6 +522,7 @@ def thrs_info(uids, tags=None, con=None):
 @fn_time
 @using()
 def tags_info(con=None):
+    saved_tags.cache_clear()
     unread = {}
     hidden = {}
     res = con.search('UNSEEN')
