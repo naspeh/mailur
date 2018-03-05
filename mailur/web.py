@@ -50,7 +50,9 @@ def auth(callback):
 def endpoint(callback):
     def inner(*args, **kwargs):
         try:
-            return callback(*args, **kwargs)
+            response.content_type = 'application/json'
+            data = callback(*args, **kwargs)
+            return json.dumps(data, indent=2, ensure_ascii=False)
         except Exception as e:
             log.exception(e)
             response.status = 500
@@ -265,7 +267,7 @@ def thrs_link():
     uids = request.json['uids']
     if not uids:
         return {}
-    return local.link_threads(uids)
+    return {'uid': local.link_threads(uids)}
 
 
 @app.post('/msgs/flag')

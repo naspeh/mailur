@@ -358,7 +358,7 @@ def link_threads(uids, con=None):
     uid = con.append(SRC, '#link', None, msg.as_bytes())
     save_msgids([uid])
     parse()
-    return uid
+    return pair_origin_uids([uid])[0]
 
 
 @fn_time

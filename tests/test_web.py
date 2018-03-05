@@ -341,7 +341,8 @@ def test_general(gm_client, load_email, login, some):
     gm_client.add_emails([{'labels': '\\Inbox', 'from': 'one@t.com'}])
     res = web.search({'q': ':threads tag:#inbox'})
     assert res['uids'] == ['4', '2']
-    res = web.post_json('/thrs/link', {'uids': res['uids']})
+    res = web.post_json('/thrs/link', {'uids': res['uids']}).json
+    assert res == {'uid': '5'}
     res = web.search({'q': ':threads tag:#inbox'})
     assert res['uids'] == ['4']
     web.flag({'uids': ['4'], 'new': ['#trash']})

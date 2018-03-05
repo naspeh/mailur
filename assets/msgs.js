@@ -187,9 +187,10 @@ let Msgs = Vue.extend({
       }
     },
     link: function() {
-      this.call('post', '/thrs/link', { uids: this.picked }).then(() =>
-        this.refresh()
-      );
+      this.call('post', '/thrs/link', { uids: this.picked }).then(() => {
+        this.picked = [];
+        this.refresh();
+      });
     },
     loadMore: function() {
       let uids = [];
