@@ -10,7 +10,7 @@ pacman --noconfirm -Syy
 #systemctl enable smtpd
 #systemctl restart smtpd
 
-bin/dovecot
+bin/install-dovecot
 
 pacman --noconfirm -S python gcc
 env=${env:-/opt/mailur/env}
@@ -24,18 +24,4 @@ pacman --noconfirm -S yarn
 yarn
 yarn build
 
-cat <<"EOF" > /etc/systemd/system/mailur.service
-[Unit]
-Description=mailur
-Wants=network.target
-After=network.target
-[Service]
-ExecStart=/bin/sh -c '. bin/activate && exec mlr web'
-WorkingDirectory=/opt/mailur
-Restart=always
-RestartSec=10
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl enable mailur
-systemctl restart mailur
+bin/install-services

@@ -227,7 +227,7 @@ def test_general(gm_client, load_email, login, some):
                 'is_unread': True,
                 'msgid': '<102@mlr>',
                 'origin_uid': '2',
-                'parent': '1',
+                'parent': '<101@mlr>',
                 'preview': '42',
                 'query_msgid': 'ref:<102@mlr>',
                 'query_subject': ':threads subj:"Subj 102"',
@@ -265,7 +265,7 @@ def test_general(gm_client, load_email, login, some):
                 'is_unread': True,
                 'msgid': '<102@mlr>',
                 'origin_uid': '2',
-                'parent': '1',
+                'parent': '<101@mlr>',
                 'preview': '42',
                 'query_msgid': 'ref:<102@mlr>',
                 'query_subject': ':threads subj:"Subj 102"',
@@ -523,7 +523,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     assert 'url_reply' not in draft
     assert draft['is_draft']
     assert not draft['is_unread']
-    assert draft['parent'] == '1'
+    assert draft['parent'] == '<101@mlr>'
     assert draft['query_edit'] == query_edit
 
     res = web.search({'q': query_edit})

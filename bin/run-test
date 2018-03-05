@@ -8,7 +8,7 @@ lxc-destroy -fn $lxc_name || true
 
 export lxc_name
 export no_login=1
-$root/lxc
+$root/run-lxc
 
 cat << "EOF" | lxc-attach --clear-env -n $lxc_name
 set -exuo pipefail

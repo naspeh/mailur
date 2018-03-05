@@ -707,11 +707,14 @@ def thread(q, opts, preload=4):
             continue
         if m['draft_id'] == opts.get('draft'):
             edit = draft_info(m['uid'])
-        if not m['parent'] or m['parent'] not in uids:
+
+        parent = m['parent']
+        parent = parent and local.pair_msgid(parent)
+        if not parent or parent not in uids:
             continue
         uids.remove(m['uid'])
-        uids.insert(uids.index(m['parent']) + 1, m['uid'])
-        parents.append(m['parent'])
+        uids.insert(uids.index(parent) + 1, m['uid'])
+        parents.append(parent)
 
     if preload is not None and len(uids) > preload * 2:
         msgs_few = {
@@ -806,7 +809,6 @@ def wrap_msgs(items, hide_tags=None):
             base_q = 'tag:#spam '
         info.update({
             'uid': uid,
-            'parent': info['parent'] and local.pair_msgid(info['parent']),
             'count': len(addrs),
             'tags': clean_tags(flags, blacklist=hide_tags),
             'from_list': wrap_addresses(addrs, max=3),

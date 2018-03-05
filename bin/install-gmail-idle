@@ -3,7 +3,7 @@
 set -exuo pipefail
 
 user=${user}
-timeout=${timeout:-300}
+timeout=${timeout:-1200}
 
 cat <<EOF > /etc/systemd/system/mailur-$user.service
 [Unit]

@@ -31,7 +31,7 @@ def init(request):
     call('''
     path=/home/vmail/test
     rm -rf $path
-    user="%s" home=$path append=1 bin/users
+    user="%s" home=$path append=1 bin/install-users
     systemctl restart dovecot
     sleep 1
     ''' % users_str, shell=True, cwd=root)

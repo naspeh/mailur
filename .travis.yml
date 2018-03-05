@@ -7,7 +7,7 @@ before_install:
 install:
   - export lxc_attach="sudo lxc-attach --clear-env -n mlr"
   - export mlr="cd /opt/mailur && . bin/activate && mlr"
-  - sudo sh -c "no_login=1 ./bin/lxc"
+  - sudo sh -c "no_login=1 ./bin/run-lxc"
   - echo "cd /opt/mailur && bin/install" | $lxc_attach
   - echo "cd /opt/mailur && bin/install-test" | $lxc_attach
 script:

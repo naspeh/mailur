@@ -160,7 +160,7 @@ Src owner lrpi
 * user=root lrwstipe
 EOF
 
-bin/users
+bin/install-users
 
 systemctl enable dovecot
 systemctl restart dovecot

@@ -1,0 +1,35 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+. bin/activate
+
+cat <<"EOF" > /etc/systemd/system/mailur.service
+[Unit]
+Description=mailur
+Wants=network.target
+After=network.target
+[Service]
+ExecStart=/bin/sh -c 'exec bin/run-web'
+WorkingDirectory=/opt/mailur
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable mailur
+systemctl restart mailur
+
+
+cat <<"EOF" > /etc/systemd/system/mailur-webpack.service
+[Unit]
+Description=mailur-webpack
+Wants=network.target
+After=network.target
+[Service]
+ExecStart=/bin/sh -c 'exec yarn run dev'
+WorkingDirectory=/opt/mailur
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+EOF

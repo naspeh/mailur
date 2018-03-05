@@ -21,6 +21,6 @@ fi
 
 # virtual mailboxes
 for user in $names; do
-    home=$home/$user bin/virtual
+    home=$home/$user bin/install-vmail
 done
 chown -R vmail:vmail $home

@@ -87,7 +87,7 @@ def process(args):
         run('pytest -n2 -q --cov=mailur --cov-report=term-missing')
     elif args['lint']:
         ci = args['--ci'] and 1 or ''
-        run('ci=%s bin/lint' % ci)
+        run('ci=%s bin/run-lint' % ci)
     else:
         raise SystemExit('Target not defined:\n%s' % args)
 
@@ -97,12 +97,7 @@ def web():
     from gevent.pool import Pool
 
     def api():
-        cmd = (
-            'gunicorn mailur.web:app -b :5000 '
-            ' -k gevent --timeout=300 --reload --access-logfile=-'
-            ' --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"'
-        )
-        run(cmd, shell=True)
+        run('bin/run-web', shell=True)
 
     def webpack():
         run('which yarn && yarn run dev || npm run dev', shell=True)
