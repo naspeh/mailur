@@ -535,6 +535,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     res = web.search({'q': query_edit})
     assert res['uids'] == ['1', '2']
     draft = res['edit']
+    assert isinstance(draft['time'], int)
     assert draft['txt'] == ''
     assert draft['subject'] == 'Re: Subj 101'
     assert draft['from'] == ''
@@ -650,6 +651,7 @@ def test_drafts_part1(gm_client, login, patch, some):
         'origin_uid': '3',
         'references': '<101@mlr>',
         'subject': 'Subj 103',
+        'time': some,
         'to': '',
         'txt': '42',
         'uid': '3',

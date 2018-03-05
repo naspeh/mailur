@@ -15,15 +15,38 @@ Vue.component('editor', {
     return {
       edit: true,
       countdown: null,
-      html: ''
+      html: '',
+      from: this.msg.from,
+      to: this.msg.to,
+      subject: this.msg.subject,
+      txt: this.msg.txt
     };
   },
+  created: function() {
+    let data = window.localStorage.getItem(this.msg.draft_id);
+    data = (data && JSON.parse(data)) || {};
+    if (data && data.time > this.msg.time) {
+      Object.assign(this, data);
+    }
+  },
   methods: {
+    autosave: function() {
+      let data = this.values();
+      data.time = new Date().getTime();
+      window.localStorage.setItem(this.msg.draft_id, JSON.stringify(data));
+    },
+    values: function() {
+      let values = {};
+      for (let i of ['from', 'to', 'subject', 'txt']) {
+        values[i] = this[i];
+      }
+      return values;
+    },
     save: function(refresh = true) {
       let data = new FormData();
       data.append('uid', this.msg.uid);
-      for (let i of ['from', 'to', 'subject', 'txt']) {
-        data.append(i, this.$refs[i].value);
+      for (let i in this.values()) {
+        data.append(i, this.values[i]);
       }
       for (let file of Array.from(this.$refs.upload.files || [])) {
         data.append('files', file, file.name);
@@ -45,7 +68,7 @@ Vue.component('editor', {
     },
     preview: function() {
       this.edit = false;
-      call('post', '/markdown', { txt: this.$refs.txt.value }).then(
+      call('post', '/markdown', { txt: this.txt }).then(
         res => (this.html = res)
       );
     },

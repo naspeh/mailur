@@ -950,5 +950,6 @@ def draft_info(uid):
         'origin_uid': meta['origin_uid'],
         'files': meta['files'],
         'url_send': app.get_url('send', uid=meta['origin_uid']),
+        'time': meta['date'],
     })
     return info

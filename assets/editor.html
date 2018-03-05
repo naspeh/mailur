@@ -1,8 +1,8 @@
 <div :class="{editor:1, 'editor--preview': !edit && html, 'editor--sending': countdown !== null}">
-  <input ref="from" class="editor__from" placeholder="From" :value="msg.from" />
-  <input ref="to" class="editor__to" placeholder="To" :value="msg.to" />
-  <input ref="subject" class="editor__subj" placeholder="Subject" :value="msg.subject" />
-  <textarea ref="txt" class="editor__body">{{msg.txt}}</textarea>
+  <input v-model="from" @keyup="autosave" class="editor__from" placeholder="From" />
+  <input v-model="to" @keyup="autosave" class="editor__to" placeholder="To" />
+  <input v-model="subject" @keyup="autosave" class="editor__subj" placeholder="Subject"  />
+  <textarea v-model="txt"  @keyup="autosave" class="editor__body"></textarea>
   <div class="editor__html" v-html="html" />
   <div v-if="msg.files.length" class="editor__files">
     <a
