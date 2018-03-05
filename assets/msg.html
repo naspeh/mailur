@@ -1,39 +1,46 @@
 <div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--detailed': detailed, 'msg--opened': opened, 'msg--edited': edit}">
   <div class="msg-line">
+    <div class="msg-line__pick">
+      <input :checked="picked" @change="pick(msg.uid)" type="checkbox">
+    </div>
     <div
       class="icon--pin"
       @click="pin(msg)"
       :title="msg.is_pinned ? 'Unpin' : 'Pin'"
-    ></div>
+    />
     <div
       v-if="!msg.is_draft"
       class="icon--unread"
       @click="read(msg)"
       :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"
-    ></div>
+    />
     <div
       v-if="!thread && !msg.is_draft"
       class="icon--reply"
       @click="reply(msg)"
       title="Reply"
-    ></div>
+    />
     <div
       v-if="msg.is_draft"
       class="icon--draft"
       @click="query(msg.query_edit)"
       title="Edit draft"
-    ></div>
+    />
     <div
       v-if="msg.files.length"
       class="icon--attachment"
       :title="`${msg.files.length} attachments`"
-    ></div>
+    />
     <div
       class="icon--image"
       @click="makeRicher"
       :title="msg.richer"
-    ></div>
-    <div @click.stop="details(msg.uid)" class="icon--more" title="Details and actions"></div>
+    />
+    <div
+      @click.stop="details(msg.uid)"
+      class="icon--more"
+      title="Details and actions"
+    />
     <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
     <a class="msg-line__insight" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
       <div class="msg-line__from">
@@ -61,9 +68,6 @@
       <div class="msg-line__text" :title="msg.preview" v-html="msg.preview" />
       <div class="msg-line__time" :title="msg.time_title">{{msg.time_human}}</div>
     </a>
-    <div class="msg-line__pick">
-      <input :checked="picked" @change="pick(msg.uid)" type="checkbox">
-    </div>
     <div
       @click.prevent="openInSplit"
       class="icon--open-in-split"
