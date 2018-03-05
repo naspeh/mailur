@@ -49,12 +49,21 @@ def auth(callback):
     return inner
 
 
+def jsonify(fn):
+    @ft.wraps(fn)
+    def inner(*a, **kw):
+        response.content_type = 'application/json'
+        data = fn(*a, **kw)
+        return json.dumps(data or {}, indent=2, ensure_ascii=False)
+    return inner
+
+
 def endpoint(callback):
+    @jsonify
+    @ft.wraps(callback)
     def inner(*args, **kwargs):
         try:
-            response.content_type = 'application/json'
-            data = callback(*args, **kwargs)
-            return json.dumps(data, indent=2, ensure_ascii=False)
+            return callback(*args, **kwargs)
         except Exception as e:
             log.exception(e)
             response.status = 500
@@ -327,12 +336,12 @@ def editor(id=None):
 
 
 @app.get('/set/addrs')
+@jsonify
 def set_addrs():
     addrs = request.query['v']
     addrs = message.addresses(addrs)
     local.save_addrs(addrs)
-    response.content_type = 'application/json'
-    return json.dumps(addrs, ensure_ascii=False, indent=2)
+    return addrs
 
 
 @app.get('/compose')
@@ -777,7 +786,7 @@ def clean_tags(tags, whitelist=None, blacklist=None):
     whitelist = whitelist or []
     blacklist = '|'.join(re.escape(i) for i in blacklist) if blacklist else ''
     blacklist = blacklist and '|%s' % blacklist
-    ignore = re.compile(r'(^\\|#sent|#latest|#link%s)' % blacklist)
+    ignore = re.compile(r'(^\\|#sent|#latest|#link|#dup|#err%s)' % blacklist)
     return sorted(i for i in tags if i in whitelist or not ignore.match(i))
 
 
@@ -796,10 +805,6 @@ def wrap_msgs(items, hide_tags=None):
         else:
             info = txt
 
-        if addrs is None:
-            addrs = [info['from']] if 'from' in info else []
-        if info.get('from'):
-            info['from'] = wrap_addresses([info['from']])[0]
         base_q = ''
         if not hide_tags:
             pass
@@ -807,11 +812,16 @@ def wrap_msgs(items, hide_tags=None):
             base_q = 'tag:#trash '
         elif '#spam' in hide_tags:
             base_q = 'tag:#spam '
+
+        if addrs is None:
+            addrs = [info['from']] if 'from' in info else []
+        if info.get('from'):
+            info['from'] = wrap_addresses([info['from']], base_q=base_q)[0]
         info.update({
             'uid': uid,
             'count': len(addrs),
             'tags': clean_tags(flags, blacklist=hide_tags),
-            'from_list': wrap_addresses(addrs, max=3),
+            'from_list': wrap_addresses(addrs, max=3, base_q=base_q),
             'query_thread': base_q + 'thread:%s' % uid,
             'query_subject': base_q + query_header('subj', info['subject']),
             'query_msgid': base_q + 'ref:%s' % info['msgid'],
@@ -838,7 +848,7 @@ def wrap_msgs(items, hide_tags=None):
     return msgs
 
 
-def wrap_addresses(addrs, max=4):
+def wrap_addresses(addrs, max=4, base_q=''):
     if isinstance(addrs, str):
         addrs = [addrs]
 
@@ -848,7 +858,8 @@ def wrap_addresses(addrs, max=4):
         if not a or a['addr'] in addrs_uniq:
             continue
         addrs_uniq.append(a['addr'])
-        addrs_list.append(dict(a, query=':threads from:%s' % a['addr']))
+        query = base_q + ':threads from:%s' % a['addr']
+        addrs_list.append(dict(a, query=query))
 
     addrs_list = list(reversed(addrs_list))
     if len(addrs_list) <= max:

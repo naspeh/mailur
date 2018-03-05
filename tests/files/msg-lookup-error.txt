@@ -1,0 +1,11 @@
+Message-ID: <lookup-error@test>
+Subject: bad symbol?
+Date: Wed, 07 Jan 2015 13:23:22 +0000
+From: katya@example.com
+To: grrr@example.com
+Content-type: text/html; charset=iso-2022-int-1
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+
+test

@@ -96,7 +96,7 @@ def test_tz(gm_client, web, login, some):
     assert some['time_title'] == time_2h.strftime('%a, %d %b, %Y at %H:%M')
 
 
-def test_tags(gm_client, login, some):
+def test_tags(gm_client, login, some, load_file):
     def tag(name, **kw):
         id = kw.get('id', name)
         return dict({
@@ -114,6 +114,12 @@ def test_tags(gm_client, login, some):
         '#spam': tag('#spam', pinned=1),
         '#trash': tag('#trash', pinned=1),
     }
+
+    gm_client.add_emails([
+        {'raw': load_file('msg-lookup-error.txt')},
+        {'mid': '<lookup-error@test>'},
+    ])
+    assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
 
     gm_client.add_emails([
         {'labels': '\\Inbox \\Junk'},
@@ -359,7 +365,7 @@ def test_general(gm_client, load_email, login, some):
         'addr': 'one@t.com',
         'hash': 'bc11cf997156ef71c34c23457e67fd65',
         'name': 'one',
-        'query': ':threads from:one@t.com',
+        'query': 'tag:#trash :threads from:one@t.com',
         'title': 'one@t.com'
     }
     res = web.search({'q': 'tag:#trash thread:4'})

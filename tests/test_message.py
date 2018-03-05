@@ -98,27 +98,13 @@ def test_general(gm_client, load_file, latest, load_email):
         in msg['meta']['errors'][0]
     )
 
-    raw = b'\r\n'.join([
-        b'Message-ID: <lookup-error@test>',
-        b'Subject: bad symbol?',
-        b'Date: Wed, 07 Jan 2015 13:23:22 +0000',
-        b'From: katya@example.com',
-        b'To: grrr@example.com',
-        b'Content-type: text/html; charset=iso-2022-int-1',
-        b'Content-Transfer-Encoding: 8bit',
-        b'MIME-Version: 1.0',
-        b'',
-        b'',
-        b'test'
-    ])
-    gm_client.add_emails([{'raw': raw}])
-    msg = latest(parsed=True)
-    assert msg['meta']['preview'] == 'test'
-    assert msg['body'] == '<p>test</p>'
-    assert msg['meta']['errors']
+    m = load_email('msg-lookup-error.txt', parsed=True)
+    assert m['meta']['preview'] == 'test'
+    assert m['body'] == '<p>test</p>'
+    assert m['meta']['errors']
     assert (
         '[LookupError] unknown encoding: iso-2022-int-1'
-        in msg['meta']['errors'][0]
+        in m['meta']['errors'][0]
     )
 
     # ending @ symbol and address without @ symbol at all
