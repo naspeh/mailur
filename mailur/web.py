@@ -71,15 +71,15 @@ def endpoint(callback):
     return inner
 
 
+@ft.lru_cache(maxsize=None)
+def themes():
+    pkg = json.loads((root / 'package.json').read_text())
+    return sorted(pkg['mailur']['themes'])
+
+
 def theme_filter(config):
-    regexp = r'(%s)?' % '|'.join(re.escape(t) for t in themes())
-
-    def to_python(t):
-        return t
-
-    def to_url(t):
-        return t
-    return regexp, to_python, to_url
+    regexp = r'(%s)' % '|'.join(re.escape(t) for t in themes())
+    return regexp, None, None
 
 
 app.install(session)
@@ -88,7 +88,7 @@ app.router.add_filter('theme', theme_filter)
 
 
 @app.get('/', skip=[auth], name='index')
-@app.get('/<theme>/', skip=[auth])
+@app.get('/<theme:theme>/', skip=[auth])
 def index(theme=None):
     if not request.session:
         prefix = ('/' + theme) if theme else ''
@@ -102,7 +102,7 @@ def index(theme=None):
 
 
 @app.get('/login', skip=[auth], name='login')
-@app.get('/<theme>/login', skip=[auth])
+@app.get('/<theme:theme>/login', skip=[auth])
 def login_html(theme=None):
     return render_tpl(theme or 'base', 'login', {
         'themes': themes(),
@@ -507,6 +507,13 @@ def avatars():
     ) for h, i in fetch_avatars(hashes, size, default))
 
 
+@app.get('/refresh/metadata')
+def refresh_metadata():
+    local.save_msgids()
+    local.save_uid_pairs()
+    return 'Done.'
+
+
 @app.get('/assets/<path:path>', skip=[auth])
 def serve_assets(path):
     return static_file(path, root=assets)
@@ -562,12 +569,6 @@ def render_tpl(theme, page, data={}):
         'title': title,
     }
     return template(tpl, **params)
-
-
-@ft.lru_cache(maxsize=None)
-def themes():
-    pkg = json.loads((root / 'package.json').read_text())
-    return sorted(pkg['mailur']['themes'])
 
 
 def parse_query(q):
@@ -817,6 +818,8 @@ def wrap_msgs(items, hide_tags=None):
             addrs = [info['from']] if 'from' in info else []
         if info.get('from'):
             info['from'] = wrap_addresses([info['from']], base_q=base_q)[0]
+        if info.get('to'):
+            info['to'] = wrap_addresses(info['to'], field='to', base_q=base_q)
         info.update({
             'uid': uid,
             'count': len(addrs),
@@ -848,7 +851,7 @@ def wrap_msgs(items, hide_tags=None):
     return msgs
 
 
-def wrap_addresses(addrs, max=4, base_q=''):
+def wrap_addresses(addrs, field='from', max=None, base_q=''):
     if isinstance(addrs, str):
         addrs = [addrs]
 
@@ -858,11 +861,11 @@ def wrap_addresses(addrs, max=4, base_q=''):
         if not a or a['addr'] in addrs_uniq:
             continue
         addrs_uniq.append(a['addr'])
-        query = base_q + ':threads from:%s' % a['addr']
+        query = base_q + ':threads %s:%s' % (field, a['addr'])
         addrs_list.append(dict(a, query=query))
 
     addrs_list = list(reversed(addrs_list))
-    if len(addrs_list) <= max:
+    if not max or len(addrs_list) <= max:
         return addrs_list
 
     addr_end = addrs[-1]

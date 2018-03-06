@@ -510,7 +510,7 @@ def tags_info(con=None):
     saved_tags.cache_clear()
     unread = {}
     hidden = {}
-    res = con.search('UNSEEN')
+    res = con.search('UNSEEN UNKEYWORD #link')
     uids = res[0].decode().split()
     if uids:
         res = con.fetch(uids, 'FLAGS')

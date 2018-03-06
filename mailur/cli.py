@@ -73,8 +73,8 @@ def process(args):
                 log.exception(e)
                 time.sleep(10)
     elif args['parse']:
-        # local.save_msgids()
-        # local.save_uid_pairs()
+        local.save_msgids()
+        local.save_uid_pairs()
         local.parse(args.get('<criteria>'), **opts)
     elif args['threads']:
         with local.client() as con:

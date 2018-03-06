@@ -68,6 +68,11 @@ def test_login_and_themes(web, some, login):
     }
     web.get('/', status=302)
 
+    # wrong theme
+    web.get('/wrong/login', status=404)
+    web = login()
+    web.get('/wrong/', status=404)
+
 
 def test_tz(gm_client, web, login, some):
     time_dt = dt.datetime.utcnow()
@@ -823,8 +828,11 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs()] == ['1', '5']
 
 
-def test_from_list(some):
-    res = wrap_addresses(addresses('test <test@example.com>'))
+def test_addresses(some):
+    def wrap_from_list(addrs):
+        return wrap_addresses(addresses(addrs), max=4)
+
+    res = wrap_from_list('test <test@example.com>')
     assert res == [
         {
             'name': 'test',
@@ -835,78 +843,97 @@ def test_from_list(some):
         },
     ]
 
-    res = wrap_addresses(addresses(
+    res = wrap_from_list(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
-    ))
+    )
     assert ['test', 'test2'] == [a['name'] for a in res]
 
-    res = wrap_addresses(addresses(
+    res = wrap_from_list(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
-    ))
+    )
     assert ['test', 'test2', 'test3'] == [a['name'] for a in res]
 
-    res = wrap_addresses(addresses(
+    res = wrap_from_list(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
         'test4 <test4@example.com>,'
-    ))
+    )
     assert ['test', 'test2', 'test3', 'test4'] == [a['name'] for a in res]
 
-    res = wrap_addresses(addresses(
+    res = wrap_from_list(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
         'test4 <test4@example.com>,'
         'test5 <test5@example.com>,'
-    ))
+    )
     assert ['test', {'expander': 2}, 'test4', 'test5'] == [
         a if 'expander' in a else a['name'] for a in res
     ]
 
-    res = wrap_addresses(addresses(
+    res = wrap_from_list(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
         'test4 <test4@example.com>,'
         'test5 <test5@example.com>,'
         'test <test@example.com>,'
-    ))
+    )
     assert [{'expander': 2}, 'test4', 'test5', 'test'] == [
         a if 'expander' in a else a['name'] for a in res
     ]
 
-    res = wrap_addresses(addresses(
+    res = wrap_from_list(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
         'test2 <test2@example.com>,'
-    ))
+    )
     assert ['test', 'test3', 'test2'] == [a['name'] for a in res]
 
-    res = wrap_addresses(addresses(
+    res = wrap_from_list(
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test <test@example.com>,'
         'test2 <test2@example.com>,'
         'test3 <test3@example.com>,'
-    ))
+    )
     assert ['test', 'test2', 'test3'] == [a['name'] for a in res]
 
-    res = wrap_addresses(addresses(','.join(
+    res = wrap_from_list(','.join(
         'test{0} <test{0}@example.com>'.format(i) for i in range(10)
-    )))
+    ))
     assert ['test0', {'expander': 7}, 'test8', 'test9'] == [
         a if 'expander' in a else a['name'] for a in res
     ]
 
-    res = wrap_addresses(addresses(','.join(
+    res = wrap_from_list(','.join(
         'test <test@example.com>' for i in range(10)
-    )))
+    ))
     assert ['test'] == [a['name'] for a in res]
+
+    # other options
+    addrs = addresses('test <test@example.com>')
+    res = wrap_addresses(addrs, field='to')
+    assert res == [{
+        'addr': 'test@example.com',
+        'hash': '55502f40dc8b7c769880b10874abc9d0',
+        'name': 'test',
+        'query': ':threads to:test@example.com',
+        'title': '"test" <test@example.com>'
+    }]
+    res = wrap_addresses(addrs, field='to', base_q='tag:#trash ')
+    assert res == [{
+        'addr': 'test@example.com',
+        'hash': '55502f40dc8b7c769880b10874abc9d0',
+        'name': 'test',
+        'query': 'tag:#trash :threads to:test@example.com',
+        'title': '"test" <test@example.com>'
+    }]
 
 
 def test_query():

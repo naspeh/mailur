@@ -50,3 +50,6 @@ machinectl shell $name /bin/sh -c "cd /opt/mailur && bin/$bin"
 machinectl stop $name
 sleep 1
 machinectl start $name
+
+machinectl enable $name
+systemctl enable machines.target
