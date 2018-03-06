@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import { call } from './utils.js';
 import { Slider } from './slider.js';
 import tpl from './editor.html';
 
@@ -7,6 +6,7 @@ Vue.component('editor', {
   template: tpl,
   props: {
     msg: { type: Object, required: true },
+    call: { type: Function, required: true },
     query: { type: Function, required: true },
     query_thread: { type: String, required: true },
     refresh: { type: Function, required: true }
@@ -56,7 +56,7 @@ Vue.component('editor', {
         data.append('files', file, file.name);
       }
       data.append('uid', this.msg.uid);
-      return call('post', '/editor', data, {}).then(res => {
+      return this.call('post', '/editor', data, {}).then(res => {
         refresh && this.refresh();
         return res;
       });
@@ -73,7 +73,7 @@ Vue.component('editor', {
     },
     preview: function() {
       this.edit = false;
-      call('post', '/markdown', { txt: this.txt }).then(
+      this.call('post', '/markdown', { txt: this.txt }).then(
         res => (this.html = res)
       );
     },
@@ -87,7 +87,7 @@ Vue.component('editor', {
         this.countdown = this.countdown - 1;
         setTimeout(() => this.sending(url_send), 1000);
       } else if (this.countdown == 0) {
-        call('get', url_send).then(res => this.query(res.query));
+        this.call('get', url_send).then(res => this.query(res.query));
       } else {
         this.countdown = null;
       }

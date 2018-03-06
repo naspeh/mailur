@@ -76,7 +76,9 @@ Vue.component('app', {
       }
     },
     compose: function() {
-      call('get', '/compose').then(res => this.openInMain(res.query_edit));
+      this.main
+        .call('get', '/compose')
+        .then(res => this.openInMain(res.query_edit));
     },
     openFromHash: function() {
       let q = decodeURIComponent(location.hash.slice(1));

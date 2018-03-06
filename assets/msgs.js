@@ -36,11 +36,11 @@ let Loader = Vue.extend({
         this.view = res.thread ? new Thread(data) : new Msgs(data);
       });
     },
-    call: function(method, url, data) {
+    call: function(method, url, data, headers = null) {
       window.app.refreshTags();
 
       this.loading = true;
-      return call(method, url, data).then(res => {
+      return call(method, url, data, headers).then(res => {
         this.loading = false;
         if (res.errors) {
           this.error = res.errors;
@@ -99,6 +99,9 @@ let Base = {
     refresh: function(preload = undefined) {
       let data = { uids: this.loaded, hide_tags: this.tags };
       this.search(preload).then(res => {
+        if (res.errors) {
+          return;
+        }
         this.set(res);
         data.uids = data.uids.filter(item => !res.msgs[item]);
         if (data.uids.length > 0) {

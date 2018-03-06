@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import { call } from './utils.js';
 import { Slider } from './slider.js';
 import tpl from './msg.html';
 
@@ -9,6 +8,7 @@ Vue.component('msg', {
     msg: { type: Object, required: true },
     body: { type: String },
     edit: { type: Object },
+    call: { type: Function, required: true },
     query: { type: Function, required: true },
     thread: { type: Boolean, default: false },
     opened: { type: Boolean, default: false },
@@ -57,7 +57,9 @@ Vue.component('msg', {
     },
     reply: function(msg, forward = null) {
       let end = forward ? '?forward=1' : '';
-      call('get', msg.url_reply + end).then(res => this.query(res.query_edit));
+      this.call('get', msg.url_reply + end).then(res =>
+        this.query(res.query_edit)
+      );
     },
     makeRicher: function() {
       for (let i of this.$el.querySelectorAll('img[data-src]')) {

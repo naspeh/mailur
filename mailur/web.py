@@ -67,7 +67,7 @@ def endpoint(callback):
         except Exception as e:
             log.exception(e)
             response.status = 500
-            return {'errors': [str(e)]}
+            return {'errors': [repr(e)]}
     return inner
 
 

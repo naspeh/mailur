@@ -19,7 +19,7 @@ export function call(method, url, data, headers = null) {
     }
     return res.then(res => {
       if (!response.ok && !res.errors) {
-        return { errors: res };
+        return { errors: `${response.status} ${response.statusText}` };
       }
       return res;
     });
