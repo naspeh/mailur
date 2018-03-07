@@ -1,4 +1,4 @@
-<div :class="{editor:1, 'editor--preview': !edit && html, 'editor--sending': countdown !== null}">
+<div :class="{editor:1, 'editor--preview': !editing && html, 'editor--sending': countdown !== null}">
   <input v-model="from" @keyup="autosave" class="editor__from" placeholder="From" />
   <input v-model="to" @keyup="autosave" class="editor__to" placeholder="To" />
   <input v-model="subject" @keyup="autosave" class="editor__subj" placeholder="Subject"  />
@@ -15,14 +15,14 @@
   <div class="editor__buttons">
     <input ref="upload" @change="save" class="editor__upload" type="file" multiple />
     <button @click="preview" class="editor__preview">Preview</button>
-    <button @click="edit = true" class="editor__edit">Edit</button>
+    <button @click="edit" class="editor__edit">Edit</button>
     <button @click="save" class="editor__save">Save</button>
     <button @click="send" class="editor__send">Send</button>
     <button @click="cancel" class="editor__cancel">Cancel</button>
   </div>
   <div v-if="countdown > 0" class="editor__sending">
     Sending in {{countdown}} seconds...
-    <button @click="countdown = null" class="editor__cancel">Cancel</button>
+    <button @click="edit" class="editor__cancel">Cancel</button>
   </div>
   <div v-if="countdown === 0" class="editor__sending">
     Sending...

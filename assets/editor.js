@@ -13,7 +13,7 @@ Vue.component('editor', {
   },
   data: function() {
     return {
-      edit: true,
+      editing: true,
       countdown: null,
       html: '',
       from: this.msg.from,
@@ -72,7 +72,7 @@ Vue.component('editor', {
       });
     },
     preview: function() {
-      this.edit = false;
+      this.editing = false;
       this.call('post', '/markdown', { txt: this.txt }).then(
         res => (this.html = res)
       );
@@ -90,6 +90,13 @@ Vue.component('editor', {
         this.call('get', url_send).then(res => this.query(res.query));
       } else {
         this.countdown = null;
+      }
+    },
+    edit: function() {
+      this.editing = true;
+      if (this.countdown) {
+        this.countdown = null;
+        this.refresh();
       }
     }
   }
