@@ -709,6 +709,10 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
+    assert local.msgids() == {
+        '<101@mlr>': ['1'],
+        m['meta']['msgid']: ['3']
+    }
     assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == []
     assert m['meta']['draft_id'] == draft_id
@@ -738,6 +742,10 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
     assert [i['uid'] for i in msgs()] == ['1', '4']
     m = latest(parsed=1)
+    assert local.msgids() == {
+        '<101@mlr>': ['1'],
+        m['meta']['msgid']: ['4']
+    }
     assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['files'] == [
         {

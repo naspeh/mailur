@@ -126,7 +126,7 @@ def pair_msgid(mid):
 
 @fn_time
 @using(SRC)
-def save_msgids(uids=None, con=None):
+def save_msgids(uids=None, rm=False, con=None):
     if uids:
         mids = msgids()
     else:
@@ -140,11 +140,18 @@ def save_msgids(uids=None, con=None):
             mid = email.message_from_bytes(line)['message-id'].strip().lower()
         else:
             mid = '<mailur@noid>'
+
         uids = mids.get(mid, [])
-        uids.append(uid)
-        if len(uids) > 1:
-            uids = sorted(uids, key=lambda i: int(i))
-        mids[mid] = uids
+        if rm and len(uids) == 1:
+            del mids[mid]
+        elif rm:
+            uids.remove(uid)
+            mids[mid] = uids
+        else:
+            uids.append(uid)
+            if len(uids) > 1:
+                uids = sorted(uids, key=lambda i: int(i))
+            mids[mid] = uids
     con.setmetadata(SRC, 'msgids', json.dumps(mids))
     msgids.cache_clear()
 
@@ -547,6 +554,7 @@ def tags_info(con=None):
 @fn_time
 @using(None)
 def del_msg(uid, con=None):
+    save_msgids([uid], rm=True)
     pid = pair_origin_uids([uid])[0]
     for box, uid in ((SRC, uid), (ALL, pid)):
         con.select(box, readonly=False)
