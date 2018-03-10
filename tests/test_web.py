@@ -609,6 +609,16 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         }
     ]
 
+    forwarded = '---------- Forwarded message ----------'
+    m = load_email('msg-links.txt')
+    res = web.get('/reply/%s' % m['uid'], {'forward': 1}).json
+    m = latest(parsed=True)
+    assert forwarded in m['body']
+    assert 'https://github.com' in m['body']
+    res = web.post('/editor', {'uid': m['uid']}, status=200).json
+    m = latest(parsed=True)
+    assert 'https://github.com' in m['body']
+
     gm_client.add_emails([{'from': 'two@t.com', 'to': 'two@t.com'}])
     m = latest(parsed=True)
     res = web.get('/reply/%s' % m['uid']).json

@@ -298,15 +298,16 @@ def msgs_flag():
 
 @app.post('/editor')
 @endpoint
-def editor(id=None):
+def editor():
     uid = request.forms['uid']
     files = request.files.getall('files')
 
     draft = draft_info(uid)
+    orig = local.raw_msg(draft['origin_uid'], local.SRC, parsed=True)
     parts = []
-    if draft['files']:
-        orig = local.raw_msg(draft['origin_uid'], local.SRC, parsed=True)
+    if orig.is_multipart() and orig.get_content_subtype() != 'alternative':
         parts = orig.get_payload()[1:]
+
     msg = message.new_draft(draft, request.forms, files or parts and True)
     for p in parts:
         msg.attach(p)
