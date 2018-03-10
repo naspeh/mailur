@@ -4,6 +4,7 @@
   <input v-model="subject" @keyup="autosave" class="editor__subj" placeholder="Subject"  />
   <textarea v-model="txt"  @keyup="autosave" class="editor__body"></textarea>
   <div class="editor__html" v-html="html" />
+  <div v-if="msg.quoted" class="editor__quote" v-html="msg.quoted" />
   <div v-if="msg.files.length" class="editor__files">
     <a
       v-for="f, idx of msg.files"

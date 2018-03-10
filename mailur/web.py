@@ -302,21 +302,18 @@ def editor():
     uid = request.forms['uid']
     files = request.files.getall('files')
 
-    draft = draft_info(uid)
-    orig = local.raw_msg(draft['origin_uid'], local.SRC, parsed=True)
-    parts = []
-    if orig.is_multipart() and orig.get_content_subtype() != 'alternative':
-        parts = orig.get_payload()[1:]
-
-    msg = message.new_draft(draft, request.forms, files or parts and True)
-    for p in parts:
-        msg.attach(p)
-    for f in files:
-        maintype, subtype = f.content_type.split('/')
-        msg.add_attachment(
-            f.file.read(), filename=f.filename,
-            maintype=maintype, subtype=subtype
-        )
+    draft, related = draft_info(uid)
+    if files:
+        if not related:
+            related = message.new()
+            related.make_mixed()
+        for f in files:
+            maintype, subtype = f.content_type.split('/')
+            related.add_attachment(
+                f.file.read(), filename=f.filename,
+                maintype=maintype, subtype=subtype
+            )
+    msg = message.new_draft(draft, request.forms, related)
     if msg['from']:
         addr = message.addresses(msg['from'])[0]
         addrs = local.get_addrs()
@@ -382,8 +379,6 @@ def reply(uid=None):
                 del inner[name]
         draft['txt'] = template(quote_tpl, type='Forwarded', msg=head)
     msg = message.new_draft(draft, {}, inner)
-    if inner:
-        msg.attach(inner)
     _, new_uid = local.new_msg(msg, '\\Draft \\Seen')
     return {'uid': new_uid, 'query_edit': 'draft:%s' % draft_id}
 
@@ -717,7 +712,7 @@ def thread(q, opts, preload=4):
         if not m['is_draft']:
             continue
         if m['draft_id'] == opts.get('draft'):
-            edit = draft_info(m['uid'])
+            edit = draft_info(m['uid'])[0]
 
         parent = m['parent']
         parent = parent and local.pair_msgid(parent)
@@ -942,6 +937,17 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
 
 def draft_info(uid):
     flags, headers, meta, txt = local.fetch_msg(uid, draft=True)
+    orig = local.raw_msg(meta['origin_uid'], local.SRC, parsed=True)
+    related = quoted = None
+    _, parts = message.parse_draft(orig)
+    if parts:
+        related = message.new()
+        related.make_mixed()
+        for p in parts:
+            related.attach(p)
+        htm_, txt_ = message.parse_mime(related, uid)[:2]
+        quoted = html.clean(htm_)[0] if htm_ else html.from_text(txt_)
+
     info = {
         i: headers.get(i, '')
         for i in ('from', 'to', 'cc', 'subject', 'in-reply-to', 'references')
@@ -949,6 +955,7 @@ def draft_info(uid):
     info.update({
         'uid': uid,
         'txt': txt,
+        'quoted': quoted,
         'flags': flags,
         'draft_id': meta['draft_id'],
         'origin_uid': meta['origin_uid'],
@@ -956,4 +963,4 @@ def draft_info(uid):
         'url_send': app.get_url('send', uid=meta['origin_uid']),
         'time': meta['date'],
     })
-    return info
+    return info, related

@@ -71,7 +71,7 @@ def link(msgids, msgid=None):
     return msg
 
 
-def parsed(raw, uid, time, flags, mids):
+def parse_mime(orig, uid):
     def error(e, label):
         return 'error on %r: [%s] %s' % (label, e.__class__.__name__, e)
 
@@ -118,7 +118,7 @@ def parsed(raw, uid, time, flags, mids):
             charsets.append(charset)
         if not txt:
             log.info('## UID=%s %s', uid, err)
-            meta['errors'].append(err)
+            errors.append(err)
             txt = raw.decode(charset, 'replace')
         return txt
 
@@ -227,16 +227,27 @@ def parsed(raw, uid, time, flags, mids):
             files = [attachment(part, content, path)]
         return htm, txt, files
 
+    charsets = list(set(c.lower() for c in orig.get_charsets() if c))
+    errors, headers = [], {}
+    htm, txt, files = parse_part(orig)
+
+    for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
+        v = decode_addresses(orig[n], n)
+        if v is None:
+            continue
+        headers[n] = v
+
+    headers['Subject'] = decode_header(orig['subject'], 'Subject')
+    return htm, txt, files, headers, errors
+
+
+def parsed(raw, uid, time, flags, mids):
     # "email.message_from_bytes" uses "email.policy.compat32" policy
     # and it's by intention, because new policies don't work well
     # with real emails which have no encodings, badly formated addreses, etc.
     orig = email.message_from_bytes(raw)
-    charsets = list(set(c.lower() for c in orig.get_charsets() if c))
-
-    headers = {}
-    meta = {'origin_uid': uid, 'files': [], 'errors': []}
-
-    htm, txt, files = parse_part(orig)
+    htm, txt, files, headers, errors = parse_mime(orig, uid)
+    meta = {'origin_uid': uid, 'files': [], 'errors': errors}
     if htm:
         embeds = {
             f['content-id']: '%s%s' % (conf['BASE_URL'], f['url'])
@@ -262,12 +273,6 @@ def parsed(raw, uid, time, flags, mids):
         for name, url in links
     )
 
-    for n in ('From', 'Sender', 'Reply-To', 'To', 'CC', 'BCC',):
-        v = decode_addresses(orig[n], n)
-        if v is None:
-            continue
-        headers[n] = v
-
     fields = (
         ('From', 1), ('Sender', 1),
         ('Reply-To', 0), ('To', 0), ('CC', 0), ('BCC', 0)
@@ -279,7 +284,7 @@ def parsed(raw, uid, time, flags, mids):
         v = addresses(v)
         meta[n.lower()] = v[0] if one else v
 
-    subj = decode_header(orig['subject'], 'Subject')
+    subj = headers['Subject']
     meta['subject'] = str(subj).strip() if subj else ''
 
     refs = orig['references']
@@ -359,6 +364,7 @@ def parsed(raw, uid, time, flags, mids):
 
 def parse_draft(msg):
     def extract_txt(msg):
+        mixed_types = ('multipart/mixed', 'multipart/related')
         ctype = msg.get_content_type()
         if ctype == 'text/plain':
             txt = msg.get_payload(decode=True)
@@ -367,10 +373,12 @@ def parse_draft(msg):
             txt = msg.get_payload()
             txt = txt[0].get_payload(decode=True) if txt else ''
             parts = []
-        elif ctype in ('multipart/mixed', 'multipart/related'):
+        elif ctype in mixed_types:
             parts = msg.get_payload()
             txt, _ = extract_txt(parts[0])
             parts = parts[1:]
+            if len(parts) == 1 and parts[0].get_content_type() in mixed_types:
+                parts = parts[0].get_payload()
         else:
             raise ValueError('Wrong content-type: %s' % ctype)
         return txt, parts
@@ -378,21 +386,21 @@ def parse_draft(msg):
     txt, parts = extract_txt(msg)
     if isinstance(txt, bytes):
         txt = txt.decode()
-    headers = {k: msg.get(k, '') for k in ('from', 'to', 'cc', 'subject')}
-    return txt, headers, parts
+    return txt, parts
 
 
-def new_draft(draft, override, mixed=False):
-    msg = new()
+def new_draft(draft, override, related):
     txt = new()
     txt.make_alternative()
     plain = override.get('txt', draft.get('txt', ''))
     txt.attach(binary(plain))
     htm = html.markdown(plain)
     txt.attach(binary(htm, 'text/html'))
-    if mixed:
+    if related:
+        msg = new()
         msg.make_mixed()
         msg.attach(txt)
+        msg.attach(related)
     else:
         msg = txt
 

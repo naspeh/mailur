@@ -1,4 +1,4 @@
-## [Mailur] is a sleek webmail inspired by Gmail
+## [Mailur] is a lightweight webmail inspired by Gmail
 
 **Mission:** bring innovations into webmail.
 

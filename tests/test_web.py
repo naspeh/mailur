@@ -592,6 +592,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'To: "Ne Greh" <negreh@gmail.com>\r\n'
         '```\r\n'
     )
+    assert 'ответ на тело' in draft['quoted']
     assert draft['files'] == [
         {
             'filename': '08.png',
@@ -670,6 +671,7 @@ def test_drafts_part1(gm_client, login, patch, some):
         'from': '',
         'in-reply-to': '',
         'origin_uid': '3',
+        'quoted': None,
         'references': '<101@mlr>',
         'subject': 'Subj 103',
         'time': some,
@@ -760,9 +762,9 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
-            'path': '2',
+            'path': '2.1',
             'size': 3,
-            'url': '/raw/4/2/test.rst',
+            'url': '/raw/4/2.1/test.rst',
         }
     ]
     assert m['meta']['draft_id'] == draft_id
@@ -776,9 +778,9 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert res['edit']
     assert res['edit']['files'] == [{
         'filename': 'test.rst',
-        'path': '2',
+        'path': '2.1',
         'size': 3,
-        'url': '/raw/4/2/test.rst',
+        'url': '/raw/4/2.1/test.rst',
     }]
 
     web.post('/editor', {
@@ -796,15 +798,15 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
-            'path': '2',
+            'path': '2.1',
             'size': 3,
-            'url': '/raw/5/2/test.rst',
+            'url': '/raw/5/2.1/test.rst',
         },
         {
             'filename': 'test2.rst',
-            'path': '3',
+            'path': '2.2',
             'size': 3,
-            'url': '/raw/5/3/test2.rst',
+            'url': '/raw/5/2.2/test2.rst',
         },
     ]
     assert m['meta']['draft_id'] == draft_id

@@ -28,7 +28,7 @@ renderer = HighlightRenderer(escape=False, hard_wrap=True)
 markdown = mistune.Markdown(renderer=renderer)
 
 
-def clean(htm, embeds):
+def clean(htm, embeds=None):
     htm = re.sub(r'^\s*<\?xml.*?\?>', '', htm).strip()
     if not htm:
         return '', {}
@@ -46,6 +46,7 @@ def clean(htm, embeds):
     htm = cleaner.clean_html(htm)
 
     ext_images = 0
+    embeds = embeds or {}
     for img in htm.xpath('//img[@src]'):
         src = img.attrib.get('src')
         cid = re.match('^cid:(.*)', src)
