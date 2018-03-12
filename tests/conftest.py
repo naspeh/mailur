@@ -41,7 +41,7 @@ def init(request):
 def setup(new_users, gm_client, patch):
     from mailur import cache
 
-    conf = {'USER': test1, 'BASE_URL': 'http://localhost'}
+    conf = {'USER': test1}
     with patch.dict('mailur.conf', conf):
         cache.clear()
 

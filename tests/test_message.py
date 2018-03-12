@@ -288,10 +288,6 @@ def test_parts(gm_client, latest, load_email):
     assert m['meta']['preview'] == ''
     assert m['body'] == ''
     assert m['body_txt'] is None
-    assert m['body_end'] == '\r\n'.join([
-        '<hr>',
-        '<a href="{0}/original-msg.eml">Original message</a>'
-    ]).format('http://localhost/raw/1')
 
     raw = '<?xml version="1.0" encoding="UTF-8"?>'
     gm_client.add_emails([{'raw': binary(raw, 'text/html').as_bytes()}])
@@ -444,12 +440,6 @@ def test_parts(gm_client, latest, load_email):
     ]
     assert m['body'] == '<p>1</p>'
     assert m['meta']['preview'] == '1 [unknown-2.1.json, unknown-2.2.json]'
-    assert m['body_end'] == '\r\n'.join([
-        '<hr>',
-        '<a href="{0}/2.1/unknown-2.1.json">unknown-2.1.json</a><br>',
-        '<a href="{0}/2.2/unknown-2.2.json">unknown-2.2.json</a><br>',
-        '<a href="{0}/original-msg.eml">Original message</a>',
-    ]).format('http://localhost/raw/14')
 
     msg2 = MIMEPart()
     msg2.make_mixed()
@@ -501,12 +491,6 @@ def test_parts(gm_client, latest, load_email):
     ]
     assert '<hr>' not in m['body']
     assert 'ответ на тело' in m['body']
-    assert m['body_end'] == '\r\n'.join([
-        '<hr>',
-        '<a href="{0}/2/08.png">08.png</a><br>',
-        '<a href="{0}/3/09.png">09.png</a><br>',
-        '<a href="{0}/original-msg.eml">Original message</a>',
-    ]).format('http://localhost/raw/17')
 
     m = load_email('msg-attachments-two-yandex.txt', 'koi8-r', parsed=True)
     assert m['meta']['files'] == [
@@ -558,5 +542,5 @@ def test_parts(gm_client, latest, load_email):
         'size': 456,
         'url': '/raw/21/2/50.png',
     }]
-    url = 'http://localhost/raw/%s/2' % m['meta']['origin_uid']
-    assert url in m['body']
+    src = 'src="/raw/%s/2/50.png"' % m['meta']['origin_uid']
+    assert src in m['body']

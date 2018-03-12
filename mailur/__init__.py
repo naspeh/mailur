@@ -18,7 +18,6 @@ conf = {
     'SECRET': os.environ.get('MLR_SECRET', uuid.uuid4().hex),
     'MASTER': os.environ.get('MLR_MASTER', 'root:root').split(':'),
     'USER': os.environ.get('MLR_USER', 'user'),
-    'BASE_URL': os.environ.get('MLR_BASE_URL', 'http://localhost').rstrip('/'),
 }
 
 

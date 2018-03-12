@@ -13,7 +13,7 @@ from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 import chardet
 
-from . import conf, html, log
+from . import html, log
 
 aliases = {
     # Seems Google used gb2312 in some subjects, so there is another symbol
@@ -250,7 +250,7 @@ def parsed(raw, uid, time, flags, mids):
     meta = {'origin_uid': uid, 'files': [], 'errors': errors}
     if htm:
         embeds = {
-            f['content-id']: '%s%s' % (conf['BASE_URL'], f['url'])
+            f['content-id']: f['url']
             for f in files if 'content-id' in f
         }
         htm, extra_meta = html.clean(htm, embeds)
@@ -265,13 +265,6 @@ def parsed(raw, uid, time, flags, mids):
         )
     meta['preview'] = preview
     meta['files'] = files
-
-    links = [(f['filename'], f['url']) for f in files]
-    links.append(('Original message', '/raw/%s/original-msg.eml' % uid))
-    links = '<hr>\n' + '<br>\n'.join(
-        ('<a href="%s%s">%s</a>' % (conf['BASE_URL'], url, name))
-        for name, url in links
-    )
 
     fields = (
         ('From', 1), ('Sender', 1),
@@ -331,7 +324,6 @@ def parsed(raw, uid, time, flags, mids):
         msg.add_header('X-Draft-ID', draft_id)
         meta['draft_id'] = draft_id
         txt = parse_draft(orig)[0]
-        links = ''
 
     thrid = orig['X-Thread-ID']
     if not thrid and not is_draft:
@@ -357,8 +349,6 @@ def parsed(raw, uid, time, flags, mids):
     if txt:
         body.attach(binary(txt))
     msg.attach(body)
-    if links:
-        msg.attach(binary(links, 'text/html'))
 
     flags = []
     if meta['errors']:

@@ -1167,5 +1167,5 @@ def test_privacy(gm_client, login, load_email):
     assert 'richer' not in info
 
     body = web.body(uid)
-    url = 'http://localhost/raw/%s/2' % m['meta']['origin_uid']
-    assert url in body
+    src = 'src="/raw/%s/2/50.png"' % m['meta']['origin_uid']
+    assert src in body
