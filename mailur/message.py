@@ -325,11 +325,14 @@ def parsed(raw, uid, time, flags, mids):
         meta['draft_id'] = draft_id
         txt = parse_draft(orig)[0]
 
-    thrid = orig['X-Thread-ID']
-    if not thrid and not is_draft:
-        from_n_subj = '%s %s' % (msg['From'], msg['Subject'])
+    thrid = None
+    if not is_draft:
+        addr = msg['from'] or msg['sender']
+        from_n_subj = ' '.join(i for i in (addr, subj) if i)
         thrid = hashlib.md5(from_n_subj.encode()).hexdigest()
         thrid = '<%s@mailur.link>' % thrid
+
+    thrid = ' '.join(i for i in (thrid, orig['X-Thread-ID']) if i)
     if thrid:
         meta['thrid'] = thrid
         msg.add_header('X-Thread-ID', thrid)
