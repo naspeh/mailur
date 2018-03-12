@@ -293,7 +293,7 @@ def update_threads(con, criteria=None):
         else:
             thrid = sorted(
                 (t for t in thrids if '#link' not in msgs[t]['flags']),
-                key=lambda i: msgs[i]['date']
+                key=lambda i: msgs[i]['date'] or 0
             )[-1]
         latest.append(thrid)
 
@@ -337,11 +337,13 @@ def link_threads(uids, con=None):
         con.expunge()
         con.select(ALL)
 
+    msgids = []
     res = con.fetch(uids, 'BODY.PEEK[1]')
-    msgids = [
-        json.loads(res[i][1].decode())['msgid']
-        for i in range(0, len(res), 2)
-    ]
+    for i in range(0, len(res), 2):
+        meta = json.loads(res[i][1].decode())
+        if meta.get('thrid'):
+            msgids.append(meta['thrid'])
+        msgids.append(meta['msgid'])
 
     msg = message.link(msgids)
     uid = con.append(SRC, '#link', None, msg.as_bytes())

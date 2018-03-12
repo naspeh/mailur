@@ -325,22 +325,28 @@ def parsed(raw, uid, time, flags, mids):
     for n, v in headers.items():
         msg.add_header(n, v)
 
-    thrid = orig['X-Thread-ID']
-    if thrid:
-        msg.add_header('X-Thread-ID', thrid)
-        refs.append(thrid)
-
-    if msg['from'] == 'mailur@link':
-        msg.add_header('References', orig['references'])
-    elif refs:
-        msg.add_header('References', ' '.join(refs))
-
-    if '\\Draft' in flags:
+    is_draft = '\\Draft' in flags
+    if is_draft:
         draft_id = orig['X-Draft-ID'] or gen_draftid()
         msg.add_header('X-Draft-ID', draft_id)
         meta['draft_id'] = draft_id
         txt = parse_draft(orig)[0]
         links = ''
+
+    thrid = orig['X-Thread-ID']
+    if not thrid and not is_draft:
+        from_n_subj = '%s %s' % (msg['From'], msg['Subject'])
+        thrid = hashlib.md5(from_n_subj.encode()).hexdigest()
+        thrid = '<%s@mailur.link>' % thrid
+    if thrid:
+        meta['thrid'] = thrid
+        msg.add_header('X-Thread-ID', thrid)
+        refs.insert(0, thrid)
+
+    if msg['from'] == 'mailur@link':
+        msg.add_header('References', orig['references'])
+    elif refs:
+        msg.add_header('References', ' '.join(refs))
 
     msg.make_mixed()
     meta_txt = json.dumps(meta, sort_keys=True, ensure_ascii=False, indent=2)
