@@ -83,6 +83,16 @@ mail {
         smtp_auth plain;
     }
 }
+
+stream {
+    ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+
+    server {
+        listen   12345 ssl;
+        proxy_pass localhost:12300;
+    }
+}
 EOF
 
 mkdir -p /etc/nginx/conf.d/

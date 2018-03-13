@@ -15,19 +15,23 @@ cat <<"EOF" > $path/INBOX/dovecot-virtual
 All
   KEYWORD #inbox UNKEYWORD #trash UNKEYWORD #spam
 EOF
-    cat <<"EOF" > $path/Trash/dovecot-virtual
+
+cat <<"EOF" > $path/Trash/dovecot-virtual
 All
   KEYWORD #trash
 EOF
-    cat <<"EOF" > $path/Spam/dovecot-virtual
+
+cat <<"EOF" > $path/Spam/dovecot-virtual
 All
   KEYWORD #spam UNKEYWORD #trash
 EOF
-    cat <<"EOF" > $path/Drafts/dovecot-virtual
+
+cat <<"EOF" > $path/Drafts/dovecot-virtual
 All
   DRAFT UNKEYWORD #trash UNKEYWORD #spam
 EOF
-    cat <<"EOF" > $path/Pinned/dovecot-virtual
+
+cat <<"EOF" > $path/Pinned/dovecot-virtual
 All
   FLAGGED UNKEYWORD #trash UNKEYWORD #spam
 EOF
