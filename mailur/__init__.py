@@ -9,6 +9,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
+from gevent import sleep
 
 cache = {}
 conf = {
@@ -129,7 +130,7 @@ class LockError(Exception):
 
 
 @contextmanager
-def global_lock(target, timeout=10, force=False):
+def global_lock(target, timeout=180, wait=3, force=False):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
 
     def is_locked():
@@ -146,21 +147,30 @@ def global_lock(target, timeout=10, force=False):
             os.remove(path)
             return
 
-        minutes_out = (time.time() - os.path.getctime(path)) / 60
-        if minutes_out > timeout or force:
+        elapsed = time.time() - os.path.getctime(path)
+        if elapsed > timeout or force:
             try:
                 os.kill(int(pid), signal.SIGQUIT)
                 os.remove(path)
             except Exception:
                 pass
             return
+        return elapsed
+
+    locked = True
+    for i in range(wait):
+        locked = is_locked()
+        if not locked:
+            break
+        sleep(1)
+
+    if locked:
         msg = (
             '## %r is locked (for %.2f minutes). Remove file %r to run'
-            % (target, minutes_out, path)
+            % (target, locked, path)
         )
         raise LockError(msg)
 
-    is_locked()
     try:
         with open(path, 'w') as f:
             f.write(str(os.getpid()))

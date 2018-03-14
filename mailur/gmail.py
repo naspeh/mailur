@@ -6,7 +6,7 @@ import re
 
 from gevent import socket, ssl
 
-from . import imap, imap_utf7, local, log, message, user_lock
+from . import fn_time, imap, imap_utf7, local, log, message, user_lock
 
 MAP_FLAGS = {
     '\\Answered': '\\Answered',
@@ -191,6 +191,7 @@ def fetch_uids(uids, tag, box):
         return lm.multiappend(local.SRC, msgs)
 
 
+@fn_time
 @user_lock('gmail-fetch')
 def fetch_folder(tag='\\All', *, box=None, **opts):
     log.info('## process %r', tag)

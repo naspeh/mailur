@@ -207,6 +207,7 @@ def parse_msgs(uids, con=None):
     return con.multiappend(ALL, list(msgs()))
 
 
+@fn_time
 @user_lock('parse')
 def parse(criteria=None, **opts):
     con = client(SRC)
