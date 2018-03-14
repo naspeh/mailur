@@ -16,8 +16,14 @@ Vue.component('app', {
       tagIds: window.data.tags.ids,
       addrs: [],
       picSize: 20,
-      tagCount: 7,
-      opts: { split: false, splitQuery: null, bigger: false, fixPrivacy: true },
+      tagCount: 5,
+      opts: {
+        bigger: false,
+        fixPrivacy: true,
+        query: null,
+        split: false,
+        splitQuery: null
+      },
       optsKey: `${window.data.user}:opts`
     };
   },
@@ -77,12 +83,16 @@ Vue.component('app', {
     },
     compose: function() {
       this.main
-        .call('get', '/compose')
+        .cal('get', '/compose')
         .then(res => this.openInMain(res.query_edit));
     },
     openFromHash: function() {
       let q = decodeURIComponent(location.hash.slice(1));
-      if (!q) {
+      if (q) {
+        // pass
+      } else if (this.opts.query) {
+        q = this.opts.query;
+      } else {
         q = ':threads tag:#inbox';
       }
       if (!this.main || this.main.query != q) {
@@ -91,6 +101,7 @@ Vue.component('app', {
     },
     openInMain: function(q) {
       window.location.hash = q;
+      this.opts.query == q || this.setOpt('query', q);
 
       let view = msgs({
         cls: 'main',

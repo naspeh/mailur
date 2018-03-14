@@ -135,7 +135,8 @@ def login():
         return {'errors': ['Authentication failed.'], 'details': str(e)}
 
     del data['password']
-    response.set_cookie('session', data, conf['SECRET'])
+    # keep session for 3 days
+    response.set_cookie('session', data, conf['SECRET'], max_age=3600 * 24 * 3)
     return {}
 
 
