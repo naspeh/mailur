@@ -617,6 +617,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     m = load_email('msg-links.txt')
     res = web.get('/reply/%s' % m['uid'], {'forward': 1}).json
     m = latest(parsed=True)
+    assert m['meta']['subject'] == 'Fwd: Тестим ссылки'
     assert forwarded in m['body']
     assert 'https://github.com' in m['body']
     res = web.post('/editor', {'uid': m['uid']}, status=200).json
@@ -631,6 +632,34 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     assert draft['from'] == '"The Two" <two@t.com>'
     assert draft['to'] == 'two@t.com'
     assert draft['txt'] == ''
+
+    msg = {'from': 'a@t.com', 'to': 'b@t.com'}
+    gm_client.add_emails([dict(msg, subj='')])
+    m = latest(parsed=True)
+    res = web.get('/reply/%s' % m['uid']).json
+    m = latest(parsed=True)
+    assert m['meta']['subject'] == 'Re:'
+    res = web.get('/reply/%s' % m['uid']).json
+    m = latest(parsed=True)
+    assert m['meta']['subject'] == 'Re:'
+
+    gm_client.add_emails([dict(msg, subj='Re[2]:')])
+    m = latest(parsed=True)
+    res = web.get('/reply/%s' % m['uid']).json
+    m = latest(parsed=True)
+    assert m['meta']['subject'] == 'Re:'
+
+    gm_client.add_emails([dict(msg, subj='fwd: subj')])
+    m = latest(parsed=True)
+    res = web.get('/reply/%s' % m['uid']).json
+    m = latest(parsed=True)
+    assert m['meta']['subject'] == 'Re: subj'
+
+    gm_client.add_emails([dict(msg, subj='Fwd:subj')])
+    m = latest(parsed=True)
+    res = web.get('/reply/%s' % m['uid']).json
+    m = latest(parsed=True)
+    assert m['meta']['subject'] == 'Re: subj'
 
 
 def test_drafts_part1(gm_client, login, patch, some):

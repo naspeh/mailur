@@ -67,7 +67,7 @@ def link(msgids, msgid=None):
     msg.add_header('References', ' '.join(msgids))
     msg.add_header('Message-ID', msgid)
     msg.add_header('From', 'mailur@link')
-    msg.add_header('Date', formatdate())
+    msg.add_header('Date', formatdate(usegmt=True))
     return msg
 
 
@@ -405,7 +405,7 @@ def new_draft(draft, override, related):
 
     msg.add_header('X-Draft-ID', draft['draft_id'])
     msg.add_header('Message-ID', gen_msgid('draft'))
-    msg.add_header('Date', formatdate())
+    msg.add_header('Date', formatdate(usegmt=True))
     headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
     for h in headers:
         val = override.get(h.lower())

@@ -359,8 +359,9 @@ def reply(uid=None):
     if uid:
         flags, head, meta, htm = local.fetch_msg(uid)
         subj = meta['subject']
-        if not re.search('(?i)^re:', subj):
-            subj = 'Re: %s' % subj
+        subj = re.sub('(?i)^(re|fwd)(\[\d+\])?: ?', '', subj)
+        prefix = 'Fwd:' if forward else 'Re:'
+        subj = ' '.join(i for i in (prefix, subj) if i)
         to = [head['reply-to'] or head['from'], head['to'], head['cc']]
         to_all = message.addresses(','.join(a for a in to if a))
         to = [a['title'] for a in to_all if addr.get('addr') != a['addr']]

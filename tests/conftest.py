@@ -142,14 +142,14 @@ def gm_client():
                 msg = message.binary(txt)
 
                 subj = item.get('subj')
-                if not subj:
+                if 'subj' not in item:
                     subj = 'Subj %s' % uid
                 msg.add_header('Subject', subj)
 
                 date = item.get('date')
                 if not date:
                     date = gm_client.time + uid
-                msg.add_header('Date', formatdate(date))
+                msg.add_header('Date', formatdate(date, usegmt=True))
 
                 mid = item.get('mid')
                 if not mid:
