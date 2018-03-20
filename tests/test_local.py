@@ -9,19 +9,19 @@ def test_uid_pairs(gm_client, msgs, patch):
     assert local.pair_parsed_uids(['1', '2']) == ()
 
     local.parse()
-    assert local.uid_pairs() == {'1': '1', '2': '2'}
+    assert local.uid_pairs() == ({'1': '1', '2': '2'}, {'1': '1', '2': '2'})
     assert local.pair_origin_uids(['1', '2']) == ('1', '2')
     assert local.pair_parsed_uids(['1', '2']) == ('1', '2')
 
     local.parse('uid 1')
     assert ['2', '3'] == [i['uid'] for i in msgs()]
-    assert local.uid_pairs() == {'1': '3', '2': '2'}
+    assert local.uid_pairs() == ({'1': '3', '2': '2'}, {'3': '1', '2': '2'})
     assert local.pair_origin_uids(['1', '2']) == ('3', '2')
     assert local.pair_parsed_uids(['2', '3']) == ('2', '1')
 
     local.parse('all')
     assert ['4', '5'] == [i['uid'] for i in msgs()]
-    assert local.uid_pairs() == {'1': '4', '2': '5'}
+    assert local.uid_pairs() == ({'1': '4', '2': '5'}, {'4': '1', '5': '2'})
     assert local.pair_origin_uids(['1', '2']) == ('4', '5')
     assert local.pair_parsed_uids(['4', '5']) == ('1', '2')
     assert local.pair_origin_uids(['2']) == ('5',)

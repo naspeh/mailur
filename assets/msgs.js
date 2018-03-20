@@ -125,6 +125,9 @@ let Base = {
     },
     del: function() {
       return this.editTags({ new: ['#trash'] });
+    },
+    spam: function() {
+      return this.editTags({ new: ['#spam'] });
     }
   }
 };
@@ -164,6 +167,7 @@ let Msgs = Vue.extend({
       this.uids = res.uids;
       this.tags = res.tags;
       this.setMsgs(res.msgs);
+      this.picked = this.picked.filter(i => this.loaded.indexOf(i) != -1);
     },
     pick: function(uid) {
       let idx = this.picked.indexOf(uid);
@@ -190,9 +194,11 @@ let Msgs = Vue.extend({
       }
     },
     link: function() {
-      this.call('post', '/thrs/link', { uids: this.picked }).then(() => {
-        this.picked = [];
-        this.refresh();
+      this.call('post', '/thrs/link', { uids: this.picked }).then(res => {
+        if (!res.errors) {
+          this.picked = [];
+          this.refresh();
+        }
       });
     },
     loadMore: function() {

@@ -26,6 +26,7 @@
     <div v-if="picked.length" class="msgs__actions">
       <button @click="archive" class="icon--archive" title="Archive"></button>
       <button @click="del" class="icon--trash" title="Move to Trash"></button>
+      <button @click="spam" class="icon--spam" title="Move to Spam"></button>
       <button
         v-if="threads && picked.length > 1"
         @click="link" class="icon--link"

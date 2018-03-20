@@ -83,7 +83,7 @@ Vue.component('app', {
     },
     compose: function() {
       this.main
-        .cal('get', '/compose')
+        .call('get', '/compose')
         .then(res => this.openInMain(res.query_edit));
     },
     openFromHash: function() {

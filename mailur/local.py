@@ -83,7 +83,7 @@ def get_tag(name):
 @using()
 def save_uid_pairs(uids=None, con=None):
     if uids:
-        pairs = uid_pairs()
+        pairs, _ = uid_pairs()
     else:
         uids = '1:*'
         pairs = {}
@@ -102,21 +102,23 @@ def save_uid_pairs(uids=None, con=None):
 def uid_pairs(con=None):
     res = con.getmetadata(ALL, 'uidpairs')
     if len(res) == 1:
-        return {}
+        return {}, {}
 
-    return json.loads(res[0][1].decode())
+    origin = json.loads(res[0][1].decode())
+    parsed = {v: k for k, v in origin.items()}
+    return origin, parsed
 
 
 @fn_time
 def pair_origin_uids(uids):
-    pairs = uid_pairs()
-    return tuple(pairs[i] for i in uids if i in pairs)
+    origin, _ = uid_pairs()
+    return tuple(origin[i] for i in uids if i in origin)
 
 
 @fn_time
 def pair_parsed_uids(uids):
-    pairs = {v: k for k, v in uid_pairs().items()}
-    return tuple(pairs[i] for i in uids if i in pairs)
+    _, parsed = uid_pairs()
+    return tuple(parsed[i] for i in uids if i in parsed)
 
 
 def pair_msgid(mid):
