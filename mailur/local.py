@@ -83,6 +83,7 @@ def get_tag(name):
 @using()
 def save_uid_pairs(uids=None, con=None):
     if uids:
+        uid_pairs.cache_clear()
         pairs, _ = uid_pairs()
     else:
         uids = '1:*'
