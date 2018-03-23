@@ -36,9 +36,22 @@ def session(callback):
         if session:
             conf['USER'] = session['username']
             user_cache().clear()
+            save_session(session)  # refresh max_age
         request.session = session
         return callback(*args, **kwargs)
     return inner
+
+
+def save_session(data):
+    opts = {
+        # keep session for 3 days
+        'max_age': 3600 * 24 * 3,
+
+        # for security
+        'httponly': True,
+        'secure': request.headers.get('X-Forwarded-Proto') == 'https',
+    }
+    response.set_cookie('session', data, conf['SECRET'], **opts)
 
 
 def auth(callback):
@@ -135,8 +148,7 @@ def login():
         return {'errors': ['Authentication failed.'], 'details': str(e)}
 
     del data['password']
-    # keep session for 3 days
-    response.set_cookie('session', data, conf['SECRET'], max_age=3600 * 24 * 3)
+    save_session(data)
     return {}
 
 

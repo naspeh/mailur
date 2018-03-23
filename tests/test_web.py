@@ -38,6 +38,12 @@ def test_login_and_themes(web, some, login):
     res = web.get('/', status=200)
     assert '/assets/theme-solarized.css' in res, res.text
 
+    # max_age should be updated every time
+    expires = [i for i in web.cookiejar][0].expires
+    time.sleep(1)
+    res = web.get('/', status=200)
+    assert [i for i in web.cookiejar][0].expires > expires
+
     res = web.get('/logout', status=302)
     assert web.cookies == {}
 
