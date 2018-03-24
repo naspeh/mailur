@@ -175,6 +175,9 @@ def gm_client():
             res = gm_client.con.append(
                 local.ALL, gmail.MAP_LABELS.get(tag), None, msg
             )
+            res = gm_client.con.append(
+                local.SRC, gmail.MAP_LABELS.get(tag), None, msg
+            )
             if res[0] != 'OK':
                 raise Exception(res)
             gm_client.fetch[1][1].append(

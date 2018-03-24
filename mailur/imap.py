@@ -20,15 +20,15 @@ class Error(Exception):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
 
 
-def using(client, box, readonly=True):
+def using(client, box, readonly=True, name='con'):
     @contextmanager
     def use_or_create(kw):
-        if kw.get('con'):
+        if kw.get(name):
             yield
             return
 
         with client(box, readonly) as con:
-            kw['con'] = con
+            kw[name] = con
             yield
 
     def inner_gen(*a, **kw):
@@ -287,7 +287,7 @@ def idle(con, handler, code='EXISTS', timeout=None):
         return dat
 
     match()
-    log.info('## start idling...')
+    log.info('## start idling %s...' % con)
     with _cmd(con, 'IDLE') as (tag, start, complete):
         start(CRLF)
         while 1:
@@ -295,7 +295,7 @@ def idle(con, handler, code='EXISTS', timeout=None):
                 with Timeout(timeout):
                     res = inner()
                 if res:
-                    handler()
+                    handler(res)
             except Timeout:
                 log.debug('## timeout reached: %ss', timeout)
                 return
@@ -377,6 +377,9 @@ def fetch(con, uids, fields):
 @command(lock=False, writable=True)
 @cmd_writable
 def store(con, uids, cmd, flags):
+    if not uids:
+        return []
+
     uids = Uids(uids)
     if uids.batches:
         res = uids.call_async(store, con, uids, cmd, flags)

@@ -12,26 +12,26 @@ mkdir -p $home/mailboxes/{Src,All}
 path=$home/tags
 mkdir -p $path/{INBOX,Trash,Spam,Drafts,Pinned}
 cat <<"EOF" > $path/INBOX/dovecot-virtual
-All
-  KEYWORD #inbox UNKEYWORD #trash UNKEYWORD #spam
+Src
+  INTHREAD REFS (KEYWORD #inbox UNKEYWORD #trash UNKEYWORD #spam) UNKEYWORD #link
 EOF
 
 cat <<"EOF" > $path/Trash/dovecot-virtual
-All
-  KEYWORD #trash
+Src
+  KEYWORD #trash UNKEYWORD #link
 EOF
 
 cat <<"EOF" > $path/Spam/dovecot-virtual
-All
-  KEYWORD #spam UNKEYWORD #trash
+Src
+  KEYWORD #spam UNKEYWORD #trash UNKEYWORD #link
 EOF
 
 cat <<"EOF" > $path/Drafts/dovecot-virtual
-All
+Src
   DRAFT UNKEYWORD #trash UNKEYWORD #spam
 EOF
 
 cat <<"EOF" > $path/Pinned/dovecot-virtual
-All
+Src
   FLAGGED UNKEYWORD #trash UNKEYWORD #spam
 EOF

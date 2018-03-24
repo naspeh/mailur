@@ -4,7 +4,7 @@ import imaplib
 import json
 import re
 
-from gevent import socket
+from gevent import joinall, socket, spawn
 
 from . import conf, fn_cache, fn_time, html, imap, log, message, user_lock
 
@@ -46,8 +46,8 @@ def client(box=ALL, readonly=True):
     return ctx
 
 
-def using(box=ALL, readonly=True):
-    return imap.using(client, box, readonly)
+def using(box=ALL, readonly=True, name='con'):
+    return imap.using(client, box, readonly, name)
 
 
 @fn_cache
@@ -311,15 +311,121 @@ def update_threads(con, criteria=None):
 
 
 @fn_time
-@using(readonly=False)
-def msgs_flag(uids, old, new, con=None):
-    rm = set(old) - set(new) if old else []
-    if rm:
-        con.store(uids, '-FLAGS.SILENT', ' '.join(rm))
+@using(SRC, name='con_src', readonly=False)
+@using(ALL, name='con_all', readonly=False)
+def msgs_flag(uids, old, new, con_src=None, con_all=None):
+    def store(con, uids):
+        rm = set(old) - set(new) if old else []
+        if rm:
+            con.store(uids, '-FLAGS.SILENT', ' '.join(rm))
 
-    add = set(new) - set(old) if new else []
-    if add:
-        con.store(uids, '+FLAGS.SILENT', ' '.join(add))
+        add = set(new) - set(old) if new else []
+        if add:
+            con.store(uids, '+FLAGS.SILENT', ' '.join(add))
+
+    jobs = [
+        spawn(store, con_all, uids),
+        spawn(store, con_src, pair_parsed_uids(uids))
+    ]
+    joinall(jobs, raise_error=True)
+
+
+@fn_time
+@using(SRC, name='con_src')
+@using(ALL, name='con_all', readonly=False)
+def sync_flags_to_all(con_src=None, con_all=None):
+    skip_flags = set(['#latest', '#err', '#dup'])
+    for flag in con_src.flags:
+        if flag in skip_flags:
+            continue
+        q = flag[1:] if flag.startswith('\\') else 'keyword %s' % flag
+        res = con_src.search(q)
+        oids = res[0].decode().split()
+        pairs = set(pair_origin_uids(oids))
+        res = con_all.search(q)
+        pids = set(res[0].decode().split())
+        con_all.store(pairs - pids, '+FLAGS.SILENT', flag)
+        con_all.store(pids - pairs, '-FLAGS.SILENT', flag)
+    rm_flags = set(con_all.flags) - set(con_src.flags) - skip_flags
+    if rm_flags:
+        con_all.store('1:*', '-FLAGS.SILENT', ' '.join(rm_flags))
+
+
+@fn_time
+@using(SRC, name='con_src', readonly=False)
+@using(ALL, name='con_all')
+def sync_flags_to_src(con_src=None, con_all=None):
+    for flag in con_all.flags:
+        if flag in ('#latest', '#err', '#dup'):
+            continue
+        q = flag[1:] if flag.startswith('\\') else 'keyword %s' % flag
+        res = con_all.search(q)
+        pids = res[0].decode().split()
+        pairs = set(pair_parsed_uids(pids))
+        res = con_src.search(q)
+        oids = set(res[0].decode().split())
+        con_src.store(pairs - oids, '+FLAGS.SILENT', flag)
+        con_src.store(oids - pairs, '-FLAGS.SILENT', flag)
+    rm_flags = set(con_src.flags) - set(con_all.flags)
+    if rm_flags:
+        con_src.store('1:*', '-FLAGS.SILENT', ' '.join(rm_flags))
+
+
+@fn_time
+@using(None)
+def sync_flags(con=None):
+    @using(SRC, name='con_src')
+    @using(ALL, name='con_all', readonly=False)
+    def handler(res, con_src=None, con_all=None):
+        modseq0 = modseq[0]
+        modseq_ = re.search(r'MODSEQ \((\d+)\)', res[0].decode()).group(1)
+        if int(modseq_) < int(modseq0):
+            return
+        modseq[0] = modseq_
+        res = con_src.fetch('1:*', '(UID FLAGS) (CHANGEDSINCE %s)' % modseq0)
+        src_flags = {}
+        for line in res:
+            val = re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode())
+            if not val:
+                continue
+            uid, flags = val.groups()
+            src_flags[uid] = flags
+
+        if not src_flags:
+            return
+
+        actions = {}
+        _, parsed = uid_pairs()
+        pids = pair_origin_uids(src_flags)
+        res = con_all.fetch(pids, '(UID FLAGS)')
+        for line in res:
+            uid, flags = (
+                re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode())
+                .groups()
+            )
+            flags = set(flags.split())
+            orig_flags = set(src_flags[parsed[uid]].split())
+            val = sorted(orig_flags - flags - set(['\\Recent']))
+            if val:
+                key = ('+FLAGS.SILENT', ' '.join(val))
+                actions.setdefault(key, [])
+                actions[key].append(uid)
+            val = sorted(flags - orig_flags - set(['#latest']))
+            if val:
+                key = ('-FLAGS.SILENT', ' '.join(val))
+                actions.setdefault(key, [])
+                actions[key].append(uid)
+        log.debug('## sync: MODSEQ=%s %s', modseq_, actions)
+        for action, uids in actions.items():
+            con_all.store(uids, *action)
+
+    res = con.status(SRC, '(UIDVALIDITY HIGHESTMODSEQ)')
+    pair = re.search(r'UIDVALIDITY (\d+) HIGHESTMODSEQ (\d+)', res[0].decode())
+    uidval, modseq = pair.groups()
+    log.info('## %s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, uidval, modseq)
+    modseq = [modseq]
+    con.select(SRC)
+    con.idle(handler, 'FETCH')
 
 
 @fn_time

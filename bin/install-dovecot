@@ -169,8 +169,8 @@ root:{plain}$secret
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lrst
-All owner lrst
-Src owner lrpi
+All owner lr
+Src owner lrstpi
 * user=root lrwstipe
 EOF
 

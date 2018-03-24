@@ -2,9 +2,11 @@
 
 Usage:
   mlr gmail <login> set <username> <password>
-  mlr gmail <login> [--tag=<tag> --box=<box> --idle=<idle> --parse] [options]
+  mlr gmail <login> [--tag=<tag> --box=<box> --parse] [options]
   mlr parse <login> [<criteria>] [options]
   mlr threads <login> [<criteria>]
+  mlr sync <login> [--gm-timeout=<timeout>]
+  mlr sync-flags <login> [--reverse]
   mlr icons
   mlr web
   mlr lint [--ci]
@@ -50,32 +52,20 @@ def process(args):
         fetch_opts = dict(opts, **select_opts)
         fetch_opts = {k: v for k, v in fetch_opts.items() if v}
 
-        def handler():
-            try:
-                gmail.fetch(**fetch_opts)
-                if args['--parse']:
-                    local.parse(**opts)
-            except LockError as e:
-                log.warn(e)
-
-        if not args['--idle']:
-            handler()
-            return
-
-        timeout = int(args['--idle'])
-        select_opts['tag'] = select_opts.get('tag') or '\\All'
-        while 1:
-            try:
-                handler()
-                with gmail.client(**select_opts) as con:
-                    con.idle(handler, timeout=timeout)
-            except Exception as e:
-                log.exception(e)
-                time.sleep(10)
+        gmail.fetch(**fetch_opts)
+        if args['--parse']:
+            local.parse(**opts)
     elif args['parse']:
         local.save_msgids()
         local.save_uid_pairs()
         local.parse(args.get('<criteria>'), **opts)
+    elif args['sync']:
+        sync(int(args['--gm-timeout']))
+    elif args['sync-flags']:
+        if args['--reverse']:
+            local.sync_flags_to_src()
+        else:
+            local.sync_flags_to_all()
     elif args['threads']:
         with local.client() as con:
             local.update_threads(con, criteria=args.get('<criteria>'))
@@ -90,6 +80,37 @@ def process(args):
         run('ci=%s bin/run-lint' % ci)
     else:
         raise SystemExit('Target not defined:\n%s' % args)
+
+
+def sync(gm_timeout):
+    from gevent import joinall, sleep, spawn
+
+    def remote():
+        def handler(res=None):
+            try:
+                gmail.fetch()
+                local.parse()
+            except LockError as e:
+                log.warn(e)
+
+        try:
+            gmail.get_credentials()
+        except ValueError:
+            log.info('## no credentials for gmail')
+            return
+        while 1:
+            try:
+                handler()
+                with gmail.client(tag='\\All') as con:
+                    con.idle(handler, timeout=gm_timeout)
+            except Exception as e:
+                log.exception(e)
+                sleep(10)
+    try:
+        jobs = [spawn(remote), spawn(local.sync_flags)]
+        joinall(jobs, raise_error=True)
+    except KeyboardInterrupt:
+        time.sleep(1)
 
 
 def web():
