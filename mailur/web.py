@@ -591,7 +591,13 @@ def parse_query(q):
         flags = {'flagged', 'unflagged', 'seen', 'unseen', 'draft'}
         flags = {k for k in flags if info.get(k)}
         if flags:
-            q = ' '.join(flags)
+            opts.setdefault('flags', [])
+            opts['flags'].extend(flags)
+            q = ''
+        elif info.get('tag'):
+            opts.setdefault('tags', [])
+            opts['tags'].append(info['tag_id'])
+            q = ''
         elif info.get('raw'):
             q = info['raw_val']
         elif info.get('thread'):
@@ -620,10 +626,6 @@ def parse_query(q):
             opts['draft'] = info['draft_val']
             opts['thread'] = True
             q = 'header x-draft-id %s' % info['draft_val']
-        elif info.get('tag'):
-            opts.setdefault('tags', [])
-            opts['tags'].append(info['tag_id'])
-            q = ''
         elif info.get('date'):
             val = info['date_val']
             count = val.count('-')
@@ -674,6 +676,10 @@ def parse_query(q):
     if q:
         q = 'text %s' % json.dumps(q, ensure_ascii=False)
         parts.append(q)
+
+    flags = opts.get('flags', [])
+    if flags:
+        parts.append(' '.join(flags))
 
     tags = opts.get('tags', [])
     if tags:
