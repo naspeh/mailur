@@ -331,6 +331,17 @@ def msgs_flag(uids, old, new, con_src=None, con_all=None):
 
 
 @fn_time
+@using(SRC, readonly=False)
+def clean_flags(con=None):
+    con.store('1:*', '-FLAGS.SILENT', '#err #dup #latest')
+    res = con.search('HEADER MESSAGE-ID @mailur.link>')
+    uids = res[0].decode().split()
+    con.store(uids, '+FLAGS.SILENT', '#link \\Seen')
+    sync_flags_to_all()
+    update_threads(con)
+
+
+@fn_time
 @using(SRC, name='con_src')
 @using(ALL, name='con_all', readonly=False)
 def sync_flags_to_all(con_src=None, con_all=None):
@@ -373,7 +384,7 @@ def sync_flags_to_src(con_src=None, con_all=None):
 
 @fn_time
 @using(None)
-def sync_flags(con=None):
+def sync_flags(con=None, timeout=None):
     @using(SRC, name='con_src')
     @using(ALL, name='con_all', readonly=False)
     def handler(res, con_src=None, con_all=None):
@@ -425,7 +436,7 @@ def sync_flags(con=None):
     log.info('## %s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, uidval, modseq)
     modseq = [modseq]
     con.select(SRC)
-    con.idle(handler, 'FETCH')
+    con.idle(handler, 'FETCH', timeout=timeout)
 
 
 @fn_time

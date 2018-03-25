@@ -5,8 +5,9 @@ Usage:
   mlr gmail <login> [--tag=<tag> --box=<box> --parse] [options]
   mlr parse <login> [<criteria>] [options]
   mlr threads <login> [<criteria>]
-  mlr sync <login> [--gm-timeout=<timeout>]
+  mlr sync <login> [--timeout=<timeout>]
   mlr sync-flags <login> [--reverse]
+  mlr clean-flags <login>
   mlr icons
   mlr web
   mlr lint [--ci]
@@ -18,11 +19,14 @@ Options:
   -b <batch>    Batch size [default: 1000].
   -t <threads>  Amount of threads for thread pool [default: 2].
 """
+import functools as ft
 import pathlib
 import sys
 import time
 
 from docopt import docopt
+
+from gevent import joinall, sleep, spawn
 
 from . import LockError, conf, gmail, local, log
 
@@ -60,12 +64,14 @@ def process(args):
         local.save_uid_pairs()
         local.parse(args.get('<criteria>'), **opts)
     elif args['sync']:
-        sync(int(args['--gm-timeout']))
+        sync(int(args['--timeout']))
     elif args['sync-flags']:
         if args['--reverse']:
             local.sync_flags_to_src()
         else:
             local.sync_flags_to_all()
+    elif args['clean-flags']:
+        local.clean_flags()
     elif args['threads']:
         with local.client() as con:
             local.update_threads(con, criteria=args.get('<criteria>'))
@@ -82,9 +88,20 @@ def process(args):
         raise SystemExit('Target not defined:\n%s' % args)
 
 
-def sync(gm_timeout):
-    from gevent import joinall, sleep, spawn
+def retry(fn):
+    @ft.wraps(fn)
+    def inner(*a, **kw):
+        while 1:
+            try:
+                fn(*a, **kw)
+            except Exception as e:
+                log.exception(e)
+                sleep(10)
+    return inner
 
+
+def sync(timeout=1200):
+    @retry
     def remote():
         def handler(res=None):
             try:
@@ -98,16 +115,18 @@ def sync(gm_timeout):
         except ValueError:
             log.info('## no credentials for gmail')
             return
-        while 1:
-            try:
-                handler()
-                with gmail.client(tag='\\All') as con:
-                    con.idle(handler, timeout=gm_timeout)
-            except Exception as e:
-                log.exception(e)
-                sleep(10)
+
+        handler()
+        with gmail.client(tag='\\All') as con:
+            con.idle(handler, timeout=timeout)
+
+    @retry
+    def flags():
+        local.sync_flags_to_all()
+        local.sync_flags(timeout=timeout)
+
     try:
-        jobs = [spawn(remote), spawn(local.sync_flags)]
+        jobs = [spawn(remote), spawn(flags)]
         joinall(jobs, raise_error=True)
     except KeyboardInterrupt:
         time.sleep(1)

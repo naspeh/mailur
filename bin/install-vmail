@@ -13,7 +13,7 @@ path=$home/tags
 mkdir -p $path/{INBOX,Trash,Spam,Drafts,Pinned}
 cat <<"EOF" > $path/INBOX/dovecot-virtual
 Src
-  INTHREAD REFS KEYWORD #inbox UNKEYWORD #trash UNKEYWORD #spam UNKEYWORD #link
+  INTHREAD REFS (KEYWORD #inbox) (UNKEYWORD #trash UNKEYWORD #spam UNKEYWORD #link)
 EOF
 
 cat <<"EOF" > $path/Trash/dovecot-virtual
