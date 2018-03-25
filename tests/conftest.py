@@ -172,11 +172,9 @@ def gm_client():
                 msg = msg.as_bytes()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
+            folder = local.ALL if tag == '\\All' else local.SRC
             res = gm_client.con.append(
-                local.ALL, gmail.MAP_LABELS.get(tag), None, msg
-            )
-            res = gm_client.con.append(
-                local.SRC, gmail.MAP_LABELS.get(tag), None, msg
+                folder, gmail.MAP_LABELS.get(tag), None, msg
             )
             if res[0] != 'OK':
                 raise Exception(res)
