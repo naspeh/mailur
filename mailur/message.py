@@ -361,6 +361,55 @@ def parsed(raw, uid, time, flags, mids):
     return msg, flags
 
 
+def sending(raw, linesep='\r\n', maxlinelen=70):
+    def _fold(v, name=None):
+        try:
+            v.encode('ascii')
+        except UnicodeEncodeError:
+            v = email.header.Header(v, charset='utf-8', header_name=name)
+            v = v.encode(maxlinelen=maxlinelen, linesep=linesep)
+        return v
+
+    def fold(name, value):
+        return '%s: %s%s' % (name, _fold(value, name), linesep)
+
+    def fold_addrs(name, value):
+        addrs = email.utils.getaddresses([value])
+        parts = []
+        length = 0
+        for n, a in addrs:
+            part = '%s <%s>' % (_fold(n), a)
+            length += len(part)
+            if len(part) > maxlinelen:
+                part = '%s %s' % (linesep, part)
+                length = len(part)
+            parts.append(part)
+        addrs = ','.join(parts)
+        return '%s: %s%s' % (name, addrs, linesep)
+
+    msg = email.message_from_bytes(raw, policy=email.policy.SMTPUTF8)
+    msgid = gen_msgid('sent')
+    msg.replace_header('Message-ID', msgid)
+
+    params = [
+        ','.join(a for n, a in email.utils.getaddresses([msg[name]]))
+        for name in ('From', 'To') if msg[name]
+    ]
+    if len(params) < 2:
+        raise ValueError('"From" and "To" shouldn\'t be empty')
+
+    # These new email policies work pretty strange,
+    # so this machinery is to encode "Subject", "From" and "To" headers
+    # and keep mime body as is
+    headers = []
+    for n, f in (('Subject', fold), ('From', fold_addrs), ('To', fold_addrs)):
+        headers.append(f(n, msg[n]))
+        del msg[n]
+    msg = b''.join([''.join(headers).encode(), msg.as_bytes()])
+    params.append(msg)
+    return params, msgid
+
+
 def parse_draft(msg):
     def extract_txt(msg):
         mixed_types = ('multipart/mixed', 'multipart/related')

@@ -722,9 +722,8 @@ def test_drafts_part1(gm_client, login, patch, some):
     with patch('mailur.gmail.get_credentials') as c:
         c.return_value = ('test', 'test')
         with patch('mailur.web.smtplib.SMTP'):
-            res = web.get('/send/3', status=200).json
-    assert res == {'query': some}
-    assert re.match(r'^:threads mid:\<.*@mailur\.sent\>', some.value)
+            res = web.get('/send/3', status=400).json
+    assert res == {'errors': ['"From" and "To" shouldn\'t be empty']}
 
 
 def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
@@ -823,10 +822,16 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
 
     web.post('/editor', {
         'uid': '4',
-        'txt': 'test it again',
-        'subject': 'Subj new',
+        'txt': 'Тест',
+        'subject': (
+            'Тема новая '
+            'looooooooooooooooooooooooooooooooooooong'
+        ),
         'from': '"Альфа" <a@t.com>',
-        'to': '"Бета" <b@t.com>, c@t.com',
+        'to': (
+            '"Бета" <b@t.com>,'
+            '"Длинное Имя looooooooooooooooooooooooooooooooooooong" <c@t.com>'
+        ),
         'files': Upload('test2.rst', b'lol', 'text/x-rst')
     }, status=200)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
@@ -850,9 +855,14 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
     assert m['body_full']['from'] == 'Альфа <a@t.com>'
-    assert m['body_full']['to'] == 'Бета <b@t.com>, c@t.com'
-    assert m['body_full']['subject'] == 'Subj new'
-    assert m['body'] == '<p>test it again</p>'
+    assert m['body_full']['to'] == (
+        'Бета <b@t.com>, '
+        'Длинное Имя looooooooooooooooooooooooooooooooooooong <c@t.com>'
+    )
+    assert m['body_full']['subject'] == (
+        'Тема новая looooooooooooooooooooooooooooooooooooong'
+    )
+    assert m['body'] == '<p>Тест</p>'
     assert local.get_addrs() == [
         {
             'addr': 'a@t.com',
@@ -870,9 +880,19 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
 
     with patch('mailur.gmail.get_credentials') as c:
         c.return_value = ('test', 'test')
-        with patch('mailur.web.smtplib.SMTP.sendmail'):
+        with patch('mailur.web.smtplib.SMTP.sendmail') as m:
             with patch('mailur.web.smtplib.SMTP.login'):
                 res = web.get('/send/5', status=200).json
+    assert m.call_args[0][:2] == ('a@t.com', 'b@t.com,c@t.com')
+    body = m.call_args[0][2].decode()
+    assert body.startswith('''\
+Subject: =?utf-8?b?0KLQtdC80LAg0L3QvtCy0LDRjyBsb29vb29vb29vb29vb29v?=\r
+ =?utf-8?b?b29vb29vb29vb29vb29vb29vb29vb25n?=\r
+From: =?utf-8?b?0JDQu9GM0YTQsA==?= <a@t.com>\r
+To: =?utf-8?b?0JHQtdGC0LA=?= <b@t.com>,\r
+ =?utf-8?b?0JTQu9C40L3QvdC+0LUg0JjQvNGPIGxvb29vb29vb29vb29vb29vb29v?=\r
+ =?utf-8?b?b29vb29vb29vb29vb29vb29vbmc=?= <c@t.com>\r
+'''), body
     assert res == {'query': some}
     assert re.match(r'^:threads mid:\<.*@mailur\.sent\>', some.value)
 

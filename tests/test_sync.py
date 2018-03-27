@@ -86,7 +86,7 @@ def test_cli_idle(gm_client, msgs, login, patch):
     with patch('mailur.gmail.get_credentials') as m:
         m.return_value = login.user2, 'user'
         spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
-        sleep(2)
+        sleep(3)
 
     gm_client.add_emails([{}] * 4, fetch=False, parse=False)
     sleep(1)

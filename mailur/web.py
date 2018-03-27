@@ -1,6 +1,5 @@
 import base64
 import datetime as dt
-import email.policy
 import functools as ft
 import json
 import pathlib
@@ -398,22 +397,25 @@ def reply(uid=None):
 
 
 @app.get('/send/<uid:int>', name='send')
+@jsonify
 def send(uid):
     from . import gmail
 
     # TODO: send emails over gmail for now
     uid = str(uid)
     raw = local.raw_msg(uid, local.SRC)
-    msg = email.message_from_bytes(raw, policy=email.policy.SMTPUTF8)
-    msgid = message.gen_msgid('sent')
-    msg.replace_header('Message-ID', msgid)
+    try:
+        params, msgid = message.sending(raw)
+    except ValueError as e:
+        response.status = 400
+        return {'errors': [str(e)]}
 
     login, pwd = gmail.get_credentials()
     con = smtplib.SMTP('smtp.gmail.com', 587)
     con.ehlo()
     con.starttls()
     con.login(login, pwd)
-    con.send_message(msg)
+    con.sendmail(*params)
     try:
         gmail.fetch_folder()
         local.parse()
