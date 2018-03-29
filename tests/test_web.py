@@ -1020,11 +1020,17 @@ def test_query():
     assert parse_query('test') == ('text "test" ' + end, {})
     assert parse_query('test1 test2') == ('text "test1 test2" ' + end, {})
 
-    assert parse_query('thread:1') == ('uid 1 ' + end, {'thread': True})
-    assert parse_query('thr:1') == ('uid 1 ' + end, {'thread': True})
-    assert parse_query('THR:1') == ('uid 1 ' + end, {'thread': True})
+    assert parse_query('thread:1') == (
+        'inthread refs uid 1 ' + end, {'thread': True}
+    )
+    assert parse_query('thr:1') == (
+        'inthread refs uid 1 ' + end, {'thread': True}
+    )
+    assert parse_query('THR:1') == (
+        'inthread refs uid 1 ' + end, {'thread': True}
+    )
     assert parse_query('thr:1 test') == (
-        'uid 1 text "test" ' + end, {'thread': True}
+        'inthread refs uid 1 text "test" ' + end, {'thread': True}
     )
 
     assert parse_query('in:#inbox') == (
@@ -1080,7 +1086,8 @@ def test_query():
         'header message-id <101@mlr> text "test" ' + end, {}
     )
     assert parse_query('ref:<_@mlr>') == (
-        'or header message-id <_@mlr> header references <_@mlr> ' + end, {}
+        'or header message-id <_@mlr> header references <_@mlr> ' + end,
+        {'thread': True}
     )
 
     assert parse_query(':raw text in:#spam') == ('text in:#spam ' + end, {})
@@ -1113,7 +1120,7 @@ def test_query():
     assert parse_query('date:2007-04-01') == ('on 01-Apr-2007 ' + end, {})
 
     assert parse_query('draft:<12345678>') == (
-        'header x-draft-id <12345678> ' + end,
+        'inthread refs header x-draft-id <12345678> ' + end,
         {'draft': '<12345678>', 'thread': True}
     )
 

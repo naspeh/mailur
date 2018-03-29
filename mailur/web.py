@@ -604,7 +604,7 @@ def parse_query(q):
             q = info['raw_val']
         elif info.get('thread'):
             opts['thread'] = True
-            q = 'uid %s' % info['thread_id']
+            q = 'inthread refs uid %s' % info['thread_id']
         elif info.get('uid'):
             q = 'uid %s' % info['uid_val']
         elif info.get('from'):
@@ -614,6 +614,7 @@ def parse_query(q):
         elif info.get('mid'):
             q = 'header message-id %s' % info['mid_val']
         elif info.get('ref'):
+            opts['thread'] = True
             q = (
                 'or header message-id {0} header references {0}'
                 .format(info['ref_val'])
@@ -625,9 +626,9 @@ def parse_query(q):
             opts['threads'] = True
             q = ''
         elif info.get('draft_edit'):
-            opts['draft'] = info['draft_val']
             opts['thread'] = True
-            q = 'header x-draft-id %s' % info['draft_val']
+            opts['draft'] = info['draft_val']
+            q = 'inthread refs header x-draft-id %s' % info['draft_val']
         elif info.get('date'):
             val = info['date_val']
             count = val.count('-')
@@ -700,7 +701,7 @@ def parse_query(q):
 
 
 def thread(q, opts, preload=4):
-    uids = local.search_msgs('INTHREAD REFS %s' % q, '(DATE)')
+    uids = local.search_msgs(q, '(DATE)')
     if not uids:
         return {
             'uids': [],
