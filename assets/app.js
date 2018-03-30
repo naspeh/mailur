@@ -90,7 +90,7 @@ Vue.component('app', {
       let q = decodeURIComponent(location.hash.slice(1));
       if (q) {
         // pass
-      } else if (this.opts.query !== undefined) {
+      } else if (this.opts.query !== null) {
         q = this.opts.query;
       } else {
         q = ':threads tag:#inbox';
