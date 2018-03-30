@@ -1,5 +1,6 @@
 html, body {
   height: 100%;
+  min-width: 350px;
 }
 
 .app {
@@ -37,23 +38,26 @@ html, body {
 .split {
   position: relative;
   box-sizing: border-box;
-  min-width: 600px;
   width: 100vw;
   overflow-x: hidden;
   overflow-y: auto;
   background-color: @--color--white;
 
-  .opt--split-on & {
-    width: 50vw;
+  @media @--split-min {
+    .opt--split-on & {
+      width: 50vw;
+    }
   }
 }
 
 .split {
   display: none;
+  border-left: 1px solid @--color--light-grey;
 
-  .opt--split-on & {
-    display: block;
-    border-left: 1px solid @--color--light-grey;
+  @media @--split-min {
+    .opt--split-on & {
+      display: block;
+    }
   }
 }
 
@@ -77,6 +81,12 @@ html, body {
   .tags__item {
     border: none;
   }
+
+  @media (max-width: 600px) {
+    .tags--quick {
+      display: none;
+    }
+  }
 }
 
 .header__actions {
@@ -87,5 +97,15 @@ html, body {
   .opt--split-on & .icon--split,
   .opt--bigger & .icon--font {
     color: @--color--orange;
+  }
+
+  .icon--split {
+    display: none;
+  }
+
+  @media @--split-min {
+    .icon--split {
+      display: flex;
+    }
   }
 }

@@ -1,29 +1,31 @@
 <div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--detailed': detailed, 'msg--opened': opened, 'msg--edited': edit}">
-  <div class="msg-line">
-    <div class="msg-line__pick">
-      <input :checked="picked" @change="pick(msg.uid)" type="checkbox">
-    </div>
+  <a class="msg-line" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
+    <div
+      :class="['msg-line__pick', picked ? 'icon--check-full' : 'icon--check-empty']"
+      @click.stop.prevent="pick(msg.uid)"
+      :title="picked ? 'Uncheck' : 'Check'"
+    />
     <div
       class="icon--pin"
-      @click="pin(msg)"
+      @click.stop.prevent="pin(msg)"
       :title="msg.is_pinned ? 'Unpin' : 'Pin'"
     />
     <div
       v-if="!msg.is_draft"
       class="icon--unread"
-      @click="read(msg)"
+      @click.stop.prevent="read(msg)"
       :title="`Mark as ${msg.is_unread ? 'read' : 'unread'}`"
     />
     <div
       v-if="!thread && !msg.is_draft"
       class="icon--reply"
-      @click="reply(msg)"
+      @click.stop.prevent="reply(msg)"
       title="Reply"
     />
     <div
       v-if="msg.is_draft"
       class="icon--draft"
-      @click="query(msg.query_edit)"
+      @click.stop.prevent="query(msg.query_edit)"
       title="Edit draft"
     />
     <div
@@ -33,32 +35,31 @@
     />
     <div
       class="icon--image"
-      @click="makeRicher"
+      @click.stop.prevent="makeRicher"
       :title="msg.richer"
     />
     <div
-      @click.stop="details(msg.uid)"
+      @click.stop.prevent="details(msg.uid)"
       class="icon--more"
       title="Details and actions"
     />
-    <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
-    <a class="msg-line__insight" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
-      <div class="msg-line__from">
-        <template v-for="from in msg.from_list">
-        <div
-          v-if="from.hash"
-          @click.stop.prevent="openInMain(from.query)"
-          :class="`msg-line__from__pic pic-${from.hash}`"
-          :title="from.title"
-        ></div>
-        <div
-          v-if="from.expander"
-          class="msg-line__from__more"
-          :title="`${from.expander} more addresses`"
-        >…</div>
-        </template>
-        <div class="msg-line__from__name" :title="msg.from.title">{{msg.from.name}}</div>
-      </div>
+    <div class="msg-line__from">
+      <template v-for="from in msg.from_list">
+      <div
+        v-if="from.hash"
+        @click.stop.prevent="openInMain(from.query)"
+        :class="`msg-line__from__pic pic-${from.hash}`"
+        :title="from.title"
+      ></div>
+      <div
+        v-if="from.expander"
+        class="msg-line__from__more"
+        :title="`${from.expander} more addresses`"
+      >…</div>
+      </template>
+      <div class="msg-line__from__name" :title="msg.from.title">{{msg.from.name}}</div>
+    </div>
+    <div class="msg-line__insight">
       <div
         v-if="msg.count > 1"
         class="msg-line__count"
@@ -66,14 +67,17 @@
       >{{msg.count}}</div>
       <div class="msg-line__subj" :title="msg.subject">{{msg.subject}}</div>
       <div class="msg-line__text" :title="msg.preview" v-html="msg.preview" />
+    </div>
+    <div class="msg-line__end">
+      <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
       <div class="msg-line__time" :title="msg.time_title">{{msg.time_human}}</div>
-    </a>
+    </div>
     <div
-      @click.prevent="openInSplit"
+      @click.stop.prevent="openInSplit"
       class="icon--open-in-split"
       title="Open in split pane"
     ></div>
-  </div>
+  </a>
   <div class="msg__details msg__actions">
     <!-- <a href="#" class="icon-unread">Mark as {{msg.is_unread ? '' : 'un'}}read</a> -->
     <a href="#" @click.prevent="archive(msg)" class="icon--archive" title="Archive">Archive</a>

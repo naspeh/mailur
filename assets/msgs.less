@@ -39,8 +39,10 @@
   .icon--open-in-split {
     display: none;
 
-    .opt--split-on .main & {
-      display: flex;
+    @media @--split-min {
+      .opt--split-on .main & {
+        display: flex;
+      }
     }
   }
 }
@@ -76,6 +78,12 @@
 
     &:focus {
       min-width: 20em
+    }
+  }
+
+  @media @--small-screen {
+    .msgs--picked & {
+      display: none;
     }
   }
 }
@@ -135,10 +143,14 @@
 }
 
 .msgs__actions {
-  display: flex;
+  display: none;
   align-items: stretch;
   height: 1.5em;
   margin-left: 0.2em;
+
+  .msgs--picked & {
+    display: flex;
+  }
 
   .tags-edit {
     margin-left: 0.2em;
@@ -146,9 +158,14 @@
 }
 
 .msgs__tags {
+  display: none;
   margin-left: 0.2em;
   overflow: hidden;
   white-space: nowrap;
+
+  .msgs--picked & {
+    display: block;
+  }
 
   .tags__item {
     border-color: transparent;

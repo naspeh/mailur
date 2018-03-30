@@ -1,4 +1,4 @@
-<div :class="['msgs', cls, name]"  ref="msgs">
+<div :class="['msgs', cls, name, picked.length ? 'msgs--picked': '']"  ref="msgs">
   <!-- loader -->
   <template v-if="name == 'loader'">
   <div class="msgs__header">
@@ -23,7 +23,7 @@
       <input v-model="query" @keyup.enter="open(query)">
       <button @click="open(query)" class="icon--search"></button>
     </div>
-    <div v-if="picked.length" class="msgs__actions">
+    <div class="msgs__actions">
       <button @click="archive" class="icon--archive" title="Archive"></button>
       <button @click="del" class="icon--trash" title="Move to Trash"></button>
       <button @click="spam" class="icon--spam" title="Move to Spam"></button>
@@ -34,7 +34,7 @@
       ></button>
       <tags-edit :origin="allTags" :edit="editTags" />
     </div>
-    <div v-if="picked.length" class="msgs__tags">
+    <div class="msgs__tags">
       <tags :opts="allTags" :edit="editTags" :trancated="true" />
     </div>
     <picker

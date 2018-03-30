@@ -43,6 +43,8 @@
   }
 }
 
+.icon--check-full,
+.icon--check-empty,
 .icon--add,
 .icon--search,
 .icon--ok,
@@ -71,6 +73,26 @@
 .icon--attachment,
 .icon--spinner {
   .--icon;
+}
+
+.--icon--check-full() {
+  &::before {
+    content: "\f046";
+  }
+}
+
+.icon--check-full {
+  .--icon--check-full;
+}
+
+.--icon--check-empty() {
+  &::before {
+    content: "\f096";
+  }
+}
+
+.icon--check-empty {
+  .--icon--check-empty;
 }
 
 .--icon--add() {

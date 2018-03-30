@@ -536,10 +536,14 @@ tpl = '''
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"
+  />
+  <meta charset="utf-8" />
   <title>Mailur: {{title}}</title>
-  <link rel="shortcut icon" href="/assets/favicon.png">
-  <link href="/assets/{{css}}?{{mtime}}" rel="stylesheet">
+  <link rel="shortcut icon" href="/assets/favicon.png" />
+  <link href="/assets/{{css}}?{{mtime}}" rel="stylesheet" />
   <script>
     window.data={{!data}};
   </script>

@@ -20,7 +20,8 @@ let Loader = Vue.extend({
     return {
       name: 'loader',
       loading: false,
-      error: null
+      error: null,
+      picked: []
     };
   },
   methods: {
