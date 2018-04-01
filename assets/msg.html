@@ -1,7 +1,7 @@
-<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--detailed': detailed, 'msg--opened': opened, 'msg--edited': edit}">
+<div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--picked': picked, 'msg--detailed': detailed, 'msg--opened': opened, 'msg--edited': edit}">
   <a class="msg-line" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
     <div
-      :class="['msg-line__pick', picked ? 'icon--check-full' : 'icon--check-empty']"
+      class="msg-line__pick"
       @click.stop.prevent="pick(msg.uid)"
       :title="picked ? 'Uncheck' : 'Check'"
     />
@@ -27,11 +27,6 @@
       class="icon--draft"
       @click.stop.prevent="query(msg.query_edit)"
       title="Edit draft"
-    />
-    <div
-      v-if="msg.files.length"
-      class="icon--attachment"
-      :title="`${msg.files.length} attachments`"
     />
     <div
       class="icon--image"
@@ -70,6 +65,11 @@
     </div>
     <div class="msg-line__end">
       <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
+      <div
+        v-if="msg.files.length"
+        class="icon--attachment"
+        :title="`${msg.files.length} attachments`"
+      />
       <div class="msg-line__time" :title="msg.time_title">{{msg.time_human}}</div>
     </div>
     <div
@@ -99,22 +99,24 @@
 
     <div class="msg__details__info">
       <div class="msg__details__subj">
-        Subject:
-        <a :href="`#${msg.query_subject}`" @click.prevent="openInMain(msg.query_subject)">
+        <span class="msg__details__label">Subject:</span>
+        <a :href="`#${msg.query_subject}`" @click.prevent="openInMain(msg.query_subject)" class="msg__details__value">
           {{msg.subject}}
         </a>
       </div>
       <div class="msg__details__from">
-        From:
-        <b>{{msg.from.name}}</b>
-        <a :href="`#${msg.from.query}`" @click.prevent="openInMain(msg.from.query)">
-          {{msg.from.addr}}
-        </a>
+        <span class="msg__details__label">From:</span>
+        <span class="msg__details__value">
+          <b>{{msg.from.name}}</b>
+          <a :href="`#${msg.from.query}`" @click.prevent="openInMain(msg.from.query)">
+            {{msg.from.addr}}
+          </a>
+        </span>
       </div>
       <template v-for="field in ['to', 'cc']">
         <div class="msg__details__to" v-if="msg[field]">
-          {{field[0].toUpperCase()}}{{field.slice(1)}}:
-          <span v-for="addr of msg[field]">
+          <span class="msg__details__label">{{field[0].toUpperCase()}}{{field.slice(1)}}:</span>
+          <span v-for="addr of msg[field]" class="msg__details__value">
             <b>{{addr.name}}</b>
             <a :href="`#${addr.query}`" @click.prevent="openInMain(addr.query)">
               {{addr.addr}}
@@ -123,8 +125,8 @@
         </div>
       </template>
       <div class="msg__details__msgid">
-        Message-ID:
-        <a :href="`#${msg.query_msgid}`" @click.prevent="openInMain(msg.query_msgid)">
+        <span class="msg__details__label">Message-ID:</span>
+        <a :href="`#${msg.query_msgid}`" @click.prevent="openInMain(msg.query_msgid)" class="msg__details__value">
           {{msg.msgid}}
         </a>
       </div>
