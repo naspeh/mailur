@@ -43,10 +43,8 @@ html, body {
   overflow-y: auto;
   background-color: @--color--white;
 
-  @media @--split-min {
-    .opt--split-on & {
-      width: 50vw;
-    }
+  .opt--split-on & {
+    width: 50vw;
   }
 }
 
@@ -54,10 +52,8 @@ html, body {
   display: none;
   border-left: 1px solid @--color--light-grey;
 
-  @media @--split-min {
-    .opt--split-on & {
-      display: block;
-    }
+  .opt--split-on & {
+    display: block;
   }
 }
 
@@ -103,7 +99,7 @@ html, body {
     display: none;
   }
 
-  @media @--split-min {
+  @media (min-width: 1200px) {
     .icon--split {
       display: flex;
     }

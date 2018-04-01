@@ -23,7 +23,7 @@
   .icon--attachment {
     display: flex;
     color: @--color--grey;
-    font-size: @--font-size--l;
+    font-size: @--font-size;
 
     &:hover {
       margin-top: 0.1em;
@@ -65,10 +65,8 @@
   .icon--open-in-split {
     display: none;
 
-    @media @--split-min {
-      .opt--split-on .main & {
-        .icon--pin;
-      }
+    .opt--split-on .main & {
+      .icon--pin;
     }
   }
 
@@ -214,10 +212,8 @@
   padding-right: 0.2em;
   background-color: inherit;
 
-  @media @--split-min {
-    .opt--split-on .main & {
-      right: 1.7em;
-    }
+  .opt--split-on .main & {
+    right: 1.7em;
   }
 }
 
@@ -292,7 +288,7 @@
   padding: 0 0.2em;
   margin-top: 0.2em;
 
-  .text;
+  .--text;
 
   .msg--opened & {
     display: block;

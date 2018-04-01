@@ -24,7 +24,8 @@ Vue.component('app', {
         split: false,
         splitQuery: null
       },
-      optsKey: `${window.data.user}:opts`
+      optsKey: `${window.data.user}:opts`,
+      splitIsPossible: window.innerWidth > 1200
     };
   },
   created: function() {
