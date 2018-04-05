@@ -444,7 +444,7 @@ def sync_flags(con=None, timeout=None):
 def link_threads(uids, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
     uids = thrs.all_uids
-    links = del_links(uids)
+    links = delete_links(uids)
     if links:
         uids = set(uids) - set(links)
 
@@ -467,7 +467,7 @@ def link_threads(uids, con=None):
 @fn_time
 @using(SRC, name='con_src', readonly=False)
 @using(ALL, name='con_all', readonly=False)
-def del_links(uids, con_src=None, con_all=None):
+def delete_links(uids, con_src=None, con_all=None):
     res = con_all.search('INTHREAD REFS UID %s KEYWORD #link' % ','.join(uids))
     links = res[0].decode().split()
     if links:
@@ -480,6 +480,19 @@ def del_links(uids, con_src=None, con_all=None):
     origin_uids = pair_parsed_uids(uids)
     update_threads(con_src, 'UID %s' % ','.join(origin_uids))
     return links
+
+
+@using(SRC)
+def update_links(con=None):
+    res = con.search('KEYWORD #link')
+    uids = res[0].decode().split()
+    res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (References)]')
+    mids = msgids()
+    for i in range(0, len(res), 2):
+        refs = email.message_from_bytes(res[i][1])['References'].split()
+        oids = [mids[i.lower()][0] for i in refs if i in mids]
+        pids = pair_origin_uids(oids)
+        link_threads(pids)
 
 
 @fn_time

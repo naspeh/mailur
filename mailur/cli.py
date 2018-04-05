@@ -8,6 +8,7 @@ Usage:
   mlr sync <login> [--timeout=<timeout>]
   mlr sync-flags <login> [--reverse]
   mlr clean-flags <login>
+  mlr update-links <login>
   mlr icons
   mlr web
   mlr lint [--ci]
@@ -72,6 +73,8 @@ def process(args):
             local.sync_flags_to_all()
     elif args['clean-flags']:
         local.clean_flags()
+    elif args['update-links']:
+        local.update_links()
     elif args['threads']:
         with local.client() as con:
             local.update_threads(con, criteria=args.get('<criteria>'))

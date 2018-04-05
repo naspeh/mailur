@@ -296,7 +296,7 @@ def thrs_unlink():
     if not uids:
         return {}
     uids = local.search_msgs('inthread refs uid %s' % ','.join(uids))
-    links = local.del_links(uids)
+    links = local.delete_links(uids)
     uids = set(uids) - set(links)
     uids = local.search_thrs('uid %s' % ','.join(uids))
     return {'query': ':threads uid:%s' % ','.join(uids)}
