@@ -215,6 +215,7 @@ def test_general(gm_client, load_email, latest, login, some):
                 'files': [],
                 'from_list': [],
                 'is_draft': False,
+                'is_link': False,
                 'is_pinned': False,
                 'is_unread': True,
                 'msgid': '<101@mlr>',
@@ -241,6 +242,7 @@ def test_general(gm_client, load_email, latest, login, some):
                 'files': [],
                 'from_list': [],
                 'is_draft': False,
+                'is_link': False,
                 'is_pinned': False,
                 'is_unread': True,
                 'msgid': '<102@mlr>',
@@ -280,6 +282,7 @@ def test_general(gm_client, load_email, latest, login, some):
                 'files': [],
                 'from_list': [],
                 'is_draft': False,
+                'is_link': False,
                 'is_pinned': False,
                 'is_unread': True,
                 'msgid': '<102@mlr>',
@@ -320,6 +323,7 @@ def test_general(gm_client, load_email, latest, login, some):
     assert res == {
         'uids': ['3'],
         'edit': None,
+        'has_link': False,
         'msgs_info': '/msgs/info',
         'msgs': {'3': some},
         'same_subject': [],
@@ -391,6 +395,19 @@ def test_general(gm_client, load_email, latest, login, some):
     res = web.post_json('/thrs/info', {'uids': [m['uid']]}, status=200).json
     assert res == {}
 
+    # unlink thread
+    gm_client.add_emails([{'labels': 'test'}] * 2)
+    local.parse('all')
+    res = web.search({'q': ':threads tag:test'})
+    assert res['uids'] == ['16', '15']
+    res = web.post_json('/thrs/link', {'uids': res['uids']}).json
+    res = web.search({'q': ':threads tag:test'})
+    assert res['uids'] == ['16']
+    res = web.post_json('/thrs/unlink', {'uids': res['uids']}).json
+    assert res == {'query': ':threads uid:16,15'}
+    res = web.search({'q': res['query']})
+    assert res['uids'] == ['16', '15']
+
 
 def test_msgs_flag(gm_client, login, msgs):
     def post(uids, **data):
@@ -447,6 +464,7 @@ def test_search_thread(gm_client, login, some):
         'tags': [],
         'same_subject': [],
         'thread': True,
+        'has_link': False,
     }
 
     gm_client.add_emails([{'refs': '<101@mlr>'}] * 2)
@@ -1015,7 +1033,7 @@ def test_addresses(some):
 
 
 def test_query():
-    end = 'unkeyword #trash unkeyword #spam unkeyword #link'
+    end = 'unkeyword #trash unkeyword #spam'
     assert parse_query('') == (end, {})
     assert parse_query('test') == ('text "test" ' + end, {})
     assert parse_query('test1 test2') == ('text "test1 test2" ' + end, {})
@@ -1044,10 +1062,10 @@ def test_query():
     )
 
     assert parse_query('tag:#trash') == (
-        'keyword #trash unkeyword #link', {'tags': ['#trash']}
+        'keyword #trash', {'tags': ['#trash']}
     )
     assert parse_query('tag:#spam') == (
-        'keyword #spam unkeyword #trash unkeyword #link', {'tags': ['#spam']}
+        'keyword #spam unkeyword #trash', {'tags': ['#spam']}
     )
     assert parse_query('in:#inbox test') == (
         'text "test" keyword #inbox ' + end, {'tags': ['#inbox']}

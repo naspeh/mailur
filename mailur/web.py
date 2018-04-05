@@ -289,6 +289,19 @@ def thrs_link():
     return {'uid': local.link_threads(uids)}
 
 
+@app.post('/thrs/unlink')
+@endpoint
+def thrs_unlink():
+    uids = request.json['uids']
+    if not uids:
+        return {}
+    uids = local.search_msgs('inthread refs uid %s' % ','.join(uids))
+    links = local.del_links(uids)
+    uids = set(uids) - set(links)
+    uids = local.search_thrs('uid %s' % ','.join(uids))
+    return {'query': ':threads uid:%s' % ','.join(uids)}
+
+
 @app.post('/msgs/flag')
 @endpoint
 def msgs_flag():
@@ -668,7 +681,7 @@ def parse_query(q):
         '|(?P<to>to:)(?P<to_val>[^ ]+)'
         '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
         '|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
-        '|(?P<uid>uid:)(?P<uid_val>\d+)'
+        '|(?P<uid>uid:)(?P<uid_val>[\d,-]+)'
         '|(?P<date>date:)(?P<date_val>\d{4}(-\d{2}(-\d{2})?)?)'
         '|(?P<draft>:(draft))'
         '|(?P<unseen>:(unread|unseen))'
@@ -695,7 +708,6 @@ def parse_query(q):
         parts.append('unkeyword #trash')
     if '#spam' not in tags and '#trash' not in tags:
         parts.append('unkeyword #spam')
-    parts.append('unkeyword #link')
 
     if parts:
         q = ' '.join(parts)
@@ -734,8 +746,13 @@ def thread(q, opts, preload=4):
             same_subject.append(uid)
 
     edit = None
+    has_link = False
     parents = []
     for i, m in msgs.items():
+        if m['is_link']:
+            has_link = True
+            uids.remove(m['uid'])
+
         if not m['is_draft']:
             continue
         if m['draft_id'] == opts.get('draft'):
@@ -774,6 +791,7 @@ def thread(q, opts, preload=4):
         'tags': tags,
         'same_subject': same_subject,
         'edit': edit,
+        'has_link': has_link,
     }
 
 
@@ -857,6 +875,7 @@ def wrap_msgs(items, hide_tags=None):
             'is_unread': '\\Seen' not in flags,
             'is_pinned': '\\Flagged' in flags,
             'is_draft': '\\Draft' in flags,
+            'is_link': '#link' in flags,
         })
         if info['is_draft']:
             info['query_edit'] = base_q + 'draft:%s' % info['draft_id']

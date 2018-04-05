@@ -45,6 +45,7 @@
 
 .icon--check-full,
 .icon--check-empty,
+.icon--unlink,
 .icon--add,
 .icon--search,
 .icon--ok,
@@ -93,6 +94,16 @@
 
 .icon--check-empty {
   .--icon--check-empty;
+}
+
+.--icon--unlink() {
+  &::before {
+    content: "\f127";
+  }
+}
+
+.icon--unlink {
+  .--icon--unlink;
 }
 
 .--icon--add() {

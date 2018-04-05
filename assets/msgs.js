@@ -285,7 +285,8 @@ let Thread = Vue.extend({
   props: {
     tags: { type: Array, required: true },
     same_subject: { type: Array, required: true },
-    edit: { type: Object }
+    edit: { type: Object },
+    has_link: { type: Boolean }
   },
   data: function() {
     return {
@@ -370,6 +371,13 @@ let Thread = Vue.extend({
           }
           break;
       }
+    },
+    unlink: function() {
+      this.call('post', '/thrs/unlink', { uids: this.uids }).then(res => {
+        if (!res.errors) {
+          this.open(res.query);
+        }
+      });
     }
   }
 });

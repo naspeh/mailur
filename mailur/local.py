@@ -444,22 +444,13 @@ def sync_flags(con=None, timeout=None):
 def link_threads(uids, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
     uids = thrs.all_uids
-    res = con.search('KEYWORD #link UID %s' % ','.join(uids))
-    refs = res[0].decode().split()
-    if refs:
-        uids = set(uids) - set(refs)
-        src_refs = pair_parsed_uids(refs)
-        if src_refs:
-            with client(SRC, readonly=False) as c:
-                c.store(src_refs, '+FLAGS.SILENT', '\\Deleted')
-                c.expunge()
-        con.select(ALL, readonly=False)
-        con.store(refs, '+FLAGS.SILENT', '\\Deleted')
-        con.expunge()
-        con.select(ALL)
+    links = del_links(uids)
+    if links:
+        uids = set(uids) - set(links)
 
-    msgids = []
+    con.select(ALL)
     res = con.fetch(uids, 'BODY.PEEK[1]')
+    msgids = []
     for i in range(0, len(res), 2):
         meta = json.loads(res[i][1].decode())
         if meta.get('thrid'):
@@ -471,6 +462,24 @@ def link_threads(uids, con=None):
     save_msgids([uid])
     parse()
     return pair_origin_uids([uid])[0]
+
+
+@fn_time
+@using(SRC, name='con_src', readonly=False)
+@using(ALL, name='con_all', readonly=False)
+def del_links(uids, con_src=None, con_all=None):
+    res = con_all.search('INTHREAD REFS UID %s KEYWORD #link' % ','.join(uids))
+    links = res[0].decode().split()
+    if links:
+        src_links = pair_parsed_uids(links)
+        if src_links:
+            con_src.store(src_links, '+FLAGS.SILENT', '\\Deleted')
+            con_src.expunge()
+        con_all.store(links, '+FLAGS.SILENT', '\\Deleted')
+        con_all.expunge()
+    origin_uids = pair_parsed_uids(uids)
+    update_threads(con_src, 'UID %s' % ','.join(origin_uids))
+    return links
 
 
 @fn_time
@@ -619,7 +628,7 @@ def thrs_info(uids, tags=None, con=None):
                 draft_id = info['draft_id']
             thr_flags.extend(msg_flags)
         if thrid is None:
-            raise ValueError('No #latest for %s' % thr)
+            raise ValueError('No #latest for %s' % tuple(thr))
         if not latest_skipped:
             info = all_msgs[thrid]
         if not info:
