@@ -500,9 +500,9 @@ def test_thrid_header(gm_client, msgs):
     assert [i[0] for i in local.thrs_info(['1'])] == ['4']
 
     gm_client.add_emails([
-        {'from': 't@t.com', 'to': 't@t.com', 'subj': 'Same aubject'}
+        {'from': 't@t.com', 'to': 'Test <t@t.com>', 'subj': 'Same aubject'}
     ] * 2)
     assert thread(local.ALL, 'from t@t.com') == (('7', '8'),)
     assert [i['body']['X-Thread-ID'] for i in msgs()][-2:] == [
-        '<ae5e0031d8e169ce266d123f56546087@mailur.link>'
+        '<6355a01321452677ff71ea4899836a52@mailur.link>'
     ] * 2

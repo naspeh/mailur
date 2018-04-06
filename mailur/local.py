@@ -441,7 +441,7 @@ def sync_flags(con=None, timeout=None):
 
 @fn_time
 @using()
-def link_threads(uids, con=None):
+def link_threads(uids, no_parse=False, con=None):
     thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % ','.join(uids))
     uids = thrs.all_uids
     links = delete_links(uids)
@@ -460,8 +460,9 @@ def link_threads(uids, con=None):
     msg = message.link(msgids)
     uid = con.append(SRC, '#link \\Seen', None, msg.as_bytes())
     save_msgids([uid])
-    parse()
-    return pair_origin_uids([uid])[0]
+    if not no_parse:
+        parse()
+        return pair_origin_uids([uid])[0]
 
 
 @fn_time
@@ -492,7 +493,8 @@ def update_links(con=None):
         refs = email.message_from_bytes(res[i][1])['References'].split()
         oids = [mids[i.lower()][0] for i in refs if i in mids]
         pids = pair_origin_uids(oids)
-        link_threads(pids)
+        link_threads(pids, no_parse=True)
+    parse()
 
 
 @fn_time

@@ -89,7 +89,7 @@ def test_cli_idle(gm_client, msgs, login, patch):
         sleep(3)
 
     gm_client.add_emails([{}] * 4, fetch=False, parse=False)
-    sleep(1)
+    sleep(2)
     assert len(msgs(local.SRC)) == 4
     assert len(msgs()) == 4
 

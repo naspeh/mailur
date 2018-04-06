@@ -329,7 +329,10 @@ def parsed(raw, uid, time, flags, mids):
     if not is_draft:
         addrs = [msg['from'] or msg['sender'], msg['to']]
         addrs = (a for a in addrs if a)
-        addrs = ','.join(sorted(a for n, a in getaddresses(addrs)))
+        addrs = ','.join(sorted(
+            '"%s" <%s>' % (n, a) if n else a
+            for n, a in getaddresses(addrs)
+        ))
         addrs_n_subj = ' '.join(i for i in (addrs, subj) if i)
         thrid = hashlib.md5(addrs_n_subj.encode()).hexdigest()
         thrid = '<%s@mailur.link>' % thrid
