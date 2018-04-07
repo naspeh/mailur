@@ -171,20 +171,46 @@ def msgids(con=None):
 
 
 @fn_time
-@using(None)
-def save_addrs(addrs, con=None):
-    data = json.dumps(addrs)
-    con.setmetadata(SRC, 'user/addresses', data)
+@using()
+def save_addrs(uids=None, con=None):
+    def fill(store, meta, fields):
+        addrs = (meta[i] for i in fields if meta.get(i))
+        addrs = sum(([a] if isinstance(a, dict) else a for a in addrs), [])
+        for addr in addrs:
+            a = addr['addr']
+            if a not in store or store[a] != addr:
+                addr['time'] = meta['date']
+                store[a] = addr
+            elif store[a]['time'] < meta['date']:
+                store[a]['time'] = meta['date']
+
+    if uids:
+        addrs_from, addrs_to = get_addrs()
+    else:
+        uids = '1:*'
+        addrs_from, addrs_to = {}, {}
+
+    res = con.fetch(uids, '(FLAGS BODY.PEEK[1])')
+    for i in range(0, len(res), 2):
+        meta = json.loads(res[i][1].decode())
+        fill(addrs_to, meta, ('from', 'to', 'cc'))
+        flags = re.search(r'FLAGS \(([^)]*)\)', res[i][0].decode()).group(1)
+        if {'#sent', '\\Draft'}.intersection(flags.split()):
+            fill(addrs_from, meta, ('from',))
+
+    data = json.dumps([addrs_from, addrs_to])
+    con.setmetadata(SRC, 'addresses', data)
 
 
 @using(None)
 def get_addrs(con=None):
-    res = con.getmetadata(SRC, 'user/addresses')
+    res = con.getmetadata(SRC, 'addresses')
     if len(res) == 1:
-        return None
+        return {}, {}
+
     data = res[0][1].decode()
-    addrs = json.loads(data)
-    return addrs
+    addrs_from, addrs_to = json.loads(data)
+    return addrs_from, addrs_to
 
 
 @using(SRC)
@@ -256,6 +282,7 @@ def parse(criteria=None, **opts):
     with client(ALL) as con:
         con.setmetadata(ALL, 'uidnext', str(uidnext))
         save_uid_pairs(puids)
+        save_addrs(puids)
         update_threads(con, 'UID %s' % uids.str)
 
 

@@ -31,26 +31,10 @@ def test_credentials():
     name, pwd = 'test', 'test'
     gmail.save_credentials(name, pwd)
     assert gmail.get_credentials() == (name, pwd)
-    assert local.get_addrs() == [
-        {
-            'addr': 'test@gmail.com',
-            'hash': '1aedb8d9dc4751e229a335e371db8058',
-            'name': 'test',
-            'title': 'test@gmail.com'
-        }
-    ]
 
     name, pwd = 'test@test.com', 'test'
     gmail.save_credentials(name, pwd)
     assert gmail.get_credentials() == (name, pwd)
-    assert local.get_addrs() == [
-        {
-            'addr': 'test@test.com',
-            'hash': 'b642b4217b34b1e8d3bd915fc65c4452',
-            'name': 'test',
-            'title': 'test@test.com'
-        }
-    ]
 
 
 def test_fetch_and_parse(gm_client, some):

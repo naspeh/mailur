@@ -580,25 +580,27 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     assert draft['to'] == '"The One" <one@t.com>, two@t.com, three@t.com'
     assert web.body('2') == ''
 
-    web.get('/set/addrs', {'v': '"The Two" <two@t.com>'})
+    gm_client.add_emails([
+        {'from': '"The Two" <two@t.com>', 'labels': '\\Sent'}
+    ])
     res = web.get(url_reply, status=200).json
     res = web.search({'q': res['query_edit']})
-    assert res['uids'] == ['1', '3', '2']
+    assert res['uids'] == ['1', '4', '2']
     draft = res['edit']
     assert draft['from'] == '"The Two" <two@t.com>'
     assert draft['to'] == '"The One" <one@t.com>, three@t.com'
 
     gm_client.add_emails([{'refs': '<101@mlr>', 'date': time.time() + 1}])
     res = web.search({'q': 'thread:1'})
-    assert res['uids'] == ['1', '3', '2', '4']
-    draft = res['msgs']['3']
+    assert res['uids'] == ['1', '4', '2', '5']
+    draft = res['msgs']['4']
     res = web.search({'q': ':threads'})
-    assert res['uids'] == ['4']
-    assert res['msgs']['4']['query_edit'] == draft['query_edit']
+    assert res['uids'] == ['5', '3']
+    assert res['msgs']['5']['query_edit'] == draft['query_edit']
 
     res = web.get('/compose').json
     res = web.search({'q': res['query_edit']})
-    assert res['uids'] == ['5']
+    assert res['uids'] == ['6']
     draft = res['edit']
     assert draft['from'] == '"The Two" <two@t.com>'
     assert draft['to'] == ''
@@ -626,14 +628,14 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
             'image': True,
             'path': '2.2',
             'size': 553,
-            'url': '/raw/7/2.2/08.png'
+            'url': '/raw/8/2.2/08.png'
         },
         {
             'filename': '09.png',
             'image': True,
             'path': '2.3',
             'size': 520,
-            'url': '/raw/7/2.3/09.png'
+            'url': '/raw/8/2.3/09.png'
         }
     ]
 
@@ -753,7 +755,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         {'flags': '\\Seen'},
         {
             'refs': '<101@mlr>',
-            'from': 'a@t.com',
+            'from': 'A@t.com',
             'to': 'b@t.com',
             'flags': '\\Draft \\Seen',
             'labels': 'test'
@@ -784,7 +786,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert m['meta']['files'] == []
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
-    assert m['body_full']['from'] == 'a@t.com'
+    assert m['body_full']['from'] == 'A@t.com'
     assert m['body_full']['to'] == 'b@t.com'
     assert m['body_full']['subject'] == 'Subj 102'
     assert m['body'] == '<p><strong>test it</strong></p>'
@@ -792,16 +794,34 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     res = web.search({'q': 'draft:%s' % draft_id})
     assert res['edit']
     assert res['edit']['files'] == []
-    assert local.get_addrs() == [
-        {
+    addrs_from, addrs_to = local.get_addrs()
+    assert addrs_from == {
+        'a@t.com': {
             'addr': 'a@t.com',
             'hash': '671fc7fb9f958db9fdd252dfaf2325db',
-            'name': 'a',
-            'title': 'a@t.com'
+            'name': 'A',
+            'time': some,
+            'title': 'A@t.com',
+        },
+    }
+    assert some.value == m['meta']['date']
+    assert addrs_to == {
+        'a@t.com': {
+            'addr': 'a@t.com',
+            'hash': '671fc7fb9f958db9fdd252dfaf2325db',
+            'name': 'A',
+            'time': some,
+            'title': 'A@t.com',
+        },
+        'b@t.com': {
+            'addr': 'b@t.com',
+            'hash': 'd2ed191b17f1b9abdfd509d877a765db',
+            'name': 'b',
+            'time': some,
+            'title': 'b@t.com',
         }
-    ]
+    }
 
-    web.get('/set/addrs', {'v': 'a@t.com, a@s.com'})
     web.post('/editor', {
         'uid': '3',
         'files': Upload('test.rst', b'txt', 'text/x-rst')
@@ -824,7 +844,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     ]
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
-    assert m['body_full']['from'] == 'a@t.com'
+    assert m['body_full']['from'] == 'A@t.com'
     assert m['body_full']['to'] == 'b@t.com'
     assert m['body_full']['subject'] == 'Subj 102'
     assert m['body'] == '<p><strong>test it</strong></p>'
@@ -881,20 +901,43 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         'Тема новая looooooooooooooooooooooooooooooooooooong'
     )
     assert m['body'] == '<p>Тест</p>'
-    assert local.get_addrs() == [
-        {
+
+    addrs_from, addrs_to = local.get_addrs()
+    assert addrs_from == {
+        'a@t.com': {
             'addr': 'a@t.com',
             'hash': '671fc7fb9f958db9fdd252dfaf2325db',
             'name': 'Альфа',
+            'time': some,
             'title': '"Альфа" <a@t.com>'
         },
-        {
-            'addr': 'a@s.com',
-            'hash': '9c2a3451dc5cbbee7c82cab115b8bc67',
-            'name': 'a',
-            'title': 'a@s.com'
+    }
+    assert addrs_to == {
+        'a@t.com': {
+            'addr': 'a@t.com',
+            'hash': '671fc7fb9f958db9fdd252dfaf2325db',
+            'name': 'Альфа',
+            'time': some,
+            'title': '"Альфа" <a@t.com>'
         },
-    ]
+        'b@t.com': {
+            'addr': 'b@t.com',
+            'hash': 'd2ed191b17f1b9abdfd509d877a765db',
+            'name': 'Бета',
+            'time': some,
+            'title': '"Бета" <b@t.com>',
+        },
+        'c@t.com': {
+            'addr': 'c@t.com',
+            'hash': 'f0af54f840071ec985f7bc9a225172dc',
+            'name': 'Длинное Имя looooooooooooooooooooooooooooooooooooong',
+            'time': some,
+            'title': (
+                '"Длинное Имя looooooooooooooooooooooooooooooooooooong" '
+                '<c@t.com>'
+            )
+        },
+    }
 
     with patch('mailur.gmail.get_credentials') as c:
         c.return_value = ('test', 'test')

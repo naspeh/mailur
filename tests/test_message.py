@@ -251,7 +251,7 @@ def test_addresses():
     res = addresses('test <TEST@example.com>')
     assert res == [{
         'name': 'test',
-        'addr': 'TEST@example.com',
+        'addr': 'test@example.com',
         'hash': '55502f40dc8b7c769880b10874abc9d0',
         'title': '"test" <TEST@example.com>'
     }]

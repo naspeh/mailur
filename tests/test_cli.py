@@ -3,15 +3,13 @@ from subprocess import check_output
 from mailur import cli, local
 
 
-def test_general():
+def test_general(gm_client, login, msgs, patch):
     stdout = check_output('mlr -h', shell=True)
     assert b'Mailur CLI' in stdout
 
     stdout = check_output('mlr icons', shell=True)
     assert b'assets/font/icons.less updated\n' in stdout
 
-
-def test_general2(gm_client, login, msgs):
     gm_client.add_emails([{}, {}], fetch=False, parse=False)
     assert [i['uid'] for i in msgs(local.SRC)] == []
     assert [i['uid'] for i in msgs()] == []
@@ -26,6 +24,12 @@ def test_general2(gm_client, login, msgs):
     cli.main('update-links %s' % login.user1)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2', '4']
     assert [i['uid'] for i in msgs()] == ['1', '2', '4']
+
+    with patch('mailur.cli.local') as m:
+        cli.main('update-metadata %s' % login.user1)
+        assert m.save_addrs.called
+        assert m.save_msgids.called
+        assert m.save_uid_pairs.called
 
 
 def test_fetch_and_parse(gm_client, login, msgs, patch, raises):

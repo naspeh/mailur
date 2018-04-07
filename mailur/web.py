@@ -339,32 +339,9 @@ def editor():
                 maintype=maintype, subtype=subtype
             )
     msg = message.new_draft(draft, request.forms, related)
-    if msg['from']:
-        addr = message.addresses(msg['from'])[0]
-        addrs = local.get_addrs()
-        if addrs:
-            match = [a for a in addrs if addr['addr'] == a['addr']]
-            match = match and match[0]
-            if match and match != addr:
-                idx = addrs.index(match)
-                addrs.remove(match)
-                addrs.insert(idx, addr)
-        else:
-            addrs = [addr]
-        local.save_addrs(addrs)
-
     oid, pid = local.new_msg(msg, draft['flags'])
     local.del_msg(draft['origin_uid'])
     return {'uid': pid, 'url_send': app.get_url('send', uid=oid)}
-
-
-@app.get('/set/addrs')
-@jsonify
-def set_addrs():
-    addrs = request.query['v']
-    addrs = message.addresses(addrs)
-    local.save_addrs(addrs)
-    return addrs
 
 
 @app.get('/compose')
@@ -372,8 +349,10 @@ def set_addrs():
 def reply(uid=None):
     forward = uid and request.query.get('forward')
     draft_id = message.gen_draftid()
-    addrs = local.get_addrs()
-    addr = addrs[0] if addrs else {}
+    addrs, _ = local.get_addrs()
+    addr = {}
+    if addrs:
+        addr = sorted(addrs.values(), key=lambda i: i['time'])[-1]
     draft = {
         'draft_id': draft_id,
         'subject': '',
@@ -388,7 +367,11 @@ def reply(uid=None):
         subj = ' '.join(i for i in (prefix, subj) if i)
         to = [head['reply-to'] or head['from'], head['to'], head['cc']]
         to_all = message.addresses(','.join(a for a in to if a))
-        to = [a['title'] for a in to_all if addr.get('addr') != a['addr']]
+        for a in to_all:
+            if a['addr'] in addrs:
+                addr = a
+                to_all.remove(a)
+        to = [a['title'] for a in to_all]
         if not to:
             to = [to_all[0]['title']]
         draft.update({
@@ -534,6 +517,7 @@ def avatars():
 
 @app.get('/refresh/metadata')
 def refresh_metadata():
+    local.save_addrs()
     local.save_msgids()
     local.save_uid_pairs()
     return 'Done.'

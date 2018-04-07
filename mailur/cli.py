@@ -9,6 +9,7 @@ Usage:
   mlr sync-flags <login> [--reverse]
   mlr clean-flags <login>
   mlr update-links <login>
+  mlr update-metadata <login>
   mlr icons
   mlr web
   mlr lint [--ci]
@@ -61,8 +62,6 @@ def process(args):
         if args['--parse']:
             local.parse(**opts)
     elif args['parse']:
-        local.save_msgids()
-        local.save_uid_pairs()
         local.parse(args.get('<criteria>'), **opts)
     elif args['sync']:
         sync(int(args['--timeout']))
@@ -75,6 +74,10 @@ def process(args):
         local.clean_flags()
     elif args['update-links']:
         local.update_links()
+    elif args['update-metadata']:
+        local.save_addrs()
+        local.save_msgids()
+        local.save_uid_pairs()
     elif args['threads']:
         with local.client() as con:
             local.update_threads(con, criteria=args.get('<criteria>'))

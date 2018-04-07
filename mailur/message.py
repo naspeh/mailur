@@ -491,7 +491,7 @@ def address_name(a):
 def addresses(txt):
     addrs = [
         {
-            'addr': a[1],
+            'addr': a[1].lower(),
             'name': address_name(a),
             'title': '"{}" <{}>'.format(*a) if a[0] else a[1],
             'hash': hashlib.md5(a[1].strip().lower().encode()).hexdigest(),
