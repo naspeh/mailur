@@ -326,7 +326,7 @@ def parsed(raw, uid, time, flags, mids):
         txt = parse_draft(orig)[0]
 
     thrid = None
-    if not is_draft:
+    if not is_draft and not refs:
         addrs = [msg['from'] or msg['sender'], msg['to']]
         addrs = (a for a in addrs if a)
         addrs = ','.join(sorted(
