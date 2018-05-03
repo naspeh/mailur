@@ -38,3 +38,7 @@ This version is already in use. It has minimal feature set I need on daily basis
 [v02post]: https://pusto.org/mailur/alpha/
 [v01code]: https://github.com/naspeh/mailur/tree/0.1
 [v01post]: https://pusto.org/mailur/intro/
+
+### Test
+
+Test commit
