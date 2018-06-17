@@ -107,6 +107,28 @@ def test_general(gm_client, load_file, latest, load_email):
         in m['meta']['errors'][0]
     )
 
+    # date can't be parsed
+    raw = b'\r\n'.join([
+        b'Message-ID: <with-bad-symbol@test>',
+        b'Subject: bad symbol?',
+        b'Date: 15.06.2018 09:24:13 +0800',
+        b'From: katya@example.com',
+        b'To: grrr@example.com',
+        b'Content-type: text/html; charset=utf-8',
+        b'Content-Transfer-Encoding: 8bit',
+        b'MIME-Version: 1.0',
+        b'',
+        b'',
+        b'Hello!'
+    ])
+    gm_client.add_emails([{'raw': raw}])
+    msg = latest(parsed=True)
+    assert msg['meta']['date'] == msg['meta']['arrived']
+    assert msg['meta']['errors'] == [
+        'error on date: val=\'15.06.2018 09:24:13 +0800\' '
+        'err=TypeError("\'NoneType\' object is not iterable",)'
+    ]
+
     # ending @ symbol and address without @ symbol at all
     m = load_email('msg-from-ending-snail.txt', parsed=True)
     assert m['meta']['from'] == {

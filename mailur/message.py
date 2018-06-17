@@ -307,7 +307,13 @@ def parsed(raw, uid, time, flags, mids):
     meta['arrived'] = int(arrived.timestamp())
 
     date = orig['date']
-    meta['date'] = date and int(parsedate_to_datetime(date).timestamp())
+    try:
+        date = date and int(parsedate_to_datetime(date).timestamp())
+    except Exception as e:
+        meta['errors'].append('error on date: val=%r err=%r' % (date, e))
+        log.error('## UID=%s can\'t parse date: val=%r err=%r', uid, date, e)
+        date = None
+    meta['date'] = date or meta['arrived']
 
     msg = new()
     msg.add_header('X-UID', '<%s>' % uid)
