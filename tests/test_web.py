@@ -942,7 +942,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         with patch('mailur.web.smtplib.SMTP.sendmail') as m:
             with patch('mailur.web.smtplib.SMTP.login'):
                 res = web.get('/send/5', status=200).json
-    assert m.call_args[0][:2] == ('a@t.com', 'b@t.com,c@t.com')
+    assert m.call_args[0][:2] == (['a@t.com'], ['b@t.com', 'c@t.com'])
     body = m.call_args[0][2].decode()
     assert body.startswith('''\
 Subject: =?utf-8?b?0KLQtdC80LAg0L3QvtCy0LDRjyBsb29vb29vb29vb29vb29v?=\r

@@ -403,7 +403,7 @@ def sending(raw, linesep='\r\n', maxlinelen=70):
     msg.replace_header('Message-ID', msgid)
 
     params = [
-        ','.join(a for n, a in email.utils.getaddresses([msg[name]]))
+        [a for n, a in email.utils.getaddresses([msg[name]])]
         for name in ('From', 'To') if msg[name]
     ]
     if len(params) < 2:
