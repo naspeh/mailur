@@ -26,6 +26,7 @@ MAP_LABELS = {
     '\\Chats': '#chats',
     '\\Important': '',
 }
+SKIP_DRAFTS = True
 
 
 class Gmail(imaplib.IMAP4, imap.Conn):
@@ -159,6 +160,9 @@ def fetch_uids(uids, tag, box):
                 re.sub(r'("[^"]*"|[^" ]*)', label, parts['labels']),
                 MAP_LABELS.get(tag, ''),
             ]).strip()
+            if SKIP_DRAFTS and '\\Draft' in flags:
+                # TODO: skip drafts for now
+                continue
 
             headers = [
                 'X-SHA256: <%s>' % hashlib.sha256(raw).hexdigest(),

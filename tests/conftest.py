@@ -125,6 +125,8 @@ def gm_fake():
 def gm_client():
     from mailur import local, gmail, message
 
+    gmail.SKIP_DRAFTS = False
+
     def add_emails(items=None, *, tag='\\All', fetch=True, parse=True):
         gmail.client()
         if items is None:
