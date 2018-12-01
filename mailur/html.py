@@ -2,11 +2,9 @@ import re
 from html import escape
 from urllib.parse import urlencode
 
+import mistune
 from lxml.html import fromstring, tostring
 from lxml.html.clean import Cleaner, autolink
-
-import mistune
-
 from pygments import highlight
 from pygments.formatters import html
 from pygments.lexers import get_lexer_by_name
@@ -132,5 +130,5 @@ def to_text(htm):
 
 def to_line(htm, limit=200):
     txt = to_text(htm)
-    txt = re.sub('([\s ]|&nbsp;)+', ' ', txt)
+    txt = re.sub(r'([\s ]|&nbsp;)+', ' ', txt)
     return txt[:limit]

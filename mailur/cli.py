@@ -27,7 +27,6 @@ import sys
 import time
 
 from docopt import docopt
-
 from gevent import joinall, sleep, spawn
 
 from . import LockError, conf, gmail, local, log

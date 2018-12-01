@@ -134,7 +134,7 @@ def parse_mime(orig, uid):
                 txt = decode_bytes(raw, charset, label)
             parts += [txt]
         header = ''.join(parts)
-        header = re.sub('\s+', ' ', header)
+        header = re.sub(r'\s+', ' ', header)
         return header
 
     def decode_addresses(raw, label):
@@ -159,7 +159,7 @@ def parse_mime(orig, uid):
         filename = part.get_filename()
         if filename:
             filename = decode_header(part.get_filename(), label) or ''
-            filename = re.sub('[^\w.-]', '-', filename)
+            filename = re.sub(r'[^\w.-]', '-', filename)
         else:
             ext = mimetypes.guess_extension(ctype) or 'txt'
             filename = 'unknown-%s%s' % (path, ext)

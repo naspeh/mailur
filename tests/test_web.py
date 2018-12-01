@@ -765,7 +765,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert m['flags'] == '\\Seen \\Draft test #latest'
     assert m['meta']['draft_id'] == some
     draft_id = some.value
-    assert re.match('\<.{8}\>', draft_id)
+    assert re.match(r'\<.{8}\>', draft_id)
     assert m['body_full']['x-draft-id'] == draft_id
 
     res = web.post('/editor', {

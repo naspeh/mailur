@@ -171,7 +171,7 @@ def fetch_uids(uids, tag, box):
                 'X-GM-THRID: <%s>' % parts['thrid'],
                 'X-GM-Login: <%s>' % login,
             ]
-            thrid_re = '(^| )mlr/thrid/\d+'
+            thrid_re = r'(^| )mlr/thrid/\d+'
             thrid = re.search(thrid_re, flags)
             if thrid:
                 flags = re.sub(thrid_re, '', flags)

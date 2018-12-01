@@ -8,20 +8,16 @@ import smtplib
 import ssl
 import time
 
-from bottle import (
-    Bottle, abort, redirect, request, response,
-    static_file, template
-)
-
 from gevent.pool import Pool
-
 from geventhttpclient import HTTPClient
-
 from pytz import common_timezones, timezone, utc
+
+from bottle import (
+    Bottle, abort, redirect, request, response, static_file, template
+)
 
 from . import LockError, conf, html, imap, local, log, message, user_cache
 from .schema import validate
-
 
 root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
@@ -362,7 +358,7 @@ def reply(uid=None):
     if uid:
         flags, head, meta, htm = local.fetch_msg(uid)
         subj = meta['subject']
-        subj = re.sub('(?i)^(re|fwd)(\[\d+\])?: ?', '', subj)
+        subj = re.sub(r'(?i)^(re|fwd)(\[\d+\])?: ?', '', subj)
         prefix = 'Fwd:' if forward else 'Re:'
         subj = ' '.join(i for i in (prefix, subj) if i)
         to = [head['reply-to'] or head['from'], head['to'], head['cc']]
@@ -655,25 +651,25 @@ def parse_query(q):
     opts = {}
     parts = []
     q = re.sub(
-        '(?i)[ ]?('
-        '(?P<raw>:raw)(?P<raw_val>.*)'
-        '|(?P<thread>thr(ead)?:)(?P<thread_id>\d+)'
-        '|(?P<threads>:threads)'
-        '|(?P<tag>(tag|in|has):)(?P<tag_id>[^ ]+)'
-        '|(?P<subj>subj(ect)?:)(?P<subj_val>("[^"]*"|[\S]*))'
-        '|(?P<from>from:)(?P<from_val>[^ ]+)'
-        '|(?P<to>to:)(?P<to_val>[^ ]+)'
-        '|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
-        '|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
-        '|(?P<uid>uid:)(?P<uid_val>[\d,-]+)'
-        '|(?P<date>date:)(?P<date_val>\d{4}(-\d{2}(-\d{2})?)?)'
-        '|(?P<draft>:(draft))'
-        '|(?P<unseen>:(unread|unseen))'
-        '|(?P<seen>:(read|seen))'
-        '|(?P<flagged>:(pin(ned)?|flagged))'
-        '|(?P<unflagged>:(unpin(ned)?|unflagged))'
-        '|(?P<draft_edit>draft:(?P<draft_val>\<.{8}\>))'
-        ')( |$)',
+        r'(?i)[ ]?('
+        r'(?P<raw>:raw)(?P<raw_val>.*)'
+        r'|(?P<thread>thr(ead)?:)(?P<thread_id>\d+)'
+        r'|(?P<threads>:threads)'
+        r'|(?P<tag>(tag|in|has):)(?P<tag_id>[^ ]+)'
+        r'|(?P<subj>subj(ect)?:)(?P<subj_val>("[^"]*"|[\S]*))'
+        r'|(?P<from>from:)(?P<from_val>[^ ]+)'
+        r'|(?P<to>to:)(?P<to_val>[^ ]+)'
+        r'|(?P<mid>(message_id|mid):)(?P<mid_val>[^ ]+)'
+        r'|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
+        r'|(?P<uid>uid:)(?P<uid_val>[\d,-]+)'
+        r'|(?P<date>date:)(?P<date_val>\d{4}(-\d{2}(-\d{2})?)?)'
+        r'|(?P<draft>:(draft))'
+        r'|(?P<unseen>:(unread|unseen))'
+        r'|(?P<seen>:(read|seen))'
+        r'|(?P<flagged>:(pin(ned)?|flagged))'
+        r'|(?P<unflagged>:(unpin(ned)?|unflagged))'
+        r'|(?P<draft_edit>draft:(?P<draft_val>\<.{8}\>))'
+        r')( |$)',
         replace, q
     )
     q = re.sub('[ ]+', ' ', q).strip()

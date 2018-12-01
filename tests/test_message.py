@@ -28,7 +28,7 @@ def test_general(gm_client, load_file, latest, load_email):
     gm_client.add_emails([{'flags': '\\Flagged'}])
     msg = latest()
     assert 'X-UID' in msg['body']
-    assert re.match('<\d+>', msg['body']['X-UID'])
+    assert re.match(r'<\d+>', msg['body']['X-UID'])
     assert '\\Flagged' in msg['flags']
 
     # `email.policy.default` is not working with long addresses.

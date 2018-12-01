@@ -210,14 +210,14 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False, policy=None):
     from mailur import local, message
 
     def flags(m):
-        res = re.search('FLAGS \(([^)]*)\)', m).group(1).split()
+        res = re.search(r'FLAGS \(([^)]*)\)', m).group(1).split()
         if '\\Recent' in res:
             res.remove('\\Recent')
         return ' '.join(res)
 
     def msg(res):
         msg = {
-            'uid': re.search('UID (\d+)', res[0].decode()).group(1),
+            'uid': re.search(r'UID (\d+)', res[0].decode()).group(1),
             'flags': flags(res[0].decode()),
         }
         if parsed:
