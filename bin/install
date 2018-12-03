@@ -3,25 +3,18 @@
 set -exuo pipefail
 . bin/activate
 
-pacman --noconfirm -Syy
-
-# smtp server for testing
-#pacman --noconfirm -S opensmtpd
-#systemctl enable smtpd
-#systemctl restart smtpd
-
 bin/install-dovecot
 
-pacman --noconfirm -S python gcc
+yum install -y epel-release
+yum install -y python36 python36-devel gcc
 env=${env:-/opt/mailur/env}
 pip=$env/bin/pip
-python3 -m venv $env
+python36 -m venv $env
 
-$pip install -U setuptools
 $pip install -U -e .
 
-pacman --noconfirm -S yarn
-yarn
-yarn build
+yum install -y npm
+npm i
+npm run build
 
 bin/install-services

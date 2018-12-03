@@ -5,7 +5,15 @@ set -exuo pipefail
 
 secret=${secret:-root}
 
-pacman --noconfirm -S dovecot
+cat <<"EOF" > /etc/yum.repos.d/dovecot.repo
+[dovecot-2.3-latest]
+name=Dovecot 2.3 CentOS $releasever - $basearch
+baseurl=http://repo.dovecot.org/ce-2.3-latest/centos/$releasever/RPMS/$basearch
+gpgkey=https://repo.dovecot.org/DOVECOT-REPO-GPG
+gpgcheck=1
+enabled=1
+EOF
+yum install -y dovecot
 
 id -u vmail || (
 groupadd -g 5000 vmail

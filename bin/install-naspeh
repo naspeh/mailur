@@ -1,8 +1,0 @@
-#!/bin/bash
-# http://redsymbol.net/articles/unofficial-bash-strict-mode/
-set -exuo pipefail
-. bin/activate
-
-# some useful stuff
-pacman --noconfirm -S vim git htop zsh grml-zsh-config
-sed -i 's|/bin/bash|/bin/zsh|' /etc/passwd

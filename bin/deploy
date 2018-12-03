@@ -11,7 +11,15 @@ echo '"domain" variable is not set'
 exit 1
 )
 
-pacman --noconfirm -S nginx certbot
+cat <<"EOF" > /etc/yum.repos.d/nginx.repo
+[nginx]
+name=nginx repo
+baseurl=https://nginx.org/packages/mainline/centos/7/$basearch/
+gpgcheck=0
+enabled=1
+EOF
+
+yum install -y nginx certbot
 
 cat <<EOF > /etc/nginx/nginx.conf
 events {

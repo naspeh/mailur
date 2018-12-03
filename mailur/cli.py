@@ -85,7 +85,7 @@ def process(args):
     elif args['web']:
         web()
     elif args['test']:
-        run('pytest -n2 -q --cov=mailur --cov-report=term-missing')
+        run('pytest --cov=mailur --cov-report=term-missing')
     elif args['lint']:
         ci = args['--ci'] and 1 or ''
         run('ci=%s bin/run-lint' % ci)
@@ -145,7 +145,7 @@ def web():
         run('bin/run-web', shell=True)
 
     def webpack():
-        run('which yarn && yarn run dev || npm run dev', shell=True)
+        run('command -v yarn && yarn run dev || npm run dev', shell=True)
 
     try:
         pool = Pool()
@@ -160,7 +160,7 @@ def run(cmd):
     from sys import exit
     from subprocess import call
 
-    check = 'which pytest'
+    check = 'command -v pytest'
     if call(check, cwd=root, shell=True):
         raise SystemExit(
             'Test dependencies must be installed.\n'

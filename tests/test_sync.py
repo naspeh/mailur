@@ -96,13 +96,13 @@ def test_cli_idle(gm_client, msgs, login, patch):
     local.parse('all')
 
     gm_client.add_emails([{}], fetch=False, parse=False)
-    sleep(1)
+    sleep(2)
     assert len(msgs(local.SRC)) == 5
     assert len(msgs()) == 5
 
     con_src = local.client(local.SRC, readonly=False)
     con_src.store('1:*', '+FLAGS', '#1')
-    sleep(1)
+    sleep(2)
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1'] * 5
     assert [i['flags'] for i in msgs()] == ['#latest #1'] * 5
 

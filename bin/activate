@@ -9,7 +9,8 @@ fi
 PATH=./node_modules/.bin:$PATH
 
 cd /opt/mailur
-[ -f bin/env ] && . bin/env
+envfile=${envfile-bin/env}
+[ -n "$envfile" ] && [ -f $envfile ] && . $envfile
 
 env=${env:-env}
 [ -d $env ] && . $env/bin/activate

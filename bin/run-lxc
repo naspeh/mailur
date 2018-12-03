@@ -7,19 +7,13 @@ lxc_name=${lxc_name:-mlr}
 mount_src=${lxc_src-$(pwd)}
 no_login=${no_login:-}
 
-lxc-create -t download -n $lxc_name -- -d archlinux -r current -a amd64
+lxc-create -t download -n $lxc_name -- -d centos -r 7 -a amd64
 
 # mount src from host and also some cache directories
 [ -z "$mount_src" ] || (
-cache=$mount_src/.cache/$lxc_name
-mkdir -p $cache/{root,home,pacman}
 cat <<EOF >> /var/lib/lxc/$lxc_name/config
 lxc.mount.entry = $mount_src opt/$proj none bind,create=dir
-lxc.mount.entry = $cache/root root none bind,create=dir
-lxc.mount.entry = $cache/home home none bind,create=dir
-lxc.mount.entry = $cache/pacman var/cache/pacman/pkg none bind,create=dir
 EOF
-unset cache
 )
 
 lxc-start -n $lxc_name
@@ -29,20 +23,16 @@ sleep 5
 cat <<EOF | lxc-attach --clear-env -n $lxc_name -- /bin/sh
 set -exu
 
-pacman --noconfirm -Syy
-pacman --noconfirm -S openssh
-systemctl enable sshd
-systemctl start sshd
+systemctl start network
 
-mkdir -p /root/.ssh
-cat <<EOF0 > /root/.ssh/authorized_keys
-$(cat ~/.ssh/id_rsa.pub)
-$([ ! -f /root/.ssh/id_rsa.pub ] ||  cat /root/.ssh/id_rsa.pub)
-EOF0
+yum update -y
+
+cat <<EOF2 > /etc/profile.d/activate.sh
+if [ -d /opt/$proj ]; then
+    cd /opt/$proj
+    . bin/activate
+fi
+EOF2
 EOF
 
-[ -n "$no_login" ] || (ssh\
-    -o StrictHostKeyChecking=no \
-    -o UserKnownHostsFile=/dev/null \
-    $(lxc-info -iH -n $lxc_name)
-)
+[ -n "$no_login" ] || lxc-attach --clear-env -n $lxc_name

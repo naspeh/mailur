@@ -15,7 +15,9 @@ set -exuo pipefail
 
 cd /opt/mailur
 
+export envfile=
 export env=/opt/mailur-env
+bin/install
 bin/install-test
 
 set +ux
@@ -25,5 +27,5 @@ set -ux
 mlr lint --ci
 mlr test
 
-yarn run build
+npm run build
 EOF

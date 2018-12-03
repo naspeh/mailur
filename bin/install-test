@@ -3,6 +3,7 @@
 set -exuo pipefail
 . bin/activate
 
-cd /opt/mailur
+yum install -y git
 
+cd /opt/mailur
 pip install -e .[test]
