@@ -1,0 +1,31 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+env | sort
+
+sha=$sha
+ref=${ref:-master}
+
+root=$(dirname $(readlink -f $0))
+
+lxc_base=${lxc_base:-'mlr-base'}
+lxc_name=mlr-$sha
+
+$root/ci-clean
+
+lxc-copy -n $lxc_base -N $lxc_name -s
+lxc-start -n $lxc_name
+cat << EOF | lxc-attach --clear-env -n $lxc_name
+set -exuo pipefail
+
+until systemctl start network; do sleep 1; done
+
+cd /opt/mailur
+git fetch origin $ref
+git checkout $sha
+
+bin/install
+bin/install-test
+EOF
+lxc-stop -n $lxc_name

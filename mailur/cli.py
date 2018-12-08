@@ -31,7 +31,7 @@ from gevent import joinall, sleep, spawn
 
 from . import LockError, conf, gmail, local, log
 
-root = pathlib.Path(__file__).parent.parent
+root = pathlib.Path(__file__).resolve().parent.parent
 
 
 def main(args=None):

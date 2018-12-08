@@ -1,0 +1,27 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+sha=$sha
+
+root=$(dirname $(readlink -f $0))
+
+lxc_base=mlr-$sha
+lxc_name=$lxc_base--lint
+lxc-destroy -fn $lxc_name || true
+lxc-copy -n $lxc_base -N $lxc_name -s
+
+function clean {
+    lxc-destroy -fn $lxc_name || true
+}
+trap clean EXIT
+
+lxc-start -n $lxc_name
+cat << EOF | lxc-attach --clear-env -n $lxc_name
+set -exuo pipefail
+
+cd /opt/mailur
+
+. bin/activate
+mlr lint --ci
+EOF

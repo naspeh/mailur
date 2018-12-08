@@ -11,7 +11,7 @@ env=${env:-/opt/mailur/env}
 pip=$env/bin/pip
 python36 -m venv $env
 
-$pip install -U -e .
+$pip install -U -e .[all]
 
 yum install -y npm
 npm i

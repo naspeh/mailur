@@ -1,0 +1,92 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+lxc_name=${lxc_name:-'mlr-ci'}
+lxc_opts=${lxc_opts:-}
+no_clean=${no_clean-1}
+no_mount=${no_mount-1}
+no_login=${no_login-}
+
+[ -n "$no_clean" ] || (
+lxc-destroy -fn $lxc_name || true
+lxc-create $lxc_name -t download $lxc_opts -- -d ubuntu -r bionic -a amd64
+)
+
+[ -n "$no_mount" ] || (
+cat <<EOF >> /var/lib/lxc/$lxc_name/config
+lxc.mount.entry = $(pwd) opt/mailur none bind,create=dir
+EOF
+)
+
+lxc-start -n $lxc_name
+
+cat << "EOF" | lxc-attach --clear-env -n $lxc_name
+set -exuo pipefail
+
+sleep 5
+
+export DEBIAN_FRONTEND=noninteractive
+apt update
+apt install -y \
+    python3-venv git aha moreutils \
+    lxc lxc-templates wget gpg zfsutils-linux
+
+#fallocate -l 4G /var/tmp/zpool.img
+#truncate -s 10G /var/tmp/zpool.img
+#zpool create lxc /var/tmp/zpool.img
+
+repo=/opt/mailur
+env=$repo/env
+
+cat <<EOF2 > /etc/profile.d/activate.sh
+if [ -d $repo ]; then
+    cd $repo
+    . bin/activate
+fi
+EOF2
+
+[ -d $repo ] || git clone https://github.com/naspeh/mailur.git $repo
+
+cd $repo
+. bin/activate
+python3 -m venv $env
+. bin/activate
+pip install -e .[ci]
+
+cat <<EOF2 > /etc/systemd/system/mailur-ci.service
+[Unit]
+Description=mailur-ci
+Wants=network.target
+After=network.target
+[Service]
+PIDFile=/run/mlr-ci
+ExecStart=/bin/sh -c 'app=ci.web:app opts="-w 4 --pid /run/mlr-ci" bin/run-web'
+ExecReload=/bin/kill -s HUP \$MAINPID
+ExecStop=/bin/kill -s TERM \$MAINPID
+WorkingDirectory=/opt/mailur
+KillMode=process
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+EOF2
+systemctl enable mailur-ci
+systemctl restart mailur-ci
+
+base=mlr-base
+lxc-destroy -fn $base || true
+name=$base src= no_login=1 opts=${lxc_opts:-} bin/run-lxc
+cat << "EOF2" | lxc-attach --clear-env -n $base
+set -exuo pipefail
+
+sleep 5
+
+yum install -y git
+
+git clone https://github.com/naspeh/mailur.git /opt/mailur
+EOF2
+lxc-stop -n $base
+EOF
+
+[ -n "$no_login" ] || lxc-attach --clear-env -n $lxc_name

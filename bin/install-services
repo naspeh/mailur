@@ -3,7 +3,7 @@
 set -exuo pipefail
 . bin/activate
 
-workers=${workers:-4}
+opts=${opts:-}
 
 cat <<EOF > /etc/systemd/system/mailur.service
 [Unit]
@@ -11,7 +11,7 @@ Description=mailur
 Wants=network.target
 After=network.target
 [Service]
-ExecStart=/bin/sh -c 'workers=$workers bin/run-web'
+ExecStart=/bin/sh -c 'opts=$opts bin/run-web'
 WorkingDirectory=/opt/mailur
 Restart=always
 RestartSec=10
