@@ -1,26 +1,26 @@
 import re
-from unittest.mock import call, patch
 
 from mailur import gmail, local
 
 
-@patch('mailur.imap.select')
-def test_client(select, some):
-    con = gmail.client()
-    assert select.call_args == call(some, b'All', True)
-    assert set(con.__dict__.keys()) == set(
-        '_con idle logout list select select_tag status search fetch'
-        .split()
-    )
+def test_client(some, patch, call):
+    with patch('mailur.imap.select') as m:
+        con = gmail.client()
+        assert m.call_args == call(some, b'All', True)
 
-    con.select_tag('\\Junk')
-    assert select.call_args == call(some, b'tags/Spam', True)
+        assert set(con.__dict__.keys()) == set(
+            '_con idle logout list select select_tag status search fetch'
+            .split()
+        )
 
-    con.select_tag('\\Trash')
-    assert select.call_args == call(some, b'tags/Trash', True)
+        con.select_tag('\\Junk')
+        assert m.call_args == call(some, b'INBOX', True)
 
-    con.select_tag('\\Drafts')
-    assert select.call_args == call(some, b'tags/Drafts', True)
+        con.select_tag('\\Trash')
+        assert m.call_args == call(some, b'INBOX', True)
+
+        con.select_tag('\\Draft')
+        assert m.call_args == call(some, b'INBOX', True)
 
     with patch('mailur.imap.fn_time') as m:
         con.list()
@@ -44,7 +44,7 @@ def test_fetch_and_parse(gm_client, some):
 
     def gm_uidnext():
         res = lm.getmetadata(local.SRC, 'gmail/uidnext/all')
-        assert res == [(b'Src (/private/gmail/uidnext/all {12}', some), b')']
+        assert res == [(b'INBOX (/private/gmail/uidnext/all {12}', some), b')']
         return some.value
 
     def mlr_uidnext():

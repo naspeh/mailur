@@ -3,7 +3,7 @@ from subprocess import check_output
 from mailur import cli, local
 
 
-def test_general(gm_client, login, msgs, patch):
+def test_general(gm_client, login, msgs, patch, call):
     stdout = check_output('mlr -h', shell=True)
     assert b'Mailur CLI' in stdout
 
@@ -30,6 +30,22 @@ def test_general(gm_client, login, msgs, patch):
         assert m.save_addrs.called
         assert m.save_msgids.called
         assert m.save_uid_pairs.called
+
+    with patch('mailur.cli.gmail.fetch_folder') as m:
+        cli.main('gmail %s' % login.user1)
+        assert m.call_args_list == [
+            call(batch=1000, threads=2),
+            call('\\Junk', batch=1000, threads=2),
+            call('\\Trash', batch=1000, threads=2),
+        ]
+
+        m.reset_mock()
+        cli.main('gmail %s --tag=\\All' % login.user1)
+        assert m.call_args_list == [call(batch=1000, tag='\\All', threads=2)]
+
+        m.reset_mock()
+        cli.main('gmail %s --box=All' % login.user1)
+        assert m.call_args_list == [call(batch=1000, box='All', threads=2)]
 
 
 def test_fetch_and_parse(gm_client, login, msgs, patch, raises):

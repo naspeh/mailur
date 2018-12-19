@@ -8,7 +8,7 @@ from gevent import joinall, socket, spawn
 
 from . import conf, fn_cache, fn_time, html, imap, log, message, user_lock
 
-SRC = 'Src'
+SRC = 'INBOX'
 ALL = 'All'
 
 

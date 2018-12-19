@@ -6,9 +6,14 @@ name=${name:-mlr}
 repo=${repo:-/opt/mailur}
 src=${src-$(pwd)}
 opts=${opts:-}
+on_boot=${on_boot:-0}
 no_login=${no_login:-}
 
 lxc-create -t download -n $name $opts -- -d centos -r 7 -a amd64
+
+cat <<EOF >> /var/lib/lxc/$name/config
+lxc.start.auto = $on_boot
+EOF
 
 [ -z "$src" ] || (
 cat <<EOF >> /var/lib/lxc/$name/config
@@ -19,8 +24,8 @@ EOF
 lxc-start -n $name
 
 # install ssh and authorized keys for easy access
-cat <<EOF | lxc-attach --clear-env -n $name -- /bin/sh
-set -exu
+cat <<EOF | lxc-attach --clear-env -n $name
+set -exuo pipefail
 
 until systemctl start network; do sleep 1; done
 

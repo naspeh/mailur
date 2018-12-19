@@ -32,9 +32,7 @@ auth_verbose_passwords=sha1
 mail_debug=yes
 verbose_ssl=yes
 
-# ssl = required
-# ssl_key = </etc/ssl/dovecot/server.key
-# ssl_cert = </etc/ssl/dovecot/server.pem
+ssl = no
 ssl_client_ca_dir = /etc/ssl/certs/
 
 # should be big enough to save all message-ids as metadata
@@ -68,46 +66,16 @@ userdb {
 }
 
 namespace main {
+    inbox = yes
     prefix =
     separator = /
-    mailbox Src {
-        auto = subscribe
-    }
     mailbox All {
         auto = subscribe
         special_use = \All
     }
-    mailbox Contacts {
-        auto = subscribe
-    }
-    mailbox Deleted {
-        auto = subscribe
-    }
-}
-namespace {
-    inbox = yes
-    prefix = tags/
-    separator = /
-    location = virtual:%h/tags
-    mailbox Trash {
-        auto = subscribe
-        special_use = \Trash
-    }
-    mailbox Spam {
-        auto = subscribe
-        special_use = \Junk
-    }
-    mailbox Drafts {
-        auto = subscribe
-        special_use = \Drafts
-    }
-    mailbox Pinned {
-        auto = subscribe
-        special_use = \Flagged
-    }
 }
 
-mail_plugins = \$mail_plugins acl notify mail_log replication virtual fts fts_squat
+mail_plugins = \$mail_plugins acl notify mail_log fts fts_lucene
 plugin {
     acl = vfile:/etc/dovecot/acl
     acl_globals_only = yes
@@ -115,10 +83,10 @@ plugin {
     mail_log_events = delete undelete expunge copy save flag_change
     mail_log_fields = uid box msgid flags
 
-    fts = squat
-    fts_squat = partial=4 full=20
-    #fts_autoindex=yes
-    #fts_autoindex_max_recent_msgs=100
+    fts = lucene
+    fts_lucene = whitespace_chars=@.
+    fts_autoindex=yes
+    fts_autoindex_exclude=INBOX
 }
 
 mail_attribute_dict = file:%h/dovecot-attributes
@@ -133,10 +101,6 @@ service imap-login {
         port = 143
         address = localhost
     }
-    inet_listener imaps {
-        port = 0
-        ssl = yes
-    }
 
     process_min_avail = 1
 }
@@ -147,22 +111,6 @@ service indexer-worker {
     vsz_limit = 2G
 }
 
-replication_dsync_parameters = -d -n main
-service replicator {
-    process_min_avail = 1
-    unix_listener replicator-doveadm {
-        user = vmail
-        mode = 0600
-    }
-}
-service aggregator {
-    fifo_listener replication-notify-fifo {
-        user = vmail
-    }
-    unix_listener replication-notify {
-        user = vmail
-    }
-}
 service doveadm {
     inet_listener {
     address = localhost
@@ -178,7 +126,7 @@ EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lrst
 All owner lr
-Src owner lrstpi
+INBOX owner lrstpi
 * user=root lrwstipe
 EOF
 

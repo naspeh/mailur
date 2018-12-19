@@ -1,12 +1,12 @@
 import email
 import json
 import re
+import subprocess
 import sys
 import time
 import uuid
 from email.utils import formatdate
 from pathlib import Path
-from subprocess import call
 from unittest import mock
 
 import pytest
@@ -28,7 +28,7 @@ def init(request):
         ])
 
     users_str = ' '.join(sum(users, []))
-    call('''
+    subprocess.call('''
     path=/home/vmail/test
     rm -rf $path
     user="%s" home=$path append=1 bin/install-users
@@ -104,6 +104,11 @@ def patch():
     return mock.patch
 
 
+@pytest.fixture
+def call():
+    return mock.call
+
+
 def gm_fake():
     from mailur import local
 
@@ -113,11 +118,24 @@ def gm_fake():
             return responces.pop()
         return gm_client._uid(name, *a, **kw)
 
+    def xlist(*a, **kw):
+        responces = getattr(gm_client, 'list', None)
+        if responces:
+            return responces.pop()
+        return 'OK', [
+            b'(\\HasNoChildren \\All) "/" All',
+            b'(\\HasNoChildren) "/" INBOX',
+            b'(\\HasNoChildren \\Junk) "/" INBOX',
+            b'(\\HasNoChildren \\Trash) "/" INBOX',
+            b'(\\HasNoChildren \\Draft) "/" INBOX',
+        ]
+
     con = local.connect(test2)
 
     gm_client.con = con
     gm_client._uid = con.uid
     con.uid = uid
+    con.list = xlist
     return con
 
 
