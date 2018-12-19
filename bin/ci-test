@@ -23,7 +23,5 @@ set -exuo pipefail
 cd /opt/mailur
 
 . bin/activate
-mlr test
-
-#journalctl -n100 -u dovecot -a --no-pager
+mlr test || journalctl -n100 -u dovecot -a --no-pager
 EOF

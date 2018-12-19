@@ -2,39 +2,41 @@
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
 
+root=$(dirname $(readlink -f $0))
 lxc_name=${lxc_name:-'mlr-ci'}
 lxc_opts=${lxc_opts:-}
-no_clean=${no_clean-1}
-no_mount=${no_mount-1}
+lxc_src=${lxc_src-$(pwd)}
+no_clean=${no_clean-}
 no_login=${no_login-}
 
 [ -n "$no_clean" ] || (
 lxc-destroy -fn $lxc_name || true
-lxc-create $lxc_name -t download $lxc_opts -- -d ubuntu -r bionic -a amd64
+name=$lxc_name opts=$lxc_opts no_login=1 on_boot=1 $root/run-lxc
 )
 
-[ -n "$no_mount" ] || (
-cat <<EOF >> /var/lib/lxc/$lxc_name/config
-lxc.mount.entry = $(pwd) opt/mailur none bind,create=dir
-EOF
-)
-
-lxc-start -n $lxc_name
 
 cat << "EOF" | lxc-attach --clear-env -n $lxc_name
 set -exuo pipefail
 
-sleep 5
+yum install -y epel-release
+yum install -y yum-plugin-copr
 
-export DEBIAN_FRONTEND=noninteractive
-apt update
-apt install -y \
-    python3-venv git aha moreutils \
-    lxc lxc-templates wget gpg zfsutils-linux
+yum copr enable -y ganto/lxc3
+yum install -y lxc dnsmasq
+cat <<EOF2 > /etc/sysconfig/lxc-net
+USE_LXC_BRIDGE=true
+LXC_ADDR="10.0.4.1"
+LXC_NETMASK="255.255.255.0"
+LXC_NETWORK="10.0.4.0/24"
+LXC_DHCP_RANGE="10.0.4.2,10.0.4.254"
+LXC_DHCP_MAX="253"
+LXC_DHCP_CONFILE=""
+LXC_DOMAIN=""
+EOF2
+systemctl enable lxc-net
+systemctl start lxc-net
 
-#fallocate -l 4G /var/tmp/zpool.img
-#truncate -s 10G /var/tmp/zpool.img
-#zpool create lxc /var/tmp/zpool.img
+yum install -y python36 git aha moreutils
 
 repo=/opt/mailur
 env=$repo/env
@@ -50,7 +52,7 @@ EOF2
 
 cd $repo
 . bin/activate
-python3 -m venv $env
+python3.6 -m venv $env
 . bin/activate
 pip install -e .[ci]
 
