@@ -6,7 +6,7 @@ from mailur import cli, local
 def test_local(gm_client, msgs):
     gm_client.add_emails([{}] * 5)
     assert [i['flags'] for i in msgs(local.SRC)] == [''] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest'] * 5
+    assert [i['flags'] for i in msgs()] == [''] * 5
 
     con_src = local.client(local.SRC, readonly=False)
     con_all = local.client(local.ALL, readonly=False)
@@ -15,7 +15,7 @@ def test_local(gm_client, msgs):
     con_all.store('1:*', '+FLAGS', '#2')
     local.sync_flags_to_all()
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1'] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest #1'] * 5
+    assert [i['flags'] for i in msgs()] == ['#1'] * 5
 
     con_src.store('1,2', '+FLAGS', '#2')
     con_all.store('2,3', '+FLAGS', '#3')
@@ -24,15 +24,14 @@ def test_local(gm_client, msgs):
         '#1 #2', '#1 #2', '#1', '#1', '#1'
     ]
     assert [i['flags'] for i in msgs()] == [
-        '#latest #2 #1', '#latest #2 #1', '#latest #1',
-        '#latest #1', '#latest #1'
+        '#2 #1', '#2 #1', '#1', '#1', '#1'
     ]
 
     con_all.store('1:*', '-FLAGS', '#1 #2')
     con_all.store('1:*', '+FLAGS', '#3')
     local.sync_flags_to_src()
     assert [i['flags'] for i in msgs(local.SRC)] == ['#3'] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest #3'] * 5
+    assert [i['flags'] for i in msgs()] == ['#3'] * 5
 
     con_src.store('1,2', '+FLAGS', '#2')
     con_all.store('2,3', '+FLAGS', '#4')
@@ -41,29 +40,28 @@ def test_local(gm_client, msgs):
         '#3', '#3 #4', '#3 #4', '#3', '#3'
     ]
     assert [i['flags'] for i in msgs()] == [
-        '#latest #3', '#latest #3 #4', '#latest #3 #4',
-        '#latest #3', '#latest #3'
+        '#3', '#3 #4', '#3 #4', '#3', '#3'
     ]
 
     con_all.store('1:*', '-FLAGS', '#3 #4')
     local.sync_flags_to_src()
     assert [i['flags'] for i in msgs(local.SRC)] == [''] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest'] * 5
+    assert [i['flags'] for i in msgs()] == [''] * 5
 
     local.sync_flags_to_src()
     con_all.store('1:*', '+FLAGS', '#err #dup')
     assert [i['flags'] for i in msgs(local.SRC)] == [''] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest #err #dup'] * 5
+    assert [i['flags'] for i in msgs()] == ['#err #dup'] * 5
 
-    con_src.store('1:*', '+FLAGS', '#latest #err #dup')
+    con_src.store('1:*', '+FLAGS', '#err #dup')
     con_all.store('1:*', '-FLAGS', '#err #dup')
     local.sync_flags_to_all()
-    assert [i['flags'] for i in msgs(local.SRC)] == ['#latest #err #dup'] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest'] * 5
+    assert [i['flags'] for i in msgs(local.SRC)] == ['#err #dup'] * 5
+    assert [i['flags'] for i in msgs()] == [''] * 5
 
-    con_src.store('1:*', '-FLAGS', '#latest #err #dup')
+    con_src.store('1:*', '-FLAGS', '#err #dup')
     assert [i['flags'] for i in msgs(local.SRC)] == [''] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest'] * 5
+    assert [i['flags'] for i in msgs()] == [''] * 5
 
     # idle
     spawn(local.sync_flags)
@@ -77,8 +75,7 @@ def test_local(gm_client, msgs):
         '#1', '#1 #2', '#1 #3', '#1 #4', '#1 #5'
     ]
     assert [i['flags'] for i in msgs()] == [
-        '#latest #1', '#latest #2 #1', '#latest #1 #3',
-        '#latest #1 #4', '#latest #1 #5'
+        '#1', '#2 #1', '#1 #3', '#1 #4', '#1 #5'
     ]
 
 
@@ -104,13 +101,13 @@ def test_cli_idle(gm_client, msgs, login, patch):
     con_src.store('1:*', '+FLAGS', '#1')
     sleep(2)
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1'] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest #1'] * 5
+    assert [i['flags'] for i in msgs()] == ['#1'] * 5
 
 
 def test_cli_all_flags(gm_client, msgs, login):
     gm_client.add_emails([{}] * 5)
     assert [i['flags'] for i in msgs(local.SRC)] == [''] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest'] * 5
+    assert [i['flags'] for i in msgs()] == [''] * 5
 
     con_src = local.client(local.SRC, readonly=False)
     con_all = local.client(local.ALL, readonly=False)
@@ -119,21 +116,21 @@ def test_cli_all_flags(gm_client, msgs, login):
     con_all.store('1:*', '+FLAGS', '#2')
     cli.main('sync-flags %s' % login.user1)
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1'] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest #1'] * 5
+    assert [i['flags'] for i in msgs()] == ['#1'] * 5
 
     con_src.store('1:*', '+FLAGS', '#2')
     con_all.store('1:*', '+FLAGS', '#3')
     cli.main('sync-flags %s --reverse' % login.user1)
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1 #3'] * 5
-    assert [i['flags'] for i in msgs()] == ['#latest #1 #3'] * 5
+    assert [i['flags'] for i in msgs()] == ['#1 #3'] * 5
 
 
 def test_clean_flags(gm_client, msgs, login):
     gm_client.add_emails([{}] * 2)
     local.link_threads(['1', '2'])
 
-    assert [i['flags'] for i in msgs(local.SRC)] == ['', '', '\\Seen #link']
-    assert [i['flags'] for i in msgs()] == ['', '#latest', '\\Seen #link']
+    assert [i['flags'] for i in msgs(local.SRC)] == ['', '']
+    assert [i['flags'] for i in msgs()] == ['', '']
 
     con_src = local.client(local.SRC, readonly=False)
     con_all = local.client(local.ALL, readonly=False)
@@ -143,18 +140,18 @@ def test_clean_flags(gm_client, msgs, login):
     con_src.store('2', '+FLAGS', '#dup')
     con_all.store('3', '-FLAGS', '#link \\Seen')
     con_all.store('2', '-FLAGS', '#latest')
-    assert [i['flags'] for i in msgs(local.SRC)] == ['#latest', '#dup', '']
-    assert [i['flags'] for i in msgs()] == ['', '', '']
+    assert [i['flags'] for i in msgs(local.SRC)] == ['#latest', '#dup']
+    assert [i['flags'] for i in msgs()] == ['', '']
     local.clean_flags()
-    assert [i['flags'] for i in msgs(local.SRC)] == ['', '', '\\Seen #link']
-    assert [i['flags'] for i in msgs()] == ['', '#latest', '\\Seen #link']
+    assert [i['flags'] for i in msgs(local.SRC)] == ['', '']
+    assert [i['flags'] for i in msgs()] == ['', '']
 
     con_src.store('3', '-FLAGS', '#link \\Seen')
     con_src.store('2', '+FLAGS', '#err')
     con_all.store('3', '-FLAGS', '#link \\Seen')
     con_all.store('2', '-FLAGS', '#latest')
-    assert [i['flags'] for i in msgs(local.SRC)] == ['', '#err', '']
-    assert [i['flags'] for i in msgs()] == ['', '', '']
+    assert [i['flags'] for i in msgs(local.SRC)] == ['', '#err']
+    assert [i['flags'] for i in msgs()] == ['', '']
     cli.main('clean-flags %s' % login.user1)
-    assert [i['flags'] for i in msgs(local.SRC)] == ['', '', '\\Seen #link']
-    assert [i['flags'] for i in msgs()] == ['', '#latest', '\\Seen #link']
+    assert [i['flags'] for i in msgs(local.SRC)] == ['', '']
+    assert [i['flags'] for i in msgs()] == ['', '']

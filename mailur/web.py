@@ -282,7 +282,7 @@ def thrs_link():
     uids = request.json['uids']
     if not uids:
         return {}
-    return {'uid': local.link_threads(uids)}
+    return {'uids': local.link_threads(uids)}
 
 
 @app.post('/thrs/unlink')
@@ -291,10 +291,7 @@ def thrs_unlink():
     uids = request.json['uids']
     if not uids:
         return {}
-    uids = local.search_msgs('inthread refs uid %s' % ','.join(uids))
-    links = local.delete_links(uids)
-    uids = set(uids) - set(links)
-    uids = local.search_thrs('uid %s' % ','.join(uids))
+    uids = local.unlink_threads(uids)
     return {'query': ':threads uid:%s' % ','.join(uids)}
 
 
@@ -335,8 +332,11 @@ def editor():
                 maintype=maintype, subtype=subtype
             )
     msg = message.new_draft(draft, request.forms, related)
-    oid, pid = local.new_msg(msg, draft['flags'])
+    oid, pid = local.new_msg(msg, draft['flags'], no_parse=True)
     local.del_msg(draft['origin_uid'])
+    local.parse()
+    local.save_msgids()
+    pid = local.pair_origin_uids([oid])[0]
     return {'uid': pid, 'url_send': app.get_url('send', uid=oid)}
 
 
@@ -601,7 +601,8 @@ def parse_query(q):
             q = info['raw_val']
         elif info.get('thread'):
             opts['thread'] = True
-            q = 'inthread refs uid %s' % info['thread_id']
+            opts['uid'] = info['thread_id']
+            q = ''
         elif info.get('uid'):
             q = 'uid %s' % info['uid_val']
         elif info.get('from'):
@@ -624,8 +625,16 @@ def parse_query(q):
             q = ''
         elif info.get('draft_edit'):
             opts['thread'] = True
-            opts['draft'] = info['draft_val']
-            q = 'inthread refs header x-draft-id %s' % info['draft_val']
+            mid = info['draft_val']
+            opts['draft'] = mid
+            mids = local.get_msgids()
+            uid = mids.get(mid)
+            if uid:
+                uid = local.pair_origin_uids(uid)[0]
+                opts['uid'] = uid
+                q = ''
+            else:
+                q = 'header message-id %s' % mid
         elif info.get('date'):
             val = info['date_val']
             count = val.count('-')
@@ -668,7 +677,7 @@ def parse_query(q):
         r'|(?P<seen>:(read|seen))'
         r'|(?P<flagged>:(pin(ned)?|flagged))'
         r'|(?P<unflagged>:(unpin(ned)?|unflagged))'
-        r'|(?P<draft_edit>draft:(?P<draft_val>\<.{8}\>))'
+        r'|(?P<draft_edit>draft:(?P<draft_val>\<[^>]+\>))'
         r')( |$)',
         replace, q
     )
@@ -688,6 +697,17 @@ def parse_query(q):
         parts.append('unkeyword #trash')
     if '#spam' not in tags and '#trash' not in tags:
         parts.append('unkeyword #spam')
+
+    uid = opts.get('uid')
+    if uid:
+        thrids, thrs = local.get_threads()
+        thrid = thrids.get(uid)
+        if thrid:
+            uids = thrs[thrids[thrid]]
+            q = 'uid %s' % ','.join(uids)
+        else:
+            q = 'uid %s' % uid
+        parts.insert(0, q)
 
     if parts:
         q = ' '.join(parts)

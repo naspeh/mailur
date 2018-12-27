@@ -8,7 +8,6 @@ Usage:
   mlr sync <login> [--timeout=<timeout>]
   mlr sync-flags <login> [--reverse]
   mlr clean-flags <login>
-  mlr update-links <login>
   mlr update-metadata <login>
   mlr icons
   mlr web
@@ -71,8 +70,6 @@ def process(args):
             local.sync_flags_to_all()
     elif args['clean-flags']:
         local.clean_flags()
-    elif args['update-links']:
-        local.update_links()
     elif args['update-metadata']:
         local.save_addrs()
         local.save_msgids()

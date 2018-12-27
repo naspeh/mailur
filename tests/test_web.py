@@ -256,6 +256,7 @@ def test_general(gm_client, load_email, latest, login, some):
                 'tags': ['#inbox'],
                 'time_human': some,
                 'time_title': some,
+                'thrid': '<1ff2e08acb99d6af71ea8ccf5b0d3358@mailur.link>',
                 'uid': '2',
                 'url_raw': '/raw/2/original-msg.eml',
                 'url_reply': '/reply/2',
@@ -295,6 +296,7 @@ def test_general(gm_client, load_email, latest, login, some):
                 'tags': ['#inbox'],
                 'time_human': some,
                 'time_title': some,
+                'thrid': '<1ff2e08acb99d6af71ea8ccf5b0d3358@mailur.link>',
                 'uid': '2',
                 'uids': ['1', '2'],
                 'url_raw': '/raw/2/original-msg.eml',
@@ -364,7 +366,7 @@ def test_general(gm_client, load_email, latest, login, some):
     res = web.search({'q': ':threads tag:#inbox'})
     assert res['uids'] == ['4', '2']
     res = web.post_json('/thrs/link', {'uids': res['uids']}).json
-    assert res == {'uid': '5'}
+    assert res == {'uids': ['4', '1', '2']}
     res = web.search({'q': ':threads tag:#inbox'})
     assert res['uids'] == ['4']
     web.flag({'uids': ['4'], 'new': ['#trash']})
@@ -397,14 +399,14 @@ def test_general(gm_client, load_email, latest, login, some):
     gm_client.add_emails([{'labels': 'test'}] * 2)
     local.parse('all')
     res = web.search({'q': ':threads tag:test'})
-    assert res['uids'] == ['16', '15']
+    assert res['uids'] == ['14', '13']
     res = web.post_json('/thrs/link', {'uids': res['uids']}).json
     res = web.search({'q': ':threads tag:test'})
-    assert res['uids'] == ['16']
+    assert res['uids'] == ['14']
     res = web.post_json('/thrs/unlink', {'uids': res['uids']}).json
-    assert res == {'query': ':threads uid:16,15'}
+    assert res == {'query': ':threads uid:13,14'}
     res = web.search({'q': res['query']})
-    assert res['uids'] == ['16', '15']
+    assert res['uids'] == ['14', '13']
 
 
 def test_msgs_flag(gm_client, login, msgs):
@@ -417,23 +419,23 @@ def test_msgs_flag(gm_client, login, msgs):
     web.flag({'old': ['\\Seen']}, status=400)
 
     gm_client.add_emails([{}])
-    assert [m['flags'] for m in msgs()] == ['#latest']
+    assert [m['flags'] for m in msgs()] == ['']
 
-    assert post(['1'], new=['\\Seen']) == ['#latest \\Seen']
-    assert post(['1'], old=['\\Seen']) == ['#latest']
+    assert post(['1'], new=['\\Seen']) == ['\\Seen']
+    assert post(['1'], old=['\\Seen']) == ['']
 
     gm_client.add_emails([{'refs': '<101@mlr>'}])
-    assert [m['flags'] for m in msgs()] == ['', '#latest']
-    assert post(['1', '2'], new=['\\Seen']) == ['\\Seen', '#latest \\Seen']
-    assert post(['1'], old=['\\Seen']) == ['', '#latest \\Seen']
-    assert post(['1', '2'], old=['\\Seen']) == ['', '#latest']
+    assert [m['flags'] for m in msgs()] == ['', '']
+    assert post(['1', '2'], new=['\\Seen']) == ['\\Seen', '\\Seen']
+    assert post(['1'], old=['\\Seen']) == ['', '\\Seen']
+    assert post(['1', '2'], old=['\\Seen']) == ['', '']
 
-    assert post(['1', '2'], new=['#1', '#2']) == ['#1 #2', '#1 #2 #latest']
+    assert post(['1', '2'], new=['#1', '#2']) == ['#1 #2', '#1 #2']
     assert post(['1', '2'], new=['#3', '#2'], old=['#1', '#2']) == [
-        '#2 #3', '#2 #3 #latest'
+        '#2 #3', '#2 #3'
     ]
     assert post(['1', '2'], new=['#4'], old=['#2', '#3']) == [
-        '#4', '#4 #latest'
+        '#4', '#4'
     ]
 
 
@@ -762,10 +764,10 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['1', '2']
     m = latest(parsed=True)
-    assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['draft_id'] == some
     draft_id = some.value
-    assert re.match(r'\<.{8}\>', draft_id)
+    assert re.match(r'\<[^\>]+\>', draft_id)
     assert m['body_full']['x-draft-id'] == draft_id
 
     res = web.post('/editor', {
@@ -776,11 +778,11 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
-    assert local.msgids() == {
+    assert local.get_msgids() == {
         '<101@mlr>': ['1'],
         m['meta']['msgid']: ['3']
     }
-    assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == []
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
@@ -827,11 +829,11 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
     assert [i['uid'] for i in msgs()] == ['1', '4']
     m = latest(parsed=1)
-    assert local.msgids() == {
+    assert local.get_msgids() == {
         '<101@mlr>': ['1'],
         m['meta']['msgid']: ['4']
     }
-    assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
@@ -873,7 +875,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
     assert [i['uid'] for i in msgs()] == ['1', '5']
     m = latest(parsed=1, policy=email.policy.default)
-    assert m['flags'] == '\\Seen \\Draft test #latest'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
@@ -1080,16 +1082,16 @@ def test_query():
     assert parse_query('test1 test2') == ('text "test1 test2" ' + end, {})
 
     assert parse_query('thread:1') == (
-        'inthread refs uid 1 ' + end, {'thread': True}
+        'uid 1 ' + end, {'thread': True, 'uid': '1'}
     )
     assert parse_query('thr:1') == (
-        'inthread refs uid 1 ' + end, {'thread': True}
+        'uid 1 ' + end, {'thread': True, 'uid': '1'}
     )
     assert parse_query('THR:1') == (
-        'inthread refs uid 1 ' + end, {'thread': True}
+        'uid 1 ' + end, {'thread': True, 'uid': '1'}
     )
     assert parse_query('thr:1 test') == (
-        'inthread refs uid 1 text "test" ' + end, {'thread': True}
+        'uid 1 text "test" ' + end, {'thread': True, 'uid': '1'}
     )
 
     assert parse_query('in:#inbox') == (
@@ -1179,7 +1181,7 @@ def test_query():
     assert parse_query('date:2007-04-01') == ('on 01-Apr-2007 ' + end, {})
 
     assert parse_query('draft:<12345678>') == (
-        'inthread refs header x-draft-id <12345678> ' + end,
+        'header message-id <12345678> ' + end,
         {'draft': '<12345678>', 'thread': True}
     )
 

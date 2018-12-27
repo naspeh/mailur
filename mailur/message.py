@@ -288,7 +288,8 @@ def parsed(raw, uid, time, flags, mids):
         parent = in_reply_to
         if not refs:
             refs = [in_reply_to]
-    refs = [r for r in refs if r in mids]
+    # TODO: should it skip message-ids which don't exist?
+    # refs = [r for r in refs if r in mids]
     meta['parent'] = parent
 
     mid = orig['message-id']
@@ -326,13 +327,13 @@ def parsed(raw, uid, time, flags, mids):
 
     is_draft = '\\Draft' in flags
     if is_draft:
-        draft_id = orig['X-Draft-ID'] or gen_draftid()
+        draft_id = orig['X-Draft-ID'] or mid
         msg.add_header('X-Draft-ID', draft_id)
         meta['draft_id'] = draft_id
         txt = parse_draft(orig)[0]
 
     thrid = None
-    if not is_draft and not refs:
+    if not is_draft:
         addrs = [msg['from'] or msg['sender'], msg['to']]
         addrs = (a for a in addrs if a)
         addrs = ','.join(sorted(
@@ -464,7 +465,7 @@ def new_draft(draft, override, related):
         msg = txt
 
     msg.add_header('X-Draft-ID', draft['draft_id'])
-    msg.add_header('Message-ID', gen_msgid('draft'))
+    msg.add_header('Message-ID', draft['draft_id'])
     msg.add_header('Date', formatdate(usegmt=True))
     headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
     for h in headers:

@@ -17,13 +17,6 @@ def test_general(gm_client, login, msgs, patch, call):
     cli.main('gmail %s --parse' % login.user1)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['1', '2']
-    local.link_threads(['1', '2'])
-
-    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2', '3']
-    assert [i['uid'] for i in msgs()] == ['1', '2', '3']
-    cli.main('update-links %s' % login.user1)
-    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2', '4']
-    assert [i['uid'] for i in msgs()] == ['1', '2', '4']
 
     with patch('mailur.cli.local') as m:
         cli.main('update-metadata %s' % login.user1)
