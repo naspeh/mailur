@@ -778,7 +778,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
     assert [i['uid'] for i in msgs()] == ['1', '3']
     m = latest(parsed=1)
-    assert local.get_msgids() == {
+    assert local.data_msgids.get() == {
         '<101@mlr>': ['1'],
         m['meta']['msgid']: ['3']
     }
@@ -794,7 +794,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     res = web.search({'q': 'draft:%s' % draft_id})
     assert res['edit']
     assert res['edit']['files'] == []
-    addrs_from, addrs_to = local.get_addrs()
+    addrs_from, addrs_to = local.data_addrs.get()
     assert addrs_from == {
         'a@t.com': {
             'addr': 'a@t.com',
@@ -829,7 +829,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
     assert [i['uid'] for i in msgs()] == ['1', '4']
     m = latest(parsed=1)
-    assert local.get_msgids() == {
+    assert local.data_msgids.get() == {
         '<101@mlr>': ['1'],
         m['meta']['msgid']: ['4']
     }
@@ -902,7 +902,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     )
     assert m['body'] == '<p>Тест</p>'
 
-    addrs_from, addrs_to = local.get_addrs()
+    addrs_from, addrs_to = local.data_addrs.get()
     assert addrs_from == {
         'a@t.com': {
             'addr': 'a@t.com',

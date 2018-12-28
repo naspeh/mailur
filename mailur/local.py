@@ -1,4 +1,5 @@
 import email
+import functools as ft
 import hashlib
 import imaplib
 import json
@@ -50,6 +51,43 @@ def using(box=ALL, readonly=True, name='con'):
     return imap.using(client, box, readonly, name)
 
 
+def metadata(name, default, *, cache=False):
+    @user_lock(name)
+    def inner(*a, con=None, **kw):
+        clear_cache()
+        val = inner.fn(*a, con=con, **kw)
+        con.setmetadata(SRC, name, json.dumps(val['data']))
+        clear_cache()
+        if val.get('post'):
+            val['post']()
+        return val['return'] if 'return' in val else val['data']
+
+    @using(None)
+    def get(con=None):
+        res = con.getmetadata(SRC, name)
+        if len(res) == 1:
+            return default()
+        return json.loads(res[0][1].decode())
+
+    def clear_cache():
+        if not cache:
+            return
+        return inner.get.cache_clear()
+
+    def wrapper(fn):
+        inner_fn = ft.wraps(fn)(inner)
+        inner_fn.fn = fn
+        inner_fn.clear_cache = clear_cache
+
+        # fn_time and fn_cache use this name attribute if it set
+        get.name = '%s.get' % inner_fn.__name__
+        get_fn = fn_time(get)
+        get_fn = fn_cache(get_fn) if cache else get_fn
+        inner_fn.get = get_fn
+        return inner_fn
+    return wrapper
+
+
 @fn_cache
 @using(None)
 def saved_tags(con=None):
@@ -81,58 +119,47 @@ def get_tag(name):
 
 @fn_time
 @using()
-def save_uid_pairs(uids=None, con=None):
+@metadata('uidpairs', lambda: ({}, {}), cache=True)
+def data_uidpairs(uids=None, con=None):
     if uids:
-        uid_pairs.cache_clear()
-        pairs, _ = uid_pairs()
+        origin, parsed = data_uidpairs.get()
     else:
         uids = '1:*'
-        pairs = {}
+        origin = {}
+        parsed = {}
+
     res = con.fetch(uids, '(UID BODY.PEEK[1])')
     for i in range(0, len(res), 2):
         uid = res[i][0].decode().split()[2]
         origin_uid = json.loads(res[i][1].decode())['origin_uid']
-        pairs[origin_uid] = uid
-    con.setmetadata(ALL, 'uidpairs', json.dumps(pairs))
-    uid_pairs.cache_clear()
-
-
-@fn_cache
-@fn_time
-@using(None)
-def uid_pairs(con=None):
-    res = con.getmetadata(ALL, 'uidpairs')
-    if len(res) == 1:
-        return {}, {}
-
-    origin = json.loads(res[0][1].decode())
-    parsed = {v: k for k, v in origin.items()}
-    return origin, parsed
+        origin[origin_uid] = uid
+        parsed[uid] = origin_uid
+    return {'data': [origin, parsed]}
 
 
 @fn_time
 def pair_origin_uids(uids):
-    origin, _ = uid_pairs()
+    origin, _ = data_uidpairs.get()
     return tuple(origin[i] for i in uids if i in origin)
 
 
 @fn_time
 def pair_parsed_uids(uids):
-    _, parsed = uid_pairs()
+    _, parsed = data_uidpairs.get()
     return tuple(parsed[i] for i in uids if i in parsed)
 
 
 def pair_msgid(mid):
-    origin_uid = get_msgids().get(mid.lower())
+    origin_uid = data_msgids.get().get(mid.lower())
     return origin_uid and pair_origin_uids(origin_uid)[0]
 
 
 @fn_time
 @using(SRC)
-@user_lock('msgids')
-def save_msgids(uids=None, rm=False, con=None):
+@metadata('msgids', lambda: {}, cache=True)
+def data_msgids(uids=None, rm=False, con=None):
     if uids:
-        mids = get_msgids()
+        mids = data_msgids.get()
     else:
         uids = '1:*'
         mids = {}
@@ -157,35 +184,13 @@ def save_msgids(uids=None, rm=False, con=None):
             if len(uids) > 1:
                 uids = sorted(uids, key=lambda i: int(i))
             mids[mid] = uids
-    con.setmetadata(SRC, 'msgids', json.dumps(mids))
-    get_msgids.cache_clear()
-
-
-@fn_cache
-@fn_time
-@using(None)
-def get_msgids(con=None):
-    res = con.getmetadata(SRC, 'msgids')
-    if len(res) == 1:
-        return {}
-
-    return json.loads(res[0][1].decode())
-
-
-@fn_time
-@using(None)
-def get_links(con=None):
-    res = con.getmetadata(SRC, 'links')
-    if len(res) == 1:
-        return []
-
-    return json.loads(res[0][1].decode())
+    return {'data': mids}
 
 
 @fn_time
 @using()
-@user_lock('links')
-def link_threads(uids, unlink=False, con=None):
+@metadata('links', lambda: [])
+def data_links(uids, unlink=False, con=None):
     thrids, thrs = get_threads(con=con)
     all_uids = sum((thrs[thrids[uid]] for uid in uids), [])
 
@@ -196,23 +201,30 @@ def link_threads(uids, unlink=False, con=None):
         mids.append(meta['msgid'])
 
     msgids_set = set(mids)
-    links = get_links(con=con)
+    links = data_links.get()
     links = [link for link in links if not msgids_set.intersection(link)]
     if not unlink:
         links.append(mids)
-    con.setmetadata(SRC, 'links', json.dumps(links))
-    update_threads(con, uids)
-    return all_uids
+
+    return {
+        'data': links,
+        'return': all_uids,
+        'post': lambda: update_threads(con, all_uids),
+    }
 
 
-@fn_time
+def link_threads(uids):
+    return data_links(uids)
+
+
 def unlink_threads(uids):
-    return link_threads(uids, unlink=True)
+    return data_links(uids, unlink=True)
 
 
 @fn_time
 @using()
-def save_addrs(uids=None, con=None):
+@metadata('addresses', lambda: ({}, {}))
+def data_addrs(uids=None, con=None):
     def fill(store, meta, fields):
         addrs = (meta[i] for i in fields if meta.get(i))
         addrs = sum(([a] if isinstance(a, dict) else a for a in addrs), [])
@@ -225,7 +237,7 @@ def save_addrs(uids=None, con=None):
                 store[a]['time'] = meta['date']
 
     if uids:
-        addrs_from, addrs_to = get_addrs()
+        addrs_from, addrs_to = data_addrs.get()
     else:
         uids = '1:*'
         addrs_from, addrs_to = {}, {}
@@ -238,25 +250,13 @@ def save_addrs(uids=None, con=None):
         if {'#sent', '\\Draft'}.intersection(flags.split()):
             fill(addrs_from, meta, ('from',))
 
-    data = json.dumps([addrs_from, addrs_to])
-    con.setmetadata(SRC, 'addresses', data)
-
-
-@using(None)
-def get_addrs(con=None):
-    res = con.getmetadata(SRC, 'addresses')
-    if len(res) == 1:
-        return {}, {}
-
-    data = res[0][1].decode()
-    addrs_from, addrs_to = json.loads(data)
-    return addrs_from, addrs_to
+    return {'data': [addrs_from, addrs_to]}
 
 
 @using(SRC)
 def parse_msgs(uids, con=None):
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
-    mids = get_msgids()
+    mids = data_msgids.get()
 
     def msgs():
         for i in range(0, len(res), 2):
@@ -311,6 +311,8 @@ def parse(criteria=None, **opts):
             log.info('## deleting %s from %r', puids, ALL)
             con.store(puids, '+FLAGS.SILENT', '\\Deleted')
             con.expunge()
+            data_uidpairs()
+            data_addrs()
 
     con.logout()
     uids = imap.Uids(uids, **opts)
@@ -320,9 +322,9 @@ def parse(criteria=None, **opts):
 
     with client(ALL) as con:
         con.setmetadata(ALL, 'uidnext', str(uidnext))
-        save_uid_pairs(puids)
-        save_addrs(puids)
-        save_msgids()
+        data_uidpairs(puids)
+        data_addrs(puids)
+        data_msgids()
         update_threads(con, 'UID %s' % uids.str)
 
 
@@ -330,6 +332,7 @@ def parse(criteria=None, **opts):
 @user_lock('threads')
 def update_threads(con, criteria=None):
     con.select(SRC)
+    # TODO: think about optimisation when criteria is partial
     # criteria = criteria or 'ALL'
     criteria = 'ALL'
     res = con.search(criteria)
@@ -349,10 +352,10 @@ def update_threads(con, criteria=None):
 
     uids = set(orig_thrs.all_uids)
 
-    mids = get_msgids(con=con)
+    mids = data_msgids.get()
     all_links = []
     linked_uids = set()
-    for link in get_links(con=con):
+    for link in data_links.get():
         thrids = sum((mids[mid] for mid in link), [])
         thrids = pair_origin_uids(thrids)
         if not uids.intersection(thrids):
@@ -504,7 +507,7 @@ def sync_flags(con=None, timeout=None):
             return
 
         actions = {}
-        _, parsed = uid_pairs()
+        _, parsed = data_uidpairs.get()
         pids = pair_origin_uids(src_flags)
         res = con_all.fetch(pids, '(UID FLAGS)')
         for line in res:
@@ -736,7 +739,7 @@ def tags_info(con=None):
 @fn_time
 @using(None)
 def del_msg(uid, con=None):
-    save_msgids([uid], rm=True)
+    data_msgids([uid], rm=True)
     pid = pair_origin_uids([uid])[0]
     for box, uid in ((SRC, uid), (ALL, pid)):
         con.select(box, readonly=False)
@@ -749,7 +752,7 @@ def del_msg(uid, con=None):
 @using(None, readonly=False)
 def new_msg(msg, flags, no_parse=False, con=None):
     uid = con.append(SRC, flags, None, msg.as_bytes())
-    save_msgids([uid])
+    data_msgids([uid])
     if no_parse:
         return uid, None
     parse()

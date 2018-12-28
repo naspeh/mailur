@@ -71,9 +71,9 @@ def process(args):
     elif args['clean-flags']:
         local.clean_flags()
     elif args['update-metadata']:
-        local.save_addrs()
-        local.save_msgids()
-        local.save_uid_pairs()
+        local.data_addrs()
+        local.data_msgids()
+        local.data_uidpairs()
     elif args['threads']:
         with local.client() as con:
             local.update_threads(con, criteria=args.get('<criteria>'))

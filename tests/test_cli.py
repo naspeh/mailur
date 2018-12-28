@@ -20,9 +20,9 @@ def test_general(gm_client, login, msgs, patch, call):
 
     with patch('mailur.cli.local') as m:
         cli.main('update-metadata %s' % login.user1)
-        assert m.save_addrs.called
-        assert m.save_msgids.called
-        assert m.save_uid_pairs.called
+        assert m.data_addrs.called
+        assert m.data_msgids.called
+        assert m.data_uidpairs.called
 
     with patch('mailur.cli.gmail.fetch_folder') as m:
         cli.main('gmail %s' % login.user1)

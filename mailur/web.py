@@ -335,7 +335,6 @@ def editor():
     oid, pid = local.new_msg(msg, draft['flags'], no_parse=True)
     local.del_msg(draft['origin_uid'])
     local.parse()
-    local.save_msgids()
     pid = local.pair_origin_uids([oid])[0]
     return {'uid': pid, 'url_send': app.get_url('send', uid=oid)}
 
@@ -345,7 +344,7 @@ def editor():
 def reply(uid=None):
     forward = uid and request.query.get('forward')
     draft_id = message.gen_draftid()
-    addrs, _ = local.get_addrs()
+    addrs, _ = local.data_addrs.get()
     addr = {}
     if addrs:
         addr = sorted(addrs.values(), key=lambda i: i['time'])[-1]
@@ -513,9 +512,9 @@ def avatars():
 
 @app.get('/refresh/metadata')
 def refresh_metadata():
-    local.save_addrs()
-    local.save_msgids()
-    local.save_uid_pairs()
+    local.data_addrs()
+    local.data_msgids()
+    local.data_uidpairs()
     return 'Done.'
 
 
@@ -627,7 +626,7 @@ def parse_query(q):
             opts['thread'] = True
             mid = info['draft_val']
             opts['draft'] = mid
-            mids = local.get_msgids()
+            mids = local.data_msgids.get()
             uid = mids.get(mid)
             if uid:
                 uid = local.pair_origin_uids(uid)[0]

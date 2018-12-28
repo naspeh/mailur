@@ -60,6 +60,15 @@ logging.config.dictConfig({
 })
 
 
+def fn_name(func):
+    name = getattr(func, 'name', None)
+    if not name:
+        name = getattr(func, '__name__', None)
+    if not name:
+        name = str(func)
+    return name
+
+
 def fn_desc(func, *a, **kw):
     args = ', '.join(
         [repr(i) for i in a] +
@@ -68,12 +77,7 @@ def fn_desc(func, *a, **kw):
     maxlen = 80
     if len(args) > maxlen:
         args = '%s...' % args[:maxlen]
-    name = getattr(func, 'name', None)
-    if not name:
-        name = getattr(func, '__name__', None)
-    if not name:
-        name = str(func)
-    return '%s(%s)' % (name, args)
+    return '%s(%s)' % (fn_name(func), args)
 
 
 def fn_time(func, desc=None):
@@ -100,17 +104,17 @@ def fn_time(func, desc=None):
 
 def fn_cache(fn):
     def get_cache():
+        key = fn_name(fn)
         cache = user_cache()
-        cache.setdefault(fn, {})
-        return cache[fn]
+        cache.setdefault(key, {})
+        return cache[key]
 
     @ft.wraps(fn)
     def inner(*a, **kw):
         cache = get_cache()
         key = a, tuple((k, kw[k]) for k in sorted(kw))
         if key not in cache:
-            res = fn(*a, **kw)
-            cache[key] = res
+            cache[key] = fn(*a, **kw)
         return cache[key]
 
     inner.cache_clear = lambda: get_cache().clear()

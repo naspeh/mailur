@@ -224,7 +224,7 @@ def fetch_folder(tag='\\All', *, box=None, **opts):
     if len(uids):
         uids = imap.Uids(uids, **opts)
         uids.call_async(fetch_uids, uids, tag, box)
-        local.save_msgids()
+        local.data_msgids()
 
     with local.client(None) as lm:
         lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))

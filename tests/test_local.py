@@ -1,7 +1,7 @@
 from mailur import local
 
 
-def test_uid_pairs(gm_client, msgs, patch):
+def test_uidpairs(gm_client, msgs, patch):
     gm_client.add_emails([{}, {}], parse=False)
     assert ['1', '2'] == [i['uid'] for i in msgs(local.SRC)]
 
@@ -9,19 +9,25 @@ def test_uid_pairs(gm_client, msgs, patch):
     assert local.pair_parsed_uids(['1', '2']) == ()
 
     local.parse()
-    assert local.uid_pairs() == ({'1': '1', '2': '2'}, {'1': '1', '2': '2'})
+    assert local.data_uidpairs() == [
+        {'1': '1', '2': '2'}, {'1': '1', '2': '2'}
+    ]
     assert local.pair_origin_uids(['1', '2']) == ('1', '2')
     assert local.pair_parsed_uids(['1', '2']) == ('1', '2')
 
     local.parse('uid 1')
     assert ['2', '3'] == [i['uid'] for i in msgs()]
-    assert local.uid_pairs() == ({'1': '3', '2': '2'}, {'3': '1', '2': '2'})
+    assert local.data_uidpairs() == [
+        {'1': '3', '2': '2'}, {'3': '1', '2': '2'}
+    ]
     assert local.pair_origin_uids(['1', '2']) == ('3', '2')
     assert local.pair_parsed_uids(['2', '3']) == ('2', '1')
 
     local.parse('all')
     assert ['4', '5'] == [i['uid'] for i in msgs()]
-    assert local.uid_pairs() == ({'1': '4', '2': '5'}, {'4': '1', '5': '2'})
+    assert local.data_uidpairs() == [
+        {'1': '4', '2': '5'}, {'4': '1', '5': '2'}
+    ]
     assert local.pair_origin_uids(['1', '2']) == ('4', '5')
     assert local.pair_parsed_uids(['4', '5']) == ('1', '2')
     assert local.pair_origin_uids(['2']) == ('5',)
@@ -29,11 +35,11 @@ def test_uid_pairs(gm_client, msgs, patch):
 
     with patch('imaplib.IMAP4.uid') as m:
         m.return_value = 'OK', []
-        local.save_uid_pairs('4')
+        local.data_uidpairs('4')
         assert m.called
         assert m.call_args[0][1] == '4'
 
-    with patch('mailur.local.save_uid_pairs', wraps=local.save_uid_pairs) as m:
+    with patch('mailur.local.data_uidpairs', wraps=local.data_uidpairs) as m:
         local.parse('uid 1')
         assert m.called
         assert m.call_args[0][0] == '6'
@@ -258,7 +264,7 @@ def test_msgids(gm_client, msgs, some, load_file, latest):
     res = msgs(local.SRC)[-2:]
     assert [i['uid'] for i in res] == ['9', '10']
     assert [i['body']['message-id'] for i in res] == ['<42@mlr>', '<42@mlr>']
-    assert local.get_msgids() == {
+    assert local.data_msgids.get() == {
         '<zero@mlr>': ['1', '2', '3', '4', '5', '6', '7', '8'],
         '<42@mlr>': ['9', '10']
     }
@@ -289,7 +295,7 @@ def test_msgids(gm_client, msgs, some, load_file, latest):
     msg = latest()
     assert msg['body']['message-id'] == '<with-no-space-in-msgid@test>'
 
-    assert local.get_msgids() == {
+    assert local.data_msgids.get() == {
         '<zero@mlr>': ['1', '2', '3', '4', '5', '6', '7', '8'],
         '<42@mlr>': ['9', '10'],
         '<mailur@noid>': ['11'],
@@ -302,8 +308,8 @@ def test_msgids(gm_client, msgs, some, load_file, latest):
     assert msg['body_full']['message-id'] == '<109@mlr>'
     assert msg['meta']['parent'] == '<42@mlr>'
     assert msg['meta']['msgid'] == '<109@mlr>'
-    assert '<109@mlr>' in local.get_msgids()
-    assert local.get_msgids()['<109@mlr>'] == ['13']
+    assert '<109@mlr>' in local.data_msgids.get()
+    assert local.data_msgids.get()['<109@mlr>'] == ['13']
 
     gm_client.add_emails([{'refs': '<42@mlr>  <109@MLR>'}])
     msg = latest(parsed=True)
