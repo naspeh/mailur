@@ -50,7 +50,7 @@ def process(args):
         'threads': int(args.get('-t')),
     }
     if args['gmail'] and args['set']:
-        gmail.save_credentials(args['<username>'], args['<password>'])
+        gmail.data_credentials(args['<username>'], args['<password>'])
     elif args['gmail']:
         select_opts = dict(tag=args['--tag'], box=args['--box'])
         fetch_opts = dict(opts, **select_opts)
@@ -71,12 +71,11 @@ def process(args):
     elif args['clean-flags']:
         local.clean_flags()
     elif args['update-metadata']:
-        local.data_addrs()
+        local.data_addresses()
         local.data_msgids()
         local.data_uidpairs()
     elif args['threads']:
-        with local.client() as con:
-            local.update_threads(con, criteria=args.get('<criteria>'))
+        local.data_threads(criteria=args.get('<criteria>'))
     elif args['icons']:
         icons()
     elif args['web']:
@@ -113,9 +112,9 @@ def sync(timeout=1200):
                 log.warn(e)
 
         try:
-            gmail.get_credentials()
-        except ValueError:
-            log.info('## no credentials for gmail')
+            gmail.data_credentials.get()
+        except ValueError as e:
+            log.info('## %s' % e)
             return
 
         handler()

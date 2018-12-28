@@ -56,6 +56,8 @@ def metadata(name, default, *, cache=False):
     def inner(*a, con=None, **kw):
         clear_cache()
         val = inner.fn(*a, con=con, **kw)
+        if val.get('skip'):
+            return get()
         con.setmetadata(SRC, name, json.dumps(val['data']))
         clear_cache()
         if val.get('post'):
@@ -66,6 +68,8 @@ def metadata(name, default, *, cache=False):
     def get(con=None):
         res = con.getmetadata(SRC, name)
         if len(res) == 1:
+            if isinstance(default, Exception):
+                raise default
             return default()
         return json.loads(res[0][1].decode())
 
@@ -88,13 +92,10 @@ def metadata(name, default, *, cache=False):
     return wrapper
 
 
-@fn_cache
 @using(None)
-def saved_tags(con=None):
-    res = con.getmetadata(SRC, 'tags')
-    if len(res) == 1:
-        return {}
-    return json.loads(res[0][1].decode())
+@metadata('tags', lambda: {}, cache=True)
+def data_tags(tags, con=None):
+    return {'data': tags}
 
 
 def get_tag(name):
@@ -103,16 +104,14 @@ def get_tag(name):
     else:
         tag = '#' + hashlib.md5(name.lower().encode()).hexdigest()[:8]
 
-    tags = saved_tags()
+    tags = data_tags.get()
     info = tags.get(tag)
     if info is None:
         info = {'name': name}
         if name != tag:
             tags[tag] = info
-            with client(None) as con:
-                con.setmetadata(SRC, 'tags', json.dumps(tags))
+            data_tags(tags)
             log.info('## new tag %s: %r', tag, name)
-            saved_tags.cache_clear()
     info.update(id=tag)
     return info
 
@@ -191,7 +190,7 @@ def data_msgids(uids=None, rm=False, con=None):
 @using()
 @metadata('links', lambda: [])
 def data_links(uids, unlink=False, con=None):
-    thrids, thrs = get_threads(con=con)
+    thrids, thrs = data_threads.get()
     all_uids = sum((thrs[thrids[uid]] for uid in uids), [])
 
     res = con.fetch(all_uids, 'BODY.PEEK[1]')
@@ -209,7 +208,7 @@ def data_links(uids, unlink=False, con=None):
     return {
         'data': links,
         'return': all_uids,
-        'post': lambda: update_threads(con, all_uids),
+        'post': lambda: data_threads(all_uids),
     }
 
 
@@ -224,7 +223,7 @@ def unlink_threads(uids):
 @fn_time
 @using()
 @metadata('addresses', lambda: ({}, {}))
-def data_addrs(uids=None, con=None):
+def data_addresses(uids=None, con=None):
     def fill(store, meta, fields):
         addrs = (meta[i] for i in fields if meta.get(i))
         addrs = sum(([a] if isinstance(a, dict) else a for a in addrs), [])
@@ -237,7 +236,7 @@ def data_addrs(uids=None, con=None):
                 store[a]['time'] = meta['date']
 
     if uids:
-        addrs_from, addrs_to = data_addrs.get()
+        addrs_from, addrs_to = data_addresses.get()
     else:
         uids = '1:*'
         addrs_from, addrs_to = {}, {}
@@ -312,7 +311,7 @@ def parse(criteria=None, **opts):
             con.store(puids, '+FLAGS.SILENT', '\\Deleted')
             con.expunge()
             data_uidpairs()
-            data_addrs()
+            data_addresses()
 
     con.logout()
     uids = imap.Uids(uids, **opts)
@@ -323,14 +322,14 @@ def parse(criteria=None, **opts):
     with client(ALL) as con:
         con.setmetadata(ALL, 'uidnext', str(uidnext))
         data_uidpairs(puids)
-        data_addrs(puids)
+        data_addresses(puids)
         data_msgids()
-        update_threads(con, 'UID %s' % uids.str)
+        data_threads('UID %s' % uids.str)
 
 
-@fn_time
-@user_lock('threads')
-def update_threads(con, criteria=None):
+@using(None)
+@metadata('threads', lambda: [{}, {}])
+def data_threads(criteria=None, con=None):
     con.select(SRC)
     # TODO: think about optimisation when criteria is partial
     # criteria = criteria or 'ALL'
@@ -339,7 +338,7 @@ def update_threads(con, criteria=None):
     src_uids = res[0].decode().split()
     if not src_uids:
         log.info('## all threads are updated already')
-        return
+        return {'skip': True}
 
     con.select(ALL)
     uids = pair_origin_uids(src_uids)
@@ -348,7 +347,7 @@ def update_threads(con, criteria=None):
     orig_thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
     if not orig_thrs:
         log.info('## no threads are updated')
-        return
+        return {'skip': True}
 
     uids = set(orig_thrs.all_uids)
 
@@ -397,18 +396,8 @@ def update_threads(con, criteria=None):
             elif uid in thrs:
                 del thrs[uid]
 
-    con.setmetadata(SRC, 'threads', json.dumps([thrids, thrs]))
     log.info('## updated %s threads', len(thrs))
-
-
-@fn_time
-@using(None)
-def get_threads(con=None):
-    res = con.getmetadata(SRC, 'threads')
-    if len(res) == 1:
-        return [{}, {}]
-
-    return json.loads(res[0][1].decode())
+    return {'data': [thrids, thrs]}
 
 
 @fn_time
@@ -439,7 +428,7 @@ def clean_flags(con=None):
     uids = res[0].decode().split()
     con.store(uids, '+FLAGS.SILENT', '#link \\Seen')
     sync_flags_to_all()
-    update_threads(con)
+    data_threads()
 
 
 @fn_time
@@ -630,7 +619,7 @@ def search_thrs(query, con=None):
     res = con.search(query)
     uids = res[0].decode().split()
     if uids:
-        thrids, thrs = get_threads()
+        thrids, thrs = data_threads.get()
         uids = [thrids[uid] for uid in uids]
         res = con.sort('(REVERSE DATE)', 'UID %s' % ','.join(uids))
         uids = res[0].decode().split()
@@ -649,7 +638,7 @@ def thrs_info(uids, tags=None, con=None):
     elif '#spam' in tags:
         special_tag = '#spam'
 
-    thrids, thrs = get_threads(con=con)
+    thrids, thrs = data_threads.get()
     uids = [thrids[uid] for uid in uids]
     all_uids = sum((thrs[uid] for uid in uids), [])
 
@@ -699,7 +688,6 @@ def thrs_info(uids, tags=None, con=None):
 @fn_time
 @using()
 def tags_info(con=None):
-    saved_tags.cache_clear()
     unread = {}
     hidden = {}
     res = con.search('UNSEEN UNKEYWORD #link')
@@ -745,7 +733,7 @@ def del_msg(uid, con=None):
         con.select(box, readonly=False)
         con.store([uid], '+FLAGS.SILENT', '\\Deleted')
         con.expunge()
-    update_threads(con)
+    data_threads()
 
 
 @fn_time

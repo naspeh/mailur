@@ -29,12 +29,12 @@ def test_client(some, patch, call):
 
 def test_credentials():
     name, pwd = 'test', 'test'
-    gmail.save_credentials(name, pwd)
-    assert gmail.get_credentials() == (name, pwd)
+    gmail.data_credentials(name, pwd)
+    assert gmail.data_credentials.get() == [name, pwd]
 
     name, pwd = 'test@test.com', 'test'
-    gmail.save_credentials(name, pwd)
-    assert gmail.get_credentials() == (name, pwd)
+    gmail.data_credentials(name, pwd)
+    assert gmail.data_credentials.get() == [name, pwd]
 
 
 def test_fetch_and_parse(gm_client, some):
@@ -98,19 +98,19 @@ def test_origin_msg(gm_client, latest, login):
     ], parse=False)
     flags = latest(local.SRC)['flags']
     assert r'\Flagged #inbox #sent label' == flags
-    assert local.saved_tags() == {}
+    assert local.data_tags.get() == {}
 
     gm_client.add_emails([{'labels': r'test/#-.,:;!?/'}], parse=False)
     flags = latest(local.SRC)['flags']
     assert r'test/#-.,:;!?/' == flags
-    assert local.saved_tags() == {}
+    assert local.data_tags.get() == {}
 
     gm_client.add_emails([
         {'labels': 'label "another label" (label)'}
     ], parse=False)
     flags = latest(local.SRC)['flags']
     assert 'label #12ea23fc #40602c03' == flags
-    assert local.saved_tags() == {
+    assert local.data_tags.get() == {
         '#12ea23fc': {'name': 'another label'},
         '#40602c03': {'name': '(label)'},
     }
@@ -122,7 +122,7 @@ def test_origin_msg(gm_client, latest, login):
     ], parse=False)
     flags = latest(local.SRC)['flags']
     assert '#sent #a058c658' == flags
-    assert local.saved_tags() == {
+    assert local.data_tags.get() == {
         '#12ea23fc': {'name': 'another label'},
         '#40602c03': {'name': '(label)'},
         '#a058c658': {'name': 'test(тест)'},

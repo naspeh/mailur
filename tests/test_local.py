@@ -59,53 +59,52 @@ def test_uidpairs(gm_client, msgs, patch):
         assert m.call_args[0][0] == '9'
 
 
-def test_update_threads(gm_client):
+def test_data_threads(gm_client):
     gm_client.add_emails([{'subj': 'new subj'}])
-    assert local.get_threads()[1] == {'1': ['1']}
+    assert local.data_threads.get()[1] == {'1': ['1']}
     assert local.search_thrs('all') == ['1']
 
     local.parse('all')
-    assert local.get_threads()[1] == {'2': ['2']}
+    assert local.data_threads.get()[1] == {'2': ['2']}
     assert local.search_thrs('all') == ['2']
 
     gm_client.add_emails([{'subj': 'new subj'}])
-    assert local.get_threads()[1] == {'3': ['2', '3']}
+    assert local.data_threads.get()[1] == {'3': ['2', '3']}
     assert local.search_thrs('all') == ['3']
 
     gm_client.add_emails([{'in_reply_to': '<101@mlr>'}])
-    assert local.get_threads()[1] == {'4': ['2', '3', '4']}
+    assert local.data_threads.get()[1] == {'4': ['2', '3', '4']}
     assert local.search_thrs('all') == ['4']
 
     gm_client.add_emails([{'refs': '<101@mlr> <102@mlr>'}])
-    assert local.get_threads()[1] == {'5': ['2', '3', '4', '5']}
+    assert local.data_threads.get()[1] == {'5': ['2', '3', '4', '5']}
     assert local.search_thrs('all') == ['5']
 
     local.parse('all')
-    assert local.get_threads()[1] == {'9': ['6', '7', '8', '9']}
+    assert local.data_threads.get()[1] == {'9': ['6', '7', '8', '9']}
     assert local.search_thrs('all') == ['9']
 
     local.parse('uid *')
-    assert local.get_threads()[1] == {'10': ['6', '7', '8', '10']}
+    assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    con = local.client()
-    local.update_threads(con, 'all')
-    assert local.get_threads()[1] == {'10': ['6', '7', '8', '10']}
+    local.data_threads('all')
+    assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.update_threads(con, 'UID 1')
-    assert local.get_threads()[1] == {'10': ['6', '7', '8', '10']}
+    local.data_threads('UID 1')
+    assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.update_threads(con)
-    assert local.get_threads()[1] == {'10': ['6', '7', '8', '10']}
+    local.data_threads()
+    assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
     gm_client.add_emails([
         {'refs': '<non-exist@mlr>'},
         {'refs': '<non-exist@mlr> <101@mlr>'}
     ])
-    assert local.get_threads()[1] == {
+    assert local.data_threads.get()[1] == {
         '11': ['11'],
         '12': ['6', '7', '8', '10', '12']
     }
@@ -113,7 +112,7 @@ def test_update_threads(gm_client):
 
     gm_client.add_emails([{'labels': 't1'}, {'labels': 't2'}], parse=False)
     local.parse('UID 6:*')
-    assert local.get_threads()[1] == {
+    assert local.data_threads.get()[1] == {
         '11': ['11'],
         '13': ['6', '7', '8', '10', '13'],
         '14': ['14'],
@@ -121,8 +120,8 @@ def test_update_threads(gm_client):
     }
     assert local.search_thrs('all') == ['15', '14', '13', '11']
 
-    local.update_threads(con, 'UID *')
-    assert local.get_threads()[1] == {
+    local.data_threads('UID *')
+    assert local.data_threads.get()[1] == {
         '11': ['11'],
         '13': ['6', '7', '8', '10', '13'],
         '14': ['14'],
@@ -137,12 +136,12 @@ def test_link_threads_part1(gm_client, msgs):
         '<9a500e323280b62c3476c27b9d23274a@mailur.link>',
         '<1ff2e08acb99d6af71ea8ccf5b0d3358@mailur.link>'
     ]
-    assert local.get_threads()[1] == {'2': ['2'], '1': ['1']}
+    assert local.data_threads.get()[1] == {'2': ['2'], '1': ['1']}
     res = msgs()
     assert [i['body']['references'] for i in res] == refs
 
     local.link_threads(['1', '2'])
-    assert local.get_threads()[1] == {'2': ['1', '2']}
+    assert local.data_threads.get()[1] == {'2': ['1', '2']}
     res = msgs(local.SRC)
     assert [i['body']['references'] for i in res] == [None, None]
 
@@ -150,17 +149,17 @@ def test_link_threads_part1(gm_client, msgs):
     assert [i['body']['references'] for i in res] == refs
 
     local.parse('all')
-    assert local.get_threads()[1] == {'4': ['3', '4']}
+    assert local.data_threads.get()[1] == {'4': ['3', '4']}
     res = msgs()
     assert [i['body']['references'] for i in res] == refs
 
     gm_client.add_emails([{}])
     refs += ['<ee1464274aa3795844800274f6a7dcdf@mailur.link>']
     assert local.search_thrs('all') == ['5', '4']
-    assert local.get_threads()[1] == {'4': ['3', '4'], '5': ['5']}
+    assert local.data_threads.get()[1] == {'4': ['3', '4'], '5': ['5']}
     local.link_threads(['4', '5'])
     assert local.search_thrs('all') == ['5']
-    assert local.get_threads()[1] == {'5': ['3', '4', '5']}
+    assert local.data_threads.get()[1] == {'5': ['3', '4', '5']}
     res = msgs(local.SRC)
     assert [i['body']['references'] for i in res] == [None, None, None]
     res = msgs()
@@ -169,7 +168,7 @@ def test_link_threads_part1(gm_client, msgs):
     gm_client.add_emails([{'refs': '<101@mlr>'}])
     refs += ['<5ae1f76f370a3d4708a10285fcf18cbc@mailur.link> <101@mlr>']
     assert local.search_thrs('all') == ['6']
-    assert local.get_threads()[1] == {'6': ['3', '4', '5', '6']}
+    assert local.data_threads.get()[1] == {'6': ['3', '4', '5', '6']}
     res = msgs(local.SRC)
     assert [i['body']['references'] for i in res] == [
         None, None, None, '<101@mlr>'
@@ -185,7 +184,7 @@ def test_link_threads_part2(gm_client, msgs):
         {}, {'refs': '<101@mlr>'}, {}, {'refs': '<103@mlr>'}]
     )
     assert local.search_thrs('all') == ['4', '2']
-    assert local.get_threads()[1] == {'2': ['1', '2'], '4': ['3', '4']}
+    assert local.data_threads.get()[1] == {'2': ['1', '2'], '4': ['3', '4']}
     refs = [
         '<9a500e323280b62c3476c27b9d23274a@mailur.link>',
         '<1ff2e08acb99d6af71ea8ccf5b0d3358@mailur.link> <101@mlr>',
@@ -201,7 +200,7 @@ def test_link_threads_part2(gm_client, msgs):
 
     local.link_threads(['1', '3'])
     assert local.search_thrs('all') == ['4']
-    assert local.get_threads()[1] == {'4': ['1', '2', '3', '4']}
+    assert local.data_threads.get()[1] == {'4': ['1', '2', '3', '4']}
     res = msgs()
     assert [i['body']['references'] for i in res] == refs
 
@@ -210,7 +209,7 @@ def test_link_threads_part2(gm_client, msgs):
         '<dffb90273b253002d4357a0c75e05e73@mailur.link> <none@mlr> <102@mlr>'
     )
     assert local.search_thrs('all') == ['5']
-    assert local.get_threads()[1] == {'5': ['1', '2', '3', '4', '5']}
+    assert local.data_threads.get()[1] == {'5': ['1', '2', '3', '4', '5']}
     res = msgs(local.SRC)
     assert [i['body']['references'] for i in res] == [
         None, '<101@mlr>', None, '<103@mlr>', '<none@mlr> <102@mlr>'
@@ -235,7 +234,9 @@ def test_link_threads_part3(gm_client, msgs):
         '<5ae1f76f370a3d4708a10285fcf18cbc@mailur.link> <none@mlr> <102@mlr>'
     ]
     assert local.search_thrs('all') == ['4', '3', '1']
-    assert local.get_threads()[1] == {'1': ['1'], '3': ['3'], '4': ['2', '4']}
+    assert local.data_threads.get()[1] == {
+        '1': ['1'], '3': ['3'], '4': ['2', '4']
+    }
     res = msgs(local.SRC)
     assert [i['body']['references'] for i in res] == [
         None,
@@ -248,7 +249,7 @@ def test_link_threads_part3(gm_client, msgs):
 
     local.link_threads(['1', '3', '4'])
     assert local.search_thrs('all') == ['4']
-    assert local.get_threads()[1] == {'4': ['1', '2', '3', '4']}
+    assert local.data_threads.get()[1] == {'4': ['1', '2', '3', '4']}
     res = msgs()
     assert [i['body']['references'] for i in res] == refs
 
@@ -338,29 +339,29 @@ def test_thrid_header(gm_client, msgs):
         ]).format(num=num, refs=refs).encode()
     gm_client.add_emails([{'raw': raw(i)} for i in range(3)])
     assert local.search_thrs('all') == ['3']
-    assert local.get_threads()[1] == {'3': ['1', '2', '3']}
+    assert local.data_threads.get()[1] == {'3': ['1', '2', '3']}
     assert [i[0] for i in local.thrs_info(['1'])] == ['3']
 
     gm_client.add_emails([{'refs': '<thrid-01@mlr> <thrid-04@mlr>'}])
     assert local.search_thrs('all') == ['4']
-    assert local.get_threads()[1] == {'4': ['1', '2', '3', '4']}
+    assert local.data_threads.get()[1] == {'4': ['1', '2', '3', '4']}
     assert [i[0] for i in local.thrs_info(['1'])] == ['4']
 
     gm_client.add_emails([{'raw': raw(4)}])
     assert local.search_thrs('all') == ['4']
-    assert local.get_threads()[1] == {'4': ['1', '2', '3', '5', '4']}
+    assert local.data_threads.get()[1] == {'4': ['1', '2', '3', '5', '4']}
     assert [i[0] for i in local.thrs_info(['1'])] == ['4']
 
     gm_client.add_emails([{'raw': raw(5, '<thrid-03@mlr> <thrid-06@mlr>')}])
     assert local.search_thrs('all') == ['4']
-    assert local.get_threads()[1] == {'4': ['1', '2', '3', '5', '6', '4']}
+    assert local.data_threads.get()[1] == {'4': ['1', '2', '3', '5', '6', '4']}
     assert [i[0] for i in local.thrs_info(['1'])] == ['4']
 
     gm_client.add_emails([
         {'from': 't@t.com', 'to': 'Test <t@t.com>', 'subj': 'Same aubject'}
     ] * 2)
     assert local.search_thrs('all') == ['8', '4']
-    assert local.get_threads()[1] == {
+    assert local.data_threads.get()[1] == {
         '4': ['1', '2', '3', '5', '6', '4'],
         '8': ['7', '8'],
     }

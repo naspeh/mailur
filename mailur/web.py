@@ -344,7 +344,7 @@ def editor():
 def reply(uid=None):
     forward = uid and request.query.get('forward')
     draft_id = message.gen_draftid()
-    addrs, _ = local.data_addrs.get()
+    addrs, _ = local.data_addresses.get()
     addr = {}
     if addrs:
         addr = sorted(addrs.values(), key=lambda i: i['time'])[-1]
@@ -401,7 +401,7 @@ def send(uid):
         response.status = 400
         return {'errors': [str(e)]}
 
-    login, pwd = gmail.get_credentials()
+    login, pwd = gmail.data_credentials.get()
     con = smtplib.SMTP('smtp.gmail.com', 587)
     con.ehlo()
     con.starttls()
@@ -512,7 +512,7 @@ def avatars():
 
 @app.get('/refresh/metadata')
 def refresh_metadata():
-    local.data_addrs()
+    local.data_addresses()
     local.data_msgids()
     local.data_uidpairs()
     return 'Done.'
@@ -699,7 +699,7 @@ def parse_query(q):
 
     uid = opts.get('uid')
     if uid:
-        thrids, thrs = local.get_threads()
+        thrids, thrs = local.data_threads.get()
         thrid = thrids.get(uid)
         if thrid:
             uids = thrs[thrids[thrid]]

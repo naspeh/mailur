@@ -1,7 +1,6 @@
 import email
 import hashlib
 import imaplib
-import json
 import re
 
 from gevent import socket, ssl
@@ -31,7 +30,7 @@ SKIP_DRAFTS = True
 
 class Gmail(imaplib.IMAP4, imap.Conn):
     def __init__(self):
-        self.username, self.password = get_credentials()
+        self.username, self.password = data_credentials.get()
         self.defaults()
         super().__init__('imap.gmail.com', imaplib.IMAP4_SSL_PORT)
 
@@ -62,20 +61,10 @@ def client(tag='\\All', box=None):
     return ctx
 
 
-def save_credentials(username, password):
-    data = json.dumps([username, password])
-    with local.client() as con:
-        con.setmetadata(local.SRC, 'gmail/credentials', data)
-
-
-def get_credentials():
-    with local.client() as con:
-        res = con.getmetadata(local.SRC, 'gmail/credentials')
-        if len(res) == 1:
-            raise ValueError('no credentials for gmail')
-    data = res[0][1].decode()
-    username, password = json.loads(data)
-    return username, password
+@local.using(None)
+@local.metadata('gmail/credentials', ValueError('no credentials for gmail'))
+def data_credentials(username, password, con=None):
+    return {'data': [username, password]}
 
 
 def fetch_uids(uids, tag, box):

@@ -80,8 +80,8 @@ def test_local(gm_client, msgs):
 
 
 def test_cli_idle(gm_client, msgs, login, patch):
-    with patch('mailur.gmail.get_credentials') as m:
-        m.return_value = login.user2, 'user'
+    with patch('mailur.gmail.data_credentials') as m:
+        m.get.return_value = login.user2, 'user'
         spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
         sleep(2)
 

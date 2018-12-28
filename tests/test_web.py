@@ -739,8 +739,8 @@ def test_drafts_part1(gm_client, login, patch, some):
         'url_send': '/send/3',
     }
 
-    with patch('mailur.gmail.get_credentials') as c:
-        c.return_value = ('test', 'test')
+    with patch('mailur.gmail.data_credentials') as c:
+        c.get.return_value = ('test', 'test')
         with patch('mailur.web.smtplib.SMTP'):
             res = web.get('/send/3', status=400).json
     assert res == {'errors': ['"From" and "To" shouldn\'t be empty']}
@@ -794,7 +794,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     res = web.search({'q': 'draft:%s' % draft_id})
     assert res['edit']
     assert res['edit']['files'] == []
-    addrs_from, addrs_to = local.data_addrs.get()
+    addrs_from, addrs_to = local.data_addresses.get()
     assert addrs_from == {
         'a@t.com': {
             'addr': 'a@t.com',
@@ -902,7 +902,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     )
     assert m['body'] == '<p>Тест</p>'
 
-    addrs_from, addrs_to = local.data_addrs.get()
+    addrs_from, addrs_to = local.data_addresses.get()
     assert addrs_from == {
         'a@t.com': {
             'addr': 'a@t.com',
@@ -939,8 +939,8 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         },
     }
 
-    with patch('mailur.gmail.get_credentials') as c:
-        c.return_value = ('test', 'test')
+    with patch('mailur.gmail.data_credentials') as c:
+        c.get.return_value = ('test', 'test')
         with patch('mailur.web.smtplib.SMTP.sendmail') as m:
             with patch('mailur.web.smtplib.SMTP.login'):
                 res = web.get('/send/5', status=200).json
