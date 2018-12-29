@@ -1,3 +1,4 @@
+import datetime as dt
 import email
 import json
 import re
@@ -157,6 +158,7 @@ def gm_client():
             raw = item.get('raw')
             if raw:
                 msg = raw
+                date = gm_client.time + uid
             else:
                 txt = item.get('txt', '42')
                 msg = message.binary(txt)
@@ -190,6 +192,9 @@ def gm_client():
                     msg.add_header('To', to)
 
                 msg = msg.as_bytes()
+
+            arrived = dt.datetime.fromtimestamp(date)
+            arrived = arrived.strftime('%d-%b-%Y %H:%M:%S %z').encode()
             flags = item.get('flags', '').encode()
             labels = item.get('labels', '').encode()
             folder = local.ALL if tag == '\\All' else local.SRC
@@ -204,8 +209,9 @@ def gm_client():
             gm_client.fetch[0][1].extend([
                 (
                     b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '
-                    b'INTERNALDATE "08-Jul-2017 09:08:30 +0000" FLAGS (%s) '
-                    b'BODY[] {%d}' % (gid, gid, labels, uid, flags, len(msg)),
+                    b'INTERNALDATE "%s" FLAGS (%s) '
+                    b'BODY[] {%d}'
+                    % (gid, gid, labels, uid, arrived, flags, len(msg)),
                     msg
                 ),
                 b')'

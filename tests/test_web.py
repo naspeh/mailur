@@ -208,7 +208,7 @@ def test_general(gm_client, load_email, latest, login, some):
         'uids': ['2', '1'],
         'msgs': {
             '1': {
-                'arrived': 1499504910,
+                'arrived': some,
                 'count': 0,
                 'date': some,
                 'errors': [],
@@ -235,7 +235,7 @@ def test_general(gm_client, load_email, latest, login, some):
                 'url_reply': '/reply/1',
             },
             '2': {
-                'arrived': 1499504910,
+                'arrived': some,
                 'count': 0,
                 'date': some,
                 'errors': [],
@@ -275,7 +275,7 @@ def test_general(gm_client, load_email, latest, login, some):
         'uids': ['2'],
         'msgs': {
             '2': {
-                'arrived': 1499504910,
+                'arrived': some,
                 'count': 2,
                 'date': some,
                 'errors': [],

@@ -716,7 +716,7 @@ def parse_query(q):
 
 
 def thread(q, opts, preload=4):
-    uids = local.search_msgs(q, '(DATE)')
+    uids = local.search_msgs(q, '(ARRIVAL)')
     if not uids:
         return {
             'uids': [],
@@ -869,8 +869,8 @@ def wrap_msgs(items, hide_tags=None):
             'query_subject': base_q + query_header('subj', info['subject']),
             'query_msgid': base_q + 'ref:%s' % info['msgid'],
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
-            'time_human': humanize_dt(info['date'], tz=tz),
-            'time_title': format_dt(info['date'], tz=tz),
+            'time_human': humanize_dt(info['arrived'], tz=tz),
+            'time_title': format_dt(info['arrived'], tz=tz),
             'is_unread': '\\Seen' not in flags,
             'is_pinned': '\\Flagged' in flags,
             'is_draft': '\\Draft' in flags,

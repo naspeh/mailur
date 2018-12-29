@@ -1,3 +1,4 @@
+import datetime as dt
 import email
 import functools as ft
 import hashlib
@@ -287,7 +288,7 @@ def parse(criteria=None, **opts):
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
-    res = con.sort('(DATE)', criteria)
+    res = con.sort('(ARRIVAL)', criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
@@ -363,16 +364,17 @@ def data_threads(criteria=None, con=None):
         linked_uids.update(thrids)
 
     msgs = {}
-    res = con.fetch(uids.union(linked_uids), '(FLAGS BODY.PEEK[1])')
-    for i in range(0, len(res), 2):
-        uid, flags = re.search(
-            r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
+    res = con.fetch('1:*', '(INTERNALDATE FLAGS)')
+    for line in res:
+        uid, time, flags = re.search(
+            r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
+            line.decode()
         ).groups()
-        meta = json.loads(res[i][1])
+        arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
+        arrived = int(arrived.timestamp())
         msgs[uid] = {
             'flags': flags.split(),
-            'date': meta['date'],
-            'arrived': meta['arrived'],
+            'arrived': arrived,
         }
     thrs = {}
     thrids = {}
@@ -386,7 +388,7 @@ def data_threads(criteria=None, con=None):
         if len(uids) == 1:
             thrid = uids[0]
         else:
-            uids = sorted(uids, key=lambda i: msgs[i]['date'] or 0)
+            uids = sorted(uids, key=lambda i: msgs[i]['arrived'] or 0)
             thrid = uids[-1]
 
         for uid in uids:
@@ -573,7 +575,7 @@ def fetch_msg(uid, draft=False, con=None):
 
 @fn_time
 @using()
-def search_msgs(query, sort='(REVERSE DATE)', con=None):
+def search_msgs(query, sort='(REVERSE ARRIVAL)', con=None):
     res = con.sort(sort, query)
     uids = res[0].decode().split()
     log.debug('## query: %r; messages: %s', query, len(uids))
@@ -621,7 +623,7 @@ def search_thrs(query, con=None):
     if uids:
         thrids, thrs = data_threads.get()
         uids = [thrids[uid] for uid in uids]
-        res = con.sort('(REVERSE DATE)', 'UID %s' % ','.join(uids))
+        res = con.sort('(REVERSE ARRIVAL)', 'UID %s' % ','.join(uids))
         uids = res[0].decode().split()
     log.debug('## query: %r; threads: %s', query, len(uids))
     return uids

@@ -348,21 +348,21 @@ def test_thrid_header(gm_client, msgs):
     assert [i[0] for i in local.thrs_info(['1'])] == ['4']
 
     gm_client.add_emails([{'raw': raw(4)}])
-    assert local.search_thrs('all') == ['4']
-    assert local.data_threads.get()[1] == {'4': ['1', '2', '3', '5', '4']}
-    assert [i[0] for i in local.thrs_info(['1'])] == ['4']
+    assert local.search_thrs('all') == ['5']
+    assert local.data_threads.get()[1] == {'5': ['1', '2', '3', '4', '5']}
+    assert [i[0] for i in local.thrs_info(['1'])] == ['5']
 
     gm_client.add_emails([{'raw': raw(5, '<thrid-03@mlr> <thrid-06@mlr>')}])
-    assert local.search_thrs('all') == ['4']
-    assert local.data_threads.get()[1] == {'4': ['1', '2', '3', '5', '6', '4']}
-    assert [i[0] for i in local.thrs_info(['1'])] == ['4']
+    assert local.search_thrs('all') == ['6']
+    assert local.data_threads.get()[1] == {'6': ['1', '2', '3', '4', '5', '6']}
+    assert [i[0] for i in local.thrs_info(['1'])] == ['6']
 
     gm_client.add_emails([
         {'from': 't@t.com', 'to': 'Test <t@t.com>', 'subj': 'Same aubject'}
     ] * 2)
-    assert local.search_thrs('all') == ['8', '4']
+    assert local.search_thrs('all') == ['8', '6']
     assert local.data_threads.get()[1] == {
-        '4': ['1', '2', '3', '5', '6', '4'],
+        '6': ['1', '2', '3', '4', '5', '6'],
         '8': ['7', '8'],
     }
     assert [i['body']['X-Thread-ID'] for i in msgs()][-2:] == [
