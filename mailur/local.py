@@ -260,15 +260,13 @@ def parse_msgs(uids, con=None):
 
     def msgs():
         for i in range(0, len(res), 2):
-            m = res[i]
-            uid, time, flags = re.search(
-                r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
-                m[0].decode()
-            ).groups()
+            line, body = res[i]
+            pattern = r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)'
+            uid, time, flags = re.search(pattern, line.decode()).groups()
             flags = flags.split()
             if flags.count('\\Recent'):
                 flags.remove('\\Recent')
-            msg_obj, marks = message.parsed(m[1], uid, time, flags, mids)
+            msg_obj, marks = message.parsed(body, uid, time, flags, mids)
             flags += marks
             msg = msg_obj.as_bytes()
             yield time, ' '.join(flags), msg
@@ -366,10 +364,8 @@ def data_threads(criteria=None, con=None):
     msgs = {}
     res = con.fetch('1:*', '(INTERNALDATE FLAGS)')
     for line in res:
-        uid, time, flags = re.search(
-            r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)',
-            line.decode()
-        ).groups()
+        pattern = r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)'
+        uid, time, flags = re.search(pattern, line.decode()).groups()
         arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
         arrived = int(arrived.timestamp())
         msgs[uid] = {
@@ -502,10 +498,8 @@ def sync_flags(con=None, timeout=None):
         pids = pair_origin_uids(src_flags)
         res = con_all.fetch(pids, '(UID FLAGS)')
         for line in res:
-            uid, flags = (
-                re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode())
-                .groups()
-            )
+            pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
+            uid, flags = re.search(pattern, line.decode()).groups()
             flags = set(flags.split())
             orig_flags = set(src_flags[parsed[uid]].split())
             val = sorted(orig_flags - flags - set(['\\Recent']))
@@ -587,10 +581,8 @@ def search_msgs(query, sort='(REVERSE ARRIVAL)', con=None):
 def msgs_info(uids, con=None):
     res = con.fetch(uids, '(UID FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
-        uid, flags = (
-            re.search(r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode())
-            .groups()
-        )
+        pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
+        uid, flags = re.search(pattern, res[i][0].decode()).groups()
         flags = flags.split()
         yield uid, res[i][1], flags, None
 
@@ -648,9 +640,8 @@ def thrs_info(uids, tags=None, con=None):
     all_msgs = {}
     res = con.fetch(all_uids, '(FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
-        uid, flags = re.search(
-            r'UID (\d+) FLAGS \(([^)]*)\)', res[i][0].decode()
-        ).groups()
+        pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
+        uid, flags = re.search(pattern, res[i][0].decode()).groups()
         all_flags[uid] = flags.split()
         all_msgs[uid] = json.loads(res[i][1])
 
@@ -697,9 +688,8 @@ def tags_info(con=None):
     if uids:
         res = con.fetch(uids, 'FLAGS')
         for line in res:
-            flags = re.search(
-                r'FLAGS \(([^)]*)\)', line.decode()
-            ).group(1).split()
+            flags = re.search(r'FLAGS \(([^)]*)\)', line.decode()).group(1)
+            flags = flags.split()
             for f in flags:
                 unread.setdefault(f, 0)
                 unread[f] += 1

@@ -197,10 +197,8 @@ def fetch_folder(tag='\\All', *, box=None, **opts):
     log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
     gm = client(tag, box=box)
     res = gm.status(None, '(UIDNEXT UIDVALIDITY)')
-    folder = re.search(
-        r'(UIDNEXT (?P<uidnext>\d+) ?|UIDVALIDITY (?P<uid>\d+)){2}',
-        res[0].decode()
-    ).groupdict()
+    folfer_re = r'(UIDNEXT (?P<uidnext>\d+) ?|UIDVALIDITY (?P<uid>\d+)){2}'
+    folder = re.search(folfer_re, res[0].decode()).groupdict()
     log.info('## gmail: uidvalidity=%(uid)s uidnext=%(uidnext)s', folder)
     if folder['uid'] != uidvalidity:
         uidvalidity = folder['uid']
