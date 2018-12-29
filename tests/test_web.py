@@ -725,7 +725,7 @@ def test_drafts_part1(gm_client, login, patch, some):
         'cc': '',
         'draft_id': draft['draft_id'],
         'files': [],
-        'flags': '\\Draft',
+        'flags': '\\Draft \\Recent',
         'from': '',
         'in-reply-to': '',
         'origin_uid': '3',

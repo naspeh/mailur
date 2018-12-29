@@ -210,10 +210,20 @@ def getmetadata(con, box, key):
         return check(con._untagged_response(typ, data, 'METADATA'))
 
 
+def clean_recent(flags):
+    if not flags:
+        return flags
+
+    if isinstance(flags, bytes):
+        flags = flags.decode()
+    return re.sub(r'(^| )\\Recent( |$)', ' ', flags)
+
+
 def _multiappend(con, box, msgs):
     with _cmd(con, 'APPEND') as (tag, start, complete):
         send = start
         for date_time, flags, msg in msgs:
+            flags = clean_recent(flags)
             if date_time is None:
                 date_time = Time2Internaldate(time.time())
             args = (' (%s) %s %s' % (flags, date_time, '{%s}' % len(msg)))
@@ -349,7 +359,7 @@ def search(con, *criteria):
 
 @command(writable=True)
 def append(con, box, flags, date_time, msg):
-    res = check(con.append(box, flags, date_time, msg))
+    res = check(con.append(box, clean_recent(flags), date_time, msg))
     return re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
 
 
@@ -378,6 +388,10 @@ def fetch(con, uids, fields):
 @cmd_writable
 def store(con, uids, cmd, flags):
     if not uids:
+        return []
+
+    flags = clean_recent(flags)
+    if not flags:
         return []
 
     uids = Uids(uids)

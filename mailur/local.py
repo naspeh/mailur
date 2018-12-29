@@ -264,8 +264,6 @@ def parse_msgs(uids, con=None):
             pattern = r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)'
             uid, time, flags = re.search(pattern, line.decode()).groups()
             flags = flags.split()
-            if flags.count('\\Recent'):
-                flags.remove('\\Recent')
             msg_obj, marks = message.parsed(body, uid, time, flags, mids)
             flags += marks
             msg = msg_obj.as_bytes()
@@ -502,7 +500,7 @@ def sync_flags(con=None, timeout=None):
             uid, flags = re.search(pattern, line.decode()).groups()
             flags = set(flags.split())
             orig_flags = set(src_flags[parsed[uid]].split())
-            val = sorted(orig_flags - flags - set(['\\Recent']))
+            val = sorted(orig_flags - flags)
             if val:
                 key = ('+FLAGS.SILENT', ' '.join(val))
                 actions.setdefault(key, [])
@@ -557,10 +555,6 @@ def fetch_msg(uid, draft=False, con=None):
     )
     res = con.fetch(uid, fields)
     flags = re.search(r'FLAGS \(([^)]*)\)', res[0][0].decode()).group(1)
-    flags = flags.split()
-    if flags.count('\\Recent'):
-            flags.remove('\\Recent')
-    flags = ' '.join(flags)
     head = email.message_from_string(res[0][1].decode())
     meta = json.loads(res[1][1].decode())
     txt = res[2][1].decode()
