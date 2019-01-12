@@ -1272,13 +1272,13 @@ def test_privacy(gm_client, login, load_email):
     uid, info = web.search({'q': ':raw all'})['msgs'].popitem()
     assert info['richer'] == 'Show styles and 1 external images'
     body = web.body(uid)
-    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in body
+    assert 'data-src="/proxy?url=https://github.com' in body
     assert ' style="color:red"' not in body
     assert 'data-style="color:red"' in body
     body = web.body(uid, False)
     assert body == (
         '<p style="color:red">test html</p>\r\n'
-        '<img src="/proxy?url=https%3A%2F%2Fgithub.com%2Ffavicon.ico">'
+        '<img src="/proxy?url=https://github.com/favicon.ico">'
     )
 
     # embend shouldn't be replaced with proxy url

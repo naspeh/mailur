@@ -76,17 +76,16 @@ mail {
 
     proxy_pass_error_message on;
 
-    ssl on;
     ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
 
     server {
-        listen   993;
+        listen   993 ssl;
         protocol imap;
     }
 
     server {
-        listen    465;
+        listen    465 ssl;
         protocol  smtp;
         smtp_auth plain;
     }
@@ -125,6 +124,11 @@ server {
     }
     location /assets {
         alias /opt/mailur/assets/dist;
+    }
+    location /proxy {
+        proxy_pass \$arg_url;
+        proxy_set_header Referer "$domain";
+        proxy_ssl_server_name on;
     }
     location /.well-known {
         root /var/tmp;

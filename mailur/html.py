@@ -1,6 +1,5 @@
 import re
 from html import escape
-from urllib.parse import urlencode
 
 import mistune
 from lxml.html import fromstring, tostring
@@ -79,7 +78,9 @@ def fix_privacy(htm, only_proxy=False):
     for img in htm.xpath('//img[@src]'):
         src = img.attrib['src']
         if re.match('^(https?://|//).*', src):
-            proxy_url = '/proxy?' + urlencode({'url': src})
+            if src.startswith('//'):
+                src = 'https:' + src
+            proxy_url = '/proxy?url=' + src
             if only_proxy:
                 img.attrib['src'] = proxy_url
             else:

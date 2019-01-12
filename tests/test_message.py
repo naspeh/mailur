@@ -206,10 +206,12 @@ def test_richer(gm_client, latest, login):
     info = web.search({'q': 'uid:%s' % m['uid']})['msgs'][m['uid']]
     assert info['richer'] == 'Show 3 external images'
     body = web.body(m['uid'])
-    assert 'src="data:image/gif' in body
-    assert 'data-src="/proxy?url=%2F%2Fgithub.com' in body
-    assert 'data-src="/proxy?url=http%3A%2F%2Fgithub.com' in body
-    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in body
+    assert body == (
+        '<span><img data-src="/proxy?url=https://github.com/favicon.ico">\r\n'
+        '<img data-src="/proxy?url=http://github.com/favicon.ico">\r\n'
+        '<img data-src="/proxy?url=https://github.com/favicon.ico">\r\n'
+        '<img src="data:image/gif;base64,R0lGODlhEAA"></span>'
+    )
 
     raw = '\r\n'.join([
         headers,
@@ -228,7 +230,7 @@ def test_richer(gm_client, latest, login):
     info = web.search({'q': 'uid:%s' % m['uid']})['msgs'][m['uid']]
     assert info['richer'] == 'Show styles and 1 external images'
     body = web.body(m['uid'])
-    assert 'data-src="/proxy?url=https%3A%2F%2Fgithub.com' in body
+    assert 'data-src="/proxy?url=https://github.com' in body
     assert ' style="color:red"' not in body
     assert 'data-style="color:red"' in body
 

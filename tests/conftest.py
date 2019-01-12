@@ -22,6 +22,8 @@ test2 = None
 
 @pytest.fixture(scope='session', autouse=True)
 def init(request):
+    from mailur import local
+
     for i in range(len(request.session.items)):
         users.append([
             'test1_%s' % uuid.uuid4().hex,
@@ -34,8 +36,18 @@ def init(request):
     rm -rf $path
     user="%s" home=$path append=1 bin/install-users
     systemctl restart dovecot
-    sleep 1
     ''' % users_str, shell=True, cwd=root)
+
+    # try to connect to dovecot as root
+    for i in range(5):
+        try:
+            local.connect()
+            return
+        except Exception as e:
+            err = e
+            time.sleep(1)
+            print('Another try to connect to dovecot: %s' % err)
+    raise err
 
 
 @pytest.fixture(autouse=True)
