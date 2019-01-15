@@ -129,7 +129,7 @@ def gm_fake():
         responces = getattr(gm_client, name.lower(), None)
         if responces:
             return responces.pop()
-        return gm_client._uid(name, *a, **kw)
+        return con._uid(name, *a, **kw)
 
     def xlist(*a, **kw):
         responces = getattr(gm_client, 'list', None)
@@ -145,8 +145,7 @@ def gm_fake():
 
     con = local.connect(test2)
 
-    gm_client.con = con
-    gm_client._uid = con.uid
+    con._uid = con.uid
     con.uid = uid
     con.list = xlist
     return con
@@ -158,77 +157,79 @@ def gm_client():
 
     gmail.SKIP_DRAFTS = False
 
+    def add_email(con, item, tag):
+        gm_client.uid += 1
+        uid = gm_client.uid
+        gid = item.get('gid', 100 * uid)
+        raw = item.get('raw')
+        if raw:
+            msg = raw
+            date = gm_client.time + uid
+        else:
+            txt = item.get('txt', '42')
+            msg = message.binary(txt)
+
+            subj = item.get('subj')
+            if 'subj' not in item:
+                subj = 'Subj %s' % uid
+            msg.add_header('Subject', subj)
+
+            date = item.get('date')
+            if not date:
+                date = gm_client.time + uid
+            msg.add_header('Date', formatdate(date, usegmt=True))
+
+            mid = item.get('mid')
+            if not mid:
+                mid = '<%s@mlr>' % uid
+            msg.add_header('Message-ID', mid)
+
+            in_reply_to = item.get('in_reply_to')
+            if in_reply_to:
+                msg.add_header('In-Reply-To', in_reply_to)
+            refs = item.get('refs')
+            if refs:
+                msg.add_header('References', refs)
+            fr = item.get('from')
+            if fr:
+                msg.add_header('From', fr)
+            to = item.get('to')
+            if to:
+                msg.add_header('To', to)
+
+            msg = msg.as_bytes()
+
+        arrived = dt.datetime.fromtimestamp(date)
+        arrived = arrived.strftime('%d-%b-%Y %H:%M:%S %z').encode()
+        flags = item.get('flags', '').encode()
+        labels = item.get('labels', '').encode()
+        folder = local.ALL if tag == '\\All' else local.SRC
+        res = con.append(
+            folder, gmail.MAP_LABELS.get(tag), None, msg
+        )
+        if res[0] != 'OK':
+            raise Exception(res)
+        gm_client.fetch[1][1].append(
+            (b'1 (X-GM-MSGID %d UID %d )' % (gid, uid))
+        )
+        gm_client.fetch[0][1].extend([
+            (
+                b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '
+                b'INTERNALDATE "%s" FLAGS (%s) '
+                b'BODY[] {%d}'
+                % (gid, gid, labels, uid, arrived, flags, len(msg)),
+                msg
+            ),
+            b')'
+        ])
+
     def add_emails(items=None, *, tag='\\All', fetch=True, parse=True):
-        gmail.client()
         if items is None:
             items = [{}]
         gm_client.fetch = [('OK', []), ('OK', [])]
-        for item in items:
-            gm_client.uid += 1
-            uid = gm_client.uid
-            gid = item.get('gid', 100 * uid)
-            raw = item.get('raw')
-            if raw:
-                msg = raw
-                date = gm_client.time + uid
-            else:
-                txt = item.get('txt', '42')
-                msg = message.binary(txt)
-
-                subj = item.get('subj')
-                if 'subj' not in item:
-                    subj = 'Subj %s' % uid
-                msg.add_header('Subject', subj)
-
-                date = item.get('date')
-                if not date:
-                    date = gm_client.time + uid
-                msg.add_header('Date', formatdate(date, usegmt=True))
-
-                mid = item.get('mid')
-                if not mid:
-                    mid = '<%s@mlr>' % uid
-                msg.add_header('Message-ID', mid)
-
-                in_reply_to = item.get('in_reply_to')
-                if in_reply_to:
-                    msg.add_header('In-Reply-To', in_reply_to)
-                refs = item.get('refs')
-                if refs:
-                    msg.add_header('References', refs)
-                fr = item.get('from')
-                if fr:
-                    msg.add_header('From', fr)
-                to = item.get('to')
-                if to:
-                    msg.add_header('To', to)
-
-                msg = msg.as_bytes()
-
-            arrived = dt.datetime.fromtimestamp(date)
-            arrived = arrived.strftime('%d-%b-%Y %H:%M:%S %z').encode()
-            flags = item.get('flags', '').encode()
-            labels = item.get('labels', '').encode()
-            folder = local.ALL if tag == '\\All' else local.SRC
-            res = gm_client.con.append(
-                folder, gmail.MAP_LABELS.get(tag), None, msg
-            )
-            if res[0] != 'OK':
-                raise Exception(res)
-            gm_client.fetch[1][1].append(
-                (b'1 (X-GM-MSGID %d UID %d )' % (gid, uid))
-            )
-            gm_client.fetch[0][1].extend([
-                (
-                    b'1 (X-GM-MSGID %d X-GM-THRID %d X-GM-LABELS (%s) UID %d '
-                    b'INTERNALDATE "%s" FLAGS (%s) '
-                    b'BODY[] {%d}'
-                    % (gid, gid, labels, uid, arrived, flags, len(msg)),
-                    msg
-                ),
-                b')'
-            ])
-
+        with gmail.connect() as con:
+            for item in items:
+                add_email(con, item, tag)
         if fetch:
             gmail.fetch_folder(tag)
         if parse:
@@ -275,8 +276,8 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False, policy=None):
         return msg
 
     policy = policy if policy else message.policy
-    con = local.client(box or local.ALL)
-    res = con.fetch(uids, '(uid flags body[])')
+    with local.client(box or local.ALL) as con:
+        res = con.fetch(uids, '(uid flags body[])')
     return [msg(res[i]) for i in range(0, len(res), 2)]
 
 
