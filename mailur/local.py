@@ -8,10 +8,11 @@ import re
 
 from gevent import joinall, socket, spawn
 
-from . import conf, fn_cache, fn_time, html, imap, log, message, user_lock
+from . import cache, conf, fn_time, html, imap, log, message, user_lock
 
 SRC = 'INBOX'
-ALL = 'All'
+ALL = 'mlr/All'
+SYS = 'mlr/Sys'
 
 
 class Local(imaplib.IMAP4, imap.Conn):
@@ -52,49 +53,86 @@ def using(box=ALL, readonly=True, name='con', reuse=True):
     return imap.using(client, box, readonly, name, reuse)
 
 
-def metadata(name, default, *, cache=False):
+@using(SYS)
+def metadata_uids(con=None):
+    def get_map():
+        uids = {}
+        all_uids = set()
+        res = con.fetch('1:*', '(UID FLAGS)')
+        for line in res:
+            val = re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode())
+            if not val:
+                continue
+            uid, flags = val.groups()
+            name = [f for f in flags.split() if not f.startswith('\\')][0]
+            if name not in uids or int(uids[name]) < int(uid):
+                uids[name] = uid
+            all_uids.add(uid)
+        # clean = all_uids.difference(uids.values())
+        # if clean:
+        #     with client(SYS, readonly=False) as c:
+        #         c.store(clean, '+FLAGS.SILENT', '\\Deleted')
+        #         c.expunge()
+        return uids
+
+    get_map = fn_time(get_map, 'metadata_uids.get_map')
+
+    cache_key = 'metadata'
+    value = cache.get(cache_key)
+    if not value or con.uidnext != value['uidnext']:
+        data = {'uidnext': con.uidnext, 'map': get_map()}
+        cache.set(cache_key, data)
+    return cache.get(cache_key)['map']
+
+
+def metadata(name, default):
     @user_lock(name)
     def inner(*a, con=None, **kw):
-        clear_cache()
         val = inner.fn(*a, con=con, **kw)
         if val.get('skip'):
             return get()
-        con.setmetadata(SRC, name, json.dumps(val['data']))
-        clear_cache()
+
+        data = json.dumps(val['data'])
+        con.append(SYS, name, None, data.encode())
+
         if val.get('post'):
             val['post']()
         return val['return'] if 'return' in val else val['data']
 
-    @using(None)
+    @using(SYS)
     def get(con=None):
-        res = con.getmetadata(SRC, name)
-        if len(res) == 1:
+        def inner():
+            res = con.fetch(uidlatest, 'BODY.PEEK[]')
+            return json.loads(res[0][1].decode())
+
+        uidlatest = metadata_uids(con=con).get(name)
+        if not uidlatest:
             if isinstance(default, Exception):
                 raise default
             return default()
-        return json.loads(res[0][1].decode())
 
-    def clear_cache():
-        if not cache:
-            return
-        return inner.get.cache_clear()
+        cache_key = 'metadata:%s' % name
+        if cache.exists(cache_key):
+            uid, value = cache.get(cache_key)
+            if uid == uidlatest:
+                return value
+
+        value = inner()
+        cache.set(cache_key, (uidlatest, value))
+        return value
 
     def wrapper(fn):
         inner_fn = ft.wraps(fn)(inner)
         inner_fn.fn = fn
-        inner_fn.clear_cache = clear_cache
 
-        # fn_time and fn_cache use this name attribute if it set
-        get.name = '%s.get' % inner_fn.__name__
-        get_fn = fn_time(get)
-        get_fn = fn_cache(get_fn) if cache else get_fn
+        get_fn = fn_time(get, '%s.get' % inner_fn.__name__)
         inner_fn.get = get_fn
         return inner_fn
     return wrapper
 
 
 @using(None)
-@metadata('tags', lambda: {}, cache=True)
+@metadata('tags', lambda: {})
 def data_tags(tags, con=None):
     return {'data': tags}
 
@@ -119,7 +157,7 @@ def get_tag(name):
 
 @fn_time
 @using()
-@metadata('uidpairs', lambda: ({}, {}), cache=True)
+@metadata('uidpairs', lambda: ({}, {}))
 def data_uidpairs(uids=None, con=None):
     if uids:
         origin, parsed = data_uidpairs.get()
@@ -156,7 +194,7 @@ def pair_msgid(mid):
 
 @fn_time
 @using(SRC)
-@metadata('msgids', lambda: {}, cache=True)
+@metadata('msgids', lambda: {})
 def data_msgids(uids=None, rm=False, con=None):
     if uids:
         mids = data_msgids.get()

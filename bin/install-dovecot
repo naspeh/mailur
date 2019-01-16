@@ -69,9 +69,18 @@ namespace main {
     inbox = yes
     prefix =
     separator = /
+}
+namespace mlr {
+    prefix = mlr/
+    separator = /
+    hidden = yes
+    list = no
     mailbox All {
         auto = subscribe
         special_use = \All
+    }
+    mailbox Sys {
+        auto = create
     }
 }
 
@@ -125,7 +134,7 @@ root:{plain}$secret
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lrst
-All owner lr
+mlr/* owner lr
 INBOX owner lrstpi
 * user=root lrwstipe
 EOF

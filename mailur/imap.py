@@ -32,7 +32,6 @@ def using(client, box, readonly=True, name='con', reuse=True):
             key = conf['USER'], client, box
             if key not in pool:
                 pool[key] = client(None)
-
             con = pool[key]
             if box:
                 con.select(box, readonly)

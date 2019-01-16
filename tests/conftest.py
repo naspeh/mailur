@@ -137,7 +137,7 @@ def gm_fake():
         if responces:
             return responces.pop()
         return 'OK', [
-            b'(\\HasNoChildren \\All) "/" All',
+            b'(\\HasNoChildren \\All) "/" mlr/All',
             b'(\\HasNoChildren) "/" INBOX',
             b'(\\HasNoChildren \\Junk) "/" INBOX',
             b'(\\HasNoChildren \\Trash) "/" INBOX',
@@ -148,6 +148,7 @@ def gm_fake():
 
     con._uid = con.uid
     con.uid = uid
+    con._list = con.list
     con.list = xlist
     return con
 

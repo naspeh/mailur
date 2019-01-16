@@ -11,7 +11,6 @@ from contextlib import contextmanager
 
 from gevent import sleep
 
-cache = {}
 conf = {
     'DEBUG': os.environ.get('MLR_DEBUG', True),
     'DEBUG_IMAP': os.environ.get('MLR_DEBUG_IMAP', 0),
@@ -100,33 +99,6 @@ def fn_time(func, desc=None):
 
     inner = inner_gen if inspect.isgeneratorfunction(func) else inner_fn
     return ft.wraps(func)(inner)
-
-
-def fn_cache(fn):
-    def get_cache():
-        key = fn_name(fn)
-        cache = user_cache()
-        cache.setdefault(key, {})
-        return cache[key]
-
-    @ft.wraps(fn)
-    def inner(*a, **kw):
-        cache = get_cache()
-        key = a, tuple((k, kw[k]) for k in sorted(kw))
-        if key not in cache:
-            cache[key] = fn(*a, **kw)
-        return cache[key]
-
-    inner.cache_clear = lambda: get_cache().clear()
-    return inner
-
-
-def user_cache():
-    global cache
-
-    user = conf['USER']
-    cache.setdefault(user, {})
-    return cache[user]
 
 
 class LockError(Exception):

@@ -1,7 +1,7 @@
 from mailur import local
 
 
-def test_uidpairs(gm_client, msgs, patch):
+def test_uidpairs(gm_client, msgs, patch, call):
     gm_client.add_emails([{}, {}], parse=False)
     assert ['1', '2'] == [i['uid'] for i in msgs(local.SRC)]
 
@@ -33,21 +33,23 @@ def test_uidpairs(gm_client, msgs, patch):
     assert local.pair_origin_uids(['2']) == ('5',)
     assert local.pair_parsed_uids(['5']) == ('2',)
 
-    with patch('imaplib.IMAP4.uid') as m:
-        m.return_value = 'OK', []
-        local.data_uidpairs('4')
-        assert m.called
-        assert m.call_args[0][1] == '4'
+    data_uidpairs = local.data_uidpairs.get()
+    with patch('mailur.local.data_uidpairs.get', lambda *a: data_uidpairs):
+        with patch('imaplib.IMAP4.uid') as m:
+            m.return_value = 'OK', []
+            local.data_uidpairs('4')
+            assert m.called
+            assert m.call_args == call('FETCH', '4', '(UID BODY.PEEK[1])')
 
     with patch('mailur.local.data_uidpairs', wraps=local.data_uidpairs) as m:
         local.parse('uid 1')
         assert m.called
-        assert m.call_args[0][0] == '6'
+        assert m.call_args == call('6')
 
         m.reset_mock()
         local.parse('all')
         assert m.called
-        assert m.call_args[0][0] == '1:*'
+        assert m.call_args == call('1:*')
 
         m.reset_mock()
         local.parse()
@@ -56,7 +58,7 @@ def test_uidpairs(gm_client, msgs, patch):
         m.reset_mock()
         gm_client.add_emails([{}])
         assert m.called
-        assert m.call_args[0][0] == '9'
+        assert m.call_args == call('9')
 
 
 def test_data_threads(gm_client):

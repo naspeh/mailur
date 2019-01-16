@@ -6,7 +6,7 @@ from mailur import gmail, local
 def test_client(some, patch, call):
     with patch('mailur.imap.select') as m:
         con = gmail.client()
-        assert m.call_args == call(some, b'All', True)
+        assert m.call_args == call(some, b'mlr/All', True)
 
         assert set(con.__dict__.keys()) == set(
             '_con idle logout list select select_tag status search fetch'
@@ -49,12 +49,12 @@ def test_fetch_and_parse(gm_client, some):
 
     def mlr_uidnext():
         res = lm.getmetadata(local.ALL, 'uidnext')
-        assert res == [(b'All (/private/uidnext {1}', some), b')']
+        assert res == [(b'mlr/All (/private/uidnext {1}', some), b')']
         return some.value
 
     assert gm_uidnext().endswith(b',1')
     assert lm.getmetadata(local.ALL, 'uidnext') == [
-        b'All (/private/uidnext NIL)'
+        b'mlr/All (/private/uidnext NIL)'
     ]
 
     gm_client.add_emails()
@@ -75,7 +75,7 @@ def test_fetch_and_parse(gm_client, some):
     assert mlr_uidnext() == b'4'
     assert lm.select(local.SRC) == [b'3']
     assert lm.select(local.ALL) == [b'3']
-    assert lm.status(local.ALL, '(UIDNEXT)') == [b'All (UIDNEXT 7)']
+    assert lm.status(local.ALL, '(UIDNEXT)') == [b'mlr/All (UIDNEXT 7)']
 
 
 def test_origin_msg(gm_client, latest, login):

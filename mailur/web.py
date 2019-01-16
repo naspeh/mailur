@@ -16,7 +16,7 @@ from bottle import (
     Bottle, abort, redirect, request, response, static_file, template
 )
 
-from . import LockError, conf, html, imap, local, log, message, user_cache
+from . import LockError, cache, conf, html, imap, local, log, message
 from .schema import validate
 
 root = pathlib.Path(__file__).parent.parent
@@ -30,7 +30,6 @@ def session(callback):
         session = request.get_cookie('session', secret=conf['SECRET'])
         if session:
             conf['USER'] = session['username']
-            user_cache().clear()
             save_session(session)  # refresh max_age
         request.session = session
         return callback(*args, **kwargs)
@@ -78,6 +77,7 @@ def endpoint(callback):
             return {'errors': [repr(e)]}
         finally:
             imap.clean_pool()
+            cache.clear()
     return inner
 
 
