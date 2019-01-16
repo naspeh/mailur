@@ -132,6 +132,14 @@ def metadata(name, default):
 
 
 @using(None)
+@metadata('settings', lambda: {})
+def data_settings(update=None, con=None):
+    settings = data_settings.get()
+    settings.update(update)
+    return {'data': settings}
+
+
+@using(None)
 @metadata('tags', lambda: {})
 def data_tags(tags, con=None):
     return {'data': tags}
@@ -315,10 +323,11 @@ def parse_msgs(uids, con=None):
 @using(None)
 def parse(criteria=None, con=None, **opts):
     uidnext = 1
+    uidnext_key = 'uidnext'
     if criteria is None:
-        res = con.getmetadata(ALL, 'uidnext')
-        if len(res) > 1:
-            uidnext = int(res[0][1].decode())
+        saved = data_settings.get().get(uidnext_key)
+        if saved:
+            uidnext = saved
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
@@ -353,7 +362,7 @@ def parse(criteria=None, con=None, **opts):
     if criteria.lower() == 'all' or count == '0':
         puids = '1:*'
 
-    con.setmetadata(ALL, 'uidnext', str(uidnext))
+    data_settings({uidnext_key: uidnext})
     data_uidpairs(puids)
     data_addresses(puids)
     data_msgids()

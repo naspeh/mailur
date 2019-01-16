@@ -37,42 +37,41 @@ def test_credentials():
     assert gmail.data_credentials.get() == [name, pwd]
 
 
-def test_fetch_and_parse(gm_client, some):
+def test_fetch_and_parse(gm_client, some, raises):
     lm = local.client()
     gmail.fetch_folder()
     local.parse()
 
     def gm_uidnext():
-        res = lm.getmetadata(local.SRC, 'gmail/uidnext/all')
-        assert res == [(b'INBOX (/private/gmail/uidnext/all {12}', some), b')']
-        return some.value
+        res = local.data_settings.get()['gmail/uidnext/all']
+        assert res
+        return res[-1]
 
     def mlr_uidnext():
-        res = lm.getmetadata(local.ALL, 'uidnext')
-        assert res == [(b'mlr/All (/private/uidnext {1}', some), b')']
-        return some.value
+        res = local.data_settings.get()['uidnext']
+        assert res
+        return res
 
-    assert gm_uidnext().endswith(b',1')
-    assert lm.getmetadata(local.ALL, 'uidnext') == [
-        b'mlr/All (/private/uidnext NIL)'
-    ]
+    assert gm_uidnext() == 1
+    with raises(KeyError):
+        mlr_uidnext()
 
     gm_client.add_emails()
-    assert gm_uidnext().endswith(b',2')
-    assert mlr_uidnext() == b'2'
+    assert gm_uidnext() == 2
+    assert mlr_uidnext() == 2
     assert lm.select(local.SRC) == [b'1']
     assert lm.select(local.ALL) == [b'1']
 
     gm_client.add_emails([{'txt': '1'}, {'txt': '2'}])
-    assert gm_uidnext().endswith(b',4')
-    assert mlr_uidnext() == b'4'
+    assert gm_uidnext() == 4
+    assert mlr_uidnext() == 4
     assert lm.select(local.SRC) == [b'3']
     assert lm.select(local.ALL) == [b'3']
 
     gmail.fetch_folder()
     local.parse('all')
-    assert gm_uidnext().endswith(b',4')
-    assert mlr_uidnext() == b'4'
+    assert gm_uidnext() == 4
+    assert mlr_uidnext() == 4
     assert lm.select(local.SRC) == [b'3']
     assert lm.select(local.ALL) == [b'3']
     assert lm.status(local.ALL, '(UIDNEXT)') == [b'mlr/All (UIDNEXT 7)']

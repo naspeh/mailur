@@ -187,13 +187,12 @@ def fetch_uids(uids, tag, box, con=None):
 def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
     log.info('## process %r', tag)
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
-    res = con.getmetadata(local.SRC, metakey)
-    if len(res) != 1:
-        uidvalidity, uidnext = res[0][1].decode().split(',')
-        uidnext = int(uidnext)
+    saved = local.data_settings.get().get(metakey)
+    if saved:
+        uidvalidity, uidnext = saved
+        log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
     else:
         uidvalidity = uidnext = None
-    log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
     gm = client(tag, box=box)
     folder = {'uidnext': gm.uidnext, 'uidval': gm.uidvalidity}
     log.info('## gmail: uidvalidity=%(uidval)s uidnext=%(uidnext)s', folder)
@@ -210,7 +209,7 @@ def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
         uids.call_async(fetch_uids, uids, tag, box)
         local.data_msgids()
 
-    con.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
+    local.data_settings({metakey: (uidvalidity, uidnext)})
 
 
 def fetch(**kw):
