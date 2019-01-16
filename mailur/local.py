@@ -253,7 +253,7 @@ def data_addresses(uids=None, con=None):
     return {'data': [addrs_from, addrs_to]}
 
 
-@using(SRC)
+@using(SRC, reuse=False)
 def parse_msgs(uids, con=None):
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
     mids = data_msgids.get()
@@ -274,7 +274,7 @@ def parse_msgs(uids, con=None):
 
 @fn_time
 @user_lock('parse')
-@using(SRC)
+@using(None)
 def parse(criteria=None, con=None, **opts):
     uidnext = 1
     if criteria is None:
@@ -284,14 +284,14 @@ def parse(criteria=None, con=None, **opts):
             log.info('## saved: uidnext=%s', uidnext)
         criteria = 'UID %s:*' % uidnext
 
+    con.select(SRC)
     res = con.sort('(ARRIVAL)', criteria)
     uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
         return
 
-    res = con.status(SRC, '(UIDNEXT)')
-    uidnext = re.search(r'UIDNEXT (?P<next>\d+)', res[0].decode()).group(1)
+    uidnext = con.uidnext
     log.info('## new: uidnext: %s', uidnext)
 
     log.info('## criteria: %r; %s uids', criteria, len(uids))

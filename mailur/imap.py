@@ -160,6 +160,14 @@ class Ctx:
     def flags(self):
         return self._con.flags
 
+    @property
+    def uidnext(self):
+        return self._con.uidnext
+
+    @property
+    def uidvalidity(self):
+        return self._con.uidvalidity
+
     def __enter__(self):
         return self
 
@@ -355,6 +363,8 @@ def select(con, box, readonly=True):
     res = check(con.select(box, readonly))
     con.current_box = box.decode() if isinstance(box, bytes) else box
     con.flags = con.untagged_responses['FLAGS'][0].decode()[1:-1].split()
+    con.uidnext = int(con.untagged_responses['UIDNEXT'][0].decode())
+    con.uidvalidity = con.untagged_responses['UIDVALIDITY'][0].decode()
     return res
 
 
