@@ -48,8 +48,8 @@ def client(box=ALL, readonly=True):
     return ctx
 
 
-def using(box=ALL, readonly=True, name='con'):
-    return imap.using(client, box, readonly, name)
+def using(box=ALL, readonly=True, name='con', reuse=True):
+    return imap.using(client, box, readonly, name, reuse)
 
 
 def metadata(name, default, *, cache=False):
@@ -274,8 +274,8 @@ def parse_msgs(uids, con=None):
 
 @fn_time
 @user_lock('parse')
-def parse(criteria=None, **opts):
-    con = client(SRC)
+@using(SRC)
+def parse(criteria=None, con=None, **opts):
     uidnext = 1
     if criteria is None:
         res = con.getmetadata(ALL, 'uidnext')
@@ -310,18 +310,16 @@ def parse(criteria=None, **opts):
             data_uidpairs()
             data_addresses()
 
-    con.logout()
     uids = imap.Uids(uids, **opts)
     puids = ','.join(uids.call_async(parse_msgs, uids))
     if criteria.lower() == 'all' or count == '0':
         puids = '1:*'
 
-    with client(ALL) as con:
-        con.setmetadata(ALL, 'uidnext', str(uidnext))
-        data_uidpairs(puids)
-        data_addresses(puids)
-        data_msgids()
-        data_threads('UID %s' % uids.str)
+    con.setmetadata(ALL, 'uidnext', str(uidnext))
+    data_uidpairs(puids)
+    data_addresses(puids)
+    data_msgids()
+    data_threads('UID %s' % uids.str)
 
 
 @using(None)
@@ -469,7 +467,7 @@ def sync_flags_to_src(con_src=None, con_all=None):
 
 
 @fn_time
-@using(None)
+@using(None, reuse=False)
 def sync_flags(con=None, timeout=None):
     @using(SRC, name='con_src')
     @using(ALL, name='con_all', readonly=False)

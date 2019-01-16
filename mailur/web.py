@@ -76,6 +76,8 @@ def endpoint(callback):
             log.exception(e)
             response.status = 500
             return {'errors': [repr(e)]}
+        finally:
+            imap.clean_pool()
     return inner
 
 

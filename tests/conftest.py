@@ -52,13 +52,14 @@ def init(request):
 
 @pytest.fixture(autouse=True)
 def setup(new_users, gm_client, patch):
-    from mailur import cache
+    from mailur import imap
 
     conf = {'USER': test1}
     with patch.dict('mailur.conf', conf):
-        cache.clear()
-
         yield
+
+        imap.clean_pool(test1)
+        imap.clean_pool(test2)
 
 
 @pytest.fixture

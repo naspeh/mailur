@@ -13,6 +13,7 @@ from gevent.pool import Pool
 from . import conf, fn_desc, fn_time, log
 
 commands = {}
+pool = {}
 
 
 class Error(Exception):
@@ -20,10 +21,22 @@ class Error(Exception):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
 
 
-def using(client, box, readonly=True, name='con'):
+def using(client, box, readonly=True, name='con', reuse=True):
     @contextmanager
     def use_or_create(kw):
         if kw.get(name):
+            yield
+            return
+
+        if reuse:
+            key = conf['USER'], client, box
+            if key not in pool:
+                pool[key] = client(None)
+
+            con = pool[key]
+            if box:
+                con.select(box, readonly)
+            kw[name] = con
             yield
             return
 
@@ -44,6 +57,17 @@ def using(client, box, readonly=True, name='con'):
         inner = inner_gen if inspect.isgeneratorfunction(fn) else inner_fn
         return ft.wraps(fn)(inner)
     return wrapper
+
+
+def clean_pool(user=None):
+    if user is None:
+        user = conf['USER']
+
+    for key in list(pool.keys()):
+        if key[0] != user:
+            continue
+        con = pool.pop(key)
+        con.logout()
 
 
 def cmd_locked(func):
@@ -127,6 +151,10 @@ class Ctx:
     @property
     def box(self):
         return self._con.current_box
+
+    @property
+    def is_readonly(self):
+        return self._con.is_readonly
 
     @property
     def flags(self):

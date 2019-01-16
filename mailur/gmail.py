@@ -67,17 +67,17 @@ def data_credentials(username, password, con=None):
     return {'data': [username, password]}
 
 
-def fetch_uids(uids, tag, box):
+@local.using(local.SRC)
+def fetch_uids(uids, tag, box, con=None):
     exists = {}
-    with local.client(local.SRC) as con:
-        res = con.fetch('1:*', 'BODY.PEEK[HEADER.FIELDS (X-GM-MSGID)]')
-        for i in range(0, len(res), 2):
-            uid = res[i][0].decode().split()[2]
-            line = res[i][1].strip()
-            if not line:
-                continue
-            gid = email.message_from_bytes(line)['X-GM-MSGID'].strip()
-            exists[gid.strip('<>')] = uid
+    res = con.fetch('1:*', 'BODY.PEEK[HEADER.FIELDS (X-GM-MSGID)]')
+    for i in range(0, len(res), 2):
+        uid = res[i][0].decode().split()[2]
+        line = res[i][1].strip()
+        if not line:
+            continue
+        gid = email.message_from_bytes(line)['X-GM-MSGID'].strip()
+        exists[gid.strip('<>')] = uid
 
     new_uids = []
     with client(tag, box=box) as gm:
@@ -178,17 +178,16 @@ def fetch_uids(uids, tag, box):
     if not msgs:
         return None
 
-    with local.client(None) as lm:
-        return lm.multiappend(local.SRC, msgs)
+    return con.multiappend(local.SRC, msgs)
 
 
 @fn_time
 @user_lock('gmail-fetch')
-def fetch_folder(tag='\\All', *, box=None, **opts):
+@local.using(None)
+def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
     log.info('## process %r', tag)
     metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
-    with local.client(None) as con:
-        res = con.getmetadata(local.SRC, metakey)
+    res = con.getmetadata(local.SRC, metakey)
     if len(res) != 1:
         uidvalidity, uidnext = res[0][1].decode().split(',')
         uidnext = int(uidnext)
@@ -213,8 +212,7 @@ def fetch_folder(tag='\\All', *, box=None, **opts):
         uids.call_async(fetch_uids, uids, tag, box)
         local.data_msgids()
 
-    with local.client(None) as lm:
-        lm.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
+    con.setmetadata(local.SRC, metakey, '%s,%s' % (uidvalidity, uidnext))
 
 
 def fetch(**kw):
