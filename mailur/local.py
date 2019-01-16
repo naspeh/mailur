@@ -92,7 +92,7 @@ def metadata(name, default):
         if val.get('skip'):
             return get()
 
-        data = json.dumps(val['data'])
+        data = json.dumps([name, val['data']])
         con.append(SYS, name, None, data.encode())
 
         if val.get('post'):
@@ -103,7 +103,8 @@ def metadata(name, default):
     def get(con=None):
         def inner():
             res = con.fetch(uidlatest, 'BODY.PEEK[]')
-            return json.loads(res[0][1].decode())
+            name, data = json.loads(res[0][1].decode())
+            return data
 
         uidlatest = metadata_uids(con=con).get(name)
         if not uidlatest:
