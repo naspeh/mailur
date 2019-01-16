@@ -106,6 +106,8 @@ def fetch_uids(uids, tag, box, con=None):
         res = gm.fetch(new_uids, fields)
         login = gm.username
 
+    tags = local.data_tags.get()
+
     def flag(m):
         flag = m.group()
         if flag:
@@ -118,7 +120,9 @@ def fetch_uids(uids, tag, box, con=None):
             label = label.strip('"').replace('\\\\', '\\')
             label = imap_utf7.decode(label)
             flag = MAP_LABELS.get(label, None)
-            return local.get_tag(label)['id'] if flag is None else flag
+            if flag is None:
+                flag = local.get_tag(label, tags=tags)['id']
+            return flag
         return ''
 
     def msgs():

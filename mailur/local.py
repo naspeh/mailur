@@ -86,9 +86,11 @@ def metadata_uids(con=None):
 
 
 def metadata(name, default):
+    @using(None, name='_con')
     @user_lock(name)
-    def inner(*a, con=None, **kw):
-        val = inner.fn(*a, con=con, **kw)
+    def inner(*a, **kw):
+        con = kw.pop('_con')
+        val = inner.fn(*a, **kw)
         if val.get('skip'):
             return get()
 
@@ -101,7 +103,7 @@ def metadata(name, default):
 
     @using(SYS)
     def get(con=None):
-        def inner():
+        def fetch():
             res = con.fetch(uidlatest, 'BODY.PEEK[]')
             name, data = json.loads(res[0][1].decode())
             return data
@@ -118,47 +120,46 @@ def metadata(name, default):
             if uid == uidlatest:
                 return value
 
-        value = inner()
+        value = fn_time(fetch, '%s.get' % inner.__name__)()
         cache.set(cache_key, (uidlatest, value))
         return value
 
     def wrapper(fn):
         inner_fn = ft.wraps(fn)(inner)
         inner_fn.fn = fn
-
-        get_fn = fn_time(get, '%s.get' % inner_fn.__name__)
-        inner_fn.get = get_fn
+        inner_fn.get = get
         return inner_fn
     return wrapper
 
 
-@using(None)
 @metadata('settings', lambda: {})
-def data_settings(update=None, con=None):
+def data_settings(update=None):
     settings = data_settings.get()
     settings.update(update)
     return {'data': settings}
 
 
-@using(None)
 @metadata('tags', lambda: {})
-def data_tags(tags, con=None):
+def data_tags(update=None):
+    tags = data_tags.get()
+    tags.update(update)
     return {'data': tags}
 
 
-def get_tag(name):
+def get_tag(name, *, tags=None):
     if re.match(r'(?i)^[\\]?[a-z0-9/#\-.,:;!?]*$', name):
         tag = name
     else:
         tag = '#' + hashlib.md5(name.lower().encode()).hexdigest()[:8]
 
-    tags = data_tags.get()
+    if not tags:
+        tags = data_tags.get()
     info = tags.get(tag)
     if info is None:
         info = {'name': name}
         if name != tag:
             tags[tag] = info
-            data_tags(tags)
+            data_tags({tag: info})
             log.info('## new tag %s: %r', tag, name)
     info.update(id=tag)
     return info
@@ -745,12 +746,13 @@ def tags_info(con=None):
         k: v - hidden.get(k, 0)
         for k, v in unread.items() if hidden.get(k) != v
     }
+    get_tag_cached = ft.partial(get_tag, tags=data_tags.get())
     tags = {
-        t: dict(get_tag(t), unread=unread.get(t, 0))
+        t: dict(get_tag_cached(t), unread=unread.get(t, 0))
         for t in con.flags
     }
     tags.update({
-        t: dict(tags.get(t, get_tag(t)), pinned=1)
+        t: dict(tags.get(t, get_tag_cached(t)), pinned=1)
         for t in ('#inbox', '#spam', '#trash')
     })
     return tags
