@@ -18,6 +18,8 @@ sys.path.insert(0, str(root))
 users = []
 test1 = None
 test2 = None
+con_local = None
+con_gmail = None
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -52,12 +54,19 @@ def init(request):
 
 @pytest.fixture(autouse=True)
 def setup(new_users, gm_client, patch):
-    from mailur import imap
+    from mailur import imap, local
+
+    global con_local, con_gmail
 
     conf = {'USER': test1}
     with patch.dict('mailur.conf', conf):
+        con_local = local.client(None)
+        con_gmail = local.connect(test2)
+
         yield
 
+        con_local.logout()
+        con_gmail.logout()
         imap.clean_pool(test1)
         imap.clean_pool(test2)
 
@@ -86,7 +95,7 @@ def load_email(gm_client, load_file, latest):
 
 
 class Some(object):
-    "A helper object that compares equal to everything."
+    """A helper object that compares equal to everything."""
 
     def __eq__(self, other):
         self.value = other
@@ -159,7 +168,7 @@ def gm_client():
 
     gmail.SKIP_DRAFTS = False
 
-    def add_email(con, item, tag):
+    def add_email(item, tag):
         gm_client.uid += 1
         uid = gm_client.uid
         gid = item.get('gid', 100 * uid)
@@ -206,9 +215,7 @@ def gm_client():
         flags = item.get('flags', '').encode()
         labels = item.get('labels', '').encode()
         folder = local.ALL if tag == '\\All' else local.SRC
-        res = con.append(
-            folder, gmail.MAP_LABELS.get(tag), None, msg
-        )
+        res = con_gmail.append(folder, None, None, msg)
         if res[0] != 'OK':
             raise Exception(res)
         gm_client.fetch[1][1].append(
@@ -229,9 +236,8 @@ def gm_client():
         if items is None:
             items = [{}]
         gm_client.fetch = [('OK', []), ('OK', [])]
-        with gmail.connect() as con:
-            for item in items:
-                add_email(con, item, tag)
+        for item in items:
+            add_email(item, tag)
         if fetch:
             gmail.fetch_folder(tag)
         if parse:
@@ -278,8 +284,8 @@ def _msgs(box=None, uids='1:*', *, parsed=False, raw=False, policy=None):
         return msg
 
     policy = policy if policy else message.policy
-    with local.client(box or local.ALL) as con:
-        res = con.fetch(uids, '(uid flags body[])')
+    con_local.select(box or local.ALL)
+    res = con_local.fetch(uids, '(uid flags body[])')
     return [msg(res[i]) for i in range(0, len(res), 2)]
 
 
