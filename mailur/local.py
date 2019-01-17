@@ -91,23 +91,12 @@ def metadata(name, default):
     def inner(*a, **kw):
         con = kw.pop('_con')
         val = inner.fn(*a, **kw)
-        if val.get('skip'):
-            return get()
-
-        data = json.dumps([name, val['data']])
+        data = json.dumps([name, val])
         con.append(SYS, name, None, data.encode())
-
-        if val.get('post'):
-            val['post']()
-        return val['return'] if 'return' in val else val['data']
+        return val
 
     @using(SYS)
     def get(con=None):
-        def fetch():
-            res = con.fetch(uidlatest, 'BODY.PEEK[]')
-            name, data = json.loads(res[0][1].decode())
-            return data
-
         uidlatest = metadata_uids(con=con).get(name)
         if not uidlatest:
             if isinstance(default, Exception):
@@ -120,30 +109,84 @@ def metadata(name, default):
             if uid == uidlatest:
                 return value
 
-        value = fn_time(fetch, '%s.get' % inner.__name__)()
+        def fetch():
+            res = con.fetch(uidlatest, 'BODY.PEEK[]')
+            name, data = json.loads(res[0][1].decode())
+            return data
+
+        value = fn_time(fetch, '%s.fetch' % inner.__name__)()
         cache.set(cache_key, (uidlatest, value))
         return value
+
+    def key(name, default=None):
+        return get().get(name, default)
 
     def wrapper(fn):
         inner_fn = ft.wraps(fn)(inner)
         inner_fn.fn = fn
         inner_fn.get = get
+        inner_fn.key = key
         return inner_fn
     return wrapper
 
 
 @metadata('settings', lambda: {})
 def data_settings(update=None):
+    """All persistent stuff saved under the one metadata row."""
     settings = data_settings.get()
     settings.update(update)
-    return {'data': settings}
+    return settings
 
 
-@metadata('tags', lambda: {})
+def setting(name, default=None):
+    @user_lock('setting:%s' % name)
+    def inner(*a, **kw):
+        val = inner.fn(*a, **kw)
+        data_settings({name: val})
+        return val
+
+    def unset():
+        data_settings({name: None})
+
+    def get(default=default):
+        value = data_settings.key(name)
+        if value is not None:
+            return value
+        elif default and isinstance(default, Exception):
+            raise default
+        elif callable(default):
+            return default()
+        else:
+            return default
+
+    def key(name, default=None):
+        return get().get(name, default)
+
+    def wrapper(fn):
+        inner_fn = ft.wraps(fn)(inner)
+        inner_fn.fn = fn
+        inner_fn.get = get
+        inner_fn.key = key
+        inner_fn.unset = unset
+        return inner_fn
+    return wrapper
+
+
+@setting('uidnext')
+def data_uidnext(value):
+    return value
+
+
+@setting('links', lambda: [])
+def data_links(links):
+    return links
+
+
+@setting('tags', lambda: {})
 def data_tags(update=None):
     tags = data_tags.get()
     tags.update(update)
-    return {'data': tags}
+    return tags
 
 
 def get_tag(name, *, tags=None):
@@ -182,7 +225,7 @@ def data_uidpairs(uids=None, con=None):
         origin_uid = json.loads(res[i][1].decode())['origin_uid']
         origin[origin_uid] = uid
         parsed[uid] = origin_uid
-    return {'data': [origin, parsed]}
+    return [origin, parsed]
 
 
 @fn_time
@@ -232,13 +275,13 @@ def data_msgids(uids=None, rm=False, con=None):
             if len(uids) > 1:
                 uids = sorted(uids, key=lambda i: int(i))
             mids[mid] = uids
-    return {'data': mids}
+    return mids
 
 
 @fn_time
 @using()
-@metadata('links', lambda: [])
-def data_links(uids, unlink=False, con=None):
+@user_lock('link_threads')
+def link_threads(uids, unlink=False, con=None):
     thrids, thrs = data_threads.get()
     all_uids = sum((thrs[thrids[uid]] for uid in uids), [])
 
@@ -254,19 +297,13 @@ def data_links(uids, unlink=False, con=None):
     if not unlink:
         links.append(mids)
 
-    return {
-        'data': links,
-        'return': all_uids,
-        'post': lambda: data_threads(all_uids),
-    }
-
-
-def link_threads(uids):
-    return data_links(uids)
+    data_links(links)
+    update_threads(all_uids)
+    return all_uids
 
 
 def unlink_threads(uids):
-    return data_links(uids, unlink=True)
+    return link_threads(uids, unlink=True)
 
 
 @fn_time
@@ -298,7 +335,7 @@ def data_addresses(uids=None, con=None):
         if {'#sent', '\\Draft'}.intersection(flags.split()):
             fill(addrs_from, meta, ('from',))
 
-    return {'data': [addrs_from, addrs_to]}
+    return [addrs_from, addrs_to]
 
 
 @using(SRC, reuse=False)
@@ -325,9 +362,8 @@ def parse_msgs(uids, con=None):
 @using(None)
 def parse(criteria=None, con=None, **opts):
     uidnext = 1
-    uidnext_key = 'uidnext'
     if criteria is None:
-        saved = data_settings.get().get(uidnext_key)
+        saved = data_uidnext.get()
         if saved:
             uidnext = saved
             log.info('## saved: uidnext=%s', uidnext)
@@ -335,7 +371,8 @@ def parse(criteria=None, con=None, **opts):
 
     con.select(SRC)
     res = con.sort('(ARRIVAL)', criteria)
-    uids = [i for i in res[0].decode().split(' ') if i and int(i) >= uidnext]
+    uids = res[0].decode().split()
+    uids = [i for i in uids if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
         return
@@ -364,16 +401,21 @@ def parse(criteria=None, con=None, **opts):
     if criteria.lower() == 'all' or count == '0':
         puids = '1:*'
 
-    data_settings({uidnext_key: uidnext})
+    data_uidnext(uidnext)
     data_uidpairs(puids)
     data_addresses(puids)
     data_msgids()
-    data_threads('UID %s' % uids.str)
+    update_threads('UID %s' % uids.str)
+
+
+@metadata('threads', lambda: [{}, {}])
+def data_threads(thrids, thrs, con=None):
+    return [thrids, thrs]
 
 
 @using(None)
-@metadata('threads', lambda: [{}, {}])
-def data_threads(criteria=None, con=None):
+@user_lock('update_threads')
+def update_threads(criteria=None, con=None):
     con.select(SRC)
     # TODO: think about optimisation when criteria is partial
     # criteria = criteria or 'ALL'
@@ -382,7 +424,7 @@ def data_threads(criteria=None, con=None):
     src_uids = res[0].decode().split()
     if not src_uids:
         log.info('## all threads are updated already')
-        return {'skip': True}
+        return
 
     con.select(ALL)
     uids = pair_origin_uids(src_uids)
@@ -391,7 +433,7 @@ def data_threads(criteria=None, con=None):
     orig_thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
     if not orig_thrs:
         log.info('## no threads are updated')
-        return {'skip': True}
+        return
 
     uids = set(orig_thrs.all_uids)
 
@@ -439,8 +481,8 @@ def data_threads(criteria=None, con=None):
             elif uid in thrs:
                 del thrs[uid]
 
+    data_threads(thrids, thrs)
     log.info('## updated %s threads', len(thrs))
-    return {'data': [thrids, thrs]}
 
 
 @fn_time
@@ -471,7 +513,7 @@ def clean_flags(con=None):
     uids = res[0].decode().split()
     con.store(uids, '+FLAGS.SILENT', '#link \\Seen')
     sync_flags_to_all()
-    data_threads()
+    update_threads()
 
 
 @fn_time
@@ -767,7 +809,7 @@ def del_msg(uid, con=None):
         con.select(box, readonly=False)
         con.store([uid], '+FLAGS.SILENT', '\\Deleted')
         con.expunge()
-    data_threads()
+    update_threads()
 
 
 @fn_time

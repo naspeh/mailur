@@ -43,18 +43,15 @@ def test_fetch_and_parse(gm_client, some, raises):
     local.parse()
 
     def gm_uidnext():
-        res = local.data_settings.get()['gmail/uidnext/all']
+        res = gmail.data_uidnext.key('\\All')
         assert res
-        return res[-1]
+        return res[1]
 
     def mlr_uidnext():
-        res = local.data_settings.get()['uidnext']
-        assert res
-        return res
+        return local.data_uidnext.get()
 
     assert gm_uidnext() == 1
-    with raises(KeyError):
-        mlr_uidnext()
+    assert mlr_uidnext() is None
 
     gm_client.add_emails()
     assert gm_uidnext() == 2

@@ -90,15 +90,15 @@ def test_data_threads(gm_client):
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.data_threads('all')
+    local.update_threads('all')
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.data_threads('UID 1')
+    local.update_threads('UID 1')
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.data_threads()
+    local.update_threads()
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
@@ -122,7 +122,7 @@ def test_data_threads(gm_client):
     }
     assert local.search_thrs('all') == ['15', '14', '13', '11']
 
-    local.data_threads('UID *')
+    local.update_threads('UID *')
     assert local.data_threads.get()[1] == {
         '11': ['11'],
         '13': ['6', '7', '8', '10', '13'],

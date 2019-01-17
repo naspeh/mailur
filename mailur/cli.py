@@ -75,7 +75,7 @@ def process(args):
         local.data_msgids()
         local.data_uidpairs()
     elif args['threads']:
-        local.data_threads(criteria=args.get('<criteria>'))
+        local.update_threads(criteria=args.get('<criteria>'))
     elif args['icons']:
         icons()
     elif args['web']:

@@ -61,10 +61,16 @@ def client(tag='\\All', box=None):
     return ctx
 
 
-@local.using(None)
-@local.metadata('gmail/credentials', ValueError('no credentials for gmail'))
-def data_credentials(username, password, con=None):
-    return {'data': [username, password]}
+@local.setting('gmail/credentials', ValueError('no credentials for gmail'))
+def data_credentials(username, password):
+    return [username, password]
+
+
+@local.setting('gmail/uidnext', lambda: {})
+def data_uidnext(tag, value):
+    setting = data_uidnext.get()
+    setting[tag] = value
+    return setting
 
 
 @local.using(local.SRC)
@@ -189,14 +195,8 @@ def fetch_uids(uids, tag, box, con=None):
 @user_lock('gmail-fetch')
 @local.using(None)
 def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
-    log.info('## process %r', tag)
-    metakey = 'gmail/uidnext/%s' % tag.strip('\\').lower()
-    saved = local.data_settings.get().get(metakey)
-    if saved:
-        uidvalidity, uidnext = saved
-        log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
-    else:
-        uidvalidity = uidnext = None
+    uidvalidity, uidnext = data_uidnext.key(tag, (None, None))
+    log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
     gm = client(tag, box=box)
     folder = {'uidnext': gm.uidnext, 'uidval': gm.uidvalidity}
     log.info('## gmail: uidvalidity=%(uidval)s uidnext=%(uidnext)s', folder)
@@ -213,7 +213,7 @@ def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
         uids.call_async(fetch_uids, uids, tag, box)
         local.data_msgids()
 
-    local.data_settings({metakey: (uidvalidity, uidnext)})
+    data_uidnext(tag, (uidvalidity, uidnext))
 
 
 def fetch(**kw):
