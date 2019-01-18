@@ -1,4 +1,3 @@
-import datetime as dt
 import email
 import functools as ft
 import hashlib
@@ -130,16 +129,8 @@ def metadata(name, default):
     return wrapper
 
 
-@metadata('settings', lambda: {})
-def data_settings(update=None):
-    """All persistent stuff saved under the one metadata row."""
-    settings = data_settings.get()
-    settings.update(update)
-    return settings
-
-
-def setting(name, default=None):
-    @user_lock('setting:%s' % name)
+def metakey(meta, name, default=None):
+    @user_lock('%s:%s' % (meta.__name__, name))
     def inner(*a, **kw):
         val = inner.fn(*a, **kw)
         data_settings({name: val})
@@ -170,6 +161,17 @@ def setting(name, default=None):
         inner_fn.unset = unset
         return inner_fn
     return wrapper
+
+
+@metadata('settings', lambda: {})
+def data_settings(update=None):
+    """All persistent stuff saved under the one metadata row."""
+    settings = data_settings.get()
+    settings.update(update)
+    return settings
+
+
+setting = ft.partial(metakey, data_settings)
 
 
 @setting('uidnext')
@@ -208,40 +210,77 @@ def get_tag(name, *, tags=None):
     return info
 
 
+@metadata('uidpairs', lambda: {})
+def data_uidpairs(pairs):
+    return pairs
+
+
 @fn_time
 @using()
-@metadata('uidpairs', lambda: ({}, {}))
-def data_uidpairs(uids=None, con=None):
+@metadata('addresses', lambda: ({}, {}))
+def data_addresses(addrs_from, addrs_to, con=None):
+    return [addrs_from, addrs_to]
+
+
+@fn_time
+@using(ALL)
+@metadata('msgs', lambda: {})
+def data_msgs(uids=None, con=None):
+    def fill_addrs(store, meta, fields):
+        addrs = (meta[i] for i in fields if meta.get(i))
+        addrs = sum(([a] if isinstance(a, dict) else a for a in addrs), [])
+        for addr in addrs:
+            a = addr['addr']
+            if a not in store or store[a] != addr:
+                addr['time'] = meta['date']
+                store[a] = addr
+            elif store[a]['time'] < meta['date']:
+                store[a]['time'] = meta['date']
+
     if uids:
-        origin, parsed = data_uidpairs.get()
+        msgs = data_msgs.get()
+        addrs_from, addrs_to = data_addresses.get()
+        origin = data_uidpairs.get()
     else:
         uids = '1:*'
+        msgs = {}
+        addrs_from, addrs_to = {}, {}
         origin = {}
-        parsed = {}
 
-    res = con.fetch(uids, '(UID BODY.PEEK[1])')
+    res = con.fetch(imap.Uids(uids), '(FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
-        uid = res[i][0].decode().split()[2]
-        origin_uid = json.loads(res[i][1].decode())['origin_uid']
-        origin[origin_uid] = uid
-        parsed[uid] = origin_uid
-    return [origin, parsed]
+        pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
+        uid, flags = re.search(pattern, res[i][0].decode()).groups()
+        info = json.loads(res[i][1])
+        keys = ('arrived', 'draft_id', 'msgid', 'origin_uid', 'from')
+        small_info = {k: v for k, v in info.items() if k in keys}
+        msgs[uid] = small_info
+        origin[info['origin_uid']] = uid
+        fill_addrs(addrs_to, info, ('from', 'to', 'cc'))
+        if {'#sent', '\\Draft'}.intersection(flags.split()):
+            fill_addrs(addrs_from, info, ('from',))
+
+    data_uidpairs(origin)
+    data_addresses(addrs_from, addrs_to)
+    return msgs
 
 
-@fn_time
-def pair_origin_uids(uids):
-    origin, _ = data_uidpairs.get()
-    return tuple(origin[i] for i in uids if i in origin)
+def pair_origin_uids(uids, uidpairs=None):
+    if uidpairs is None:
+        uidpairs = data_uidpairs.get()
+    return tuple(uidpairs[i] for i in uids if i in uidpairs)
 
 
-@fn_time
-def pair_parsed_uids(uids):
-    _, parsed = data_uidpairs.get()
-    return tuple(parsed[i] for i in uids if i in parsed)
+def pair_parsed_uids(uids, msgs=None):
+    if msgs is None:
+        msgs = data_msgs.get()
+    return tuple(msgs[i]['origin_uid'] for i in uids if i in msgs)
 
 
-def pair_msgid(mid):
-    origin_uid = data_msgids.get().get(mid.lower())
+def pair_msgid(mid, msgids=None):
+    if msgids is None:
+        msgids = data_msgids.get()
+    origin_uid = msgids.get(mid.lower())
     return origin_uid and pair_origin_uids(origin_uid)[0]
 
 
@@ -270,6 +309,8 @@ def data_msgids(uids=None, rm=False, con=None):
         elif rm:
             uids.remove(uid)
             mids[mid] = uids
+        elif uid in uids:
+            pass
         else:
             uids.append(uid)
             if len(uids) > 1:
@@ -284,6 +325,7 @@ def data_msgids(uids=None, rm=False, con=None):
 def link_threads(uids, unlink=False, con=None):
     thrids, thrs = data_threads.get()
     all_uids = sum((thrs[thrids[uid]] for uid in uids), [])
+    all_uids = imap.Uids(all_uids)
 
     res = con.fetch(all_uids, 'BODY.PEEK[1]')
     mids = []
@@ -298,44 +340,12 @@ def link_threads(uids, unlink=False, con=None):
         links.append(mids)
 
     data_links(links)
-    update_threads(all_uids)
-    return all_uids
+    update_threads(all_uids.val)
+    return all_uids.val
 
 
 def unlink_threads(uids):
     return link_threads(uids, unlink=True)
-
-
-@fn_time
-@using()
-@metadata('addresses', lambda: ({}, {}))
-def data_addresses(uids=None, con=None):
-    def fill(store, meta, fields):
-        addrs = (meta[i] for i in fields if meta.get(i))
-        addrs = sum(([a] if isinstance(a, dict) else a for a in addrs), [])
-        for addr in addrs:
-            a = addr['addr']
-            if a not in store or store[a] != addr:
-                addr['time'] = meta['date']
-                store[a] = addr
-            elif store[a]['time'] < meta['date']:
-                store[a]['time'] = meta['date']
-
-    if uids:
-        addrs_from, addrs_to = data_addresses.get()
-    else:
-        uids = '1:*'
-        addrs_from, addrs_to = {}, {}
-
-    res = con.fetch(uids, '(FLAGS BODY.PEEK[1])')
-    for i in range(0, len(res), 2):
-        meta = json.loads(res[i][1].decode())
-        fill(addrs_to, meta, ('from', 'to', 'cc'))
-        flags = re.search(r'FLAGS \(([^)]*)\)', res[i][0].decode()).group(1)
-        if {'#sent', '\\Draft'}.intersection(flags.split()):
-            fill(addrs_from, meta, ('from',))
-
-    return [addrs_from, addrs_to]
 
 
 @using(SRC, reuse=False)
@@ -384,7 +394,7 @@ def parse(criteria=None, con=None, **opts):
     count = con.select(ALL)[0].decode()
     if count != '0':
         if criteria.lower() == 'all':
-            puids = '1:*'
+            puids = con.search('all')[0].decode().split()
         else:
             puids = pair_origin_uids(uids)
         if puids:
@@ -393,8 +403,8 @@ def parse(criteria=None, con=None, **opts):
             log.info('## deleting %s from %r', puids, ALL)
             con.store(puids, '+FLAGS.SILENT', '\\Deleted')
             con.expunge()
-            data_uidpairs()
-            data_addresses()
+            clean_threads(puids.val)
+            data_msgs()
 
     uids = imap.Uids(uids, **opts)
     puids = ','.join(uids.call_async(parse_msgs, uids))
@@ -402,87 +412,99 @@ def parse(criteria=None, con=None, **opts):
         puids = '1:*'
 
     data_uidnext(uidnext)
-    data_uidpairs(puids)
-    data_addresses(puids)
-    data_msgids()
-    update_threads('UID %s' % uids.str)
+    data_msgs(puids)
+    data_msgids(puids)
+    update_threads(puids)
 
 
 @metadata('threads', lambda: [{}, {}])
-def data_threads(thrids, thrs, con=None):
+def data_threads(thrids, thrs):
     return [thrids, thrs]
 
 
-@using(None)
+@using(ALL)
 @user_lock('update_threads')
-def update_threads(criteria=None, con=None):
-    con.select(SRC)
-    # TODO: think about optimisation when criteria is partial
-    # criteria = criteria or 'ALL'
-    criteria = 'ALL'
-    res = con.search(criteria)
-    src_uids = res[0].decode().split()
-    if not src_uids:
-        log.info('## all threads are updated already')
-        return
+def clean_threads(uids, con=None):
+    thrids, thrs = data_threads.get()
+    cleaned = []
+    for uid in uids:
+        thrid = thrids.pop(uid, None)
+        thr = thrs.get(thrid)
+        if uid == thrid:
+            del thrs[uid]
+            cleaned.extend(thr)
+        elif thr:
+            thr.remove(uid)
+    for uid in cleaned:
+        thrids.pop(uid, None)
+    data_threads(thrids, thrs)
+    log.info('## cleaned %s threads', len(cleaned))
 
-    con.select(ALL)
-    uids = pair_origin_uids(src_uids)
-    criteria = 'UID %s' % ','.join(uids)
 
-    orig_thrs = con.thread('REFS UTF-8 INTHREAD REFS %s' % criteria)
+@using()
+@user_lock('update_threads')
+def update_threads(uids=None, con=None):
+    if uids is None:
+        uids = '1:*'
+        thrids, thrs = {}, {}
+    else:
+        uids = uids if isinstance(uids, str) else ','.join(uids)
+        thrids, thrs = data_threads.get()
+
+    orig_thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids)
     if not orig_thrs:
         log.info('## no threads are updated')
         return
 
-    uids = set(orig_thrs.all_uids)
+    all_uids = set(orig_thrs.all_uids)
 
+    uidpairs = data_uidpairs.get()
+    msgs = data_msgs.get()
     mids = data_msgids.get()
+
     all_links = []
     linked_uids = set()
     for link in data_links.get():
-        thrids = sum((mids[mid] for mid in link), [])
-        thrids = pair_origin_uids(thrids)
-        if not uids.intersection(thrids):
+        uids = sum((mids[mid] for mid in link), [])
+        uids = pair_origin_uids(uids, uidpairs=uidpairs)
+        if not all_uids.intersection(uids):
             continue
-        all_links.append(thrids)
-        linked_uids.update(thrids)
+        all_links.append(uids)
+        linked_uids.update(uids)
 
-    msgs = {}
-    res = con.fetch('1:*', '(INTERNALDATE FLAGS)')
-    for line in res:
-        pattern = r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)'
-        uid, time, flags = re.search(pattern, line.decode()).groups()
-        arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
-        arrived = int(arrived.timestamp())
-        msgs[uid] = {
-            'flags': flags.split(),
-            'arrived': arrived,
-        }
-    thrs = {}
-    thrids = {}
+    if thrids:
+        # clean exiting mapping
+        cleaned = set()
+        for uid in all_uids:
+            thrs.pop(uid, None)
+            thrid = thrids.pop(uid, None)
+            if thrid == uid:
+                cleaned.add(uid)
+        log.info('## cleaned %s threads', len(cleaned))
+
+    updated = set()
     for uids in orig_thrs:
         uids_set = set(uids)
         if uids_set.intersection(linked_uids):
             uids = (list(l) for l in all_links if uids_set.intersection(l))
             uids = sum(uids, [])
             uids = uids + [uid for uid in uids_set if uid not in uids]
-
         if len(uids) == 1:
             thrid = uids[0]
         else:
-            uids = sorted(uids, key=lambda i: msgs[i]['arrived'] or 0)
+            uids = sorted(uids, key=lambda i: msgs[i]['arrived'])
             thrid = uids[-1]
 
         for uid in uids:
             thrids[uid] = thrid
             if uid == thrid:
                 thrs[uid] = uids
+                updated.add(uid)
             elif uid in thrs:
                 del thrs[uid]
 
     data_threads(thrids, thrs)
-    log.info('## updated %s threads', len(thrs))
+    log.info('## updated %s threads', len(updated))
 
 
 @fn_time
@@ -521,13 +543,14 @@ def clean_flags(con=None):
 @using(ALL, name='con_all', readonly=False)
 def sync_flags_to_all(con_src=None, con_all=None):
     skip_flags = set(['#latest', '#err', '#dup'])
+    uidpairs = data_uidpairs.get()
     for flag in con_src.flags:
         if flag in skip_flags:
             continue
         q = flag[1:] if flag.startswith('\\') else 'keyword %s' % flag
         res = con_src.search(q)
         oids = res[0].decode().split()
-        pairs = set(pair_origin_uids(oids))
+        pairs = set(pair_origin_uids(oids, uidpairs=uidpairs))
         res = con_all.search(q)
         pids = set(res[0].decode().split())
         con_all.store(pairs - pids, '+FLAGS.SILENT', flag)
@@ -581,14 +604,14 @@ def sync_flags(con=None, timeout=None):
             return
 
         actions = {}
-        _, parsed = data_uidpairs.get()
+        parsed = data_msgs.get()
         pids = pair_origin_uids(src_flags)
         res = con_all.fetch(pids, '(UID FLAGS)')
         for line in res:
             pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
             uid, flags = re.search(pattern, line.decode()).groups()
             flags = set(flags.split())
-            orig_flags = set(src_flags[parsed[uid]].split())
+            orig_flags = set(src_flags[parsed[uid]['origin_uid']].split())
             val = sorted(orig_flags - flags)
             if val:
                 key = ('+FLAGS.SILENT', ' '.join(val))
@@ -715,21 +738,22 @@ def thrs_info(uids, tags=None, con=None):
     elif '#spam' in tags:
         special_tag = '#spam'
 
-    thrids, thrs = data_threads.get()
+    msgs = data_msgs.get()
+    thrids, all_thrs = data_threads.get()
     uids = [thrids[uid] for uid in uids]
-    all_uids = sum((thrs[uid] for uid in uids), [])
+    all_uids = sum((all_thrs[uid] for uid in uids), [])
+    all_uids = imap.Uids(all_uids)
 
     all_flags = {}
-    all_msgs = {}
-    res = con.fetch(all_uids, '(FLAGS BINARY.PEEK[1])')
-    for i in range(0, len(res), 2):
+    res = con.fetch(all_uids, '(UID FLAGS)')
+    for line in res:
         pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
-        uid, flags = re.search(pattern, res[i][0].decode()).groups()
+        uid, flags = re.search(pattern, line.decode()).groups()
         all_flags[uid] = flags.split()
-        all_msgs[uid] = json.loads(res[i][1])
 
+    thrs = {}
     for thrid in uids:
-        thr = thrs[thrid]
+        thr = all_thrs[thrid]
         thr_flags = []
         addrs = []
         unseen = False
@@ -741,7 +765,8 @@ def thrs_info(uids, tags=None, con=None):
                 continue
             elif special_tag and special_tag not in msg_flags:
                 continue
-            info = all_msgs[uid]
+            info = msgs[uid]
+            info['uid'] = uid
             addrs.append(info.get('from'))
             if not msg_flags:
                 continue
@@ -755,10 +780,26 @@ def thrs_info(uids, tags=None, con=None):
         flags = list(set(' '.join(thr_flags).split()))
         if unseen and '\\Seen' in flags:
             flags.remove('\\Seen')
-        info['uids'] = thr
-        if draft_id:
-            info['draft_id'] = draft_id
-        yield thrid, info, flags, addrs
+        thrs[info['uid']] = {
+            'thrid': thrid,
+            'uids': thr,
+            'draft_id': draft_id,
+            'flags': flags,
+            'addrs': addrs
+        }
+
+    if not thrs:
+        return
+
+    res = con.fetch(imap.Uids(thrs.keys()), 'BINARY.PEEK[1]')
+    for i in range(0, len(res), 2):
+        uid = res[i][0].decode().split()[2]
+        info = json.loads(res[i][1])
+        thr = thrs[uid]
+        info['uids'] = thr['uids']
+        if thr['draft_id']:
+            info['draft_id'] = thr['draft_id']
+        yield thr['thrid'], info, thr['flags'], thr['addrs']
 
 
 @fn_time
@@ -766,7 +807,7 @@ def thrs_info(uids, tags=None, con=None):
 def tags_info(con=None):
     unread = {}
     hidden = {}
-    res = con.search('UNSEEN UNKEYWORD #link')
+    res = con.search('UNSEEN')
     uids = res[0].decode().split()
     if uids:
         res = con.fetch(uids, 'FLAGS')

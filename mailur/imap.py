@@ -540,6 +540,7 @@ class Uids:
     def call(self, fn, *args):
         return [f() for f in self._call(fn, *args)]
 
+    @fn_time
     def call_async(self, fn, *args):
         if not self.batches:
             return self.call(fn, *args)
@@ -570,4 +571,7 @@ class Uids:
             uids = self.val
             uids = uids if isinstance(uids, str) else uids.decode()
             return uids if ':' in uids else fmt % (uids.count(',') + 1)
+        if len(self.val) < 5:
+            # show few uids as is
+            return str(self.val)
         return fmt % len(self.val)

@@ -5,10 +5,10 @@ Usage:
   mlr gmail <login> [--tag=<tag> --box=<box> --parse] [options]
   mlr parse <login> [<criteria>] [options]
   mlr threads <login> [<criteria>]
+  mlr metadata <login>
   mlr sync <login> [--timeout=<timeout>]
   mlr sync-flags <login> [--reverse]
   mlr clean-flags <login>
-  mlr update-metadata <login>
   mlr icons
   mlr web
   mlr lint [--ci]
@@ -70,10 +70,9 @@ def process(args):
             local.sync_flags_to_all()
     elif args['clean-flags']:
         local.clean_flags()
-    elif args['update-metadata']:
-        local.data_addresses()
+    elif args['metadata']:
+        local.data_msgs()
         local.data_msgids()
-        local.data_uidpairs()
     elif args['threads']:
         local.update_threads(criteria=args.get('<criteria>'))
     elif args['icons']:

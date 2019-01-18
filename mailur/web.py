@@ -514,9 +514,8 @@ def avatars():
 
 @app.get('/refresh/metadata')
 def refresh_metadata():
-    local.data_addresses()
     local.data_msgids()
-    local.data_uidpairs()
+    local.data_msgs()
     return 'Done.'
 
 

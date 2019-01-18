@@ -19,10 +19,9 @@ def test_general(gm_client, login, msgs, patch, call):
     assert [i['uid'] for i in msgs()] == ['1', '2']
 
     with patch('mailur.cli.local') as m:
-        cli.main('update-metadata %s' % login.user1)
-        assert m.data_addresses.called
+        cli.main('metadata %s' % login.user1)
+        assert m.data_msgs.called
         assert m.data_msgids.called
-        assert m.data_uidpairs.called
 
     with patch('mailur.cli.gmail.fetch_folder') as m:
         cli.main('gmail %s' % login.user1)

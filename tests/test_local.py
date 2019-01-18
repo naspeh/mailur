@@ -9,39 +9,34 @@ def test_uidpairs(gm_client, msgs, patch, call):
     assert local.pair_parsed_uids(['1', '2']) == ()
 
     local.parse()
-    assert local.data_uidpairs() == [
-        {'1': '1', '2': '2'}, {'1': '1', '2': '2'}
-    ]
+    assert local.data_uidpairs.get() == {'1': '1', '2': '2'}
     assert local.pair_origin_uids(['1', '2']) == ('1', '2')
     assert local.pair_parsed_uids(['1', '2']) == ('1', '2')
 
     local.parse('uid 1')
     assert ['2', '3'] == [i['uid'] for i in msgs()]
-    assert local.data_uidpairs() == [
-        {'1': '3', '2': '2'}, {'3': '1', '2': '2'}
-    ]
+    assert local.data_uidpairs.get() == {'1': '3', '2': '2'}
     assert local.pair_origin_uids(['1', '2']) == ('3', '2')
     assert local.pair_parsed_uids(['2', '3']) == ('2', '1')
 
     local.parse('all')
     assert ['4', '5'] == [i['uid'] for i in msgs()]
-    assert local.data_uidpairs() == [
-        {'1': '4', '2': '5'}, {'4': '1', '5': '2'}
-    ]
+    assert local.data_uidpairs.get() == {'1': '4', '2': '5'}
     assert local.pair_origin_uids(['1', '2']) == ('4', '5')
     assert local.pair_parsed_uids(['4', '5']) == ('1', '2')
     assert local.pair_origin_uids(['2']) == ('5',)
     assert local.pair_parsed_uids(['5']) == ('2',)
 
-    data_uidpairs = local.data_uidpairs.get()
-    with patch('mailur.local.data_uidpairs.get', lambda *a: data_uidpairs):
-        with patch('imaplib.IMAP4.uid') as m:
-            m.return_value = 'OK', []
-            local.data_uidpairs('4')
-            assert m.called
-            assert m.call_args == call('FETCH', '4', '(UID BODY.PEEK[1])')
+    # warm cache up
+    local.data_addresses.get()
+    local.data_uidpairs.get()
+    with patch('imaplib.IMAP4.uid') as m:
+        m.return_value = 'OK', []
+        local.data_msgs('4')
+        assert m.called
+        assert m.call_args == call('FETCH', '4', '(FLAGS BINARY.PEEK[1])')
 
-    with patch('mailur.local.data_uidpairs', wraps=local.data_uidpairs) as m:
+    with patch('mailur.local.data_msgs', wraps=local.data_msgs) as m:
         local.parse('uid 1')
         assert m.called
         assert m.call_args == call('6')
@@ -90,11 +85,11 @@ def test_data_threads(gm_client):
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.update_threads('all')
+    local.update_threads()
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.update_threads('UID 1')
+    local.update_threads('1')
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
@@ -122,7 +117,7 @@ def test_data_threads(gm_client):
     }
     assert local.search_thrs('all') == ['15', '14', '13', '11']
 
-    local.update_threads('UID *')
+    local.update_threads('*')
     assert local.data_threads.get()[1] == {
         '11': ['11'],
         '13': ['6', '7', '8', '10', '13'],

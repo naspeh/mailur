@@ -3,6 +3,8 @@
 set -exuo pipefail
 . bin/activate
 
+localectl set-locale LANG=en_US.utf8
+
 bin/install-dovecot
 
 yum install -y epel-release
