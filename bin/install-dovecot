@@ -35,6 +35,7 @@ verbose_ssl=yes
 ssl = no
 ssl_client_ca_dir = /etc/ssl/certs/
 
+# TODO: remove after migration to new metadata storage
 # should be big enough to save all message-ids as metadata
 imap_max_line_length = 10M
 
@@ -75,6 +76,9 @@ namespace mlr {
     separator = /
     hidden = yes
     list = no
+    mailbox {
+        auto = create
+    }
     mailbox All {
         auto = subscribe
         special_use = \All
