@@ -4,8 +4,8 @@ set -exuo pipefail
 . bin/activate
 
 app=${app:-'mailur.web:app'}
-opts=${opts:-'-w 4'}
+opts=${opts:-'-w 4 --worker-class=meinheld.gmeinheld.MeinheldWorker'}
 
 exec gunicorn $app -b :5000 $opts \
  --timeout=300 --reload --access-logfile=- \
- --access-logformat="%(m)s %(U)s %(s)s %(L)ss %(b)sb"
+ --access-logformat="%(r)s %(s)s %(D)sms %(b)sb"

@@ -16,7 +16,7 @@ def test_login_and_themes(web, some, login):
     assert '"Europe/Kiev"' in res, res.text
     assert '"current_theme": "base"' in res, res.text
 
-    res = web.get('/solarized/login', status=200)
+    res = web.get('/login?theme=solarized', status=200)
     assert '/assets/theme-solarized.css' in res, res.text
     assert '"current_theme": "solarized"' in res, res.text
 
@@ -30,7 +30,7 @@ def test_login_and_themes(web, some, login):
     assert '"tags": {' in res, res.text
     assert '"current_theme": "base"' in res, res.text
 
-    res = web.get('/solarized/', status=200)
+    res = web.get('/?theme=solarized', status=200)
     assert '/assets/theme-solarized.css' in res, res.text
 
     web.reset()
@@ -45,6 +45,7 @@ def test_login_and_themes(web, some, login):
     assert [i for i in web.cookiejar][0].expires > expires
 
     res = web.get('/logout', status=302)
+    assert res.location == 'http://localhost:80/login?theme=solarized'
     assert web.cookies == {}
 
     res = web.get('/', status=302)
@@ -52,8 +53,8 @@ def test_login_and_themes(web, some, login):
     res.follow(status=200)
 
     web.reset()
-    res = web.get('/solarized/', status=302)
-    assert res.location == 'http://localhost:80/solarized/login'
+    res = web.get('/?theme=solarized', status=302)
+    assert res.location == 'http://localhost:80/login?theme=solarized'
     res.follow(status=200)
 
     web.get('/tags', status=403)

@@ -7,14 +7,14 @@ import re
 import smtplib
 import ssl
 import time
+import urllib.parse
 
 from gevent.pool import Pool
 from geventhttpclient import HTTPClient
+from itsdangerous import BadData, BadSignature, URLSafeSerializer
 from pytz import common_timezones, timezone, utc
 
-from bottle import (
-    Bottle, abort, redirect, request, response, static_file, template
-)
+from bottle import Bottle, abort, request, response, static_file, template
 
 from . import LockError, cache, conf, html, imap, local, log, message
 from .schema import validate
@@ -26,26 +26,44 @@ app.catchall = not conf['DEBUG']
 
 
 def session(callback):
+    cookie_name = 'session'
+    serializer = URLSafeSerializer(conf['SECRET'])
+
     def inner(*args, **kwargs):
-        session = request.get_cookie('session', secret=conf['SECRET'])
-        if session:
-            conf['USER'] = session['username']
-            save_session(session)  # refresh max_age
-        request.session = session
-        return callback(*args, **kwargs)
+        data_raw = data = request.get_cookie(cookie_name)
+        if data_raw:
+            try:
+                data = serializer.loads(data_raw)
+            except (BadSignature, BadData):
+                data = None
+
+        if data:
+            conf['USER'] = data['username']
+
+        request.session = data or {}
+
+        try:
+            return callback(*args, **kwargs)
+        finally:
+            if request.session:
+                save(request.session)
+            elif not data_raw:
+                pass
+            else:
+                response.delete_cookie(cookie_name)
+
+    def save(session):
+        cookie_opts = {
+            # keep session for 3 days
+            'max_age': 3600 * 24 * 3,
+
+            # for security
+            'httponly': True,
+            'secure': request.headers.get('X-Forwarded-Proto') == 'https',
+        }
+        data = serializer.dumps(session)
+        response.set_cookie(cookie_name, data, **cookie_opts)
     return inner
-
-
-def save_session(data):
-    opts = {
-        # keep session for 3 days
-        'max_age': 3600 * 24 * 3,
-
-        # for security
-        'httponly': True,
-        'secure': request.headers.get('X-Forwarded-Proto') == 'https',
-    }
-    response.set_cookie('session', data, conf['SECRET'], **opts)
 
 
 def auth(callback):
@@ -81,40 +99,38 @@ def endpoint(callback):
     return inner
 
 
-@ft.lru_cache(maxsize=None)
-def themes():
-    pkg = json.loads((root / 'package.json').read_text())
-    return sorted(pkg['mailur']['themes'])
-
-
-def theme_filter(config):
-    regexp = r'(%s)' % '|'.join(re.escape(t) for t in themes())
-    return regexp, None, None
+def redirect(url, code=None):
+    if not code:
+        code = 303 if request.get('SERVER_PROTOCOL') == 'HTTP/1.1' else 302
+    response.status = code
+    response.body = ''
+    response.set_header('Location', urllib.parse.urljoin(request.url, url))
+    return response
 
 
 app.install(session)
 app.install(auth)
-app.router.add_filter('theme', theme_filter)
 
 
 @app.get('/', skip=[auth], name='index')
-@app.get('/<theme:theme>/', skip=[auth])
-def index(theme=None):
+def index():
+    theme = request.query.get('theme')
     if not request.session:
-        prefix = ('/' + theme) if theme else ''
-        login_url = '%s%s' % (prefix, app.get_url('login'))
+        args = {'theme': theme} if theme else {}
+        login_url = app.get_url('login', **args)
         return redirect(login_url)
 
-    return render_tpl(theme or request.session['theme'], 'index', {
+    theme = theme or request.session['theme']
+    return render_tpl(theme, 'index', {
         'user': request.session['username'],
         'tags': wrap_tags(local.tags_info())
     })
 
 
 @app.get('/login', skip=[auth], name='login')
-@app.get('/<theme:theme>/login', skip=[auth])
 def login_html(theme=None):
-    return render_tpl(theme or 'base', 'login', {
+    theme = request.query.get('theme') or request.session.get('theme')
+    return render_tpl(theme, 'login', {
         'themes': themes(),
         'timezones': common_timezones,
     })
@@ -145,14 +161,17 @@ def login():
         return {'errors': ['Authentication failed.'], 'details': str(e)}
 
     del data['password']
-    save_session(data)
+    request.session.update(data)
     return {}
 
 
 @app.get('/logout')
 def logout():
-    response.delete_cookie('session')
-    return redirect('/login')
+    theme = request.session.get('theme')
+    args = {'theme': theme} if theme else {}
+    login_url = app.get_url('login', **args)
+    request.session.clear()
+    return redirect(login_url)
 
 
 @app.get('/nginx', skip=[auth])
@@ -564,7 +583,14 @@ CC: {{!msg['cc']}}
 '''
 
 
+@ft.lru_cache(maxsize=None)
+def themes():
+    pkg = json.loads((root / 'package.json').read_text())
+    return sorted(pkg['mailur']['themes'])
+
+
 def render_tpl(theme, page, data={}):
+    theme = theme if theme in themes() else 'base'
     data.update(current_theme=theme)
     title = {'index': 'welcome', 'login': 'login'}[page]
     css = assets / ('theme-%s.css' % theme)
