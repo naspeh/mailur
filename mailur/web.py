@@ -5,12 +5,11 @@ import json
 import pathlib
 import re
 import smtplib
-import ssl
 import time
 import urllib.parse
+import urllib.request
+from multiprocessing.pool import ThreadPool
 
-from gevent.pool import Pool
-from geventhttpclient import HTTPClient
 from itsdangerous import BadData, BadSignature, URLSafeSerializer
 from pytz import common_timezones, timezone, utc
 
@@ -74,6 +73,10 @@ def auth(callback):
     return inner
 
 
+app.install(session)
+app.install(auth)
+
+
 def jsonify(fn):
     @ft.wraps(fn)
     def inner(*a, **kw):
@@ -97,19 +100,6 @@ def endpoint(callback):
             imap.clean_pool()
             cache.clear()
     return inner
-
-
-def redirect(url, code=None):
-    if not code:
-        code = 303 if request.get('SERVER_PROTOCOL') == 'HTTP/1.1' else 302
-    response.status = code
-    response.body = ''
-    response.set_header('Location', urllib.parse.urljoin(request.url, url))
-    return response
-
-
-app.install(session)
-app.install(auth)
 
 
 @app.get('/', skip=[auth], name='index')
@@ -477,46 +467,6 @@ def markdown():
     return html.markdown(txt)
 
 
-@app.get('/proxy')
-def proxy():
-    url = request.query.get('url')
-    if not url:
-        return abort(400)
-
-    if url.startswith('//'):
-        url = 'https:' + url
-
-    def get(url):
-        log.debug('proxy: %s', url)
-        opts = dict(
-            insecure=True,
-            ssl_options={'cert_reqs': ssl.CERT_NONE}
-        )
-        try:
-            http = HTTPClient.from_url(url, **opts)
-            res = http.get(url)
-        except Exception as e:
-            log.error(e)
-            abort(500, repr(e))
-        return res
-
-    res = get(url)
-    if res.status_code in (301, 302):
-        location = [v for k, v in res.headers if k.lower() == 'location']
-        if location:
-            res = get(location[0])
-
-    response.status = res.status_code
-    keys = (
-        'content-type', 'content-length',
-        'cache-control', 'expires', 'date', 'last-modified'
-    )
-    for key, val in res.headers:
-        if key in keys:
-            response.set_header(key, val)
-    return bytes(res.read())
-
-
 @app.get('/avatars.css')
 def avatars():
     hashes = set(request.query['hashes'].split(','))
@@ -538,8 +488,19 @@ def refresh_metadata():
     return 'Done.'
 
 
+@app.get('/proxy')
+def proxy():
+    """Real proxing is done by nginx, this is just stub"""
+    url = request.query.get('url')
+    if not url:
+        return abort(400)
+
+    return redirect(url)
+
+
 @app.get('/assets/<path:path>', skip=[auth])
 def serve_assets(path):
+    """"Real serving is done by nginx, this is just stub"""
     return static_file(path, root=assets)
 
 
@@ -604,6 +565,15 @@ def render_tpl(theme, page, data={}):
         'title': title,
     }
     return template(tpl, **params)
+
+
+def redirect(url, code=None):
+    if not code:
+        code = 303 if request.get('SERVER_PROTOCOL') == 'HTTP/1.1' else 302
+    response.status = code
+    response.body = ''
+    response.set_header('Location', urllib.parse.urljoin(request.url, url))
+    return response
 
 
 def parse_query(q):
@@ -987,11 +957,11 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
     def _avatar(hash):
         if hash in cache:
             return cache[hash]
-        res = http.get(
-            '/avatar/{hash}?d={default}&s={size}'
+        res = urllib.request.urlopen(
+            'https://www.gravatar.com/avatar/{hash}?d={default}&s={size}'
             .format(hash=hash, size=size, default=default)
         )
-        result = hash, res.read() if res.status_code == 200 else None
+        result = hash, res.read() if res.status == 200 else None
         cache[hash] = result
         return result
 
@@ -1001,8 +971,7 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
     fetch_avatars.cache.setdefault(key, {})
     cache = fetch_avatars.cache[key]
 
-    http = HTTPClient.from_url('https://www.gravatar.com/')
-    pool = Pool(20)
+    pool = ThreadPool(20)
     res = pool.map(_avatar, hashes)
     return [(i[0], base64.b64encode(i[1]) if b64 else i[1]) for i in res if i]
 
