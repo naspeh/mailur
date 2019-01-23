@@ -344,7 +344,7 @@ def editor():
             )
     msg = message.new_draft(draft, request.forms, related)
     oid, _ = local.new_msg(msg, draft['flags'], no_parse=True)
-    local.del_msg(draft['origin_uid'])
+    local.del_msg(draft['uid'])
     local.parse()
     pid = local.pair_origin_uids([oid])[0]
     return {'uid': pid, 'url_send': app.get_url('send', uid=oid)}

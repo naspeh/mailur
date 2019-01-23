@@ -92,7 +92,7 @@ def metadata(name, default):
     def inner(*a, **kw):
         con = kw.pop('_con')
         val = inner.fn(*a, **kw)
-        data = json.dumps([name, val])
+        data = json.dumps([name, val], sort_keys=True)
         uidlatest = con.append(SYS, name, None, data.encode())
         cache.set(cache_key, (uidlatest, val))
         return val
@@ -237,16 +237,18 @@ def data_msgids(mids):
 
 def clean_threads(uids):
     thrids, thrs = data_threads.get()
-    cleaned = []
+    cleaned_uids = []
+    cleaned = set()
     for uid in uids:
         thrid = thrids.pop(uid, None)
         thr = thrs.get(thrid)
         if uid == thrid:
             del thrs[uid]
-            cleaned.extend(thr)
+            cleaned_uids.extend(thr)
+            cleaned.add(uid)
         elif thr:
             thr.remove(uid)
-    for uid in cleaned:
+    for uid in cleaned_uids:
         thrids.pop(uid, None)
 
     data_threads(thrids, thrs)
@@ -340,8 +342,8 @@ def update_metadata(uids=None, clean=False, con=None):
             fill_addrs(addrs_from, info, ('from',))
 
     data_msgs(msgs)
-    data_msgids(msgids)
     data_uidpairs(uidpairs)
+    data_msgids(msgids)
     data_addresses(addrs_from, addrs_to)
     update_threads(uids)
     return msgs
@@ -535,6 +537,8 @@ def msgs_flag(uids, old, new, con_src=None, con_all=None):
         add = set(new) - set(old) if new else []
         if add:
             con.store(uids, '+FLAGS.SILENT', ' '.join(add))
+        if '\\Deleted' in add:
+            con.expunge()
 
     jobs = [
         spawn(store, con_all, uids),
@@ -858,13 +862,8 @@ def tags_info(con=None):
 
 
 @fn_time
-@using(None)
-def del_msg(uid, con=None):
-    pid = pair_origin_uids([uid])[0]
-    for box, uid in ((SRC, uid), (ALL, pid)):
-        con.select(box, readonly=False)
-        con.store([uid], '+FLAGS.SILENT', '\\Deleted')
-        con.expunge()
+def del_msg(uid):
+    msgs_flag([uid], [], ['\\Deleted'])
     update_metadata([uid], clean=True)
 
 
