@@ -48,8 +48,8 @@ def client(box=ALL, readonly=True):
     return ctx
 
 
-def using(box=ALL, readonly=True, name='con', reuse=True):
-    return imap.using(client, box, readonly, name, reuse)
+def using(box=ALL, **kw):
+    return imap.using(client, box, **kw)
 
 
 @using(SYS)
@@ -85,13 +85,16 @@ def metadata_uids(con=None):
 
 
 def metadata(name, default):
-    @using(None, name='_con')
+    cache_key = 'metadata:%s' % name
+
+    @using(SYS, name='_con')
     @user_lock(name)
     def inner(*a, **kw):
         con = kw.pop('_con')
         val = inner.fn(*a, **kw)
         data = json.dumps([name, val])
-        con.append(SYS, name, None, data.encode())
+        uidlatest = con.append(SYS, name, None, data.encode())
+        cache.set(cache_key, (uidlatest, val))
         return val
 
     @using(SYS)
@@ -102,7 +105,6 @@ def metadata(name, default):
                 raise default
             return default()
 
-        cache_key = 'metadata:%s' % name
         if cache.exists(cache_key):
             uid, value = cache.get(cache_key)
             if uid == uidlatest:
@@ -131,18 +133,18 @@ def metadata(name, default):
     return wrapper
 
 
-def metakey(meta, name, default=None):
-    @user_lock('%s:%s' % (meta.__name__, name))
+def metakey(metavalue, name, default=None):
+    @user_lock('%s:%s' % (metavalue.__name__, name))
     def inner(*a, **kw):
         val = inner.fn(*a, **kw)
-        data_settings({name: val})
+        metavalue({name: val})
         return val
 
     def unset():
-        data_settings({name: None})
+        metavalue({name: None})
 
     def get(default=default):
-        value = data_settings.key(name)
+        value = metavalue.key(name)
         if value is not None:
             return value
         elif default and isinstance(default, Exception):
@@ -193,6 +195,7 @@ def data_tags(update=None):
     return tags
 
 
+@using(SYS, name=None, parent=True)
 def get_tag(name, *, tags=None):
     if re.match(r'(?i)^[\\]?[a-z0-9/#\-.,:;!?]*$', name):
         tag = name
@@ -206,7 +209,7 @@ def get_tag(name, *, tags=None):
         info = {'name': name}
         if name != tag:
             tags[tag] = info
-            data_tags({tag: info})
+            data_tags({tag: info.copy()})
             log.info('## new tag %s: %r', tag, name)
     info.update(id=tag)
     return info
@@ -273,7 +276,8 @@ def clean_msgs(uids):
 
 
 @fn_time
-@using(ALL)
+@using(parent=True)
+@using(SYS, name=None, parent=True)
 @user_lock('update_metadata')
 def update_metadata(uids=None, clean=False, con=None):
     if clean:
@@ -356,7 +360,8 @@ def pair_parsed_uids(uids, msgs=None):
 
 
 @fn_time
-@using()
+@using(parent=True)
+@using(SYS, name=None, parent=True)
 @user_lock('link_threads')
 def link_threads(uids, unlink=False, con=None):
     thrids, thrs = data_threads.get()
@@ -455,6 +460,7 @@ def data_threads(thrids, thrs):
 
 
 @using()
+@using(SYS, name=None, parent=True)
 @user_lock('update_threads')
 def update_threads(uids, thrids=None, thrs=None, con=None):
     if thrids is None:
@@ -550,16 +556,16 @@ def clean_flags(con=None):
 @fn_time
 @using(SRC, name='con_src')
 @using(ALL, name='con_all', readonly=False)
+@using(SYS, name=None, parent=True)
 def sync_flags_to_all(con_src=None, con_all=None):
     skip_flags = set(['#latest', '#err', '#dup'])
-    uidpairs = data_uidpairs.get()
     for flag in con_src.flags:
         if flag in skip_flags:
             continue
         q = flag[1:] if flag.startswith('\\') else 'keyword %s' % flag
         res = con_src.search(q)
         oids = res[0].decode().split()
-        pairs = set(pair_origin_uids(oids, uidpairs=uidpairs))
+        pairs = set(pair_origin_uids(oids))
         res = con_all.search(q)
         pids = set(res[0].decode().split())
         con_all.store(pairs - pids, '+FLAGS.SILENT', flag)
@@ -738,6 +744,7 @@ def search_thrs(query, con=None):
 
 @fn_time
 @using()
+@using(SYS, name=None, parent=True)
 def thrs_info(uids, tags=None, con=None):
     special_tag = None
     if not tags:
@@ -813,6 +820,7 @@ def thrs_info(uids, tags=None, con=None):
 
 @fn_time
 @using()
+@using(SYS, name=None, parent=True)
 def tags_info(con=None):
     unread = {}
     hidden = {}
@@ -838,13 +846,12 @@ def tags_info(con=None):
         k: v - hidden.get(k, 0)
         for k, v in unread.items() if hidden.get(k) != v
     }
-    get_tag_cached = ft.partial(get_tag, tags=data_tags.get())
     tags = {
-        t: dict(get_tag_cached(t), unread=unread.get(t, 0))
+        t: dict(get_tag(t), unread=unread.get(t, 0))
         for t in con.flags
     }
     tags.update({
-        t: dict(tags.get(t, get_tag_cached(t)), pinned=1)
+        t: dict(tags.get(t, get_tag(t)), pinned=1)
         for t in ('#inbox', '#spam', '#trash')
     })
     return tags

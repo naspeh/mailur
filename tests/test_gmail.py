@@ -9,7 +9,8 @@ def test_client(some, patch, call):
         assert m.call_args == call(some, b'mlr/All', True)
 
         assert set(con.__dict__.keys()) == set(
-            '_con idle logout list select select_tag status search fetch'
+            '_con parent logout list select select_tag status search '
+            'fetch idle'
             .split()
         )
 

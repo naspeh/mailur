@@ -21,7 +21,7 @@ class Error(Exception):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
 
 
-def using(client, box, readonly=True, name='con', reuse=True):
+def using(client, box, readonly=True, name='con', reuse=True, parent=False):
     @contextmanager
     def use_or_create(kw):
         if kw.get(name):
@@ -33,14 +33,21 @@ def using(client, box, readonly=True, name='con', reuse=True):
             if key not in pool:
                 pool[key] = client(None)
             con = pool[key]
-            if box:
+            parent_orig = con.parent
+            if not con.parent and box:
                 con.select(box, readonly)
-            kw[name] = con
+                if parent:
+                    con.parent = parent
+            if name:
+                kw[name] = con
             yield
+            if con.parent:
+                con.parent = parent_orig
             return
 
         with client(box, readonly) as con:
-            kw[name] = con
+            if name:
+                kw[name] = con
             yield
 
     def inner_gen(*a, **kw):
@@ -136,6 +143,7 @@ class Conn:
 class Ctx:
     def __init__(self, con):
         self._con = con
+        self.parent = False
 
     def __repr__(self):
         return str(self)
@@ -397,7 +405,11 @@ def search(con, *criteria):
 @command(writable=True)
 def append(con, box, flags, date_time, msg):
     res = check(con.append(box, clean_recent(flags), date_time, msg))
-    return re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
+    uidlatest = re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
+    # update "uidnext" because some stuff is relying on it
+    # for example metadata cache
+    con.uidnext = str(int(uidlatest) + 1)
+    return uidlatest
 
 
 @command(writable=True)
@@ -470,7 +482,7 @@ def parse_thread(line):
 
             opening -= 1
             if opening == 0:
-                threads.append(tuple(uids))
+                threads.append(uids)
                 all_uids.extend(uids)
                 uids = []
         elif i == ' ':
