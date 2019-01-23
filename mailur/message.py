@@ -241,7 +241,11 @@ def parse_mime(orig, uid):
     return htm, txt, files, headers, errors
 
 
-def parsed(raw, uid, time, flags, mids):
+def normalize_msgid(mid):
+    return mid.strip().lower()
+
+
+def parsed(raw, uid, time, flags):
     # "email.message_from_bytes" uses "email.policy.compat32" policy
     # and it's by intention, because new policies don't work well
     # with real emails which have no encodings, badly formated addreses, etc.
@@ -283,13 +287,11 @@ def parsed(raw, uid, time, flags, mids):
     refs = orig['references']
     refs = [i.strip().lower() for i in refs.split()] if refs else []
     parent = refs[-1] if refs else None
-    in_reply_to = orig['in-reply-to'] and orig['in-reply-to'].strip().lower()
+    in_reply_to = orig['in-reply-to'] and normalize_msgid(orig['in-reply-to'])
     if in_reply_to:
         parent = in_reply_to
         if not refs:
             refs = [in_reply_to]
-    # TODO: should it skip message-ids which don't exist?
-    # refs = [r for r in refs if r in mids]
     meta['parent'] = parent
 
     mid = orig['message-id']
@@ -297,12 +299,8 @@ def parsed(raw, uid, time, flags, mids):
         log.info('## UID=%s has no "Message-ID" header', uid)
         mid = '<mailur@noid>'
     else:
-        mid = mid.strip().lower()
+        mid = normalize_msgid(mid)
     meta['msgid'] = mid
-    if mids[mid][0] != uid:
-        log.info('## UID=%s duplicate: {%r: %r}', uid, mid, mids[mid])
-        meta['duplicate'] = mid
-        mid = gen_msgid('dup')
 
     arrived = dt.datetime.strptime(time.strip('"'), '%d-%b-%Y %H:%M:%S %z')
     meta['arrived'] = int(arrived.timestamp())
@@ -368,8 +366,6 @@ def parsed(raw, uid, time, flags, mids):
     flags = []
     if meta['errors']:
         flags.append('#err')
-    if meta.get('duplicate'):
-        flags.append('#dup')
     return msg, flags
 
 

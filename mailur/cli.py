@@ -4,8 +4,7 @@ Usage:
   mlr gmail <login> set <username> <password>
   mlr gmail <login> [--tag=<tag> --box=<box> --parse] [options]
   mlr parse <login> [<criteria>] [options]
-  mlr threads <login> [<criteria>]
-  mlr metadata <login>
+  mlr metadata <login> [<uids>]
   mlr sync <login> [--timeout=<timeout>]
   mlr sync-flags <login> [--reverse]
   mlr clean-flags <login>
@@ -71,10 +70,7 @@ def process(args):
     elif args['clean-flags']:
         local.clean_flags()
     elif args['metadata']:
-        local.data_msgs()
-        local.data_msgids()
-    elif args['threads']:
-        local.update_threads(criteria=args.get('<criteria>'))
+        local.update_metadata(args.get('<uids>'))
     elif args['icons']:
         icons()
     elif args['web']:

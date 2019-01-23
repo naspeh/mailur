@@ -30,13 +30,20 @@ def test_uidpairs(gm_client, msgs, patch, call):
     # warm cache up
     local.data_addresses.get()
     local.data_uidpairs.get()
+    local.data_threads.get()
+    local.data_msgids.get()
     with patch('imaplib.IMAP4.uid') as m:
         m.return_value = 'OK', []
-        local.data_msgs('4')
+        local.update_metadata('4')
         assert m.called
-        assert m.call_args == call('FETCH', '4', '(FLAGS BINARY.PEEK[1])')
+        assert m.call_args_list == [
+            call('FETCH', '4', '(FLAGS BINARY.PEEK[1])'),
+            call('FETCH', '1:*', '(UID FLAGS)'),
+            call('THREAD', 'REFS UTF-8 INTHREAD REFS UID 4'),
+        ]
 
-    with patch('mailur.local.data_msgs', wraps=local.data_msgs) as m:
+    patched = {'wraps': local.update_metadata}
+    with patch('mailur.local.update_metadata', **patched) as m:
         local.parse('uid 1')
         assert m.called
         assert m.call_args == call('6')
@@ -85,7 +92,7 @@ def test_data_threads(gm_client):
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.update_threads()
+    local.update_threads('1:*')
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
@@ -93,7 +100,7 @@ def test_data_threads(gm_client):
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
-    local.update_threads()
+    local.update_threads('1:*')
     assert local.data_threads.get()[1] == {'10': ['6', '7', '8', '10']}
     assert local.search_thrs('all') == ['10']
 
@@ -268,14 +275,14 @@ def test_msgids(gm_client, msgs, some, load_file, latest):
     }
     res = msgs()[-2:]
     assert [i['uid'] for i in res] == ['9', '10']
-    assert [i['body']['message-id'] for i in res] == ['<42@mlr>', some]
-    assert some.value.endswith('@mailur.dup>')
-    msg = latest(parsed=True)
-    assert msg['meta']['duplicate'] == '<42@mlr>'
-    assert '#dup' in msg['flags']
-
-    res = msgs()
-    assert len(set([i['body']['message-id'] for i in res])) == 10
+    assert [i['body']['message-id'] for i in res] == ['<42@mlr>', '<42@mlr>']
+    # TODO: maybe introduce such duplication handling again
+    # assert some.value.endswith('@mailur.dup>')
+    # msg = latest(parsed=True)
+    # assert msg['meta']['duplicate'] == '<42@mlr>'
+    # assert '#dup' in msg['flags']
+    # res = msgs()
+    # assert set([i['body']['message-id'] for i in res]) == set()
 
     gm_client.add_emails([
         {'raw': load_file('msg-header-with-no-msgid.txt')}

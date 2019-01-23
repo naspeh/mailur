@@ -211,7 +211,6 @@ def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
     if len(uids):
         uids = imap.Uids(uids, **opts)
         uids.call_async(fetch_uids, uids, tag, box)
-        local.data_msgids()
 
     data_uidnext(tag, (uidvalidity, uidnext))
 

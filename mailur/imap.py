@@ -306,7 +306,7 @@ def multiappend(con, box, msgs, *, batch=None, threads=10):
 @command(dovecot=True)
 def thread(con, *criteria):
     res = check(con.uid('THREAD', *criteria))
-    return parse_thread(res[0].decode())
+    return parse_thread(res[0].decode() if res else '')
 
 
 @command(dovecot=True)

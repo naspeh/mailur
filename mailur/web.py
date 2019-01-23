@@ -343,7 +343,7 @@ def editor():
                 maintype=maintype, subtype=subtype
             )
     msg = message.new_draft(draft, request.forms, related)
-    oid, pid = local.new_msg(msg, draft['flags'], no_parse=True)
+    oid, _ = local.new_msg(msg, draft['flags'], no_parse=True)
     local.del_msg(draft['origin_uid'])
     local.parse()
     pid = local.pair_origin_uids([oid])[0]
@@ -483,8 +483,7 @@ def avatars():
 
 @app.get('/refresh/metadata')
 def refresh_metadata():
-    local.data_msgids()
-    local.data_msgs()
+    local.update_metadata('1:*')
     return 'Done.'
 
 
@@ -626,8 +625,7 @@ def parse_query(q):
             mids = local.data_msgids.get()
             uid = mids.get(mid)
             if uid:
-                uid = local.pair_origin_uids(uid)[0]
-                opts['uid'] = uid
+                opts['uid'] = uid[0]
                 q = ''
             else:
                 q = 'header message-id %s' % mid
@@ -744,6 +742,7 @@ def thread(q, opts, preload=4):
     edit = None
     has_link = False
     parents = []
+    mids = local.data_msgids.get()
     for i, m in msgs.items():
         if m['is_link']:
             has_link = True
@@ -755,7 +754,7 @@ def thread(q, opts, preload=4):
             edit = draft_info(m['uid'])[0]
 
         parent = m['parent']
-        parent = parent and local.pair_msgid(parent)
+        parent = parent and mids.get(parent, [None])[0]
         if not parent or parent not in uids:
             continue
         uids.remove(m['uid'])

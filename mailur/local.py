@@ -110,8 +110,10 @@ def metadata(name, default):
 
         def fetch():
             res = con.fetch(uidlatest, 'BODY.PEEK[]')
-            name, data = json.loads(res[0][1].decode())
-            return data
+            if res and res[0]:
+                name, data = json.loads(res[0][1].decode())
+                return data
+            return default()
 
         value = fn_time(fetch, '%s.fetch' % inner.__name__)()
         cache.set(cache_key, (uidlatest, value))
@@ -215,17 +217,89 @@ def data_uidpairs(pairs):
     return pairs
 
 
-@fn_time
-@using()
 @metadata('addresses', lambda: ({}, {}))
-def data_addresses(addrs_from, addrs_to, con=None):
+def data_addresses(addrs_from, addrs_to):
     return [addrs_from, addrs_to]
+
+
+@metadata('msgs', lambda: {})
+def data_msgs(msgs):
+    return msgs
+
+
+@metadata('msgids', lambda: {})
+def data_msgids(mids):
+    return mids
+
+
+def clean_threads(uids):
+    thrids, thrs = data_threads.get()
+    cleaned = []
+    for uid in uids:
+        thrid = thrids.pop(uid, None)
+        thr = thrs.get(thrid)
+        if uid == thrid:
+            del thrs[uid]
+            cleaned.extend(thr)
+        elif thr:
+            thr.remove(uid)
+    for uid in cleaned:
+        thrids.pop(uid, None)
+
+    data_threads(thrids, thrs)
+    log.info('## cleaned %s threads', len(cleaned))
+
+
+def clean_msgs(uids):
+    msgs = data_msgs.get()
+    uidpairs = data_uidpairs.get()
+    msgids = data_msgids.get()
+
+    for uid in uids:
+        msg = msgs.pop(uid)
+        uidpairs.pop(msg['origin_uid'], None)
+        mid = msg['msgid']
+        ids = msgids[mid]
+        if len(ids) == 1:
+            del msgids[mid]
+        else:
+            ids.remove(uid)
+            msgids[mid] = ids
+
+    data_msgs(msgs)
+    data_uidpairs(uidpairs)
+    data_msgids(msgids)
+    log.info('## cleaned %s messages' % len(uids))
 
 
 @fn_time
 @using(ALL)
-@metadata('msgs', lambda: {})
-def data_msgs(uids=None, con=None):
+@user_lock('update_metadata')
+def update_metadata(uids=None, clean=False, con=None):
+    if clean:
+        clean_msgs(uids)
+        clean_threads(uids)
+        return
+
+    if uids == '1:*':
+        msgs = {}
+        addrs_from, addrs_to = {}, {}
+        uidpairs = {}
+        msgids = {}
+    else:
+        msgs = data_msgs.get()
+        addrs_from, addrs_to = data_addresses.get()
+        uidpairs = data_uidpairs.get()
+        msgids = data_msgids.get()
+        thrids, thrs = data_threads.get()
+
+        if uids is None:
+            if uidpairs:
+                uidmax = max(uidpairs.values(), key=lambda v: int(v))
+            else:
+                uidmax = 1
+            uids = '%s:*' % uidmax
+
     def fill_addrs(store, meta, fields):
         addrs = (meta[i] for i in fields if meta.get(i))
         addrs = sum(([a] if isinstance(a, dict) else a for a in addrs), [])
@@ -237,16 +311,6 @@ def data_msgs(uids=None, con=None):
             elif store[a]['time'] < meta['date']:
                 store[a]['time'] = meta['date']
 
-    if uids:
-        msgs = data_msgs.get()
-        addrs_from, addrs_to = data_addresses.get()
-        origin = data_uidpairs.get()
-    else:
-        uids = '1:*'
-        msgs = {}
-        addrs_from, addrs_to = {}, {}
-        origin = {}
-
     res = con.fetch(imap.Uids(uids), '(FLAGS BINARY.PEEK[1])')
     for i in range(0, len(res), 2):
         pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
@@ -255,13 +319,27 @@ def data_msgs(uids=None, con=None):
         keys = ('arrived', 'draft_id', 'msgid', 'origin_uid', 'from')
         small_info = {k: v for k, v in info.items() if k in keys}
         msgs[uid] = small_info
-        origin[info['origin_uid']] = uid
+        uidpairs[info['origin_uid']] = uid
+
+        # message-ids
+        mid = info['msgid']
+        ids = msgids.get(mid, [])
+        if uid not in ids:
+            ids.append(uid)
+            if len(ids) > 1:
+                ids = sorted(ids, key=lambda i: int(i))
+            msgids[mid] = ids
+
+        # addresses
         fill_addrs(addrs_to, info, ('from', 'to', 'cc'))
         if {'#sent', '\\Draft'}.intersection(flags.split()):
             fill_addrs(addrs_from, info, ('from',))
 
-    data_uidpairs(origin)
+    data_msgs(msgs)
+    data_msgids(msgids)
+    data_uidpairs(uidpairs)
     data_addresses(addrs_from, addrs_to)
+    update_threads(uids)
     return msgs
 
 
@@ -275,48 +353,6 @@ def pair_parsed_uids(uids, msgs=None):
     if msgs is None:
         msgs = data_msgs.get()
     return tuple(msgs[i]['origin_uid'] for i in uids if i in msgs)
-
-
-def pair_msgid(mid, msgids=None):
-    if msgids is None:
-        msgids = data_msgids.get()
-    origin_uid = msgids.get(mid.lower())
-    return origin_uid and pair_origin_uids(origin_uid)[0]
-
-
-@fn_time
-@using(SRC)
-@metadata('msgids', lambda: {})
-def data_msgids(uids=None, rm=False, con=None):
-    if uids:
-        mids = data_msgids.get()
-    else:
-        uids = '1:*'
-        mids = {}
-
-    res = con.fetch(uids, 'BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)]')
-    for i in range(0, len(res), 2):
-        uid = res[i][0].decode().split()[2]
-        line = res[i][1].strip()
-        if line:
-            mid = email.message_from_bytes(line)['message-id'].strip().lower()
-        else:
-            mid = '<mailur@noid>'
-
-        uids = mids.get(mid, [])
-        if rm and len(uids) == 1:
-            del mids[mid]
-        elif rm:
-            uids.remove(uid)
-            mids[mid] = uids
-        elif uid in uids:
-            pass
-        else:
-            uids.append(uid)
-            if len(uids) > 1:
-                uids = sorted(uids, key=lambda i: int(i))
-            mids[mid] = uids
-    return mids
 
 
 @fn_time
@@ -351,7 +387,6 @@ def unlink_threads(uids):
 @using(SRC, reuse=False)
 def parse_msgs(uids, con=None):
     res = con.fetch(uids.str, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
-    mids = data_msgids.get()
 
     def msgs():
         for i in range(0, len(res), 2):
@@ -359,7 +394,7 @@ def parse_msgs(uids, con=None):
             pattern = r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)'
             uid, time, flags = re.search(pattern, line.decode()).groups()
             flags = flags.split()
-            msg_obj, marks = message.parsed(body, uid, time, flags, mids)
+            msg_obj, marks = message.parsed(body, uid, time, flags)
             flags += marks
             msg = msg_obj.as_bytes()
             yield time, ' '.join(flags), msg
@@ -403,8 +438,7 @@ def parse(criteria=None, con=None, **opts):
             log.info('## deleting %s from %r', puids, ALL)
             con.store(puids, '+FLAGS.SILENT', '\\Deleted')
             con.expunge()
-            clean_threads(puids.val)
-            data_msgs()
+            update_metadata(puids.val, clean=True)
 
     uids = imap.Uids(uids, **opts)
     puids = ','.join(uids.call_async(parse_msgs, uids))
@@ -412,9 +446,7 @@ def parse(criteria=None, con=None, **opts):
         puids = '1:*'
 
     data_uidnext(uidnext)
-    data_msgs(puids)
-    data_msgids(puids)
-    update_threads(puids)
+    update_metadata(puids)
 
 
 @metadata('threads', lambda: [{}, {}])
@@ -422,34 +454,14 @@ def data_threads(thrids, thrs):
     return [thrids, thrs]
 
 
-@using(ALL)
-@user_lock('update_threads')
-def clean_threads(uids, con=None):
-    thrids, thrs = data_threads.get()
-    cleaned = []
-    for uid in uids:
-        thrid = thrids.pop(uid, None)
-        thr = thrs.get(thrid)
-        if uid == thrid:
-            del thrs[uid]
-            cleaned.extend(thr)
-        elif thr:
-            thr.remove(uid)
-    for uid in cleaned:
-        thrids.pop(uid, None)
-    data_threads(thrids, thrs)
-    log.info('## cleaned %s threads', len(cleaned))
-
-
 @using()
 @user_lock('update_threads')
-def update_threads(uids=None, con=None):
-    if uids is None:
-        uids = '1:*'
-        thrids, thrs = {}, {}
-    else:
-        uids = uids if isinstance(uids, str) else ','.join(uids)
+def update_threads(uids, thrids=None, thrs=None, con=None):
+    if thrids is None:
         thrids, thrs = data_threads.get()
+
+    if not isinstance(uids, str):
+        uids = ','.join(uids)
 
     orig_thrs = con.thread('REFS UTF-8 INTHREAD REFS UID %s' % uids)
     if not orig_thrs:
@@ -458,7 +470,6 @@ def update_threads(uids=None, con=None):
 
     all_uids = set(orig_thrs.all_uids)
 
-    uidpairs = data_uidpairs.get()
     msgs = data_msgs.get()
     mids = data_msgids.get()
 
@@ -466,7 +477,6 @@ def update_threads(uids=None, con=None):
     linked_uids = set()
     for link in data_links.get():
         uids = sum((mids[mid] for mid in link), [])
-        uids = pair_origin_uids(uids, uidpairs=uidpairs)
         if not all_uids.intersection(uids):
             continue
         all_links.append(uids)
@@ -535,7 +545,6 @@ def clean_flags(con=None):
     uids = res[0].decode().split()
     con.store(uids, '+FLAGS.SILENT', '#link \\Seen')
     sync_flags_to_all()
-    update_threads()
 
 
 @fn_time
@@ -844,20 +853,18 @@ def tags_info(con=None):
 @fn_time
 @using(None)
 def del_msg(uid, con=None):
-    data_msgids([uid], rm=True)
     pid = pair_origin_uids([uid])[0]
     for box, uid in ((SRC, uid), (ALL, pid)):
         con.select(box, readonly=False)
         con.store([uid], '+FLAGS.SILENT', '\\Deleted')
         con.expunge()
-    update_threads()
+    update_metadata([uid], clean=True)
 
 
 @fn_time
 @using(None, readonly=False)
 def new_msg(msg, flags, no_parse=False, con=None):
     uid = con.append(SRC, flags, None, msg.as_bytes())
-    data_msgids([uid])
     if no_parse:
         return uid, None
     parse()
