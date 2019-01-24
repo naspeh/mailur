@@ -367,7 +367,7 @@ def test_general(gm_client, load_email, latest, login, some):
     res = web.search({'q': ':threads tag:#inbox'})
     assert res['uids'] == ['4', '2']
     res = web.post_json('/thrs/link', {'uids': res['uids']}).json
-    assert res == {'uids': ['4', '1', '2']}
+    assert res == {'uids': ['1', '2', '4']}
     res = web.search({'q': ':threads tag:#inbox'})
     assert res['uids'] == ['4']
     web.flag({'uids': ['4'], 'new': ['#trash']})

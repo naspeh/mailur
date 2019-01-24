@@ -367,24 +367,19 @@ def pair_parsed_uids(uids, msgs=None):
 @user_lock('link_threads')
 def link_threads(uids, unlink=False, con=None):
     thrids, thrs = data_threads.get()
-    all_uids = sum((thrs[thrids[uid]] for uid in uids), [])
-    all_uids = imap.Uids(all_uids)
+    all_uids = set(sum((thrs[thrids[uid]] for uid in uids), []))
 
-    res = con.fetch(all_uids, 'BODY.PEEK[1]')
-    mids = []
-    for i in range(0, len(res), 2):
-        meta = json.loads(res[i][1].decode())
-        mids.append(meta['msgid'])
-
-    msgids_set = set(mids)
+    msgs = data_msgs.get()
     links = data_links.get()
-    links = [link for link in links if not msgids_set.intersection(link)]
+
+    link = set(msgs[uid]['msgid'] for uid in all_uids)
+    links = [l for l in links if not link.intersection(l)]
     if not unlink:
-        links.append(mids)
+        links.append(sorted(link))
 
     data_links(links)
-    update_threads(all_uids.val)
-    return all_uids.val
+    update_threads(all_uids)
+    return sorted(all_uids)
 
 
 def unlink_threads(uids):

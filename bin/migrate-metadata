@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+import json
+import re
+import sys
+
+from mailur import conf, gmail, local, message
+
+conf['USER'] = sys.argv[1]
+
+c = local.client()
+
+
+metadata = (
+    ('tags', lambda v: local.data_tags(v)),
+    ('gmail/credentials', lambda v: gmail.data_credentials(*v))
+)
+
+for name, fn in metadata:
+    res = c.getmetadata('INBOX', name)
+    val = json.loads(res[0][1])
+    fn(val)
+
+
+mids = local.data_msgids.get()
+c.select('Src')
+res = c.search('from mailur@link')
+links = res[0].decode().split()
+res = c.fetch(links, '(UID BODY.PEEK[HEADER.FIELDS (References)])')
+for i in range(0, len(res), 2):
+    pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
+    uid = res[i][0].decode().split()[2]
+    refs = re.sub('^References: ?', '', res[i][1].decode()).strip().split()
+    uids = sum((mids.get(message.normalize_msgid(i), []) for i in refs), [])
+    local.link_threads(uids)
+    parsed_uid = local.pair_origin_uids([uid])[0]
+    local.del_msg(parsed_uid)
