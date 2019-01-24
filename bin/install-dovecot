@@ -33,16 +33,17 @@ mail_debug=yes
 verbose_ssl=yes
 
 ssl = no
-ssl_client_ca_dir = /etc/ssl/certs/
+ssl_client_ca_file = /etc/pki/tls/cert.pem
 
 # TODO: remove after migration to new metadata storage
 # should be big enough to save all message-ids as metadata
 imap_max_line_length = 10M
 
+mdbox_rotate_size = 100M
+
 # strange behavior when applying flags for mdbox,
 # somehow flags are mixed up on messages
 # mail_location = mdbox:~
-# mdbox_rotate_size = 100M
 mail_location = sdbox:~
 
 # mail_always_cache_fields = date.sent date.saved hdr.references
@@ -76,6 +77,7 @@ namespace mlr {
     separator = /
     hidden = yes
     list = no
+    location = mdbox:~/mlr
     mailbox {
         auto = create
     }
@@ -98,8 +100,9 @@ plugin {
 
     fts = lucene
     fts_lucene = whitespace_chars=@.
-    fts_autoindex=yes
-    fts_autoindex_exclude=INBOX
+    fts_autoindex = yes
+    fts_autoindex_exclude = INBOX
+    fts_autoindex_exclude2 = mlr/Sys
 }
 
 mail_attribute_dict = file:%h/dovecot-attributes
@@ -130,7 +133,8 @@ service doveadm {
         port = 12300
     }
 }
-doveadm_port = 12300
+# use https port from nginx
+doveadm_port = 12345
 doveadm_password = $secret
 EOF
 cat <<EOF > /etc/dovecot/passwd.masters
