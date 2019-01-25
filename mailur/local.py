@@ -417,7 +417,8 @@ def parse(criteria=None, con=None, **opts):
         criteria = 'UID %s:*' % uidnext
 
     con.select(SRC)
-    res = con.sort('(ARRIVAL)', criteria)
+    # TODO: clean @link part after metadata migration
+    res = con.sort('(ARRIVAL)', '%s NOT FROM mailur@link' % criteria)
     uids = res[0].decode().split()
     uids = [i for i in uids if i and int(i) >= uidnext]
     if not uids:
@@ -479,7 +480,7 @@ def update_threads(uids, thrids=None, thrs=None, con=None):
     all_links = []
     linked_uids = set()
     for link in data_links.get():
-        uids = sum((mids[mid] for mid in link), [])
+        uids = sum((mids.get(mid, []) for mid in link), [])
         if not all_uids.intersection(uids):
             continue
         all_links.append(uids)
