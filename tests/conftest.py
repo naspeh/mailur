@@ -34,8 +34,10 @@ def init(request):
 
     users_str = ' '.join(sum(users, []))
     subprocess.call('''
-    path=/home/vmail/test
+    path=/tmp/vmail
     rm -rf $path
+    mkdir -p $path
+    chown vmail:vmail $path
     user="%s" home=$path append=1 bin/install-users
     systemctl restart dovecot
     ''' % users_str, shell=True, cwd=root)

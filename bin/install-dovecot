@@ -90,7 +90,7 @@ namespace mlr {
     }
 }
 
-mail_plugins = \$mail_plugins acl notify mail_log fts fts_lucene
+mail_plugins = \$mail_plugins acl notify mail_log replication fts fts_lucene
 plugin {
     acl = vfile:/etc/dovecot/acl
     acl_globals_only = yes
@@ -127,6 +127,22 @@ service indexer-worker {
     vsz_limit = 2G
 }
 
+replication_dsync_parameters = -d -n main -n mlr
+service replicator {
+    process_min_avail = 1
+    unix_listener replicator-doveadm {
+        user = vmail
+        mode = 0600
+    }
+}
+service aggregator {
+    fifo_listener replication-notify-fifo {
+        user = vmail
+    }
+    unix_listener replication-notify {
+        user = vmail
+    }
+}
 service doveadm {
     inet_listener {
     address = localhost
