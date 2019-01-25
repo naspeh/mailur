@@ -203,8 +203,8 @@ def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
     if folder['uidval'] != uidvalidity:
         uidvalidity = folder['uidval']
         uidnext = 1
-    res = gm.search('UID %s:*' % uidnext)
-    uids = [i for i in res[0].decode().split() if int(i) >= uidnext]
+    uids = gm.search('UID %s:*' % uidnext)
+    uids = [i for i in uids if int(i) >= uidnext]
     uidnext = folder['uidnext']
     log.info('## box(%s): %s new uids', gm.box, len(uids))
     gm.logout()

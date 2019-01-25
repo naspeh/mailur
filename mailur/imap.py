@@ -399,7 +399,8 @@ def status(con, box, fields):
 
 @command()
 def search(con, *criteria):
-    return check(con.uid('SEARCH', None, *criteria))
+    res = check(con.uid('SEARCH', None, *criteria))
+    return res[0].decode().split()
 
 
 @command(writable=True)

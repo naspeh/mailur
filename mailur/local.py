@@ -431,7 +431,7 @@ def parse(criteria=None, con=None, **opts):
     count = con.select(ALL)[0].decode()
     if count != '0':
         if criteria.lower() == 'all':
-            puids = con.search('all')[0].decode().split()
+            puids = con.search('all')
         else:
             puids = pair_origin_uids(uids)
         if puids:
@@ -546,8 +546,7 @@ def msgs_flag(uids, old, new, con_src=None, con_all=None):
 @using(SRC, readonly=False)
 def clean_flags(con=None):
     con.store('1:*', '-FLAGS.SILENT', '#err #dup #latest')
-    res = con.search('HEADER MESSAGE-ID @mailur.link>')
-    uids = res[0].decode().split()
+    uids = con.search('HEADER MESSAGE-ID @mailur.link>')
     con.store(uids, '+FLAGS.SILENT', '#link \\Seen')
     sync_flags_to_all()
 
@@ -562,11 +561,9 @@ def sync_flags_to_all(con_src=None, con_all=None):
         if flag in skip_flags:
             continue
         q = flag[1:] if flag.startswith('\\') else 'keyword %s' % flag
-        res = con_src.search(q)
-        oids = res[0].decode().split()
+        oids = con_src.search(q)
         pairs = set(pair_origin_uids(oids))
-        res = con_all.search(q)
-        pids = set(res[0].decode().split())
+        pids = set(con_all.search(q))
         con_all.store(pairs - pids, '+FLAGS.SILENT', flag)
         con_all.store(pids - pairs, '-FLAGS.SILENT', flag)
     rm_flags = set(con_all.flags) - set(con_src.flags) - skip_flags
@@ -582,11 +579,9 @@ def sync_flags_to_src(con_src=None, con_all=None):
         if flag in ('#latest', '#err', '#dup'):
             continue
         q = flag[1:] if flag.startswith('\\') else 'keyword %s' % flag
-        res = con_all.search(q)
-        pids = res[0].decode().split()
+        pids = con_all.search(q)
         pairs = set(pair_parsed_uids(pids))
-        res = con_src.search(q)
-        oids = set(res[0].decode().split())
+        oids = set(con_src.search(q))
         con_src.store(pairs - oids, '+FLAGS.SILENT', flag)
         con_src.store(oids - pairs, '-FLAGS.SILENT', flag)
     rm_flags = set(con_src.flags) - set(con_all.flags)
@@ -730,8 +725,7 @@ def msg_flags(uid, box=ALL, con=None):
 @fn_time
 @using()
 def search_thrs(query, con=None):
-    res = con.search(query)
-    uids = res[0].decode().split()
+    uids = con.search(query)
     if uids:
         thrids, thrs = data_threads.get()
         uids = [thrids[uid] for uid in uids]
@@ -823,8 +817,7 @@ def thrs_info(uids, tags=None, con=None):
 def tags_info(con=None):
     unread = {}
     hidden = {}
-    res = con.search('UNSEEN')
-    uids = res[0].decode().split()
+    uids = con.search('UNSEEN')
     if uids:
         res = con.fetch(uids, 'FLAGS')
         for line in res:

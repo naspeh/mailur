@@ -56,12 +56,12 @@ def test_fn_pack_uids():
 def test_literal_size_limit(gm_client, raises):
     gm_client.add_emails([{} for i in range(0, 20)], parse=False)
     c = local.client(local.SRC)
-    res = c.search('ALL')
-    uids = res[0].decode().replace(' ', ',')
+    all_uids = c.search('ALL')
 
+    uids = ','.join(all_uids)
     uid = ',1%.127i' % 1 * 8
     uids += (uid * 1024 * 9)
-    assert res == c.search('UID %s' % uids)
+    assert all_uids == c.search('UID %s' % uids)
 
     uids += (uid * 1024)
     with raises(imap.Error) as e:
