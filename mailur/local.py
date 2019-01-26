@@ -57,21 +57,18 @@ def metadata_uids(con=None):
     def get_map():
         uids = {}
         all_uids = set()
-        res = con.fetch('1:*', '(UID FLAGS)')
-        for line in res:
-            val = re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode())
-            if not val:
-                continue
-            uid, flags = val.groups()
-            name = [f for f in flags.split() if not f.startswith('\\')][0]
+        res = con.fetch('1:*', '(UID BODY[HEADER.FIELDS (Subject)])')
+        for i in range(0, len(res), 2):
+            uid = res[i][0].decode().split()[2]
+            name = re.sub(r'^Subject: ?', '', res[i][1].decode()).strip()
             if name not in uids or int(uids[name]) < int(uid):
                 uids[name] = uid
             all_uids.add(uid)
-        # clean = all_uids.difference(uids.values())
-        # if clean:
-        #     with client(SYS, readonly=False) as c:
-        #         c.store(clean, '+FLAGS.SILENT', '\\Deleted')
-        #         c.expunge()
+        clean = all_uids.difference(uids.values())
+        if clean and len(clean) > 100:
+            with client(SYS, readonly=False) as c:
+                c.store(clean, '+FLAGS.SILENT', '\\Deleted')
+                c.expunge()
         return uids
 
     get_map = fn_time(get_map, 'metadata_uids.get_map')
@@ -92,8 +89,10 @@ def metadata(name, default):
     def inner(*a, **kw):
         con = kw.pop('_con')
         val = inner.fn(*a, **kw)
-        data = json.dumps([name, val], sort_keys=True)
-        uidlatest = con.append(SYS, name, None, data.encode())
+        data = json.dumps(val, sort_keys=True)
+        msg = message.binary(data)
+        msg.add_header('Subject', name)
+        uidlatest = con.append(SYS, name, None, msg.as_bytes())
         cache.set(cache_key, (uidlatest, val))
         return val
 
@@ -111,9 +110,9 @@ def metadata(name, default):
                 return value
 
         def fetch():
-            res = con.fetch(uidlatest, 'BODY.PEEK[]')
+            res = con.fetch(uidlatest, 'BODY.PEEK[1]')
             if res and res[0]:
-                name, data = json.loads(res[0][1].decode())
+                data = json.loads(res[0][1].decode())
                 return data
             return default()
 
@@ -414,6 +413,12 @@ def parse(criteria=None, con=None, **opts):
         if saved:
             uidnext = saved
             log.info('## saved: uidnext=%s', uidnext)
+        else:
+            uidmax = 0
+            uidpairs = data_uidpairs.get()
+            if uidpairs:
+                uidmax = max(int(i) for i in uidpairs.values())
+            uidnext = uidmax + 1
         criteria = 'UID %s:*' % uidnext
 
     con.select(SRC)

@@ -38,7 +38,7 @@ def test_uidpairs(gm_client, msgs, patch, call):
         assert m.called
         assert m.call_args_list == [
             call('FETCH', '4', '(FLAGS BINARY.PEEK[1])'),
-            call('FETCH', '1:*', '(UID FLAGS)'),
+            call('FETCH', '1:*', '(UID BODY[HEADER.FIELDS (Subject)])'),
             call('THREAD', 'REFS UTF-8 INTHREAD REFS UID 4'),
         ]
 
