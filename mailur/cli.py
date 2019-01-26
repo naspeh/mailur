@@ -27,7 +27,7 @@ import time
 from docopt import docopt
 from gevent import joinall, sleep, spawn
 
-from . import LockError, conf, gmail, local, log
+from . import LockError, conf, gmail, imap, local, log
 
 root = pathlib.Path(__file__).resolve().parent.parent
 
@@ -87,12 +87,14 @@ def process(args):
 def retry(fn):
     @ft.wraps(fn)
     def inner(*a, **kw):
-        while 1:
+        count = 3
+        while count:
             try:
                 fn(*a, **kw)
             except Exception as e:
                 log.exception(e)
                 sleep(10)
+                count = -1
     return inner
 
 
@@ -100,6 +102,7 @@ def sync(timeout=1200):
     @retry
     def remote():
         def handler(res=None):
+            imap.clean_pool()
             try:
                 gmail.fetch()
                 local.parse()
@@ -118,6 +121,7 @@ def sync(timeout=1200):
 
     @retry
     def flags():
+        imap.clean_pool()
         local.sync_flags_to_all()
         local.sync_flags(timeout=timeout)
 

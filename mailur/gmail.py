@@ -74,6 +74,7 @@ def data_uidnext(tag, value):
 
 
 @local.using(local.SRC)
+@local.using(local.SYS, name=None, parent=True)
 def fetch_uids(uids, tag, box, con=None):
     exists = {}
     res = con.fetch('1:*', 'BODY.PEEK[HEADER.FIELDS (X-GM-MSGID)]')
@@ -112,8 +113,6 @@ def fetch_uids(uids, tag, box, con=None):
         res = gm.fetch(new_uids, fields)
         login = gm.username
 
-    tags = local.data_tags.get()
-
     def flag(m):
         flag = m.group()
         if flag:
@@ -127,7 +126,7 @@ def fetch_uids(uids, tag, box, con=None):
             label = imap_utf7.decode(label)
             flag = MAP_LABELS.get(label, None)
             if flag is None:
-                flag = local.get_tag(label, tags=tags)['id']
+                flag = local.get_tag(label)['id']
             return flag
         return ''
 
@@ -193,8 +192,7 @@ def fetch_uids(uids, tag, box, con=None):
 
 @fn_time
 @user_lock('gmail-fetch')
-@local.using(None)
-def fetch_folder(tag='\\All', *, box=None, con=None, **opts):
+def fetch_folder(tag='\\All', *, box=None, **opts):
     uidvalidity, uidnext = data_uidnext.key(tag, (None, None))
     log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
     gm = client(tag, box=box)

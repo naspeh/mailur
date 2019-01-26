@@ -35,11 +35,7 @@ def using(client, box, readonly=True, name='con', reuse=True, parent=False):
             con = pool[key]
             parent_orig = con.parent
             if not con.parent and box:
-                try:
-                    con.select(box, readonly)
-                except Error:
-                    con = client(box, readonly)
-                    pool[key] = con
+                con.select(box, readonly)
                 if parent:
                     con.parent = parent
             if name:

@@ -596,8 +596,8 @@ def sync_flags_to_src(con_src=None, con_all=None):
 @fn_time
 @using(None, reuse=False)
 def sync_flags(con=None, timeout=None):
-    @using(SRC, name='con_src')
-    @using(ALL, name='con_all', readonly=False)
+    @using(SRC, name='con_src', reuse=False)
+    @using(ALL, name='con_all', readonly=False, reuse=False)
     def handler(res, con_src=None, con_all=None):
         modseq0 = modseq[0]
         modseq_ = re.search(r'MODSEQ \((\d+)\)', res[0].decode()).group(1)
