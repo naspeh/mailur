@@ -2,12 +2,11 @@ import email
 import functools as ft
 import hashlib
 import imaplib
-import json
 import re
 
 from gevent import joinall, socket, spawn
 
-from . import cache, conf, fn_time, html, imap, log, message, user_lock
+from . import cache, conf, fn_time, html, imap, json, log, message, user_lock
 
 SRC = 'INBOX'
 ALL = 'mlr/All'

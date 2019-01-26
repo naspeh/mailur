@@ -1,7 +1,6 @@
 import base64
 import datetime as dt
 import functools as ft
-import json
 import pathlib
 import re
 import smtplib
@@ -15,7 +14,7 @@ from pytz import common_timezones, timezone, utc
 
 from bottle import Bottle, abort, request, response, static_file, template
 
-from . import LockError, cache, conf, html, imap, local, log, message
+from . import LockError, cache, conf, html, imap, json, local, log, message
 from .schema import validate
 
 root = pathlib.Path(__file__).parent.parent

@@ -9,8 +9,10 @@ import time
 import uuid
 from contextlib import contextmanager
 
+import ujson
 from gevent import sleep
 
+json = ujson
 conf = {
     'DEBUG': os.environ.get('MLR_DEBUG', True),
     'DEBUG_IMAP': os.environ.get('MLR_DEBUG_IMAP', 0),

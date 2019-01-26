@@ -12,13 +12,13 @@ def test_login_and_themes(web, some, login):
     res = web.get('/login', status=200)
     assert '/assets/theme-base.css' in res, res.text
     assert '/assets/login.js' in res, res.txt
-    assert '"themes": ["base", "indigo", "mint", "solarized"]' in res, res.text
-    assert '"Europe/Kiev"' in res, res.text
-    assert '"current_theme": "base"' in res, res.text
+    assert '"themes":["base","indigo","mint","solarized"]' in res, res.text
+    assert '"Europe\\/Kiev"' in res, res.text
+    assert '"current_theme":"base"' in res, res.text
 
     res = web.get('/login?theme=solarized', status=200)
     assert '/assets/theme-solarized.css' in res, res.text
-    assert '"current_theme": "solarized"' in res, res.text
+    assert '"current_theme":"solarized"' in res, res.text
 
     params = {'username': login.user1, 'password': 'user', 'timezone': 'UTC'}
     res = web.post_json('/login', params, status=200)
@@ -27,8 +27,8 @@ def test_login_and_themes(web, some, login):
     res = web.get('/', status=200)
     assert '/assets/theme-base.css' in res, res.text
     assert '/assets/index.js' in res, res.text
-    assert '"tags": {' in res, res.text
-    assert '"current_theme": "base"' in res, res.text
+    assert '"tags":{' in res, res.text
+    assert '"current_theme":"base"' in res, res.text
 
     res = web.get('/?theme=solarized', status=200)
     assert '/assets/theme-solarized.css' in res, res.text
