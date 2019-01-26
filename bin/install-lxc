@@ -1,0 +1,23 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+
+addr_prefix=${addr_prefix:-'10.0.3'}
+
+yum install -y epel-release
+yum install -y yum-plugin-copr
+
+yum copr enable -y ganto/lxc3
+yum install -y lxc dnsmasq
+cat <<EOF2 > /etc/sysconfig/lxc-net
+USE_LXC_BRIDGE=true
+LXC_ADDR="${addr_prefix}.1"
+LXC_NETMASK="255.255.255.0"
+LXC_NETWORK="${addr_prefix}.0/24"
+LXC_DHCP_RANGE="${addr_prefix}.2,${addr_prefix}.254"
+LXC_DHCP_MAX="253"
+LXC_DHCP_CONFILE=""
+LXC_DOMAIN=""
+EOF2
+systemctl enable lxc-net
+systemctl start lxc-net

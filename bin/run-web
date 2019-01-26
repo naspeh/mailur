@@ -6,5 +6,5 @@ set -exuo pipefail
 app=${app:-'mailur.web:app'}
 opts=${opts:-'-w 2 --worker-class=meinheld.gmeinheld.MeinheldWorker'}
 
-exec gunicorn $app -b :5000 $opts --timeout=300 \
+exec gunicorn $app $opts -b :5000 --timeout=300 \
  --access-logfile=- --access-logformat="%(r)s %(s)s %(D)sms %(b)sb"

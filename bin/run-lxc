@@ -6,14 +6,12 @@ name=${name:-mlr}
 repo=${repo:-/opt/mailur}
 src=${src-$(pwd)}
 opts=${opts:-}
-on_boot=${on_boot:-0}
+conf=${conf:-}
 no_login=${no_login:-}
 
 lxc-create -t download -n $name $opts -- -d centos -r 7 -a amd64
 
-cat <<EOF >> /var/lib/lxc/$name/config
-lxc.start.auto = $on_boot
-EOF
+echo "$conf" >> /var/lib/lxc/$name/config
 
 [ -z "$src" ] || (
 cat <<EOF >> /var/lib/lxc/$name/config

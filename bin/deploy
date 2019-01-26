@@ -80,13 +80,13 @@ mail {
     ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
 
     server {
-        listen   993 ssl;
+        listen 993 ssl;
         protocol imap;
     }
 
     server {
-        listen    465 ssl;
-        protocol  smtp;
+        listen 465 ssl;
+        protocol smtp;
         smtp_auth plain;
     }
 }
@@ -96,7 +96,7 @@ stream {
     ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
 
     server {
-        listen   12345 ssl;
+        listen 12345 ssl;
         proxy_pass localhost:12300;
     }
 }
@@ -105,15 +105,15 @@ EOF
 mkdir -p /etc/nginx/conf.d/
 cat <<EOF > /etc/nginx/conf.d/mailur.conf
 server {
-    listen 80 default;
-    listen [::]:80 default;
+    listen 80;
+    listen [::]:80;
     server_name $domain;
 
     return 301 https://$domain\$request_uri;
 }
 server {
-    listen 443 ssl http2 default;
-    listen [::]:443 ssl http2 default;
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name $domain;
 
     ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
