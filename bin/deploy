@@ -4,7 +4,7 @@ set -exuo pipefail
 . bin/activate
 
 domain=${domain:-}
-certbot_opts=${certbot_opts-"--webroot -w /var/tmp"}
+certbot_opts=${certbot_opts-"--webroot -w /var/tmp --agree-tos"}
 
 [ -n "$domain" ] || (
 echo '"domain" variable is not set'
@@ -112,8 +112,8 @@ server {
     return 301 https://$domain\$request_uri;
 }
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl http2 default;
+    listen [::]:443 ssl http2 default;
     server_name $domain;
 
     ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
