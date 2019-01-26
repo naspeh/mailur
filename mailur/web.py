@@ -14,7 +14,7 @@ from pytz import common_timezones, timezone, utc
 
 from bottle import Bottle, abort, request, response, static_file, template
 
-from . import LockError, cache, conf, html, imap, json, local, log, message
+from . import LockError, conf, html, imap, json, local, log, message
 from .schema import validate
 
 root = pathlib.Path(__file__).parent.parent
@@ -97,7 +97,6 @@ def endpoint(callback):
             return {'errors': [repr(e)]}
         finally:
             imap.clean_pool()
-            cache.clear()
     return inner
 
 

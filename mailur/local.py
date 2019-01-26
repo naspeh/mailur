@@ -422,8 +422,7 @@ def parse(criteria=None, con=None, **opts):
 
     con.select(SRC)
     # TODO: clean @link part after metadata migration
-    res = con.sort('(ARRIVAL)', '%s NOT FROM mailur@link' % criteria)
-    uids = res[0].decode().split()
+    uids = con.sort('(ARRIVAL)', '%s NOT FROM mailur@link' % criteria)
     uids = [i for i in uids if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
@@ -690,8 +689,7 @@ def fetch_msg(uid, draft=False, con=None):
 @fn_time
 @using()
 def search_msgs(query, sort='(REVERSE ARRIVAL)', con=None):
-    res = con.sort(sort, query)
-    uids = res[0].decode().split()
+    uids = con.sort(sort, query)
     log.debug('## query: %r; messages: %s', query, len(uids))
     return uids
 
@@ -729,13 +727,14 @@ def msg_flags(uid, box=ALL, con=None):
 
 @fn_time
 @using()
+@using(SYS, name=None, parent=True)
 def search_thrs(query, con=None):
     uids = con.search(query)
     if uids:
+        msgs = data_msgs.get()
         thrids, thrs = data_threads.get()
-        uids = [thrids[uid] for uid in uids]
-        res = con.sort('(REVERSE ARRIVAL)', 'UID %s' % ','.join(uids))
-        uids = res[0].decode().split()
+        uids = set(thrids[uid] for uid in uids)
+        uids = sorted(uids, key=lambda uid: msgs[uid]['arrived'], reverse=True)
     log.debug('## query: %r; threads: %s', query, len(uids))
     return uids
 

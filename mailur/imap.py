@@ -323,7 +323,8 @@ def thread(con, *criteria):
 
 @command(dovecot=True)
 def sort(con, fields, *criteria, charset='UTF-8'):
-    return check(con.uid('SORT', fields, charset, *criteria))
+    res = check(con.uid('SORT', fields, charset, *criteria))
+    return res[0].decode().split()
 
 
 @command()
