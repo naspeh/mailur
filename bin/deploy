@@ -4,6 +4,7 @@ set -exuo pipefail
 . bin/activate
 
 domain=${domain:-}
+nginx_domains=${nginx_domains:-"$domain"}
 certbot_opts=${certbot_opts-"--webroot -w /var/tmp --agree-tos"}
 
 [ -n "$domain" ] || (
@@ -21,6 +22,8 @@ EOF
 
 yum install -y nginx certbot
 
+
+grep -rq '/var/tmp' /etc/nginx/ || (
 cat <<EOF > /etc/nginx/nginx.conf
 events {
     worker_connections 768;
@@ -42,6 +45,7 @@ http {
     }
 }
 EOF
+)
 
 systemctl enable nginx
 systemctl restart nginx
@@ -107,14 +111,14 @@ cat <<EOF > /etc/nginx/conf.d/mailur.conf
 server {
     listen 80;
     listen [::]:80;
-    server_name $domain;
+    server_name $nginx_domains;
 
-    return 301 https://$domain\$request_uri;
+    return 301 https://\$host\$request_uri;
 }
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name $domain;
+    server_name $nginx_domains;
 
     ssl_certificate     /etc/letsencrypt/live/$domain/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
@@ -127,7 +131,7 @@ server {
     }
     location /proxy {
         proxy_pass \$arg_url;
-        proxy_set_header Referer "$domain";
+        proxy_set_header Referer "\$host";
         proxy_ssl_server_name on;
     }
     location /.well-known {
