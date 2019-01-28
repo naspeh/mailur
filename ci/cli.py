@@ -46,7 +46,7 @@ def process(**args):
 
     pool.map(sh, ('ci-lint', 'ci-test'))
 
-    # sh('ci-clean')
+    sh('ci-clean')
 
 
 def sh(target, exit=False):
