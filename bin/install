@@ -21,3 +21,5 @@ npm i
 npm run build
 
 bin/install-services
+
+[ ! -f bin/install-local ] || bin/install-local

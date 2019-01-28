@@ -7,6 +7,8 @@
 
 /assets/dist
 /bin/env
+/bin/install-local
 /env
+/var
 /node_modules
 /yarn.lock
