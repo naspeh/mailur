@@ -837,10 +837,10 @@ def thrs_info(uids, tags=None, con=None):
             info = msgs[uid]
             info['uid'] = uid
             addrs.append(info.get('from'))
-            if not msg_flags:
-                continue
             if '\\Seen' not in msg_flags:
                 unseen = True
+            if not msg_flags:
+                continue
             if '\\Draft' in msg_flags:
                 draft_id = info['draft_id']
             thr_flags.extend(msg_flags)

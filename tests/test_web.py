@@ -230,8 +230,7 @@ def test_general(gm_client, load_email, latest, login, some):
         'msgs_info': '/msgs/info',
     }
 
-    msg = {'labels': '\\Inbox'}
-    gm_client.add_emails([msg, dict(msg, refs='<101@mlr>')])
+    gm_client.add_emails([{'labels': '\\Inbox'}, {'refs': '<101@mlr>'}])
     res = web.search({'q': '', 'preload': 10})
     assert res == {
         'uids': ['2', '1'],
@@ -282,7 +281,7 @@ def test_general(gm_client, load_email, latest, login, some):
                 'query_subject': ':threads subj:"Subj 102"',
                 'query_thread': 'thread:2',
                 'subject': 'Subj 102',
-                'tags': ['#inbox'],
+                'tags': [],
                 'time_human': some,
                 'time_title': some,
                 'thrid': '<1ff2e08acb99d6af71ea8ccf5b0d3358@mailur.link>',
@@ -296,6 +295,8 @@ def test_general(gm_client, load_email, latest, login, some):
 
     web.post_json('/msgs/body', {'uids': ['1']}, status=200)
     res = web.search({'q': 'in:#inbox'})
+    assert [i['is_unread'] for i in res['msgs'].values()] == [False]
+    res = web.search({'q': ''})
     assert [i['is_unread'] for i in res['msgs'].values()] == [False, True]
     web.post_json('/msgs/body', {'uids': ['1']}, status=200)
 
@@ -335,6 +336,9 @@ def test_general(gm_client, load_email, latest, login, some):
         'msgs_info': '/thrs/info',
         'threads': True
     }
+    res = web.search({'q': ':threads :unread'})
+    assert res['msgs']['2']['is_unread']
+
     web.flag({'uids': ['2'], 'new': ['\\Seen']})
     res = web.search({'q': ':threads in:#inbox'})
     assert not res['msgs']['2']['is_unread']
@@ -388,7 +392,7 @@ def test_general(gm_client, load_email, latest, login, some):
 
     res = web.search({'q': 'tag:#inbox'})
     assert res['tags'] == ['#inbox']
-    assert [i['tags'] for i in res['msgs'].values()] == [[], []]
+    assert [i['tags'] for i in res['msgs'].values()] == [[]]
 
     # one message from thread is going to #trash
     gm_client.add_emails([{'labels': '\\Inbox', 'from': 'one@t.com'}])
