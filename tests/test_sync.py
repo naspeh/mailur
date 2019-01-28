@@ -135,23 +135,17 @@ def test_clean_flags(gm_client, msgs, login):
     con_src = local.client(local.SRC, readonly=False)
     con_all = local.client(local.ALL, readonly=False)
 
-    con_src.store('3', '-FLAGS', '#link \\Seen')
-    con_src.store('1', '+FLAGS', '#latest')
-    con_src.store('2', '+FLAGS', '#dup')
-    con_all.store('3', '-FLAGS', '#link \\Seen')
-    con_all.store('2', '-FLAGS', '#latest')
-    assert [i['flags'] for i in msgs(local.SRC)] == ['#latest', '#dup']
-    assert [i['flags'] for i in msgs()] == ['', '']
-    local.clean_flags()
-    assert [i['flags'] for i in msgs(local.SRC)] == ['', '']
-    assert [i['flags'] for i in msgs()] == ['', '']
+    con_src.store('1', '+FLAGS', '#tag1')
+    con_src.store('2', '+FLAGS', '#tag2 #tag3')
+    con_all.store('1', '+FLAGS', '#tag1 #tag3')
+    con_all.store('2', '+FLAGS', '#tag2')
+    assert [i['flags'] for i in msgs(local.SRC)] == ['#tag1', '#tag2 #tag3']
+    assert [i['flags'] for i in msgs()] == ['#tag1 #tag3', '#tag2']
 
-    con_src.store('3', '-FLAGS', '#link \\Seen')
-    con_src.store('2', '+FLAGS', '#err')
-    con_all.store('3', '-FLAGS', '#link \\Seen')
-    con_all.store('2', '-FLAGS', '#latest')
-    assert [i['flags'] for i in msgs(local.SRC)] == ['', '#err']
-    assert [i['flags'] for i in msgs()] == ['', '']
-    cli.main('clean-flags %s' % login.user1)
+    cli.main('clean-flags %s #tag1' % login.user1)
+    assert [i['flags'] for i in msgs(local.SRC)] == ['', '#tag2 #tag3']
+    assert [i['flags'] for i in msgs()] == ['#tag3', '#tag2']
+
+    cli.main('clean-flags %s #tag2 #tag3' % login.user1)
     assert [i['flags'] for i in msgs(local.SRC)] == ['', '']
     assert [i['flags'] for i in msgs()] == ['', '']

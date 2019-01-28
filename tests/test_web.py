@@ -109,79 +109,107 @@ def test_tz(gm_client, web, login, some):
 
 
 def test_tags(gm_client, login, some, load_file):
-    def tag(name, **kw):
-        id = kw.get('id', name)
+    def query(tag):
+        if tag == ':all':
+            return ''
+        elif tag.startswith(':'):
+            return tag
+        else:
+            return 'tag:%s' % tag
+
+    def tag(tag, **kw):
+        aliases = {'#draft': '\\Draft', '#pinned': '\\Flagged'}
+        id = '#%s' % tag[1:] if tag.startswith(':') else tag
+        name = kw.get('name', id)
         return dict({
-            'id': id,
+            'id': aliases.get(id, id),
             'name': name,
             'short_name': name,
-            'query': ':threads tag:%s' % id
+            'query': ':threads %s' % query(tag),
         }, **kw)
 
     web = login()
     res = web.get('/tags', status=200)
-    assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
-    assert some.value == {
-        '#inbox': tag('#inbox', pinned=1),
-        '#spam': tag('#spam', pinned=1),
-        '#trash': tag('#trash', pinned=1),
+    expect = {
+        '#inbox': tag(':inbox', pinned=1, unread=0),
+        '#all': tag(':all', unread=0),
+        '\\Draft': tag(':draft', unread=0),
+        '\\Flagged': tag(':pinned', unread=0),
+        '#sent': tag(':sent', unread=0),
+        '#spam': tag(':spam', unread=0),
+        '#trash': tag(':trash', unread=0),
+        '#unread': tag(':unread', unread=0),
     }
+    expect_ids = list(expect.keys())
+    assert res.json == {'ids': expect_ids, 'info': expect}
 
     gm_client.add_emails([
         {'raw': load_file('msg-lookup-error.txt')},
         {'mid': '<lookup-error@test>'},
     ])
-    assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
+    res = web.get('/tags', status=200)
+    assert res.json['ids'] == [
+        '#inbox', '#unread', '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash'
+    ]
+    assert res.json['info'] == dict(expect, **{
+        '#unread': tag(':unread', unread=2)
+    })
 
     gm_client.add_emails([
         {'labels': '\\Inbox \\Junk'},
         {'labels': '\\Junk \\Trash'}
     ])
     res = web.get('/tags', status=200)
-    assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
-    assert some.value == {
-        '#inbox': tag('#inbox', pinned=1, unread=0),
-        '#spam': tag('#spam', pinned=1, unread=1),
-        '#trash': tag('#trash', pinned=1, unread=1),
-    }
+    assert res.json['info'] == dict(expect, **{
+        '#unread': tag(':unread', unread=2),
+    })
 
     gm_client.add_emails([{'labels': '\\Inbox t1 "test 2"'}])
     res = web.get('/tags', status=200)
-    assert res.json == {
-        'ids': ['#inbox', 't1', '#38b0d2ff', '#spam', '#trash'],
-        'info': some
-    }
-    assert some.value == {
-        '#inbox': tag('#inbox', pinned=1, unread=1),
-        '#spam': tag('#spam', pinned=1, unread=1),
-        '#trash': tag('#trash', pinned=1, unread=1),
+    assert res.json['ids'] == [
+        '#inbox', '#unread', 't1', '#38b0d2ff',
+        '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash'
+    ]
+    assert res.json['info'] == dict(expect, **{
+        '#inbox': tag(':inbox', pinned=1, unread=1),
+        '#unread': tag(':unread', unread=3),
         't1': tag('t1', unread=1),
-        '#38b0d2ff': tag('test 2', unread=1, id='#38b0d2ff')
-    }
+        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=1)
+    })
 
     gm_client.add_emails([{'labels': '"test 3"', 'flags': '\\Flagged'}])
     res = web.get('/tags', status=200)
-    assert res.json == {
-        'ids': ['#inbox', 't1', '#38b0d2ff', '#e558c4df', '#spam', '#trash'],
-        'info': some
-    }
-    assert some.value == {
-        '#inbox': tag('#inbox', pinned=1, unread=1),
-        '#spam': tag('#spam', pinned=1, unread=1),
-        '#trash': tag('#trash', pinned=1, unread=1),
+    assert res.json['ids'] == [
+        '#inbox', '#unread', 't1', '#38b0d2ff', '#e558c4df',
+        '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash'
+    ]
+    assert res.json['info'] == dict(expect, **{
+        '#inbox': tag(':inbox', pinned=1, unread=1),
+        '#unread': tag(':unread', unread=4),
         't1': tag('t1', unread=1),
-        '#38b0d2ff': tag('test 2', unread=1, id='#38b0d2ff'),
-        '#e558c4df': tag('test 3', unread=1, id='#e558c4df'),
-    }
+        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=1),
+        '#e558c4df': tag('#e558c4df', name='test 3', unread=1),
+    })
 
-    web = login(username=login.user2)
+    res = web.search({'q': ':threads'})
+    res = web.post_json('/thrs/link', {'uids': res['uids']}).json
+    assert res == {'uids': ['1', '2', '5', '6']}
     res = web.get('/tags', status=200)
-    assert res.json == {'ids': ['#inbox', '#spam', '#trash'], 'info': some}
-    assert some.value == {
-        '#inbox': tag('#inbox', pinned=1),
-        '#spam': tag('#spam', pinned=1),
-        '#trash': tag('#trash', pinned=1),
-    }
+    assert res.json['ids'] == [
+        '#inbox', '#unread', 't1', '#38b0d2ff', '#e558c4df',
+        '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash'
+    ]
+    assert res.json['info'] == dict(expect, **{
+        '#inbox': tag(':inbox', pinned=1, unread=4),
+        '#unread': tag(':unread', unread=4),
+        't1': tag('t1', unread=4),
+        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=4),
+        '#e558c4df': tag('#e558c4df', name='test 3', unread=4),
+    })
 
     web = login()
     web.post_json('/tag', {}, status=400)
@@ -190,7 +218,7 @@ def test_tags(gm_client, login, some, load_file):
     res = web.post_json('/tag', {'name': 'new'}, status=200)
     assert res.json == tag('new')
     res = web.post_json('/tag', {'name': 'нью'}, status=200)
-    assert res.json == tag('нью', id='#d44f332a')
+    assert res.json == tag('#d44f332a', name='нью')
 
 
 def test_general(gm_client, load_email, latest, login, some):

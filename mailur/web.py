@@ -586,6 +586,10 @@ def parse_query(q):
             opts.setdefault('flags', [])
             opts['flags'].extend(flags)
             q = ''
+        elif info.get('shortcut'):
+            opts.setdefault('tags', [])
+            opts['tags'].append('#%s' % info['shortcut_tag'])
+            q = ''
         elif info.get('tag'):
             opts.setdefault('tags', [])
             opts['tags'].append(info['tag_id'])
@@ -664,6 +668,7 @@ def parse_query(q):
         r'|(?P<ref>ref:)(?P<ref_val>[^ ]+)'
         r'|(?P<uid>uid:)(?P<uid_val>[\d,-]+)'
         r'|(?P<date>date:)(?P<date_val>\d{4}(-\d{2}(-\d{2})?)?)'
+        r'|(?P<shortcut>:(?P<shortcut_tag>inbox|sent|trash|spam))'
         r'|(?P<draft>:(draft))'
         r'|(?P<unseen>:(unread|unseen))'
         r'|(?P<seen>:(read|seen))'
@@ -789,29 +794,20 @@ def thread(q, opts, preload=4):
 
 
 def wrap_tags(tags, whitelist=None):
-    def query(tag):
-        if tag.startswith('\\'):
-            q = {'\\Draft': ':draft', '\\Flagged': ':pinned'}.get(tag)
-            if not q:
-                q = ':raw %s' % tag[1:]
-        else:
-            q = 'tag:%s' % tag.lower()
-        return ':threads %s' % q
-
     def trancate(val, max=14, end='…'):
         return val[:max] + end if len(val) > max else val
 
     def sort(key):
         tag = tags[key]
-        first = (
-            key not in ('#spam', '#trash') and
-            (tag.get('unread', 0) or tag.get('pinned', 0))
+        weight = 10 - (
+            int(key not in ('#spam', '#trash')) and
+            (tag.get('pinned', 0) or int(tag.get('unread', 0) > 0))
         )
-        return 0 if first else 1, tags[key]['name']
+        return weight, tags[key]['name']
 
-    ids = sorted(clean_tags(tags, whitelist), key=sort)
+    ids = sorted(tags, key=sort)
     info = {
-        t: dict(tags[t], query=query(t), short_name=trancate(tags[t]['name']))
+        t: dict(tags[t], short_name=trancate(tags[t]['name']))
         for t in ids
     }
     return {'ids': ids, 'info': info}
@@ -821,7 +817,7 @@ def clean_tags(tags, whitelist=None, blacklist=None):
     whitelist = whitelist or []
     blacklist = '|'.join(re.escape(i) for i in blacklist) if blacklist else ''
     blacklist = blacklist and '|%s' % blacklist
-    ignore = re.compile(r'(^\\|#sent|#latest|#link|#dup|#err%s)' % blacklist)
+    ignore = re.compile(r'(^\\|#sent|#err%s)' % blacklist)
     return sorted(i for i in tags if i in whitelist or not ignore.match(i))
 
 

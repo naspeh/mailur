@@ -40,13 +40,7 @@ let TagsSelect = {
   },
   computed: {
     totalUnread: function() {
-      let unread = 0;
-      for (let i of this.optsInfo) {
-        if (i.unread) {
-          unread = unread + i.unread;
-        }
-      }
-      return unread;
+      return this.info['#unread'].unread;
     }
   },
   methods: {

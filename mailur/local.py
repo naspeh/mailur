@@ -195,6 +195,26 @@ def data_tags(update=None):
 
 @using(SYS, name=None, parent=True)
 def get_tag(name, *, tags=None):
+    def query(tag):
+        if tag in special or tag.startswith('\\'):
+            q = special.get(tag, {}).get('query')
+            if q is None:
+                q = ':raw %s' % tag[1:]
+        else:
+            q = 'tag:%s' % tag.lower()
+        return ':threads %s' % q
+
+    special = {
+        '\\Flagged': {'alias': '#pinned', 'query': ':pinned'},
+        '\\Draft': {'alias': '#draft', 'query': ':draft'},
+        '#all': {'query': ''},
+        '#inbox': {'query': ':inbox'},
+        '#unread': {'query': ':unread'},
+        '#sent': {'query': ':sent'},
+        '#spam': {'query': ':spam'},
+        '#trash': {'query': ':trash'},
+    }
+
     if re.match(r'(?i)^[\\]?[a-z0-9/#\-.,:;!?]*$', name):
         tag = name
     else:
@@ -205,12 +225,56 @@ def get_tag(name, *, tags=None):
     info = tags.get(tag)
     if info is None:
         info = {'name': name}
-        if name != tag:
+        if tag in special:
+            info.update(name=special[tag].get('alias', tag))
+        elif name != tag:
             tags[tag] = info
             data_tags({tag: info.copy()})
             log.info('## new tag %s: %r', tag, name)
-    info.update(id=tag)
+    info.update(id=tag, query=query(tag))
     return info
+
+
+@fn_time
+@using()
+@using(SYS, name=None, parent=True)
+def tags_info(con=None):
+    def query(tag):
+        if tag.startswith('\\'):
+            return tag[1:]
+        return 'keyword %s' % tag
+
+    thrids, thrs = data_threads.get()
+    unread_uids = set(con.search('(UNSEEN UNKEYWORD #trash UNKEYWORD #spam)'))
+    special = {
+        '\\Seen', '\\Deleted', '\\Answered', '\\Flagged', '\\Draft',
+        '#trash', '#spam', '#sent', '#err'
+    }
+    tags = {
+        '#unread': {'unread': len(unread_uids)},
+        '#inbox': {'pinned': 1, 'unread': 0}
+    }
+    for tag in con.flags:
+        if tag in special:
+            continue
+        uids = con.search(query(tag))
+        if not uids:
+            continue
+        unread = set()
+        for uid in uids:
+            thr = thrs[thrids[uid]]
+            unread.update(unread_uids.intersection(thr))
+        tags.setdefault(tag, {})
+        tags[tag].update(unread=len(unread))
+    tags = {t: dict(get_tag(t), **v) for t, v in tags.items()}
+    tags.update({
+        t: dict(get_tag(t), **tags.get(t, {'unread': 0}))
+        for t in (
+            '\\Flagged', '\\Draft', '#inbox', '#all', '#unread', '#sent',
+            '#spam', '#trash'
+        )
+    })
+    return tags
 
 
 @metadata('uidpairs', lambda: {})
@@ -405,6 +469,7 @@ def parse_msgs(uids, con=None):
 @fn_time
 @user_lock('parse')
 @using(None)
+@using(SYS, name=None, parent=True)
 def parse(criteria=None, con=None, **opts):
     uidnext = 1
     if criteria is None:
@@ -416,7 +481,7 @@ def parse(criteria=None, con=None, **opts):
             uidmax = 0
             uidpairs = data_uidpairs.get()
             if uidpairs:
-                uidmax = max(int(i) for i in uidpairs.values())
+                uidmax = max(int(i) for i in uidpairs.keys())
             uidnext = uidmax + 1
         criteria = 'UID %s:*' % uidnext
 
@@ -547,12 +612,12 @@ def msgs_flag(uids, old, new, con_src=None, con_all=None):
 
 
 @fn_time
-@using(SRC, readonly=False)
-def clean_flags(con=None):
-    con.store('1:*', '-FLAGS.SILENT', '#err #dup #latest')
-    uids = con.search('HEADER MESSAGE-ID @mailur.link>')
-    con.store(uids, '+FLAGS.SILENT', '#link \\Seen')
-    sync_flags_to_all()
+@using(SRC, name='con_src', readonly=False)
+@using(ALL, name='con_all', readonly=False)
+def clean_flags(flags, con_all=None, con_src=None):
+    flags = ' '.join(flags)
+    con_all.store('1:*', '-FLAGS.SILENT', flags)
+    con_src.store('1:*', '-FLAGS.SILENT', flags)
 
 
 @fn_time
@@ -717,15 +782,6 @@ def msgs_body(uids, fix_privacy=False, con=None):
 
 
 @fn_time
-@using(None)
-def msg_flags(uid, box=ALL, con=None):
-    con.select(box)
-    res = con.fetch(uid, 'FLAGS')
-    flags = re.search(r'FLAGS \(([^)]*)\)', res[0].decode()).group(1)
-    return flags
-
-
-@fn_time
 @using()
 @using(SYS, name=None, parent=True)
 def search_thrs(query, con=None):
@@ -813,44 +869,6 @@ def thrs_info(uids, tags=None, con=None):
         if thr['draft_id']:
             info['draft_id'] = thr['draft_id']
         yield thr['thrid'], info, thr['flags'], thr['addrs']
-
-
-@fn_time
-@using()
-@using(SYS, name=None, parent=True)
-def tags_info(con=None):
-    unread = {}
-    hidden = {}
-    uids = con.search('UNSEEN')
-    if uids:
-        res = con.fetch(uids, 'FLAGS')
-        for line in res:
-            flags = re.search(r'FLAGS \(([^)]*)\)', line.decode()).group(1)
-            flags = flags.split()
-            for f in flags:
-                unread.setdefault(f, 0)
-                unread[f] += 1
-                hide_flags = None
-                if '#trash' in flags:
-                    hide_flags = {'#trash'}
-                elif '#spam' in flags:
-                    hide_flags = {'#spam'}
-                if hide_flags and hide_flags - {f}:
-                    hidden.setdefault(f, 0)
-                    hidden[f] += 1
-    unread = {
-        k: v - hidden.get(k, 0)
-        for k, v in unread.items() if hidden.get(k) != v
-    }
-    tags = {
-        t: dict(get_tag(t), unread=unread.get(t, 0))
-        for t in con.flags
-    }
-    tags.update({
-        t: dict(tags.get(t, get_tag(t)), pinned=1)
-        for t in ('#inbox', '#spam', '#trash')
-    })
-    return tags
 
 
 @fn_time

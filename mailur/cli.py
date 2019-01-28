@@ -7,7 +7,7 @@ Usage:
   mlr metadata <login> [<uids>]
   mlr sync <login> [--timeout=<timeout>]
   mlr sync-flags <login> [--reverse]
-  mlr clean-flags <login>
+  mlr clean-flags <login> <flag>...
   mlr icons
   mlr web
   mlr lint [--ci]
@@ -68,7 +68,7 @@ def process(args):
         else:
             local.sync_flags_to_all()
     elif args['clean-flags']:
-        local.clean_flags()
+        local.clean_flags(args['<flag>'])
     elif args['metadata']:
         local.update_metadata(args.get('<uids>'))
     elif args['icons']:
