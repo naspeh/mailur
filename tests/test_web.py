@@ -339,6 +339,12 @@ def test_general(gm_client, load_email, latest, login, some):
     res = web.search({'q': ':threads :unread'})
     assert res['msgs']['2']['is_unread']
 
+    res = web.search({'q': ':threads :inbox :unread'})
+    assert res['uids'] == ['2']
+
+    res = web.search({'q': ':threads :inbox :unread <102@mlr>'})
+    assert res['uids'] == ['2']
+
     web.flag({'uids': ['2'], 'new': ['\\Seen']})
     res = web.search({'q': ':threads in:#inbox'})
     assert not res['msgs']['2']['is_unread']
@@ -1153,6 +1159,14 @@ def test_query():
     )
     assert parse_query('test :threads') == (
         'text "test" ' + end, {'threads': True}
+    )
+    assert parse_query(':threads tag:#inbox test') == (
+        'text "test" keyword #inbox ' + end,
+        {
+            'tags': ['#inbox'],
+            'parts': ['text "test"', 'keyword #inbox ' + end],
+            'threads': True
+        }
     )
 
     assert parse_query('uid:1') == ('uid 1 ' + end, {})

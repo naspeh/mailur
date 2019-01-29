@@ -225,7 +225,7 @@ def search():
         return thread(q, opts, preload or 4)
 
     if opts.get('threads'):
-        uids = local.search_thrs(q)
+        uids = local.search_thrs(opts.get('parts', q))
         info = ft.partial(local.thrs_info, tags=opts.get('tags'))
         info_url = app.get_url('thrs_info')
     else:
@@ -683,18 +683,6 @@ def parse_query(q):
         q = 'text %s' % json.dumps(q, ensure_ascii=False)
         parts.append(q)
 
-    flags = opts.get('flags', [])
-    if flags:
-        parts.append(' '.join(flags))
-
-    tags = opts.get('tags', [])
-    if tags:
-        parts.append(' '.join('keyword %s' % t for t in tags))
-    if '#trash' not in tags:
-        parts.append('unkeyword #trash')
-    if '#spam' not in tags and '#trash' not in tags:
-        parts.append('unkeyword #spam')
-
     uid = opts.get('uid')
     if uid:
         thrids, thrs = local.data_threads.get()
@@ -706,10 +694,25 @@ def parse_query(q):
             q = 'uid %s' % uid
         parts.insert(0, q)
 
-    if parts:
-        q = ' '.join(parts)
-    q = q.strip()
-    q = q if q else 'all'
+    flags = opts.get('flags', [])
+    if flags:
+        parts.extend(flags)
+
+    tags = opts.get('tags', [])
+    if tags:
+        parts.extend('keyword %s' % t for t in tags)
+
+    if not parts:
+        parts.append('')
+
+    if '#trash' not in tags:
+        parts[-1] = ' '.join([parts[-1], 'unkeyword #trash'])
+    if '#spam' not in tags and '#trash' not in tags:
+        parts[-1] = ' '.join([parts[-1], 'unkeyword #spam'])
+
+    if len(parts) > 1 and opts.get('threads'):
+        opts['parts'] = parts
+    q = ' '.join(parts).strip() or 'all'
     return q, opts
 
 

@@ -785,7 +785,17 @@ def msgs_body(uids, fix_privacy=False, con=None):
 @using()
 @using(SYS, name=None, parent=True)
 def search_thrs(query, con=None):
-    uids = con.search(query)
+    q = [query] if isinstance(query, str) else query.copy()
+    if len(q) > 1:
+        uids = []
+        thrids, thrs = data_threads.get()
+        for part in q:
+            if uids:
+                uids = set(sum((thrs[thrids[uid]] for uid in uids), []))
+                part = ' '.join([part, 'UID %s' % ','.join(uids)])
+            uids = con.search(part)
+    else:
+        uids = con.search(q[0])
     if uids:
         msgs = data_msgs.get()
         thrids, thrs = data_threads.get()
