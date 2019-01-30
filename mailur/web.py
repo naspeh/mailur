@@ -222,7 +222,7 @@ def search():
     preload = request.json.get('preload')
     q, opts = parse_query(request.json['q'])
     if opts.get('thread'):
-        return thread(q, opts, preload or 4)
+        return thread(q, opts, preload)
 
     if opts.get('threads'):
         uids = local.search_thrs(opts.get('parts', q))
@@ -718,7 +718,8 @@ def parse_query(q):
     return q, opts
 
 
-def thread(q, opts, preload=4):
+def thread(q, opts, preload=None):
+    preload = preload or 7
     uids = local.search_msgs(q, '(ARRIVAL)')
     if not uids:
         return {

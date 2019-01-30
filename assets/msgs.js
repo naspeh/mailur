@@ -291,7 +291,7 @@ let Thread = Vue.extend({
   data: function() {
     return {
       name: 'thread',
-      preload: 4,
+      preload: 7,
       detailed: [],
       opened: [],
       pickerOpts: {
