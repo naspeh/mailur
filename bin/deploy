@@ -129,7 +129,8 @@ server {
     location /assets {
         alias /opt/mailur/assets/dist;
     }
-    location /proxy {
+    location /.proxy {
+        internal;
         proxy_pass \$arg_url;
         proxy_set_header Referer "\$host";
         proxy_ssl_server_name on;

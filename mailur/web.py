@@ -487,12 +487,14 @@ def refresh_metadata():
 
 @app.get('/proxy')
 def proxy():
-    """Real proxing is done by nginx, this is just stub"""
     url = request.query.get('url')
     if not url:
         return abort(400)
 
-    return redirect(url)
+    # further serve by nginx
+    url = '/.proxy?url=%s' % url
+    response.set_header('X-Accel-Redirect', url)
+    return ''
 
 
 @app.get('/assets/<path:path>', skip=[auth])
