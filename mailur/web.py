@@ -425,7 +425,8 @@ def send(uid):
 
     uids = local.search_msgs('HEADER Message-ID %s KEYWORD #sent' % msgid)
     if uids:
-        local.del_msg(uid)
+        pid = local.pair_origin_uids([uid])[0]
+        local.del_msg(pid)
         uid = uids[0]
         return {'query': 'thread:%s' % uid}
     return {'query': ':threads mid:%s' % msgid}

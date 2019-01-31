@@ -800,8 +800,11 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
             'labels': 'test'
         }
     ])
+    # unsynchronize uid in Src and All folders
+    local.parse('all')
+
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
-    assert [i['uid'] for i in msgs()] == ['1', '2']
+    assert [i['uid'] for i in msgs()] == ['3', '4']
     m = latest(parsed=True)
     assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['draft_id'] == some
@@ -810,16 +813,16 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert m['body_full']['x-draft-id'] == draft_id
 
     res = web.post('/editor', {
-        'uid': '2',
+        'uid': '4',
         'txt': '**test it**',
     }, status=200).json
-    assert res == {'uid': '3', 'url_send': '/send/3'}
+    assert res == {'uid': '5', 'url_send': '/send/3'}
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '3']
-    assert [i['uid'] for i in msgs()] == ['1', '3']
+    assert [i['uid'] for i in msgs()] == ['3', '5']
     m = latest(parsed=1)
     assert local.data_msgids.get() == {
-        '<101@mlr>': ['1'],
-        m['meta']['msgid']: ['3']
+        '<101@mlr>': ['3'],
+        m['meta']['msgid']: ['5']
     }
     assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == []
@@ -862,15 +865,15 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     }
 
     web.post('/editor', {
-        'uid': '3',
+        'uid': '5',
         'files': Upload('test.rst', b'txt', 'text/x-rst')
     }, status=200)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
-    assert [i['uid'] for i in msgs()] == ['1', '4']
+    assert [i['uid'] for i in msgs()] == ['3', '6']
     m = latest(parsed=1)
     assert local.data_msgids.get() == {
-        '<101@mlr>': ['1'],
-        m['meta']['msgid']: ['4']
+        '<101@mlr>': ['3'],
+        m['meta']['msgid']: ['6']
     }
     assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == [
@@ -898,7 +901,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     }]
 
     web.post('/editor', {
-        'uid': '4',
+        'uid': '6',
         'txt': 'Тест',
         'subject': (
             'Тема новая '
@@ -912,7 +915,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         'files': Upload('test2.rst', b'lol', 'text/x-rst')
     }, status=200)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
-    assert [i['uid'] for i in msgs()] == ['1', '5']
+    assert [i['uid'] for i in msgs()] == ['3', '7']
     m = latest(parsed=1, policy=email.policy.default)
     assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == [
@@ -980,9 +983,13 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
 
     with patch('mailur.gmail.data_credentials') as c:
         c.get.return_value = ('test', 'test')
-        with patch('mailur.web.smtplib.SMTP.sendmail') as m:
-            with patch('mailur.web.smtplib.SMTP.login'):
-                res = web.get('/send/5', status=200).json
+        msgid = '1@mailur.sent'
+        with patch('mailur.message.gen_msgid') as gen_msgid:
+            gen_msgid.return_value = msgid
+            with patch('mailur.web.smtplib.SMTP.sendmail') as m:
+                with patch('mailur.web.smtplib.SMTP.login'):
+                    res = web.get('/send/5', status=200).json
+    assert res == {'query': ':threads mid:%s' % msgid}
     assert m.call_args[0][:2] == (['a@t.com'], ['b@t.com', 'c@t.com'])
     body = m.call_args[0][2].decode()
     assert body.startswith('''\
@@ -993,17 +1000,26 @@ To: =?utf-8?b?0JHQtdGC0LA=?= <b@t.com>,\r
  =?utf-8?b?0JTQu9C40L3QvdC+0LUg0JjQvNGPIGxvb29vb29vb29vb29vb29vb29v?=\r
  =?utf-8?b?b29vb29vb29vb29vb29vb29vbmc=?= <c@t.com>\r
 '''), body
-    assert res == {'query': some}
-    assert re.match(r'^:threads mid:\<.*@mailur\.sent\>', some.value)
+
+    with patch('mailur.gmail.data_credentials') as c:
+        c.get.return_value = ('test', 'test')
+        msgid = '2@mailur.sent'
+        gm_client.add_emails([{'mid': msgid, 'labels': '\\Sent'}])
+        with patch('mailur.message.gen_msgid') as gen_msgid:
+            gen_msgid.return_value = msgid
+            with patch('mailur.web.smtplib.SMTP.sendmail') as m:
+                with patch('mailur.web.smtplib.SMTP.login'):
+                    res = web.get('/send/5', status=200).json
+    assert res == {'query': 'thread:8'}
 
     with patch('mailur.local.new_msg') as m:
         m.side_effect = ValueError
         web.post('/editor', {
-            'uid': '5',
+            'uid': '7',
             'txt': 'test it',
         }, status=500)
-    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '5']
-    assert [i['uid'] for i in msgs()] == ['1', '5']
+    assert [i['uid'] for i in msgs(local.SRC)] == ['1', '6']
+    assert [i['uid'] for i in msgs()] == ['3', '8']
 
 
 def test_addresses(some):
