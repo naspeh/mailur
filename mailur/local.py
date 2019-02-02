@@ -469,7 +469,6 @@ def parse_msgs(uids, con=None):
 @fn_time
 @user_lock('parse')
 @using(None)
-@using(SYS, name=None, parent=True)
 def parse(criteria=None, con=None, **opts):
     uidnext = 1
     if criteria is None:
