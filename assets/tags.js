@@ -63,7 +63,7 @@ let TagsEdit = {
     name: { type: String, default: 'tags-edit' },
     origin: { type: Array, required: true },
     edit: { type: Function, required: true },
-    opts: { type: Array, default: () => window.app.tagIds }
+    opts: { type: Array, default: () => window.app.tagIdsEdit }
   },
   data: function() {
     return {

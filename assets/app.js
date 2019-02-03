@@ -14,6 +14,7 @@ Vue.component('app', {
     return {
       tags: window.data.tags.info,
       tagIds: window.data.tags.ids,
+      tagIdsEdit: window.data.tags.ids_edit,
       addrs: [],
       picSize: 20,
       tagCount: 5,
@@ -64,6 +65,7 @@ Vue.component('app', {
         }
         this.tags = Object.assign({}, res.info);
         this.tagIds = res.ids;
+        this.tagIdsEdit = res.ids_edit;
       });
     },
     setOpt: function(name, value) {

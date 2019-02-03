@@ -813,18 +813,19 @@ def wrap_tags(tags, whitelist=None):
         return weight, tags[key]['name']
 
     ids = sorted(tags, key=sort)
+    ids_edit = sorted(clean_tags(ids), key=lambda t: tags[t]['name'])
     info = {
         t: dict(tags[t], short_name=trancate(tags[t]['name']))
         for t in ids
     }
-    return {'ids': ids, 'info': info}
+    return {'ids': ids, 'ids_edit': ids_edit, 'info': info}
 
 
 def clean_tags(tags, whitelist=None, blacklist=None):
     whitelist = whitelist or []
     blacklist = '|'.join(re.escape(i) for i in blacklist) if blacklist else ''
     blacklist = blacklist and '|%s' % blacklist
-    ignore = re.compile(r'(^\\|#sent|#err%s)' % blacklist)
+    ignore = re.compile(r'(^\\|#unread|#all|#sent|#err%s)' % blacklist)
     return sorted(i for i in tags if i in whitelist or not ignore.match(i))
 
 

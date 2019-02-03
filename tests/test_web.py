@@ -140,8 +140,11 @@ def test_tags(gm_client, login, some, load_file):
         '#trash': tag(':trash', unread=0),
         '#unread': tag(':unread', unread=0),
     }
-    expect_ids = list(expect.keys())
-    assert res.json == {'ids': expect_ids, 'info': expect}
+    assert res.json == {
+        'ids': list(expect.keys()),
+        'ids_edit': ['#inbox', '#spam', '#trash'],
+        'info': expect
+    }
 
     gm_client.add_emails([
         {'raw': load_file('msg-lookup-error.txt')},
