@@ -1,6 +1,24 @@
 <div :class="{editor:1, 'editor--preview': !editing && html, 'editor--sending': countdown !== null}">
-  <input v-model="from" @keyup="autosave" class="editor__from" placeholder="From" />
-  <input v-model="to" @keyup="autosave" class="editor__to" placeholder="To" />
+  <picker
+    class="editor__from"
+    placeholder="From"
+    :value="from"
+    :opts="allFrom"
+    :fnUpdate="update"
+    :fnFilter="filter"
+    :fnKeyup="keyup"
+    :fnCancel="(el) => update(null, el)"
+  />
+  <picker
+    class="editor__to"
+    placeholder="To"
+    :value="to"
+    :opts="allTo"
+    :fnUpdate="update"
+    :fnFilter="filter"
+    :fnKeyup="keyup"
+    :fnCancel="(el) => update(null, el)"
+  />
   <input v-model="subject" @keyup="autosave" class="editor__subj" placeholder="Subject"  />
   <textarea v-model="txt"  @keyup="autosave" class="editor__body"></textarea>
   <div class="editor__html" v-html="html" />

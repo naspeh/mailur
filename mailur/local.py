@@ -399,9 +399,9 @@ def update_metadata(uids=None, clean=False, con=None):
             msgids[mid] = ids
 
         # addresses
-        fill_addrs(addrs_to, info, ('from', 'to', 'cc'))
         if {'#sent', '\\Draft'}.intersection(flags.split()):
             fill_addrs(addrs_from, info, ('from',))
+            fill_addrs(addrs_to, info, ('from', 'to', 'cc'))
 
     data_msgs(msgs)
     data_uidpairs(uidpairs)

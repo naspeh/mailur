@@ -14,7 +14,8 @@ Vue.component('picker', {
     fnUpdate: { type: Function, default: val => val },
     fnFilter: { type: Function, default: contains },
     fnApply: { type: Function },
-    fnCancel: { type: Function }
+    fnCancel: { type: Function },
+    fnKeyup: { type: Function }
   },
   data: function() {
     return {
@@ -37,7 +38,11 @@ Vue.component('picker', {
         return this.opts;
       }
 
-      return this.opts.filter(val => this.fnFilter(val, this.filter));
+      let result = this.opts.filter(val => this.fnFilter(val, this.filter));
+      if (result.length == 0) {
+        this.selected = '';
+      }
+      return result;
     }
   },
   methods: {
@@ -60,26 +65,25 @@ Vue.component('picker', {
       if (this.active) {
         this.$refs.input.focus();
       }
-      if (this.value) {
+      val = this.fnUpdate(val, this.$el) || '';
+      if (val) {
         this.selected = val;
         this.filter = val;
       } else {
         this.filter = this.value;
       }
-      if (!val) {
-        return;
-      }
-      this.fnUpdate(val);
     },
     cancel: function() {
-      this.fnCancel && this.fnCancel();
-      this.set(this.value);
-      this.active = false;
+      this.fnCancel && this.fnCancel(this.$el);
+      this.$nextTick(() => {
+        this.set(this.value);
+        this.active = false;
+      });
     },
     apply: function() {
       this.fnApply ? this.fnApply() : this.set();
     },
-    activate: function() {
+    activate: function(e) {
       if (this.disabled) {
         return;
       }
@@ -102,6 +106,7 @@ Vue.component('picker', {
         }
         opts.scrollTop = element.offsetTop;
       });
+      this.fnKeyup && e && this.fnKeyup(e);
     },
     clsOpt: function(opt) {
       return `picker__opts__item ${

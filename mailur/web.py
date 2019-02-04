@@ -109,9 +109,15 @@ def index():
         return redirect(login_url)
 
     theme = theme or request.session['theme']
+    addrs_from, addrs_to = local.data_addresses.get()
+    sort = ft.partial(sorted, key=lambda a: a['time'], reverse=True)
+    addrs_from = sort(addrs_from.values())
+    addrs_to = sort(addrs_to.values())
     return render_tpl(theme, 'index', {
         'user': request.session['username'],
-        'tags': wrap_tags(local.tags_info())
+        'tags': wrap_tags(local.tags_info()),
+        'addrs_from': [a['title'] for a in addrs_from],
+        'addrs_to': [a['title'] for a in addrs_to]
     })
 
 
