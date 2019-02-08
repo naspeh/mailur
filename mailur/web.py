@@ -87,6 +87,7 @@ def jsonify(fn):
 
 def endpoint(callback):
     @jsonify
+    @local.using(local.SYS, name=None, parent=True)
     @ft.wraps(callback)
     def inner(*args, **kwargs):
         try:
@@ -762,7 +763,6 @@ def thread(q, opts, preload=None):
     for i, m in msgs.items():
         if m['is_link']:
             has_link = True
-            uids.remove(m['uid'])
 
         if not m['is_draft']:
             continue
@@ -848,6 +848,13 @@ def wrap_msgs(items, hide_tags=None):
     elif '#spam' in hide_tags:
         base_q = 'tag:#spam '
 
+    mids = local.data_msgids.get()
+    linked_uids = (
+        sum((mids.get(mid, []) for mid in link), [])
+        for link in local.data_links.get()
+    )
+    linked_uids = sum(linked_uids, [])
+
     tz = request.session['timezone']
     msgs = {}
     for uid, txt, flags, addrs in items:
@@ -878,7 +885,7 @@ def wrap_msgs(items, hide_tags=None):
             'is_unread': '\\Seen' not in flags,
             'is_pinned': '\\Flagged' in flags,
             'is_draft': '\\Draft' in flags,
-            'is_link': '#link' in flags,
+            'is_link': uid in linked_uids,
         })
         if info['is_draft']:
             info['query_edit'] = base_q + 'draft:%s' % info['draft_id']

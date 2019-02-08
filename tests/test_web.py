@@ -440,15 +440,49 @@ def test_general(gm_client, load_email, latest, login, some):
     # unlink thread
     gm_client.add_emails([{'labels': 'test'}] * 2)
     local.parse('all')
+    res = web.search({'q': 'thread:14'})
+    assert res == {
+        'uids': ['14'],
+        'edit': None,
+        'msgs': {'14': some},
+        'msgs_info': '/msgs/info',
+        'tags': ['test'],
+        'same_subject': [],
+        'thread': True,
+        'has_link': False,
+    }
     res = web.search({'q': ':threads tag:test'})
     assert res['uids'] == ['14', '13']
     res = web.post_json('/thrs/link', {'uids': res['uids']}).json
+    assert res == {'uids': ['13', '14']}
     res = web.search({'q': ':threads tag:test'})
     assert res['uids'] == ['14']
+    res = web.search({'q': 'thread:14'})
+    assert res == {
+        'uids': ['13', '14'],
+        'edit': None,
+        'msgs': {'13': some, '14': some},
+        'msgs_info': '/msgs/info',
+        'tags': ['test'],
+        'same_subject': [],
+        'thread': True,
+        'has_link': True,
+    }
     res = web.post_json('/thrs/unlink', {'uids': res['uids']}).json
     assert res == {'query': ':threads uid:13,14'}
     res = web.search({'q': res['query']})
     assert res['uids'] == ['14', '13']
+    res = web.search({'q': 'thread:14'})
+    assert res == {
+        'uids': ['14'],
+        'edit': None,
+        'msgs': {'14': some},
+        'msgs_info': '/msgs/info',
+        'tags': ['test'],
+        'same_subject': [],
+        'thread': True,
+        'has_link': False,
+    }
 
 
 def test_msgs_flag(gm_client, login, msgs):
