@@ -49,17 +49,17 @@ def test_local(gm_client, msgs):
     assert [i['flags'] for i in msgs()] == [''] * 5
 
     local.sync_flags_to_src()
-    con_all.store('1:*', '+FLAGS', '#err #dup')
+    con_all.store('1:*', '+FLAGS', '#err')
     assert [i['flags'] for i in msgs(local.SRC)] == [''] * 5
-    assert [i['flags'] for i in msgs()] == ['#err #dup'] * 5
+    assert [i['flags'] for i in msgs()] == ['#err'] * 5
 
-    con_src.store('1:*', '+FLAGS', '#err #dup')
-    con_all.store('1:*', '-FLAGS', '#err #dup')
+    con_src.store('1:*', '+FLAGS', '#err')
+    con_all.store('1:*', '-FLAGS', '#err')
     local.sync_flags_to_all()
-    assert [i['flags'] for i in msgs(local.SRC)] == ['#err #dup'] * 5
+    assert [i['flags'] for i in msgs(local.SRC)] == ['#err'] * 5
     assert [i['flags'] for i in msgs()] == [''] * 5
 
-    con_src.store('1:*', '-FLAGS', '#err #dup')
+    con_src.store('1:*', '-FLAGS', '#err')
     assert [i['flags'] for i in msgs(local.SRC)] == [''] * 5
     assert [i['flags'] for i in msgs()] == [''] * 5
 

@@ -60,17 +60,6 @@ def binary(txt, mimetype='text/plain'):
     return msg
 
 
-def link(msgids, msgid=None):
-    msgid = msgid or gen_msgid('link')
-    msg = new()
-    msg.add_header('Subject', 'Dummy: linking threads')
-    msg.add_header('References', ' '.join(msgids))
-    msg.add_header('Message-ID', msgid)
-    msg.add_header('From', 'mailur@link')
-    msg.add_header('Date', formatdate(usegmt=True))
-    return msg
-
-
 def parse_mime(orig, uid):
     def error(e, label):
         return 'error on %r: [%s] %s' % (label, e.__class__.__name__, e)
@@ -348,9 +337,7 @@ def parsed(raw, uid, time, flags):
         msg.add_header('X-Thread-ID', thrid)
         refs.insert(0, thrid)
 
-    if msg['from'] == 'mailur@link':
-        msg.add_header('References', orig['references'])
-    elif refs:
+    if refs:
         msg.add_header('References', ' '.join(refs))
 
     msg.make_mixed()

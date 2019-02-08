@@ -276,13 +276,6 @@ def test_msgids(gm_client, msgs, some, load_file, latest):
     res = msgs()[-2:]
     assert [i['uid'] for i in res] == ['9', '10']
     assert [i['body']['message-id'] for i in res] == ['<42@mlr>', '<42@mlr>']
-    # TODO: maybe introduce such duplication handling again
-    # assert some.value.endswith('@mailur.dup>')
-    # msg = latest(parsed=True)
-    # assert msg['meta']['duplicate'] == '<42@mlr>'
-    # assert '#dup' in msg['flags']
-    # res = msgs()
-    # assert set([i['body']['message-id'] for i in res]) == set()
 
     gm_client.add_emails([
         {'raw': load_file('msg-header-with-no-msgid.txt')}

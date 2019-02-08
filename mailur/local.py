@@ -485,8 +485,7 @@ def parse(criteria=None, con=None, **opts):
         criteria = 'UID %s:*' % uidnext
 
     con.select(SRC)
-    # TODO: clean @link part after metadata migration
-    uids = con.sort('(ARRIVAL)', '%s NOT FROM mailur@link' % criteria)
+    uids = con.sort('(ARRIVAL)', criteria)
     uids = [i for i in uids if i and int(i) >= uidnext]
     if not uids:
         log.info('## all parsed already')
@@ -624,7 +623,7 @@ def clean_flags(flags, con_all=None, con_src=None):
 @using(ALL, name='con_all', readonly=False)
 @using(SYS, name=None, parent=True)
 def sync_flags_to_all(con_src=None, con_all=None):
-    skip_flags = set(['#latest', '#err', '#dup'])
+    skip_flags = set(['#err'])
     for flag in con_src.flags:
         if flag in skip_flags:
             continue
@@ -644,7 +643,7 @@ def sync_flags_to_all(con_src=None, con_all=None):
 @using(ALL, name='con_all')
 def sync_flags_to_src(con_src=None, con_all=None):
     for flag in con_all.flags:
-        if flag in ('#latest', '#err', '#dup'):
+        if flag in ('#err'):
             continue
         q = flag[1:] if flag.startswith('\\') else 'keyword %s' % flag
         pids = con_all.search(q)
@@ -694,7 +693,7 @@ def sync_flags(con=None, timeout=None):
                 key = ('+FLAGS.SILENT', ' '.join(val))
                 actions.setdefault(key, [])
                 actions[key].append(uid)
-            val = sorted(flags - orig_flags - set(['#latest']))
+            val = sorted(flags - orig_flags)
             if val:
                 key = ('-FLAGS.SILENT', ' '.join(val))
                 actions.setdefault(key, [])
