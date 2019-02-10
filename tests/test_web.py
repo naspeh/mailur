@@ -224,6 +224,60 @@ def test_tags(gm_client, login, some, load_file):
     assert res.json == tag('#d44f332a', name='нью')
 
 
+def test_expunge_tag(gm_client, login, some):
+    gm_client.add_emails([
+        {'labels': '\\Junk \\Trash'},
+        {'labels': '\\Inbox \\Junk'},
+        {'labels': '\\Inbox', 'refs': '<101@mlr>'},
+    ])
+
+    web = login()
+    res = web.search({'q': ':trash'})
+    assert res == {
+        'msgs': some,
+        'msgs_info': '/msgs/info',
+        'tags': ['#trash'],
+        'uids': ['1'],
+    }
+
+    res = web.search({'q': ':spam'})
+    assert res == {
+        'msgs': some,
+        'msgs_info': '/msgs/info',
+        'tags': ['#spam'],
+        'uids': ['2'],
+    }
+
+    res = web.post_json('/tag/expunge', {'name': '#trash'})
+    res = web.search({'q': ':trash'})
+    assert res == {
+        'msgs': {},
+        'msgs_info': '/msgs/info',
+        'tags': ['#trash'],
+        'uids': [],
+    }
+
+    res = web.post_json('/tag/expunge', {'name': '#spam'})
+    res = web.search({'q': ':spam'})
+    assert res == {
+        'msgs': {},
+        'msgs_info': '/msgs/info',
+        'tags': ['#spam'],
+        'uids': [],
+    }
+
+    res = web.post_json('/thrs/info', {'uids': ['1']})
+
+    res = web.search({'q': ':threads :inbox'})
+    assert res == {
+        'msgs': some,
+        'msgs_info': '/thrs/info',
+        'tags': ['#inbox'],
+        'uids': ['3'],
+        'threads': True
+    }
+
+
 def test_general(gm_client, load_email, latest, login, some):
     web = login()
     res = web.search({'q': '', 'preload': 10})

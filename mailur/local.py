@@ -817,7 +817,10 @@ def thrs_info(uids, tags=None, con=None):
 
     msgs = data_msgs.get()
     thrids, all_thrs = data_threads.get()
-    uids = [thrids[uid] for uid in uids]
+    uids = [thrids[uid] for uid in uids if uid in thrids]
+    if not uids:
+        return
+
     all_uids = sum((all_thrs[uid] for uid in uids), [])
     all_uids = imap.Uids(all_uids)
 

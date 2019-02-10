@@ -157,6 +157,13 @@ let Msgs = Vue.extend({
         tags.push.apply(tags, this.msgs[i].tags);
       }
       return [...new Set(tags)];
+    },
+    expungedTag: function() {
+      for (let tag of ['#trash', '#spam']) {
+        if (this.tags.indexOf(tag) != -1) {
+          return tag;
+        }
+      }
     }
   },
   methods: {
@@ -276,6 +283,16 @@ let Msgs = Vue.extend({
           this.refresh();
         }
       });
+    },
+    expunge: function() {
+      this.call('post', '/tag/expunge', { name: this.expungedTag }).then(
+        res => {
+          if (!res.errors) {
+            this.picked = [];
+            this.refresh();
+          }
+        }
+      );
     }
   }
 });

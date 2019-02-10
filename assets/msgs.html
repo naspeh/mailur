@@ -62,6 +62,9 @@
   </div>
   <div class="msgs__body">
     <div v-if="error" class="msgs__error">{{error}}</div>
+    <a @click.prevent="expunge" v-if="uids.length && expungedTag" class="msgs__expunge" href="#">
+      Completely delete all <b>{{expungedTag}}</b> messages
+    </a>
     <div v-if="!loading && !uids.length">Nothing...</div>
     <msg
       v-for="uid in uids" :key="uid"

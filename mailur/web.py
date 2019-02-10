@@ -223,6 +223,30 @@ def tag():
     return wrap_tags({tag['id']: tag})['info'][tag['id']]
 
 
+@app.post('/tag/expunge')
+@endpoint
+def expunge_tag():
+    schema = {
+        'type': 'object',
+        'properties': {
+            'name': {
+                'type': 'string',
+                'enum': ['#trash', '#spam']
+            },
+        },
+        'required': ['name']
+    }
+    errs, data = validate(request.json, schema)
+    if errs:
+        response.status = 400
+        return {'errors': errs, 'schema': schema}
+    with local.client(readonly=False) as con:
+        uids = con.search('KEYWORD %(name)s' % data)
+        con.store(uids, '+FLAGS.SILENT', '\\Deleted')
+        con.expunge()
+        local.update_metadata(uids, clean=True)
+
+
 @app.post('/search')
 @endpoint
 def search():
