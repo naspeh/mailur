@@ -127,7 +127,7 @@ def login_html(theme=None):
     theme = request.query.get('theme') or request.session.get('theme')
     return render_tpl(theme, 'login', {
         'themes': themes(),
-        'timezones': common_timezones,
+        'timezones': list(common_timezones),
     })
 
 

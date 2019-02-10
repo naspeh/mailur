@@ -316,6 +316,7 @@ def clean_threads(uids):
 
     data_threads(thrids, thrs)
     log.info('## cleaned %s threads', len(cleaned))
+    return cleaned_uids
 
 
 def clean_msgs(uids):
@@ -347,8 +348,9 @@ def clean_msgs(uids):
 def update_metadata(uids=None, clean=False, con=None):
     if clean:
         clean_msgs(uids)
-        clean_threads(uids)
-        return
+        uids = clean_threads(uids)
+        if not uids:
+            return
 
     if uids == '1:*':
         msgs = {}
