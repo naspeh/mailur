@@ -1120,6 +1120,33 @@ To: =?utf-8?b?0JHQtdGC0LA=?= <b@t.com>,\r
     assert [i['uid'] for i in msgs()] == ['3', '8']
 
 
+def test_draft_after_autocomplete(gm_client, login, patch, latest):
+    web = login()
+
+    gm_client.add_emails([
+        {
+            'from': 'a@t.com',
+            'to': 'b@t.com',
+            'flags': '\\Draft \\Seen',
+            'labels': 'test'
+        }
+    ])
+    res = web.post('/editor', {
+        'uid': '1',
+        # it appends ", " to the end for easy adding multiple addresses
+        'to': '"B" <b@t.com>, ',
+        'txt': 'test',
+    }, status=200).json
+    assert res == {'uid': '2', 'url_send': '/send/2'}
+    m = latest(local.SRC)
+    assert m['uid'] == '2'
+    assert m['body']['To'] == '"B" <b@t.com>,'
+    with patch('mailur.gmail.data_credentials') as c:
+        c.get.return_value = ('test', 'test')
+        with patch('mailur.web.smtplib.SMTP'):
+            res = web.get('/send/2', status=200).json
+
+
 def test_addresses(some):
     def wrap_from_list(addrs):
         return wrap_addresses(addresses(addrs), max=4)

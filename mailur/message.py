@@ -452,7 +452,7 @@ def new_draft(draft, override, related):
     msg.add_header('Date', formatdate(usegmt=True))
     headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
     for h in headers:
-        val = override.get(h.lower())
+        val = override.get(h.lower(), '').strip()
         if not val and h.lower() in draft:
             val = draft[h.lower()]
         if val:
