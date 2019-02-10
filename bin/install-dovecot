@@ -88,6 +88,10 @@ namespace mlr {
     mailbox Sys {
         auto = create
     }
+    mailbox Del {
+        auto = create
+        autoexpunge = 30d
+    }
 }
 
 mail_plugins = \$mail_plugins acl notify mail_log replication fts fts_lucene

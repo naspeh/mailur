@@ -11,6 +11,7 @@ from . import cache, conf, fn_time, html, imap, json, log, message, user_lock
 SRC = 'INBOX'
 ALL = 'mlr/All'
 SYS = 'mlr/Sys'
+DEL = 'mlr/Del'
 
 
 class Local(imaplib.IMAP4, imap.Conn):
@@ -607,6 +608,15 @@ def msgs_flag(uids, old, new, con_src=None, con_all=None):
         spawn(store, con_src, pair_parsed_uids(uids))
     ]
     joinall(jobs, raise_error=True)
+
+
+@using(SRC)
+def msgs_expunge(tag, con=None):
+    uids = con.search('KEYWORD %s' % tag)
+    con.copy(uids, DEL)
+    parsed_uids = pair_origin_uids(uids)
+    msgs_flag(parsed_uids, [], ['\\Deleted'])
+    update_metadata(parsed_uids, clean=True)
 
 
 @fn_time

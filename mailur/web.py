@@ -240,11 +240,7 @@ def expunge_tag():
     if errs:
         response.status = 400
         return {'errors': errs, 'schema': schema}
-    with local.client(readonly=False) as con:
-        uids = con.search('KEYWORD %(name)s' % data)
-        con.store(uids, '+FLAGS.SILENT', '\\Deleted')
-        con.expunge()
-        local.update_metadata(uids, clean=True)
+    local.msgs_expunge(data['name'])
 
 
 @app.post('/search')

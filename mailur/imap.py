@@ -420,6 +420,11 @@ def expunge(con):
     return check(con.expunge())
 
 
+@command()
+def copy(con, uids, box):
+    return check(con.uid('COPY', ','.join(uids), box))
+
+
 @command(lock=False)
 def fetch(con, uids, fields):
     uids = Uids(uids)

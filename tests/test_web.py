@@ -224,12 +224,16 @@ def test_tags(gm_client, login, some, load_file):
     assert res.json == tag('#d44f332a', name='нью')
 
 
-def test_expunge_tag(gm_client, login, some):
+def test_expunge_tag(gm_client, login, some, msgs):
     gm_client.add_emails([
         {'labels': '\\Junk \\Trash'},
         {'labels': '\\Inbox \\Junk'},
         {'labels': '\\Inbox', 'refs': '<101@mlr>'},
     ])
+    existing = sorted(msgs('INBOX'), key=lambda i: int(i['uid']))
+
+    # mix original and parsed uids
+    local.parse('all')
 
     web = login()
     res = web.search({'q': ':trash'})
@@ -237,7 +241,7 @@ def test_expunge_tag(gm_client, login, some):
         'msgs': some,
         'msgs_info': '/msgs/info',
         'tags': ['#trash'],
-        'uids': ['1'],
+        'uids': ['4'],
     }
 
     res = web.search({'q': ':spam'})
@@ -245,7 +249,7 @@ def test_expunge_tag(gm_client, login, some):
         'msgs': some,
         'msgs_info': '/msgs/info',
         'tags': ['#spam'],
-        'uids': ['2'],
+        'uids': ['5'],
     }
 
     res = web.post_json('/tag/expunge', {'name': '#trash'})
@@ -273,9 +277,12 @@ def test_expunge_tag(gm_client, login, some):
         'msgs': some,
         'msgs_info': '/thrs/info',
         'tags': ['#inbox'],
-        'uids': ['3'],
+        'uids': ['6'],
         'threads': True
     }
+    deleted = sorted(msgs('mlr/Del'), key=lambda i: int(i['uid']))
+    assert existing[0]['body'].as_bytes() == deleted[0]['body'].as_bytes()
+    assert existing[1]['body'].as_bytes() == deleted[1]['body'].as_bytes()
 
 
 def test_general(gm_client, load_email, latest, login, some):
