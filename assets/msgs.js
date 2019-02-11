@@ -160,7 +160,7 @@ let Msgs = Vue.extend({
     },
     expungedTag: function() {
       for (let tag of ['#trash', '#spam']) {
-        if (this.tags.indexOf(tag) != -1) {
+        if (this.tags && this.tags.indexOf(tag) != -1) {
           return tag;
         }
       }
