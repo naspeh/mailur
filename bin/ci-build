@@ -2,8 +2,6 @@
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
 
-env | sort
-
 sha=$sha
 ref=${ref:-master}
 

@@ -16,6 +16,7 @@ def get_conf():
         'secret': uuid.uuid4().hex,
         'github_basic': None,
         'logs_root': '/var/tmp/mlr-ci',
+        'logs_web': None,
         'smtp_host': None,
         'smtp_port': 587,
         'smtp_user': None,

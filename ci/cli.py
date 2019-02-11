@@ -51,9 +51,9 @@ def process(**args):
 
 def sh(target, exit=False):
     started = time.time()
-    gh_post_status(target, 'pending')
     log_file = logs / ('%s.log' % target.rsplit('/', 1)[-1])
     log.info('%r is running: log_file=%s', target, log_file)
+    gh_post_status(target, 'pending', log_file=log_file)
     cmd = (
         '(time (sha={sha} ref={ref} bin/{target})) 2>&1'
         '  | ts "[%Y-%m-%d %H:%M:%S]"'
@@ -67,7 +67,7 @@ def sh(target, exit=False):
     state = 'success' if success else 'failure'
     duration = time.time() - started
     duration = '%dm%ds' % (duration // 60, duration % 60)
-    gh_post_status(target, state, desc=duration)
+    gh_post_status(target, state, desc=duration, log_file=log_file)
     if not success:
         with open('%s.htm' % log_file, 'rb') as f:
             payload = f.read()
@@ -77,7 +77,13 @@ def sh(target, exit=False):
     return success
 
 
-def gh_post_status(context, state, desc=None, target_url=None):
+def gh_post_status(context, state, desc=None, log_file=None):
+    target_url = None
+    if log_file and conf.logs_web:
+        path = str(log_file).replace(conf.logs_root, '')
+        target_url = '%s%s' % (conf.logs_web.rstrip('/'), path)
+    if state != 'pending' and target_url:
+        target_url += '.htm'
     data = {
         'context': context,
         'state': state,
