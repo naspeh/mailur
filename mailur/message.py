@@ -360,7 +360,7 @@ def parsed(raw, uid, time, flags):
     return msg, flags
 
 
-def sending(raw, linesep='\r\n', maxlinelen=70):
+def sending(msg, linesep='\r\n', maxlinelen=70):
     def _fold(v, name=None):
         try:
             v.encode('ascii')
@@ -386,10 +386,6 @@ def sending(raw, linesep='\r\n', maxlinelen=70):
         addrs = ','.join(parts)
         return '%s: %s%s' % (name, addrs, linesep)
 
-    msg = email.message_from_bytes(raw, policy=email.policy.SMTPUTF8)
-    msgid = gen_msgid('sent')
-    msg.replace_header('Message-ID', msgid)
-
     params = [
         [a for n, a in email.utils.getaddresses([msg[name]])]
         for name in ('From', 'To') if msg[name]
@@ -406,7 +402,7 @@ def sending(raw, linesep='\r\n', maxlinelen=70):
         del msg[n]
     msg = b''.join([''.join(headers).encode(), msg.as_bytes()])
     params.append(msg)
-    return params, msgid
+    return params
 
 
 def parse_draft(msg):
@@ -436,7 +432,7 @@ def parse_draft(msg):
     return txt, parts
 
 
-def new_draft(draft, related):
+def new_draft(draft, related, msgid=None):
     txt = new()
     txt.make_alternative()
     plain = draft.get('txt', '')
@@ -452,7 +448,7 @@ def new_draft(draft, related):
         msg = txt
 
     msg.add_header('X-Draft-ID', draft['draft_id'])
-    msg.add_header('Message-ID', draft['draft_id'])
+    msg.add_header('Message-ID', msgid or draft['draft_id'])
     msg.add_header('Date', formatdate(usegmt=True))
     headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
     for h in headers:

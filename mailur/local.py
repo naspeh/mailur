@@ -185,7 +185,11 @@ def data_uidnext(value):
 @setting('drafts', lambda: {})
 def data_drafts(update):
     drafts = data_drafts.get()
-    drafts.update(update)
+    for key, val in update.items():
+        if val is None:
+            drafts.pop(key, None)
+        else:
+            drafts[key] = val
     return drafts
 
 
@@ -790,10 +794,20 @@ def msgs_info(uids, con=None):
 @fn_time
 @using()
 def msgs_body(uids, fix_privacy=False, con=None):
+    msgs = data_msgs.get()
+    drafts = data_drafts.get()
     res = con.fetch(uids, '(UID BINARY.PEEK[2.1])')
     for i in range(0, len(res), 2):
         uid = res[i][0].decode().split()[2]
-        body = res[i][1].decode()
+        draft_id = msgs[uid].get('draft_id')
+        if draft_id:
+            draft = drafts[draft_id]
+            body = '<hr>'.join(
+                p for p in [html.markdown(draft['txt']), drafts.get('quoted')]
+                if p
+            )
+        else:
+            body = res[i][1].decode()
         body = html.fix_privacy(body, only_proxy=not fix_privacy)
         yield uid, body
 

@@ -14,7 +14,7 @@ from pytz import common_timezones, timezone, utc
 
 from bottle import Bottle, abort, request, response, static_file, template
 
-from . import LockError, conf, html, imap, json, local, log, message
+from . import LockError, conf, html, imap, json, local, log, message, user_lock
 from .schema import validate
 
 root = pathlib.Path(__file__).parent.parent
@@ -356,40 +356,44 @@ def editor():
     draft_id = request.forms['draft_id']
     files = request.files.getall('files')
 
-    draft, related = compose(draft_id)
-    updated = {k: v for k, v in draft.items() if k in (
-        'draft_id', 'parent', 'forward'
-    )}
-    updated.update({k: v.strip() for k, v in request.forms.items() if k in (
-        'from', 'to'
-    )})
-    updated.update({k: v for k, v in request.forms.items() if k in (
-        'subject', 'txt', 'time'
-    )})
-    local.data_drafts({draft_id: updated})
-    draft.update(updated)
-    if files:
-        if not related:
-            related = message.new()
-            related.make_mixed()
-        for f in files:
-            maintype, subtype = f.content_type.split('/')
-            related.add_attachment(
-                f.file.read(), filename=f.filename,
-                maintype=maintype, subtype=subtype
-            )
-    uid = draft['uid']
-    if not uid or files:
-        draft['flags'] = draft.get('flags') or '\\Draft \\Seen'
-        msg = message.new_draft(draft, related)
-        oid, _ = local.new_msg(msg, draft['flags'], no_parse=True)
-        if uid:
-            local.del_msg(uid)
-        local.parse()
-        uid = local.pair_origin_uids([oid])[0]
-    else:
-        oid = local.pair_parsed_uids([uid])[0]
-    return {'uid': uid, 'url_send': app.get_url('send', uid=oid)}
+    with user_lock('editor:%s' % draft_id):
+        draft, related = compose(draft_id)
+        updated = {
+            k: v for k, v in draft.items()
+            if k in ('draft_id', 'parent', 'forward')
+        }
+        updated.update({
+            k: v.strip() for k, v in request.forms.items()
+            if k in ('from', 'to')
+        })
+        updated.update({
+            k: v for k, v in request.forms.items()
+            if k in ('subject', 'txt', 'time')
+        })
+        local.data_drafts({draft_id: updated})
+        draft.update(updated)
+        if files:
+            if not related:
+                related = message.new()
+                related.make_mixed()
+            for f in files:
+                maintype, subtype = f.content_type.split('/')
+                related.add_attachment(
+                    f.file.read(), filename=f.filename,
+                    maintype=maintype, subtype=subtype
+                )
+        uid = draft['uid']
+        if not uid or files:
+            draft['flags'] = draft.get('flags') or '\\Draft \\Seen'
+            msg = message.new_draft(draft, related)
+            oid, _ = local.new_msg(msg, draft['flags'], no_parse=True)
+            if uid:
+                local.del_msg(uid)
+            local.parse()
+            uid = local.pair_origin_uids([oid])[0]
+        else:
+            oid = local.pair_parsed_uids([uid])[0]
+    return {'uid': uid, 'url_send': app.get_url('send', draft_id=draft_id)}
 
 
 @app.get('/compose')
@@ -402,19 +406,21 @@ def reply(uid=None):
         'parent': uid,
         'forward': forward,
     }})
-    return {'query_edit': 'draft:%s' % draft_id}
+    return {'draft_id': draft_id, 'query_edit': 'draft:%s' % draft_id}
 
 
-@app.get('/send/<uid:int>', name='send')
+@app.get('/send/<draft_id>', name='send')
 @jsonify
-def send(uid):
+def send(draft_id):
     from . import gmail
 
     # TODO: send emails over gmail for now
-    uid = str(uid)
-    raw = local.raw_msg(uid, local.SRC)
+    msgid = message.gen_msgid('sent')
+    draft, related = compose(draft_id)
+    msg = message.new_draft(draft, related, msgid)
+
     try:
-        params, msgid = message.sending(raw)
+        params = message.sending(msg)
     except ValueError as e:
         response.status = 400
         return {'errors': [str(e)]}
@@ -434,8 +440,8 @@ def send(uid):
 
     uids = local.search_msgs('HEADER Message-ID %s KEYWORD #sent' % msgid)
     if uids:
-        pid = local.pair_origin_uids([uid])[0]
-        local.del_msg(pid)
+        local.data_drafts({draft_id: None})
+        local.del_msg(draft['uid'])
         uid = uids[0]
         return {'query': 'thread:%s' % uid}
     return {'query': ':threads mid:%s' % msgid}
@@ -1096,7 +1102,7 @@ def draft_info(uid):
         'draft_id': meta['draft_id'],
         'origin_uid': meta['origin_uid'],
         'files': meta['files'],
-        'url_send': app.get_url('send', uid=meta['origin_uid']),
+        'url_send': app.get_url('send', draft_id=meta['draft_id']),
         'time': meta['date'],
     })
     return info, related
