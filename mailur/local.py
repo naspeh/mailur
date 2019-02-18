@@ -182,6 +182,13 @@ def data_uidnext(value):
     return value
 
 
+@setting('drafts', lambda: {})
+def data_drafts(update):
+    drafts = data_drafts.get()
+    drafts.update(update)
+    return drafts
+
+
 @setting('links', lambda: [])
 def data_links(links):
     return links

@@ -353,10 +353,21 @@ def msgs_flag():
 @app.post('/editor')
 @endpoint
 def editor():
-    uid = request.forms['uid']
+    draft_id = request.forms['draft_id']
     files = request.files.getall('files')
 
-    draft, related = draft_info(uid)
+    draft, related = compose(draft_id)
+    updated = {k: v for k, v in draft.items() if k in (
+        'draft_id', 'parent', 'forward'
+    )}
+    updated.update({k: v.strip() for k, v in request.forms.items() if k in (
+        'from', 'to'
+    )})
+    updated.update({k: v for k, v in request.forms.items() if k in (
+        'subject', 'txt', 'time'
+    )})
+    local.data_drafts({draft_id: updated})
+    draft.update(updated)
     if files:
         if not related:
             related = message.new()
@@ -367,12 +378,18 @@ def editor():
                 f.file.read(), filename=f.filename,
                 maintype=maintype, subtype=subtype
             )
-    msg = message.new_draft(draft, request.forms, related)
-    oid, _ = local.new_msg(msg, draft['flags'], no_parse=True)
-    local.del_msg(draft['uid'])
-    local.parse()
-    pid = local.pair_origin_uids([oid])[0]
-    return {'uid': pid, 'url_send': app.get_url('send', uid=oid)}
+    uid = draft['uid']
+    if not uid or files:
+        draft['flags'] = draft.get('flags') or '\\Draft \\Seen'
+        msg = message.new_draft(draft, related)
+        oid, _ = local.new_msg(msg, draft['flags'], no_parse=True)
+        if uid:
+            local.del_msg(uid)
+        local.parse()
+        uid = local.pair_origin_uids([oid])[0]
+    else:
+        oid = local.pair_parsed_uids([uid])[0]
+    return {'uid': uid, 'url_send': app.get_url('send', uid=oid)}
 
 
 @app.get('/compose')
@@ -380,47 +397,12 @@ def editor():
 def reply(uid=None):
     forward = uid and request.query.get('forward')
     draft_id = message.gen_draftid()
-    addrs, _ = local.data_addresses.get()
-    addr = {}
-    if addrs:
-        addr = sorted(addrs.values(), key=lambda i: i['time'])[-1]
-    draft = {
+    local.data_drafts({draft_id: {
         'draft_id': draft_id,
-        'subject': '',
-        'to': '',
-        'from': addr.get('title', ''),
-    }
-    if uid:
-        flags, head, meta, htm = local.fetch_msg(uid)
-        subj = meta['subject']
-        subj = re.sub(r'(?i)^(re|fwd)(\[\d+\])?: ?', '', subj)
-        prefix = 'Fwd:' if forward else 'Re:'
-        subj = ' '.join(i for i in (prefix, subj) if i)
-        to = [head['reply-to'] or head['from'], head['to'], head['cc']]
-        to_all = message.addresses(','.join(a for a in to if a))
-        for a in to_all:
-            if a['addr'] in addrs:
-                addr = a
-                to_all.remove(a)
-        to = [a['title'] for a in to_all]
-        if not to:
-            to = [to_all[0]['title']]
-        draft.update({
-            'subject': subj,
-            'to': ','.join(to),
-            'in-reply-to': meta['msgid'],
-            'references': meta['msgid'],
-        })
-    inner = None
-    if forward:
-        inner = local.raw_msg(meta['origin_uid'], local.SRC, parsed=True)
-        for name, val in inner.items():
-            if not name.lower().startswith('content-'):
-                del inner[name]
-        draft['txt'] = template(quote_tpl, type='Forwarded', msg=head)
-    msg = message.new_draft(draft, {}, inner)
-    _, new_uid = local.new_msg(msg, '\\Draft \\Seen')
-    return {'uid': new_uid, 'query_edit': 'draft:%s' % draft_id}
+        'parent': uid,
+        'forward': forward,
+    }})
+    return {'query_edit': 'draft:%s' % draft_id}
 
 
 @app.get('/send/<uid:int>', name='send')
@@ -651,13 +633,16 @@ def parse_query(q):
             opts['threads'] = True
             q = ''
         elif info.get('draft_edit'):
-            opts['thread'] = True
             mid = info['draft_val']
+            opts['thread'] = True
             opts['draft'] = mid
-            mids = local.data_msgids.get()
-            uid = mids.get(mid)
-            if uid:
-                opts['uid'] = uid[0]
+            uids = local.data_msgids.key(mid)
+            draft = local.data_drafts.key(mid, {})
+            if uids:
+                opts['uid'] = uids[0]
+                q = ''
+            elif draft.get('parent'):
+                opts['uid'] = draft['parent']
                 q = ''
             else:
                 q = 'header message-id %s' % mid
@@ -746,11 +731,74 @@ def parse_query(q):
     return q, opts
 
 
+def compose(draft_id):
+    draft = local.data_drafts.key(draft_id, {})
+
+    uids = local.data_msgids.key(draft_id)
+    uid = uids[0] if uids else None
+
+    if uid:
+        saved_draft, related = draft_info(uid)
+        saved_draft.update(draft)
+        return saved_draft, related
+
+    addrs, _ = local.data_addresses.get()
+    addr = {}
+    if addrs:
+        addr = sorted(addrs.values(), key=lambda i: i['time'])[-1]
+    draft.update({
+        'uid': None,
+        'from': addr.get('title', ''),
+        'to': '',
+        'subject': '',
+        'txt': '',
+        'files': [],
+    })
+    parent = draft.get('parent')
+    forward = parent and draft.get('forward')
+    if parent:
+        flags, head, meta, htm = local.fetch_msg(parent)
+        subj = meta['subject']
+        subj = re.sub(r'(?i)^(re|fwd)(\[\d+\])?: ?', '', subj)
+        prefix = 'Fwd:' if forward else 'Re:'
+        subj = ' '.join(i for i in (prefix, subj) if i)
+        to = [head['reply-to'] or head['from'], head['to'], head['cc']]
+        to_all = message.addresses(','.join(a for a in to if a))
+        for a in to_all:
+            if a['addr'] in addrs:
+                addr = a
+                to_all.remove(a)
+        to = [a['title'] for a in to_all]
+        if not to:
+            to = [to_all[0]['title']]
+        draft.update({
+            'subject': subj,
+            'to': ','.join(to),
+            'in-reply-to': meta['msgid'],
+            'references': meta['msgid'],
+        })
+    inner = None
+    if forward:
+        inner = local.raw_msg(meta['origin_uid'], local.SRC, parsed=True)
+        for name, val in inner.items():
+            if not name.lower().startswith('content-'):
+                del inner[name]
+        draft['txt'] = template(quote_tpl, type='Forwarded', msg=head)
+        draft['quoted'] = local.fetch_msg(parent)[-1]
+        draft['files'] = meta['files']
+    return draft, inner
+
+
 def thread(q, opts, preload=None):
     preload = preload or 7
     uids = local.search_msgs(q, '(ARRIVAL)')
+    edit = None
+    draft_id = opts.get('draft')
+    if draft_id:
+        edit, _ = compose(draft_id)
     if not uids:
         return {
+            'edit': edit,
             'uids': [],
             'msgs': {},
             'msgs_info': app.get_url('msgs_info'),
@@ -776,7 +824,6 @@ def thread(q, opts, preload=None):
         if subj == prev_subj:
             same_subject.append(uid)
 
-    edit = None
     has_link = False
     parents = []
     mids = local.data_msgids.get()
@@ -786,8 +833,6 @@ def thread(q, opts, preload=None):
 
         if not m['is_draft']:
             continue
-        if m['draft_id'] == opts.get('draft'):
-            edit = draft_info(m['uid'])[0]
 
         parent = m['parent']
         parent = parent and mids.get(parent, [None])[0]
@@ -885,12 +930,37 @@ def wrap_msgs(items, hide_tags=None):
         else:
             info = txt
 
+        info.update({
+            'is_unread': '\\Seen' not in flags,
+            'is_pinned': '\\Flagged' in flags,
+            'is_draft': '\\Draft' in flags,
+            'is_link': uid in linked_uids,
+        })
+
+        if info['is_draft']:
+            info['query_edit'] = base_q + 'draft:%s' % info['draft_id']
+            draft = local.data_drafts.key(info['draft_id'], {})
+            if draft.get('from'):
+                info['from'] = message.addresses(draft['from'])[0]
+            if draft.get('to'):
+                info['to'] = message.addresses(draft['to'])
+            subj = draft.get('subject')
+            if subj:
+                info['subject'] = subj
+            txt = draft.get('txt')
+            if txt:
+                htm = html.markdown(txt)
+                info['preview'] = message.preview(htm, info['files'])
+        else:
+            info['url_reply'] = app.get_url('reply', uid=uid)
+
         if addrs is None:
             addrs = [info['from']] if 'from' in info else []
         if info.get('from'):
             info['from'] = wrap_addresses([info['from']], base_q=base_q)[0]
         if info.get('to'):
             info['to'] = wrap_addresses(info['to'], field='to', base_q=base_q)
+
         info.update({
             'uid': uid,
             'count': len(addrs),
@@ -902,16 +972,7 @@ def wrap_msgs(items, hide_tags=None):
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
             'time_human': humanize_dt(info['arrived'], tz=tz),
             'time_title': format_dt(info['arrived'], tz=tz),
-            'is_unread': '\\Seen' not in flags,
-            'is_pinned': '\\Flagged' in flags,
-            'is_draft': '\\Draft' in flags,
-            'is_link': uid in linked_uids,
         })
-        if info['is_draft']:
-            info['query_edit'] = base_q + 'draft:%s' % info['draft_id']
-        else:
-            info['url_reply'] = app.get_url('reply', uid=uid)
-
         styles, ext_images = info.get('styles'), info.get('ext_images')
         if styles or ext_images:
             richer = ['styles'] if styles else []

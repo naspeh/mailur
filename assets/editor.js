@@ -14,6 +14,7 @@ Vue.component('editor', {
   },
   data: function() {
     return {
+      saving: false,
       editing: true,
       countdown: null,
       html: '',
@@ -36,8 +37,8 @@ Vue.component('editor', {
   methods: {
     autosave: function() {
       let data = this.values();
-      data.time = new Date().getTime();
       window.localStorage.setItem(this.msg.draft_id, JSON.stringify(data));
+      this.saving || this.save();
     },
     update: function(val, el) {
       let addrs = el.__vue__.$refs['input'].value.split(',');
@@ -88,9 +89,10 @@ Vue.component('editor', {
       for (let i of ['from', 'to', 'subject', 'txt']) {
         values[i] = this[i];
       }
+      values.time = new Date().getTime();
       return values;
     },
-    save: function(refresh = true) {
+    save: function(refresh = false) {
       let data = new FormData();
       let values = this.values();
       for (let i in values) {
@@ -99,8 +101,10 @@ Vue.component('editor', {
       for (let file of Array.from(this.$refs.upload.files || [])) {
         data.append('files', file, file.name);
       }
-      data.append('uid', this.msg.uid);
+      data.append('draft_id', this.msg.draft_id);
+      this.saving = true;
       return this.call('post', '/editor', data, {}).then(res => {
+        this.saving = false;
         refresh && this.refresh();
         return res;
       });

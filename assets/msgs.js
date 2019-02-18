@@ -38,8 +38,6 @@ let Loader = Vue.extend({
       });
     },
     call: function(method, url, data, headers = null) {
-      window.app.refreshTags();
-
       this.loading = true;
       return call(method, url, data, headers).then(res => {
         this.loading = false;
@@ -51,6 +49,7 @@ let Loader = Vue.extend({
       });
     },
     search: function(preload = undefined) {
+      window.app.refreshTags();
       return this.call('post', '/search', { q: this.query, preload: preload });
     },
     mount: function() {
@@ -349,7 +348,9 @@ let Thread = Vue.extend({
       }
     },
     openMsg: function(uid, force) {
-      this.fetchBodies([uid]);
+      if (uid) {
+        this.fetchBodies([uid]);
+      }
       let idx = this.opened.indexOf(uid);
       if (idx == -1) {
         this.opened.push(uid);

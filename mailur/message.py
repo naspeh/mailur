@@ -234,6 +234,15 @@ def normalize_msgid(mid):
     return mid.strip().lower()
 
 
+def preview(htm, files):
+    preview = htm and html.to_line(htm, 200)
+    if len(preview) < 200 and files:
+        preview += (' ' if preview else '') + (
+            '[%s]' % ', '.join(f['filename'] for f in files)
+        )
+    return preview
+
+
 def parsed(raw, uid, time, flags):
     # "email.message_from_bytes" uses "email.policy.compat32" policy
     # and it's by intention, because new policies don't work well
@@ -251,12 +260,7 @@ def parsed(raw, uid, time, flags):
     elif txt:
         htm = html.from_text(txt)
 
-    preview = htm and html.to_line(htm, 200)
-    if len(preview) < 200 and files:
-        preview += (' ' if preview else '') + (
-            '[%s]' % ', '.join(f['filename'] for f in files)
-        )
-    meta['preview'] = preview
+    meta['preview'] = preview(htm, files)
     meta['files'] = files
 
     fields = (
@@ -432,10 +436,10 @@ def parse_draft(msg):
     return txt, parts
 
 
-def new_draft(draft, override, related):
+def new_draft(draft, related):
     txt = new()
     txt.make_alternative()
-    plain = override.get('txt', draft.get('txt', ''))
+    plain = draft.get('txt', '')
     txt.attach(binary(plain))
     htm = html.markdown(plain)
     txt.attach(binary(htm, 'text/html'))
@@ -452,9 +456,7 @@ def new_draft(draft, override, related):
     msg.add_header('Date', formatdate(usegmt=True))
     headers = ('From', 'To', 'CC', 'Subject', 'In-Reply-To', 'References')
     for h in headers:
-        val = override.get(h.lower(), '').strip()
-        if not val and h.lower() in draft:
-            val = draft[h.lower()]
+        val = draft.get(h.lower())
         if val:
             msg.add_header(h, val)
     return msg
