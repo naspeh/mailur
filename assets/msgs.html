@@ -140,13 +140,14 @@
   <div class="msgs__body">
     <div v-if="error" class="msgs__error">{{error}}</div>
     <div v-if="!loading && !uids.length && !edit">Nothing...</div>
-    <div v-for="uid of uids" :key="uid">
+    <template v-for="uid of uids">
       <a
         v-if="hidden.indexOf(uid) == 0"
         @click.prevent="loadAll()" href="#"
         class="msg-hidden"
       >{{hidden.length}} hidden</a>
       <msg v-if="msgs[uid] && (!edit || edit.uid != uid)"
+        :key="uid"
         :msg="msgs[uid]"
         :editTags="editTags"
         :details="details"
@@ -161,13 +162,14 @@
       />
       <editor
         v-if="edit && edit.uid == uid"
+        :key="uid"
         :msg="edit"
         :call="call"
         :query="open"
         :query_thread="msgs[uid].query_thread"
         :refresh="refresh"
       />
-    </div>
+    </template>
     <editor
       v-if="edit && !edit.uid"
       :msg="edit"

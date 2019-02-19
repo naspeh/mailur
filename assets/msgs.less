@@ -45,6 +45,15 @@
   }
 }
 
+.msgs__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 1.9em 0.2em 5em 0.2em;
+  margin-top: -1.9em;
+}
+
 .msgs__error {
   position: sticky;
   top: 1.7em;
@@ -65,10 +74,6 @@
   display: block;
   padding: 0.2em;
   background-color: @--color--white;
-}
-
-.msgs__body {
-  padding: 0 0.2em 5em 0.2em;
 }
 
 .msgs__search {
