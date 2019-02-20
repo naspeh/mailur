@@ -96,6 +96,7 @@ let Base = {
     }
   },
   methods: {
+    init: function() {},
     refresh: function(preload = undefined) {
       let data = { uids: this.loaded, hide_tags: this.tags };
       this.search(preload).then(res => {
@@ -112,6 +113,7 @@ let Base = {
     setMsgs: function(msgs) {
       this.msgs = Object.assign({}, this.msgs, msgs);
       this.pics(msgs);
+      this.init();
     },
     fetchBodies: function(uids) {
       let data = { uids: uids, fix_privacy: window.app.opts.fixPrivacy };
@@ -319,12 +321,7 @@ let Thread = Vue.extend({
     };
   },
   created: function() {
-    if (!this.threads && this.uids.length == 1) {
-      this.openMsg(this.uids[0]);
-    }
-    if (this.edit && this.opened.indexOf(this.edit.uid) == -1) {
-      this.openMsg(this.edit.uid);
-    }
+    this.init();
   },
   methods: {
     set: function(res) {
@@ -332,6 +329,14 @@ let Thread = Vue.extend({
       this.tags = res.tags;
       this.edit = res.edit;
       this.setMsgs(res.msgs);
+    },
+    init: function() {
+      if (this.uids.length == 1 && !this.opened.length) {
+        this.openMsg(this.uids[0]);
+      }
+      if (this.edit && this.opened.indexOf(this.edit.uid) == -1) {
+        this.openMsg(this.edit.uid);
+      }
     },
     loadAll: function() {
       return this.call('post', this.msgs_info, {

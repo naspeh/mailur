@@ -714,9 +714,13 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'txt': '',
         'in-reply-to': '<101@mlr>',
         'references': '<101@mlr>',
-        'query_thread': 'thread:1',
+        'query_thread': 'mid:%s' % draft_id,
         'url_send': '/send/%s' % draft_id,
     }
+    query_thread = res['edit']['query_thread']
+    assert parse_query(query_thread) == (
+        'header message-id %s unkeyword #trash unkeyword #spam' % draft_id, {}
+    )
     assert local.data_drafts.key(draft_id) == {
         'draft_id': draft_id,
         'forward': None,
@@ -728,6 +732,10 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'txt': '**test it**',
     }, status=200).json
     assert res == {'uid': '2'}
+    assert parse_query(query_thread) == (
+        'uid 2 unkeyword #trash unkeyword #spam',
+        {'thread': True}
+    )
 
     res = web.search({'q': 'thread:1'})
     assert res['uids'] == ['1', '2']
@@ -780,7 +788,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'to': '',
         'subject': '',
         'txt': '',
-        'query_thread': ':threads :inbox',
+        'query_thread': 'mid:%s' % draft_id,
         'url_send': '/send/%s' % draft_id,
     }
 
@@ -918,7 +926,7 @@ def test_drafts_part1(gm_client, login, patch, some):
         'to': '',
         'txt': '42',
         'uid': '3',
-        'query_thread': ':threads :inbox',
+        'query_thread': 'mid:%(draft_id)s' % draft,
         'url_send': '/send/<103@mlr>',
     }
 

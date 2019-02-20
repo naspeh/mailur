@@ -13,6 +13,7 @@ Vue.component('editor', {
   },
   data: function() {
     return {
+      uid: this.msg.uid,
       saving: false,
       editing: true,
       countdown: null,
@@ -37,7 +38,7 @@ Vue.component('editor', {
     autosave: function() {
       let data = this.values();
       window.localStorage.setItem(this.msg.draft_id, JSON.stringify(data));
-      this.saving || this.save();
+      setTimeout(() => this.saving || this.save(), 3000);
     },
     update: function(val, el) {
       let addrs = el.__vue__.$refs['input'].value.split(',');
@@ -109,6 +110,13 @@ Vue.component('editor', {
       this.saving = true;
       return this.call('post', '/editor', data, {}).then(res => {
         this.saving = false;
+        this.uid = res.uid;
+        if (this.uid) {
+          if (window.app.main.query == this.msg.query_thread) {
+            let main = window.app.main.view;
+            main.openMsg(this.uid, true);
+          }
+        }
         refresh && this.refresh();
         return res;
       });
@@ -128,6 +136,9 @@ Vue.component('editor', {
       this.call('post', '/markdown', { txt: this.txt }).then(
         res => (this.html = res)
       );
+    },
+    previewInMain: function() {
+      window.app.main.open(this.msg.query_thread);
     },
     send: function() {
       this.preview();

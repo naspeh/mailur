@@ -25,7 +25,9 @@ let Tags = {
     }
   },
   methods: {
-    openInMain: tag => window.app.openInMain(tag.query),
+    openInMain: function(tag) {
+      tag && window.app.openInMain(tag.query);
+    },
     remove: function(tag) {
       return this.edit({ old: [tag] });
     }

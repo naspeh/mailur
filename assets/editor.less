@@ -2,7 +2,6 @@
   flex: auto;
   display: flex;
   flex-direction: column;
-  min-height: 300px;
   padding: 0.5em 1em;
   border-top: 1px solid @--color--orange;
   border-radius: 0.5em;
@@ -49,16 +48,32 @@
 .editor__files {
   display: flex;
   flex-direction: column;
-  padding-top: 0.2em;
-  margin-top: 0.2em;
-  border-top: 1px solid @--color--grey;
+  padding-bottom: 0.2em;
+  margin-bottom: 0.2em;
+  border-bottom: 1px solid @--color--grey-light;
 }
 
 .editor__buttons {
   display: flex;
-  padding-top: 0.2em;
-  margin-top: 0.2em;
-  border-top: 1px solid @--color--grey;
+
+  button, input {
+    margin: 0 0.2em;
+  }
+
+  .editor__side_preview {
+    display: none;
+
+    .split & {
+      display: block;
+    }
+  }
+  .editor__send {
+    font-weight: bold;
+  }
+  .editor__delete {
+    .icon--trash;
+    align-self: end;
+  }
 }
 
 .editor__from,
@@ -68,7 +83,16 @@
   width: 100%;
 }
 
+.editor__quote {
+  width: 100%;
+  padding-bottom: 0.2em;
+  margin-bottom: 0.2em;
+  border-bottom: 1px solid @--color--grey-light;
+}
+
 .editor__body {
   flex: auto;
   width: 100%;
+  min-height: 200px;
+  margin-bottom: 0.2em;
 }

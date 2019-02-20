@@ -637,7 +637,13 @@ def parse_query(q):
         elif info.get('to'):
             q = 'to %s' % escape(info['to_val'])
         elif info.get('mid'):
-            q = 'header message-id %s' % info['mid_val']
+            val = info['mid_val']
+            uids = local.data_msgids.key(val)
+            if uids:
+                opts['thread'] = True
+                q = 'uid %s' % ','.join(uids)
+            else:
+                q = 'header message-id %s' % val
         elif info.get('ref'):
             opts['thread'] = True
             q = (
@@ -752,10 +758,7 @@ def parse_query(q):
 def compose(draft_id):
     draft = local.data_drafts.key(draft_id, {}).copy()
     draft.update({
-        'query_thread': (
-            'thread:%(parent)s' % draft if draft.get('parent')
-            else ':threads :inbox'
-        ),
+        'query_thread': 'mid:%s' % draft_id,
         'url_send': app.get_url('send', draft_id=draft_id),
     })
 
@@ -1107,7 +1110,8 @@ def draft_info(uid):
         for p in parts:
             related.attach(p)
         htm_, txt_ = message.parse_mime(related, uid)[:2]
-        quoted = html.clean(htm_)[0] if htm_ else html.from_text(txt_)
+        if htm_:
+            quoted = html.clean(htm_)[0] if htm_ else html.from_text(txt_)
 
     info = {
         i: headers.get(i, '')

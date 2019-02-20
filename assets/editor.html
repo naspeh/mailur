@@ -32,9 +32,10 @@
     >{{f.filename}}</a>
   </div>
   <div class="editor__buttons">
-    <input ref="upload" @change="save" class="editor__upload" type="file" multiple />
+    <button @click="previewInMain" class="editor__side_preview">Side preview</button>
     <button @click="preview" class="editor__preview">Preview</button>
     <button @click="edit" class="editor__edit">Edit</button>
+    <input ref="upload" @change="save" class="editor__upload" type="file" multiple />
     <button @click="send" class="editor__send">Send</button>
     <button @click="del" class="editor__delete">Delete</button>
   </div>
