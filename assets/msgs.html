@@ -161,21 +161,19 @@
         :edit="edit && edit.uid == uid ? edit : null"
       />
       <editor
-        v-if="edit && edit.uid == uid"
-        :key="uid"
+        v-if="edit && (!edit.uid && edit.parent == uid || edit.uid == uid)"
+        :key="edit.uid"
         :msg="edit"
         :call="call"
         :query="open"
-        :query_thread="msgs[uid].query_thread"
         :refresh="refresh"
       />
     </template>
     <editor
-      v-if="edit && !edit.uid"
+      v-if="edit && !edit.uid && !edit.parent"
       :msg="edit"
       :call="call"
       :query="open"
-      :query_thread="edit.parent && msgs[edit.parent].query_thread || ''"
       :refresh="refresh"
     />
   </div>

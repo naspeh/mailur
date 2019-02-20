@@ -9,7 +9,6 @@ Vue.component('editor', {
     msg: { type: Object, required: true },
     call: { type: Function, required: true },
     query: { type: Function, required: true },
-    query_thread: { type: String, required: true },
     refresh: { type: Function, required: true }
   },
   data: function() {
@@ -80,9 +79,14 @@ Vue.component('editor', {
     filter: function(val) {
       return contains(val, this.addrCurrent.trim());
     },
-    cancel: function() {
+    del: function() {
       window.localStorage.removeItem(this.msg.draft_id);
-      this.query(this.query_thread);
+      let data = new FormData();
+      data.append('draft_id', this.msg.draft_id);
+      data.append('delete', true);
+      this.call('post', '/editor', data, {}).then(() =>
+        this.query(this.msg.query_thread)
+      );
     },
     values: function() {
       let values = {};
@@ -128,7 +132,7 @@ Vue.component('editor', {
     send: function() {
       this.preview();
       this.countdown = 5;
-      this.save(false).then(res => this.sending(res.url_send));
+      this.save(false).then(() => this.sending(this.msg.url_send));
     },
     sending: function(url_send) {
       if (this.countdown > 0) {

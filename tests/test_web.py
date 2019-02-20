@@ -696,13 +696,14 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     url_reply = res['msgs']['1']['url_reply']
     assert url_reply == '/reply/1'
     res = web.get(url_reply, status=200).json
+    draft_id = res['draft_id']
     query_edit = res['query_edit']
     assert re.match(r'draft:\<[^>]{8}\>', query_edit)
 
     res = web.search({'q': query_edit})
     assert res['uids'] == ['1']
     assert res['edit'] == {
-        'draft_id': some,
+        'draft_id': draft_id,
         'parent': '1',
         'forward': None,
         'uid': None,
@@ -713,27 +714,20 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'txt': '',
         'in-reply-to': '<101@mlr>',
         'references': '<101@mlr>',
+        'query_thread': 'thread:1',
+        'url_send': '/send/%s' % draft_id,
     }
-    draft_id = some.value
     assert local.data_drafts.key(draft_id) == {
         'draft_id': draft_id,
         'forward': None,
         'parent': '1',
-        'uid': None,
-        'files': [],
-        'from': '',
-        'subject': 'Re: Subj 101',
-        'to': '"The One" <one@t.com>,two@t.com,three@t.com',
-        'txt': '',
-        'in-reply-to': '<101@mlr>',
-        'references': '<101@mlr>',
     }
 
     res = web.post('/editor', {
         'draft_id': draft_id,
         'txt': '**test it**',
     }, status=200).json
-    assert res == {'uid': '2', 'url_send': '/send/%s' % draft_id}
+    assert res == {'uid': '2'}
 
     res = web.search({'q': 'thread:1'})
     assert res['uids'] == ['1', '2']
@@ -773,10 +767,11 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     assert res['msgs']['4']['query_edit'] == query_edit
 
     res = web.get('/compose').json
+    draft_id = res['draft_id']
     res = web.search({'q': res['query_edit']})
     assert res['uids'] == []
     assert res['edit'] == {
-        'draft_id': some,
+        'draft_id': draft_id,
         'parent': None,
         'forward': None,
         'uid': None,
@@ -785,12 +780,15 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'to': '',
         'subject': '',
         'txt': '',
+        'query_thread': ':threads :inbox',
+        'url_send': '/send/%s' % draft_id,
     }
 
     m = load_email('msg-attachments-two-gmail.txt')
     res = web.get('/reply/%s' % m['uid'], {'forward': 1}).json
     res = web.search({'q': res['query_edit']})
     draft = res['edit']
+    draft_id = draft['draft_id']
     assert draft['txt'] == (
         '\n\n'
         '```\n'
@@ -818,9 +816,9 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
             'url': '/raw/5/3/09.png'
         }
     ]
-    res = web.post('/editor', {'draft_id': draft['draft_id']}, status=200).json
-    assert res == {'uid': '6', 'url_send': '/send/%(draft_id)s' % draft}
-    res = web.search({'q': 'draft:%(draft_id)s' % draft})
+    res = web.post('/editor', {'draft_id': draft_id}, status=200).json
+    assert res == {'uid': '6'}
+    res = web.search({'q': 'draft:%s' % draft_id})
     draft = res['edit']
     assert draft['txt'] == (
         '\n\n'
@@ -920,6 +918,7 @@ def test_drafts_part1(gm_client, login, patch, some):
         'to': '',
         'txt': '42',
         'uid': '3',
+        'query_thread': ':threads :inbox',
         'url_send': '/send/<103@mlr>',
     }
 
@@ -961,7 +960,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         'draft_id': draft_id,
         'txt': '**test it**',
     }, status=200).json
-    assert res == {'uid': '4', 'url_send': '/send/<102@mlr>'}
+    assert res == {'uid': '4'}
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['3', '4']
     m = latest(parsed=1)
@@ -1206,12 +1205,13 @@ def test_drafts_sending(gm_client, login, patch, some, latest):
             'labels': '\\Sent'
         }
     ])
-    draft_id = web.get('/reply/1').json['draft_id']
+    res = web.get('/reply/1').json
+    draft_id = res['draft_id']
+    url_send = res['url_send']
     res = web.post('/editor', {
         'draft_id': draft_id,
         'txt': 'test',
     }, status=200).json
-    url_send = res['url_send']
     assert url_send == '/send/%s' % draft_id
     m = latest(parsed=True)
     assert m['uid'] == '2'
@@ -1292,21 +1292,23 @@ def test_drafts_autocomplete(gm_client, login, patch, latest):
             'labels': 'test'
         }
     ])
-    draft_id = web.get('/reply/1').json['draft_id']
+    res = web.get('/reply/1').json
+    draft_id = res['draft_id']
+    url_send = res['url_send']
     res = web.post('/editor', {
         'draft_id': draft_id,
         # it appends ", " to the end for easy adding multiple addresses
         'to': '"B" <b@t.com>, ',
         'txt': 'test',
     }, status=200).json
-    assert res == {'uid': '2', 'url_send': '/send/%s' % draft_id}
+    assert res == {'uid': '2'}
     m = latest(local.SRC)
     assert m['uid'] == '2'
     assert m['body']['To'] == '"B" <b@t.com>,'
     with patch('mailur.gmail.data_credentials') as c:
         c.get.return_value = ('test', 'test')
         with patch('mailur.web.smtplib.SMTP'):
-            res = web.get(res['url_send'], status=200).json
+            res = web.get(url_send, status=200).json
 
 
 def test_addresses(some):

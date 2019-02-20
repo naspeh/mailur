@@ -354,9 +354,17 @@ def msgs_flag():
 @endpoint
 def editor():
     draft_id = request.forms['draft_id']
-    files = request.files.getall('files')
+    with user_lock('editor:%s' % draft_id, wait=5):
+        if request.forms.get('delete'):
+            local.data_drafts({draft_id: None})
+            uids = local.data_msgids.key(draft_id)
+            uid = uids[0] if uids else None
+            if uid:
+                local.msgs_flag([uid], [], ['#trash'])
+            return {}
 
-    with user_lock('editor:%s' % draft_id):
+        files = request.files.getall('files')
+
         draft, related = compose(draft_id)
         updated = {
             k: v for k, v in draft.items()
@@ -393,7 +401,7 @@ def editor():
             uid = local.pair_origin_uids([oid])[0]
         else:
             oid = local.pair_parsed_uids([uid])[0]
-    return {'uid': uid, 'url_send': app.get_url('send', draft_id=draft_id)}
+    return {'uid': uid}
 
 
 @app.get('/compose')
@@ -406,7 +414,11 @@ def reply(uid=None):
         'parent': uid,
         'forward': forward,
     }})
-    return {'draft_id': draft_id, 'query_edit': 'draft:%s' % draft_id}
+    return {
+        'draft_id': draft_id,
+        'query_edit': 'draft:%s' % draft_id,
+        'url_send': app.get_url('send', draft_id=draft_id),
+    }
 
 
 @app.get('/send/<draft_id>', name='send')
@@ -738,7 +750,14 @@ def parse_query(q):
 
 
 def compose(draft_id):
-    draft = local.data_drafts.key(draft_id, {})
+    draft = local.data_drafts.key(draft_id, {}).copy()
+    draft.update({
+        'query_thread': (
+            'thread:%(parent)s' % draft if draft.get('parent')
+            else ':threads :inbox'
+        ),
+        'url_send': app.get_url('send', draft_id=draft_id),
+    })
 
     uids = local.data_msgids.key(draft_id)
     uid = uids[0] if uids else None
@@ -1102,7 +1121,6 @@ def draft_info(uid):
         'draft_id': meta['draft_id'],
         'origin_uid': meta['origin_uid'],
         'files': meta['files'],
-        'url_send': app.get_url('send', draft_id=meta['draft_id']),
-        'time': meta['date'],
+        'time': meta['arrived'],
     })
     return info, related
