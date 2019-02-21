@@ -39,17 +39,7 @@ ssl_client_ca_file = /etc/pki/tls/cert.pem
 # should be big enough to save all message-ids as metadata
 imap_max_line_length = 10M
 
-mdbox_rotate_size = 100M
-
-# strange behavior when applying flags for mdbox,
-# somehow flags are mixed up on messages
-# mail_location = mdbox:~
 mail_location = sdbox:~
-
-# mail_always_cache_fields = date.sent date.saved hdr.references
-
-# TODO: maybe can be used during the import
-# mail_fsync = never
 
 auth_master_user_separator = *
 passdb {
@@ -77,7 +67,7 @@ namespace mlr {
     separator = /
     hidden = yes
     list = no
-    location = mdbox:~/mlr
+    location = sdbox:~/mlr
     mailbox {
         auto = create
     }
