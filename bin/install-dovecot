@@ -13,7 +13,7 @@ gpgkey=https://repo.dovecot.org/DOVECOT-REPO-GPG
 gpgcheck=1
 enabled=1
 EOF
-yum install -y dovecot
+yum install -y dovecot dovecot-pigeonhole
 
 id -u vmail || (
 groupadd -g 5000 vmail
@@ -101,6 +101,7 @@ plugin {
 
 mail_attribute_dict = file:%h/dovecot-attributes
 protocol imap {
+    mail_plugins = \$mail_plugins imap_filter_sieve
     mail_max_userip_connections = 20
     imap_metadata = yes
 }

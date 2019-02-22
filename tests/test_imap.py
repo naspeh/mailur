@@ -107,3 +107,54 @@ def test_idle():
     con = local.client()
     # just check if timeout works
     assert not con.idle(handler, timeout=1)
+
+
+def test_sieve(gm_client, msgs, raises, some):
+    gm_client.add_emails([
+        {'from': '"A" <A@t.com>'},
+        {'from': '"B" <B@t.com>'}
+    ])
+    con = local.client(readonly=False)
+
+    with raises(imap.Error) as e:
+        res = con.sieve('ALL', 'addflag "#0";')
+    assert e.value.args == (some,)
+    assert some.value.startswith(b'script: line 1: error: unknown command')
+
+    res = con.sieve('ALL', '''
+    require ["imap4flags"];
+
+    if header :contains "Subject" "Subj" {
+        setflag "#subj";
+    }
+    ''')
+    assert [m['flags'] for m in msgs()] == ['#subj', '#subj']
+
+    res = con.sieve('UID *', 'require ["imap4flags"];addflag "#2";')
+    assert res == [some]
+    assert some.value.endswith(b'UID 2 OK')
+    assert [m['flags'] for m in msgs()] == ['#subj', '#subj #2']
+
+    res = con.sieve('UID 3', 'require ["imap4flags"];addflag "#2";')
+    assert res == []
+    assert [m['flags'] for m in msgs()] == ['#subj', '#subj #2']
+
+    res = con.sieve('ALL', '''
+    require ["imap4flags"];
+
+    if address :is :all "from" "a@t.com" {
+        addflag "#1";
+    }
+    ''')
+    assert res == [some, some]
+    assert [m['flags'] for m in msgs()] == ['#subj #1', '#subj #2']
+
+    res = con.sieve('ALL', '''
+    require ["imap4flags"];
+
+    if address :is "from" ["a@t.com", "b@t.com"] {
+        addflag "#ab";
+    }
+    ''')
+    assert res == [some, some]
+    assert [m['flags'] for m in msgs()] == ['#subj #1 #ab', '#subj #2 #ab']

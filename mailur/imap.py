@@ -253,6 +253,27 @@ def getmetadata(con, box, key):
         return check(con._untagged_response(typ, data, 'METADATA'))
 
 
+@command(dovecot=True)
+def sieve(con, criteria, script):
+    script = script.strip().encode()
+    criteria = criteria.encode()
+    with _cmd(con, 'FILTER') as (tag, start, complete):
+        args = ' SIEVE SCRIPT {%s}' % len(script)
+        start(args.encode() + CRLF)
+        con.send(script)
+        con.send(criteria + CRLF)
+        typ, data = complete()
+        log.debug('## %s; %s', typ, data[0].decode())
+        err = con.untagged_responses.pop('FILTER', None)
+        if err:
+            err = err[0][1]
+            raise Error(err)
+        if typ != 'OK':
+            raise Error(typ, data)
+        filtered = con.untagged_responses.pop('FILTERED', [])
+        return filtered
+
+
 def clean_recent(flags):
     if not flags:
         return flags
@@ -281,9 +302,9 @@ def _multiappend(con, box, msgs):
             con.send(msg)
         con.send(CRLF)
         res = check(complete())
-        res = res[0].decode()
-        log.debug('## %s', res)
-        uids = re.search(r'\[APPENDUID \d+ (\d+(:\d+)?)\]', res).group(1)
+        log.debug('## %s', res[0].decode())
+        uids = con.untagged_responses.pop('APPENDUID')
+        uids = uids[0].decode().split(' ', 1)[-1]
         return uids
 
 
@@ -406,8 +427,9 @@ def search(con, *criteria):
 
 @command(writable=True)
 def append(con, box, flags, date_time, msg):
-    res = check(con.append(box, clean_recent(flags), date_time, msg))
-    uidlatest = re.search(r'\[APPENDUID \d+ (\d+)\]', res[0].decode()).group(1)
+    check(con.append(box, clean_recent(flags), date_time, msg))
+    uidlatest = con.untagged_responses.pop('APPENDUID')
+    uidlatest = uidlatest[0].decode().split(' ', 1)[-1]
     # update "uidnext" because some stuff is relying on it
     # for example metadata cache
     con.uidnext = str(int(uidlatest) + 1)
