@@ -365,3 +365,26 @@ def test_thrid_header(gm_client, msgs):
     assert [i['body']['X-Thread-ID'] for i in msgs()][-2:] == [
         '<6355a01321452677ff71ea4899836a52@mailur.link>'
     ] * 2
+
+
+def test_sieve_personal(gm_client, msgs, some):
+    gm_client.add_emails([
+        {'from': 'me@t.com', 'to': 'a@t.com', 'labels': '\\Sent'},
+        {'from': 'me@t.com', 'to': 'b@t.com', 'labels': '\\Sent'},
+    ])
+
+    assert local.data_addresses.get() == [
+        {'me@t.com': some},
+        {'a@t.com': some, 'b@t.com': some, 'me@t.com': some}
+    ]
+
+    gm_client.add_emails([
+        {'from': 'a@t.com', 'labels': '\\Inbox'},
+        {'from': 'b@t.com', 'labels': '\\Inbox'},
+        {'from': 'c@t.com', 'labels': '\\Inbox'},
+        {'from': 'd@t.com', 'labels': '\\Inbox'},
+    ])
+
+    assert [m['flags'] for m in msgs()[-4:]] == [
+        '#inbox #personal', '#inbox #personal', '#inbox', '#inbox'
+    ]

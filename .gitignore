@@ -2,7 +2,7 @@
 *.egg-info
 *.py[co]
 .cache
-.coverage
+.coverage*
 .eggs
 
 /assets/dist

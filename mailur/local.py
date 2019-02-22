@@ -508,6 +508,21 @@ def parse(criteria=None, con=None, **opts):
     uidnext = con.uidnext
     log.info('## new: uidnext: %s', uidnext)
 
+    _, addrs_to = data_addresses.get()
+    if addrs_to:
+        con.select(SRC, readonly=False)
+        con.sieve('UID %s' % ','.join(uids), '''
+        require ["imap4flags"];
+
+        if allof(
+            not hasflag :contains ["\\Draft", "#sent"],
+            address :is "from" %(addrs_to)s
+        ) {
+            addflag "#personal";
+        }
+        ''' % {'addrs_to': json.dumps(addrs_to.keys())})
+        con.select(SRC)
+
     log.info('## criteria: %r; %s uids', criteria, len(uids))
     count = con.select(ALL)[0].decode()
     if count != '0':
