@@ -1,7 +1,5 @@
 ## [Mailur] is a lightweight webmail inspired by Gmail
 
-**Mission:** bring innovations into webmail.
-
 ### Features
 - multiple tags for messages (no folders)
 - easy to switch from threads view to messages view
@@ -31,7 +29,7 @@ This version is already in use. It has minimal feature set I need on daily basis
 - **[0.2][v02code]** | Nov 2015 | [The alpha version.][v02post] Postgres based. We used it over 2 years on daily basis.
 - **[0.1][v01code]** | Apr 2014 | [The first prototype.][v01post]
 
-[v02code]: https://github.com/naspeh/mailur/tree/0.2
+[v02code]: https://github.com/naskoro/mailur-pg
 [v02post]: https://pusto.org/mailur/alpha/
-[v01code]: https://github.com/naspeh/mailur/tree/0.1
+[v01code]: https://github.com/naskoro/mailur-pg/tree/prototype
 [v01post]: https://pusto.org/mailur/intro/
