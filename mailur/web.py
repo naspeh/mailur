@@ -758,7 +758,7 @@ def parse_query(q):
 
 
 def compose(draft_id):
-    draft = local.data_drafts.key(draft_id, {})
+    draft = local.data_drafts.key(draft_id, {}).copy()
     draft.update({
         'query_thread': (
             'thread:%(parent)s' % draft

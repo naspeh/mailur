@@ -1,4 +1,3 @@
-import copy
 import email
 import functools as ft
 import hashlib
@@ -108,7 +107,7 @@ def metadata(name, default):
         if cache.exists(cache_key):
             uid, value = cache.get(cache_key)
             if uid == uidlatest:
-                return copy.deepcopy(value)
+                return value
 
         def fetch():
             res = con.fetch(uidlatest, 'BODY.PEEK[1]')
@@ -119,7 +118,7 @@ def metadata(name, default):
 
         value = fn_time(fetch, '%s.fetch' % inner.__name__)()
         cache.set(cache_key, (uidlatest, value))
-        return copy.deepcopy(value)
+        return value
 
     def key(name, default=None):
         return get().get(name, default)
