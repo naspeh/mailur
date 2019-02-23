@@ -707,6 +707,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'parent': '1',
         'forward': None,
         'uid': None,
+        'time': some,
         'files': [],
         'from': '',
         'subject': 'Re: Subj 101',
@@ -714,10 +715,10 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'txt': '',
         'in-reply-to': '<101@mlr>',
         'references': '<101@mlr>',
-        'query_thread': 'mid:%s' % draft_id,
+        'query_thread': 'thread:1',
         'url_send': '/send/%s' % draft_id,
     }
-    query_thread = res['edit']['query_thread']
+    query_thread = 'mid:%s' % draft_id
     assert parse_query(query_thread) == (
         'header message-id %s unkeyword #trash unkeyword #spam' % draft_id, {}
     )
@@ -725,6 +726,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'draft_id': draft_id,
         'forward': None,
         'parent': '1',
+        'time': some,
     }
 
     res = web.post('/editor', {
@@ -749,7 +751,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     res = web.search({'q': query_edit})
     assert res['uids'] == ['1', '2']
     draft = res['edit']
-    assert isinstance(draft['time'], int)
+    assert isinstance(draft['time'], float)
     assert draft['txt'] == '**test it**'
     assert draft['subject'] == 'Re: Subj 101'
     assert draft['from'] == ''
@@ -782,6 +784,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'draft_id': draft_id,
         'parent': None,
         'forward': None,
+        'time': some,
         'uid': None,
         'files': [],
         'from': '"The Two" <two@t.com>',
@@ -797,6 +800,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     res = web.search({'q': res['query_edit']})
     draft = res['edit']
     draft_id = draft['draft_id']
+    assert draft['to'] == ''
     assert draft['txt'] == (
         '\n\n'
         '```\n'
@@ -986,7 +990,8 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert m['body'] == '<p>42</p>'
     assert local.data_drafts.key(draft_id) == {
         'draft_id': '<102@mlr>',
-        'txt': '**test it**'
+        'txt': '**test it**',
+        'time': some,
     }
     assert web.body('4') == '<p><strong>test it</strong></p>'
 
@@ -1234,6 +1239,7 @@ def test_drafts_sending(gm_client, login, patch, some, latest):
         'to': '"B" <b@t.com>, "C" <c@t.com>',
         'subject': 'Subj 101',
         'txt': '**test this**',
+        'time': some,
     }, status=200).json
     m = latest(parsed=True)
     assert m['uid'] == '2'
@@ -1244,7 +1250,8 @@ def test_drafts_sending(gm_client, login, patch, some, latest):
         'parent': '1',
         'subject': 'Subj 101',
         'to': '"B" <b@t.com>, "C" <c@t.com>',
-        'txt': '**test this**'
+        'txt': '**test this**',
+        'time': some,
     }
     assert local.data_drafts.get() == {draft_id: some}
 

@@ -376,8 +376,9 @@ def editor():
         })
         updated.update({
             k: v for k, v in request.forms.items()
-            if k in ('subject', 'txt', 'time')
+            if k in ('subject', 'txt')
         })
+        updated['time'] = time.time()
         local.data_drafts({draft_id: updated})
         draft.update(updated)
         if files:
@@ -413,6 +414,7 @@ def reply(uid=None):
         'draft_id': draft_id,
         'parent': uid,
         'forward': forward,
+        'time': time.time(),
     }})
     return {
         'draft_id': draft_id,
@@ -756,9 +758,13 @@ def parse_query(q):
 
 
 def compose(draft_id):
-    draft = local.data_drafts.key(draft_id, {}).copy()
+    draft = local.data_drafts.key(draft_id, {})
     draft.update({
-        'query_thread': 'mid:%s' % draft_id,
+        'query_thread': (
+            'thread:%(parent)s' % draft
+            if draft.get('parent') else
+            'mid:%s' % draft_id
+        ),
         'url_send': app.get_url('send', draft_id=draft_id),
     })
 
@@ -801,7 +807,7 @@ def compose(draft_id):
             to = [to_all[0]['title']]
         draft.update({
             'subject': subj,
-            'to': ','.join(to),
+            'to': '' if forward else ','.join(to),
             'in-reply-to': meta['msgid'],
             'references': meta['msgid'],
         })
