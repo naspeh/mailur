@@ -1,0 +1,54 @@
+.filters {
+  display: none;
+  position: relative;
+  flex-direction: column;
+  padding: 1em 0.5em 0.5em 0.5em;
+  border: 1px solid @--color--grey-light;
+  border-radius: 0.5em;
+
+  .opt--filters .main & {
+    display: flex;
+  }
+}
+.filters__body {
+  flex: auto;
+  width: 100%;
+  height: 200px;
+}
+.filters__bottom {
+  flex: none;
+  display: flex;
+  padding: 0.2em;
+  margin-bottom: -0.5em;
+}
+.filters__run,
+.filters__save,
+.filters__cancel,
+.filters__close {
+  padding-left: 0;
+  margin: 0.2em;
+}
+.filters__run {
+  .icon--magic;
+}
+.filters__save {
+  font-weight: bold;
+
+  .icon--save;
+}
+.filters__cancel {
+  .icon--cancel;
+}
+.filters__close {
+  position: absolute;
+  top: 0;
+  right: -0.2em;
+  z-index: 20;
+  color: @--color--orange;
+  .icon--remove;
+}
+.filters__info {
+  flex: auto;
+  align-self: center;
+  text-align: right;
+}

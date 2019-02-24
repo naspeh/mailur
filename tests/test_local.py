@@ -379,12 +379,15 @@ def test_sieve_personal(gm_client, msgs, some):
     ]
 
     gm_client.add_emails([
+        {'from': 'me@t.com', 'to': 'a@t.com', 'labels': '\\Sent'},
         {'from': 'a@t.com', 'labels': '\\Inbox'},
         {'from': 'b@t.com', 'labels': '\\Inbox'},
         {'from': 'c@t.com', 'labels': '\\Inbox'},
         {'from': 'd@t.com', 'labels': '\\Inbox'},
     ])
 
-    assert [m['flags'] for m in msgs()[-4:]] == [
-        '#inbox #personal', '#inbox #personal', '#inbox', '#inbox'
+    assert [m['flags'] for m in msgs()] == [
+        '#sent', '#sent',
+        '#sent #personal', '#personal #inbox', '#personal #inbox',
+        '#inbox', '#inbox'
     ]

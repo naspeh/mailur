@@ -45,7 +45,7 @@ def using(client, box, readonly=True, name='con', reuse=True, parent=False):
                 con.parent = parent_orig
             return
 
-        with client(box, readonly) as con:
+        with client(box, readonly=readonly) as con:
             if name:
                 kw[name] = con
             yield

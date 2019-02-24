@@ -9,10 +9,9 @@ import urllib.parse
 import urllib.request
 from multiprocessing.pool import ThreadPool
 
+from bottle import Bottle, abort, request, response, static_file, template
 from itsdangerous import BadData, BadSignature, URLSafeSerializer
 from pytz import common_timezones, timezone, utc
-
-from bottle import Bottle, abort, request, response, static_file, template
 
 from . import LockError, conf, html, imap, json, local, log, message, user_lock
 from .schema import validate
@@ -95,7 +94,7 @@ def endpoint(callback):
         except Exception as e:
             log.exception(e)
             response.status = 500
-            return {'errors': [repr(e)]}
+            return {'errors': [str(e)]}
         finally:
             imap.clean_pool()
     return inner
@@ -241,6 +240,58 @@ def expunge_tag():
         response.status = 400
         return {'errors': errs, 'schema': schema}
     local.msgs_expunge(data['name'])
+
+
+@app.route('/filters', method=['GET', 'POST'])
+@endpoint
+def filters():
+    def values():
+        data = local.data_filters.get()
+        if not data:
+            data = {'manual': ''}
+        data['auto'] = data.get('auto', local.sieve_auto())
+        return data
+
+    def run():
+        query, opts = parse_query(data['query'])
+        if opts.get('thread') and opts.get('uids'):
+            uids = opts['uids']
+            oids = uids and local.pair_parsed_uids(uids)
+            query = 'uid %s' % imap.pack_uids(oids)
+        try:
+            local.sieve_run(query, data['body'])
+        except imap.Error as e:
+            raise imap.Error(e.args[0].decode())
+        local.sync_flags_to_all()
+
+    if request.method == 'GET':
+        return values()
+
+    schema = {
+        'type': 'object',
+        'properties': {
+            'action': {'type': 'string', 'enum': ['save', 'run']},
+            'name': {'type': 'string', 'enum': ['auto', 'manual']},
+            'body': {'type': 'string'},
+            'query': {'type': 'string'},
+        },
+        'required': ['action', 'name', 'body', 'query']
+    }
+    errs, data = validate(request.json, schema)
+    if errs:
+        response.status = 400
+        return {'errors': errs, 'schema': schema}
+
+    if data['action'] == 'save':
+        run()
+        local.data_filters({data['name']: data['body']})
+        return values()
+
+    body = data['body']
+    if not body:
+        return
+
+    run()
 
 
 @app.post('/search')
@@ -643,6 +694,7 @@ def parse_query(q):
             uids = local.data_msgids.key(val)
             if uids:
                 opts['thread'] = True
+                opts['uids'] = uids
                 q = 'uid %s' % ','.join(uids)
             else:
                 q = 'header message-id %s' % val
@@ -730,6 +782,7 @@ def parse_query(q):
         thrid = thrids.get(uid)
         if thrid:
             uids = thrs[thrids[thrid]]
+            opts['uids'] = uids
             q = 'uid %s' % ','.join(uids)
         else:
             q = 'uid %s' % uid

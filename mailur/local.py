@@ -3,6 +3,7 @@ import functools as ft
 import hashlib
 import imaplib
 import re
+import textwrap
 
 from gevent import joinall, socket, spawn
 
@@ -23,26 +24,25 @@ class Local(imaplib.IMAP4, imap.Conn):
     def _create_socket(self):
         return socket.create_connection((self.host, self.port))
 
-    def login_root(self):
-        master, pwd = conf['MASTER']
-        username = '%s*%s' % (self.username, master)
-        return imap.login(self, username, pwd)
 
-
-def connect(username=None, password=None):
-    con = Local(username or conf['USER'])
-    if password is None:
-        con.login_root()
-    else:
-        imap.login(con, username, password)
+def connect(username, password):
+    con = Local(username)
+    imap.login(con, username, password)
 
     # For searching with non ascii symbols (Dovecot understands this)
     con._encoding = 'utf-8'
     return con
 
 
-def client(box=ALL, readonly=True):
-    ctx = imap.client(connect, dovecot=True, writable=True)
+def master_login(key='MASTER', username=None):
+    master, pwd = conf[key]
+    username = '%s*%s' % (username or conf['USER'], master)
+    return username, pwd
+
+
+def client(box=ALL, *, master='MASTER', readonly=True):
+    connect_fn = ft.wraps(connect)(ft.partial(connect, *master_login(master)))
+    ctx = imap.client(connect_fn, dovecot=True, writable=True)
     if box:
         ctx.select(box, readonly=readonly)
     return ctx
@@ -182,20 +182,31 @@ def data_uidnext(value):
     return value
 
 
-@setting('drafts', lambda: {})
-def data_drafts(update):
-    drafts = data_drafts.get()
-    for key, val in update.items():
-        if val is None:
-            drafts.pop(key, None)
-        else:
-            drafts[key] = val
-    return drafts
-
-
 @setting('links', lambda: [])
 def data_links(links):
     return links
+
+
+@setting('drafts', lambda: {})
+def data_drafts(update):
+    data = data_drafts.get()
+    for key, val in update.items():
+        if val is None:
+            data.pop(key, None)
+        else:
+            data[key] = val
+    return data
+
+
+@setting('filters', lambda: {})
+def data_filters(update):
+    data = data_filters.get()
+    for key, val in update.items():
+        if val is None:
+            data.pop(key, None)
+        else:
+            data[key] = val
+    return data
 
 
 @setting('tags', lambda: {})
@@ -287,6 +298,29 @@ def tags_info(con=None):
         )
     })
     return tags
+
+
+def sieve_run(query, script, box=SRC):
+    _, addrs_to = data_addresses.get()
+    values = {
+        'my_recipients': json.dumps(addrs_to.keys())
+    }
+    script = script % values
+    with client(box, master='SIEVE', readonly=False) as con:
+        return con.sieve(query, script)
+
+
+def sieve_auto():
+    main = data_filters.key('auto') or textwrap.dedent('''
+    # it runs every time when new message appears in your mailbox
+    # use %(my_recipients)s to get all your previous recipients
+    require ["imap4flags"];
+
+    if address :is "from" %(my_recipients)s {
+        addflag "#personal";
+    }
+    ''').strip()
+    return main
 
 
 @metadata('uidpairs', lambda: {})
@@ -510,18 +544,7 @@ def parse(criteria=None, con=None, **opts):
 
     _, addrs_to = data_addresses.get()
     if addrs_to:
-        con.select(SRC, readonly=False)
-        con.sieve('UID %s' % ','.join(uids), '''
-        require ["imap4flags"];
-
-        if allof(
-            not hasflag :contains ["\\Draft", "#sent"],
-            address :is "from" %(addrs_to)s
-        ) {
-            addflag "#personal";
-        }
-        ''' % {'addrs_to': json.dumps(addrs_to.keys())})
-        con.select(SRC)
+        sieve_run('UID %s' % ','.join(uids), sieve_auto())
 
     log.info('## criteria: %r; %s uids', criteria, len(uids))
     count = con.select(ALL)[0].decode()

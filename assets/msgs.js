@@ -28,22 +28,19 @@ let Loader = Vue.extend({
     load: function() {
       this.error = null;
       this.search().then(res => {
-        if (res.errors) {
-          this.error = res.errors;
-          this.mount();
-          return this;
-        }
         let data = { propsData: Object.assign(res, this.$props) };
         this.view = res.thread ? new Thread(data) : new Msgs(data);
       });
     },
     call: function(method, url, data, headers = null) {
       this.loading = true;
+      this.error = null;
       return call(method, url, data, headers).then(res => {
         this.loading = false;
         if (res.errors) {
-          this.error = res.errors;
-          return res;
+          this.error = res.errors.join('\n');
+          this.mount();
+          throw res.errors;
         }
         return res;
       });

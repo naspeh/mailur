@@ -88,7 +88,7 @@ def test_origin_msg(gm_client, latest, login):
     thrid = msg.get('X-GM-THRID')
     assert thrid and thrid == '<10100>'
     user = msg.get('X-GM-Login')
-    assert user == '<%s>' % login.user2
+    assert user == '<%s*root>' % login.user2
 
     gm_client.add_emails([
         {'flags': r'\Flagged', 'labels': r'"\\Inbox" "\\Sent" label'}

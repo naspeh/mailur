@@ -173,6 +173,8 @@ def icons():
     font = root / 'assets/font'
     sel = (font / 'selection.json').read_text()
     sel = json.loads(sel)
+    sel_pretty = json.dumps(sel, indent=2, ensure_ascii=False, sort_keys=True)
+    (font / 'selection.json').write_text(sel_pretty)
     icons = [
         (i['properties']['name'], '\\%s' % hex(i['properties']['code'])[2:])
         for i in sel['icons']

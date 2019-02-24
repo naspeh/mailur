@@ -19,6 +19,7 @@ conf = {
     'IMAP_OFF': os.environ.get('MLR_IMAP_OFF', '').split(),
     'SECRET': os.environ.get('MLR_SECRET', uuid.uuid4().hex),
     'MASTER': os.environ.get('MLR_MASTER', 'root:root').split(':'),
+    'SIEVE': os.environ.get('MLR_SIEVE', 'sieve:root').split(':'),
     'USER': os.environ.get('MLR_USER', 'user'),
 }
 

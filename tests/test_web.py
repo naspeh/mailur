@@ -736,7 +736,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     assert res == {'uid': '2'}
     assert parse_query(query_thread) == (
         'uid 2 unkeyword #trash unkeyword #spam',
-        {'thread': True}
+        {'thread': True, 'uids': ['2']}
     )
 
     res = web.search({'q': 'thread:1'})
@@ -962,7 +962,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['3', '4']
     m = latest(parsed=True)
-    assert m['flags'] == '\\Seen \\Draft test'
+    assert m['flags'] == '\\Seen \\Draft test #personal'
     assert m['meta']['draft_id'] == some
     draft_id = some.value
     assert re.match(r'\<[^\>]+\>', draft_id)
@@ -980,7 +980,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         '<101@mlr>': ['3'],
         m['meta']['msgid']: ['4']
     }
-    assert m['flags'] == '\\Seen \\Draft test'
+    assert m['flags'] == '\\Seen \\Draft test #personal'
     assert m['meta']['files'] == []
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
@@ -1037,7 +1037,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         '<101@mlr>': ['3'],
         m['meta']['msgid']: ['5']
     }
-    assert m['flags'] == '\\Seen \\Draft test'
+    assert m['flags'] == '\\Seen \\Draft test #personal'
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
@@ -1079,7 +1079,7 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
     assert [i['uid'] for i in msgs()] == ['3', '6']
     m = latest(parsed=1, policy=email.policy.default)
-    assert m['flags'] == '\\Seen \\Draft test'
+    assert m['flags'] == '\\Seen \\Draft test #personal'
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
@@ -1656,3 +1656,92 @@ def test_privacy(gm_client, login, load_email):
     body = web.body(uid)
     src = 'src="/raw/%s/2/50.png"' % m['meta']['origin_uid']
     assert src in body
+
+
+def test_sieve_filters(gm_client, login, some, msgs):
+    web = login()
+    gm_client.add_emails([
+        {'from': 'me@t.com', 'to': 'a@t.com', 'labels': '\\Sent'},
+        {'from': 'me@t.com', 'to': 'b@t.com', 'labels': '\\Sent'},
+    ])
+
+    res = web.get('/filters').json
+    assert res == {
+        'auto': local.sieve_auto(),
+        'manual': ''
+    }
+
+    data = {
+        'name': 'manual',
+        'query': ':threads',
+        'body': '',
+        'action': 'run',
+    }
+    for key in data:
+        params = data.copy()
+        del params[key]
+        res = web.post_json('/filters', params, status=400).json
+        assert res == {'errors': [some], 'schema': some}
+
+    params = dict(data, body='addflag "#1";')
+    res = web.post_json('/filters', params, status=500).json
+    assert res == {'errors': [some]}
+    assert some.value.startswith('script: line 1')
+
+    params = dict(data, body='addflag "#1";', action='save')
+    res = web.post_json('/filters', params, status=500).json
+    assert res == {'errors': [some]}
+    assert some.value.startswith('script: line 1')
+
+    # not allowed to mark as deleted
+    params = dict(data, body=r'require ["imap4flags"];addflag "\\Deleted";')
+    res = web.post_json('/filters', params).json
+    assert res == {}
+    assert [m['flags'] for m in msgs(local.SRC)] == ['#sent', '#sent']
+    assert [m['flags'] for m in msgs()] == ['#sent', '#sent']
+
+    # not allowed to discard
+    params = dict(data, body=r'discard;')
+    res = web.post_json('/filters', params).json
+    assert res == {}
+    assert [m['flags'] for m in msgs(local.SRC)] == ['#sent', '#sent']
+    assert [m['flags'] for m in msgs()] == ['#sent', '#sent']
+
+    params = dict(data, body='require ["imap4flags"];addflag "#1";')
+    res = web.post_json('/filters', params).json
+    assert res == {}
+    assert [m['flags'] for m in msgs(local.SRC)] == ['#sent #1', '#sent #1']
+    assert [m['flags'] for m in msgs()] == ['#sent #1', '#sent #1']
+
+    params = dict(data, **{
+        'query': 'uid 100',
+        'body': 'require ["imap4flags"];addflag "#100";'
+    })
+    res = web.post_json('/filters', params).json
+    assert res == {}
+    assert [m['flags'] for m in msgs(local.SRC)] == ['#sent #1', '#sent #1']
+    assert [m['flags'] for m in msgs()] == ['#sent #1', '#sent #1']
+
+    params = dict(data, **{
+        'body': 'require ["imap4flags"];addflag "#1";',
+        'action': 'save'
+    })
+    res = web.post_json('/filters', params).json
+    assert res == {
+        'manual': 'require ["imap4flags"];addflag "#1";',
+        'auto': some
+    }
+
+    local.parse('all')
+    params = dict(data, **{
+        'query': 'thread:4',
+        'body': 'require ["imap4flags"];removeflag "#1";addflag "#4";'
+    })
+    res = web.post_json('/filters', params).json
+    assert res == {}
+    assert [m['flags'] for m in msgs(local.SRC)] == [
+        '#sent #1 #personal', '#sent #personal #4'
+    ]
+    assert [m['flags'] for m in msgs()] == [
+        '#sent #1 #personal', '#sent #personal #4'
+    ]

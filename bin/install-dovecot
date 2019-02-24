@@ -150,12 +150,14 @@ doveadm_password = $secret
 EOF
 cat <<EOF > /etc/dovecot/passwd.masters
 root:{plain}$secret
+sieve:{plain}$secret
 EOF
 cat <<"EOF" > /etc/dovecot/acl
 * owner lrst
 mlr/* owner lr
 INBOX owner lrstpi
 * user=root lrwstipe
+* user=sieve lrws
 EOF
 
 bin/install-users

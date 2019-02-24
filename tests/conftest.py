@@ -42,10 +42,11 @@ def init(request):
     systemctl restart dovecot
     ''' % users_str, shell=True, cwd=root)
 
-    # try to connect to dovecot as root
+    # try to connect to dovecot
     for i in range(5):
         try:
-            local.connect()
+            username, pwd = local.master_login(username=users[0][0])
+            local.connect(username, pwd)
             return
         except Exception as e:
             err = e
@@ -63,7 +64,7 @@ def setup(new_users, gm_client, patch):
     conf = {'USER': test1}
     with patch.dict('mailur.conf', conf):
         con_local = local.client(None)
-        con_gmail = local.connect(test2)
+        con_gmail = local.connect(*local.master_login(username=test2))
 
         yield
 
@@ -155,7 +156,7 @@ def gm_fake():
             b'(\\HasNoChildren \\Draft) "/" INBOX',
         ]
 
-    con = local.connect(test2)
+    con = local.connect(*local.master_login(username=test2))
 
     con._uid = con.uid
     con.uid = uid

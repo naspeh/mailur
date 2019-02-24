@@ -72,7 +72,12 @@
 .icon--image,
 .icon--draft,
 .icon--attachment,
-.icon--spinner {
+.icon--spinner,
+.icon--sieve,
+.icon--send,
+.icon--cancel,
+.icon--save,
+.icon--magic {
   .--icon;
 }
 
@@ -374,4 +379,54 @@
 
 .icon--spinner {
   .--icon--spinner;
+}
+
+.--icon--sieve() {
+  &::before {
+    content: "\f121";
+  }
+}
+
+.icon--sieve {
+  .--icon--sieve;
+}
+
+.--icon--send() {
+  &::before {
+    content: "\f1d8";
+  }
+}
+
+.icon--send {
+  .--icon--send;
+}
+
+.--icon--cancel() {
+  &::before {
+    content: "\f05e";
+  }
+}
+
+.icon--cancel {
+  .--icon--cancel;
+}
+
+.--icon--save() {
+  &::before {
+    content: "\f0c7";
+  }
+}
+
+.icon--save {
+  .--icon--save;
+}
+
+.--icon--magic() {
+  &::before {
+    content: "\f0d0";
+  }
+}
+
+.icon--magic {
+  .--icon--magic;
 }

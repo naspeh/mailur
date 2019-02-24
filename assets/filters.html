@@ -1,0 +1,20 @@
+<div class="filters">
+  <a href="#" @click="close" class="filters__close"></a>
+  <picker
+    class="filters__name"
+    :value="name"
+    :opts="filters && Object.keys(filters) || ['test']"
+    :filterOff="true"
+    :fnUpdate="update"
+  />
+  <textarea v-model="body" @keyup="autosave" class="filters__body"></textarea>
+
+  <div class="filters__bottom">
+    <button @click="run" class="filters__run">Run</button>
+    <button @click="save" class="filters__save">Run and Save</button>
+    <button @click="cancel" class="filters__cancel">Cancel</button>
+    <div class="filters__info">
+      <a href="https://p5r.uk/blog/2011/sieve-tutorial.html">Sieve (mail filtering language) tutorial</a>
+    </div>
+  </div>
+</div>

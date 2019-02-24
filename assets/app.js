@@ -3,6 +3,7 @@ import './favicon.png';
 import './picker.js';
 import './tags.js';
 import './editor.js';
+import './filters.js';
 import './msg.js';
 import { call } from './utils.js';
 import msgs from './msgs.js';
@@ -23,7 +24,8 @@ Vue.component('app', {
         fixPrivacy: true,
         query: null,
         split: false,
-        splitQuery: null
+        splitQuery: null,
+        filters: false
       },
       optsKey: `${window.data.user}:opts`,
       splitIsPossible: window.innerWidth > 1200
