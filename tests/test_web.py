@@ -171,30 +171,28 @@ def test_tags(gm_client, login, some, load_file):
     gm_client.add_emails([{'labels': '\\Inbox t1 "test 2"'}])
     res = web.get('/index-data', status=200).json['tags']
     assert res['ids'] == [
-        '#inbox', '#unread', 't1', '#38b0d2ff',
-        '#all', '\\Draft', '\\Flagged', '#sent',
-        '#spam', '#trash'
+        '#inbox', '#unread', '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash', 't1', '#38b0d2ff',
     ]
     assert res['info'] == dict(expect, **{
         '#inbox': tag(':inbox', pinned=1, unread=1),
         '#unread': tag(':unread', unread=3),
-        't1': tag('t1', unread=1),
-        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=1)
+        't1': tag('t1', unread=0),
+        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=0)
     })
 
     gm_client.add_emails([{'labels': '"test 3"', 'flags': '\\Flagged'}])
     res = web.get('/index-data', status=200).json['tags']
     assert res['ids'] == [
-        '#inbox', '#unread', 't1', '#38b0d2ff', '#e558c4df',
-        '#all', '\\Draft', '\\Flagged', '#sent',
-        '#spam', '#trash'
+        '#inbox', '#unread', '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash', 't1', '#38b0d2ff', '#e558c4df',
     ]
     assert res['info'] == dict(expect, **{
         '#inbox': tag(':inbox', pinned=1, unread=1),
         '#unread': tag(':unread', unread=4),
-        't1': tag('t1', unread=1),
-        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=1),
-        '#e558c4df': tag('#e558c4df', name='test 3', unread=1),
+        't1': tag('t1', unread=0),
+        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=0),
+        '#e558c4df': tag('#e558c4df', name='test 3', unread=0),
     })
 
     res = web.search({'q': ':threads'})
@@ -202,16 +200,32 @@ def test_tags(gm_client, login, some, load_file):
     assert res == {'uids': ['1', '2', '5', '6']}
     res = web.get('/index-data', status=200).json['tags']
     assert res['ids'] == [
-        '#inbox', '#unread', 't1', '#38b0d2ff', '#e558c4df',
-        '#all', '\\Draft', '\\Flagged', '#sent',
-        '#spam', '#trash'
+        '#inbox', '#unread', '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash', 't1', '#38b0d2ff', '#e558c4df',
     ]
     assert res['info'] == dict(expect, **{
         '#inbox': tag(':inbox', pinned=1, unread=4),
         '#unread': tag(':unread', unread=4),
-        't1': tag('t1', unread=4),
-        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=4),
-        '#e558c4df': tag('#e558c4df', name='test 3', unread=4),
+        't1': tag('t1', unread=0),
+        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=0),
+        '#e558c4df': tag('#e558c4df', name='test 3', unread=0),
+    })
+
+    gm_client.add_emails([{'labels': '#test'}, {'labels': '-test'}])
+    res = web.get('/index-data', status=200).json['tags']
+    assert res['ids'] == [
+        '#inbox', '#test', '#unread', '-test',
+        '#all', '\\Draft', '\\Flagged', '#sent',
+        '#spam', '#trash', 't1', '#38b0d2ff', '#e558c4df'
+    ]
+    assert res['info'] == dict(expect, **{
+        '#inbox': tag(':inbox', pinned=1, unread=4),
+        '#unread': tag(':unread', unread=6),
+        '#test': tag('#test', pinned=1, unread=1),
+        '-test': tag('-test', pinned=1, unread=1),
+        't1': tag('t1', unread=0),
+        '#38b0d2ff': tag('#38b0d2ff', name='test 2', unread=0),
+        '#e558c4df': tag('#e558c4df', name='test 3', unread=0),
     })
 
     web = login()

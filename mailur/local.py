@@ -277,18 +277,22 @@ def tags_info(con=None):
         '#unread': {'unread': len(unread_uids)},
         '#inbox': {'pinned': 1, 'unread': 0}
     }
+    tags_info = data_tags.get()
     for tag in con.flags:
         if tag in special:
             continue
         uids = con.search(query(tag))
         if not uids:
             continue
+        tags.setdefault(tag, {'unread': 0})
+        name = tags_info.get(tag, {}).get('name', tag)
+        if not re.search('^[#.-]', name):
+            continue
         unread = set()
         for uid in uids:
             thr = thrs[thrids[uid]]
             unread.update(unread_uids.intersection(thr))
-        tags.setdefault(tag, {})
-        tags[tag].update(unread=len(unread))
+        tags[tag].update(unread=len(unread), pinned=1)
     tags = {t: dict(get_tag(t), **v) for t, v in tags.items()}
     tags.update({
         t: dict(get_tag(t), **tags.get(t, {'unread': 0}))
