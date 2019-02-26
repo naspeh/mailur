@@ -109,16 +109,13 @@ def index():
         return redirect(login_url)
 
     theme = theme or request.session['theme']
-    addrs_from, addrs_to = local.data_addresses.get()
-    sort = ft.partial(sorted, key=lambda a: a['time'], reverse=True)
-    addrs_from = sort(addrs_from.values())
-    addrs_to = sort(addrs_to.values())
-    return render_tpl(theme, 'index', {
-        'user': request.session['username'],
-        'tags': wrap_tags(local.tags_info()),
-        'addrs_from': [a['title'] for a in addrs_from],
-        'addrs_to': [a['title'] for a in addrs_to]
-    })
+    return render_tpl(theme, 'index', preload_data())
+
+
+@app.get('/index-data')
+@endpoint
+def index_data():
+    return preload_data()
 
 
 @app.get('/login', skip=[auth], name='login')
@@ -195,12 +192,6 @@ def nginx():
     return ''
 
 
-@app.get('/tags')
-@endpoint
-def tags():
-    return wrap_tags(local.tags_info())
-
-
 @app.post('/tag')
 @endpoint
 def tag():
@@ -242,16 +233,9 @@ def expunge_tag():
     local.msgs_expunge(data['name'])
 
 
-@app.route('/filters', method=['GET', 'POST'])
+@app.post('/filters')
 @endpoint
 def filters():
-    def values():
-        data = local.data_filters.get()
-        if not data:
-            data = {'manual': ''}
-        data['auto'] = data.get('auto', local.sieve_auto())
-        return data
-
     def run():
         query, opts = parse_query(data['query'])
         if opts.get('thread') and opts.get('uids'):
@@ -263,9 +247,6 @@ def filters():
         except imap.Error as e:
             raise imap.Error(e.args[0].decode())
         local.sync_flags_to_all()
-
-    if request.method == 'GET':
-        return values()
 
     schema = {
         'type': 'object',
@@ -285,7 +266,7 @@ def filters():
     if data['action'] == 'save':
         run()
         local.data_filters({data['name']: data['body']})
-        return values()
+        return local.sieve_scripts()
 
     body = data['body']
     if not body:
@@ -645,6 +626,20 @@ def render_tpl(theme, page, data={}):
         'title': title,
     }
     return template(tpl, **params)
+
+
+def preload_data():
+    addrs_from, addrs_to = local.data_addresses.get()
+    sort = ft.partial(sorted, key=lambda a: a['time'], reverse=True)
+    addrs_from = sort(addrs_from.values())
+    addrs_to = sort(addrs_to.values())
+    return {
+        'user': request.session['username'],
+        'tags': wrap_tags(local.tags_info()),
+        'addrs_from': [a['title'] for a in addrs_from],
+        'addrs_to': [a['title'] for a in addrs_to],
+        'filters': local.sieve_scripts(),
+    }
 
 
 def redirect(url, code=None):

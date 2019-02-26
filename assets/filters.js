@@ -9,17 +9,15 @@ Vue.component('filters', {
     refresh: { type: Function, required: true }
   },
   data: function() {
+    let name = window.localStorage.getItem('filters') || 'auto';
     return {
-      filters: null,
-      name: window.localStorage.getItem('filters') || 'auto',
-      body: ''
+      filters: window.data.filters,
+      name: name,
+      body: window.data.filters[name]
     };
   },
   created: function() {
-    this.call('get', '/filters').then(res => {
-      this.filters = res;
-      this.update(this.name);
-    });
+    this.update(this.name);
   },
   methods: {
     update: function(name) {

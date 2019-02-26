@@ -57,7 +57,7 @@ def test_login_and_themes(web, some, login):
     assert res.location == 'http://localhost:80/login?theme=solarized'
     res.follow(status=200)
 
-    web.get('/tags', status=403)
+    web.get('/index-data', status=403)
 
     res = web.post_json('/login', status=400)
     assert 'errors' in res
@@ -129,7 +129,7 @@ def test_tags(gm_client, login, some, load_file):
         }, **kw)
 
     web = login()
-    res = web.get('/tags', status=200)
+    res = web.get('/index-data', status=200).json['tags']
     expect = {
         '#inbox': tag(':inbox', pinned=1, unread=0),
         '#all': tag(':all', unread=0),
@@ -140,7 +140,7 @@ def test_tags(gm_client, login, some, load_file):
         '#trash': tag(':trash', unread=0),
         '#unread': tag(':unread', unread=0),
     }
-    assert res.json == {
+    assert res == {
         'ids': list(expect.keys()),
         'ids_edit': ['#inbox', '#spam', '#trash'],
         'info': expect
@@ -150,12 +150,12 @@ def test_tags(gm_client, login, some, load_file):
         {'raw': load_file('msg-lookup-error.txt')},
         {'mid': '<lookup-error@test>'},
     ])
-    res = web.get('/tags', status=200)
-    assert res.json['ids'] == [
+    res = web.get('/index-data', status=200).json['tags']
+    assert res['ids'] == [
         '#inbox', '#unread', '#all', '\\Draft', '\\Flagged', '#sent',
         '#spam', '#trash'
     ]
-    assert res.json['info'] == dict(expect, **{
+    assert res['info'] == dict(expect, **{
         '#unread': tag(':unread', unread=2)
     })
 
@@ -163,19 +163,19 @@ def test_tags(gm_client, login, some, load_file):
         {'labels': '\\Inbox \\Junk'},
         {'labels': '\\Junk \\Trash'}
     ])
-    res = web.get('/tags', status=200)
-    assert res.json['info'] == dict(expect, **{
+    res = web.get('/index-data', status=200).json['tags']
+    assert res['info'] == dict(expect, **{
         '#unread': tag(':unread', unread=2),
     })
 
     gm_client.add_emails([{'labels': '\\Inbox t1 "test 2"'}])
-    res = web.get('/tags', status=200)
-    assert res.json['ids'] == [
+    res = web.get('/index-data', status=200).json['tags']
+    assert res['ids'] == [
         '#inbox', '#unread', 't1', '#38b0d2ff',
         '#all', '\\Draft', '\\Flagged', '#sent',
         '#spam', '#trash'
     ]
-    assert res.json['info'] == dict(expect, **{
+    assert res['info'] == dict(expect, **{
         '#inbox': tag(':inbox', pinned=1, unread=1),
         '#unread': tag(':unread', unread=3),
         't1': tag('t1', unread=1),
@@ -183,13 +183,13 @@ def test_tags(gm_client, login, some, load_file):
     })
 
     gm_client.add_emails([{'labels': '"test 3"', 'flags': '\\Flagged'}])
-    res = web.get('/tags', status=200)
-    assert res.json['ids'] == [
+    res = web.get('/index-data', status=200).json['tags']
+    assert res['ids'] == [
         '#inbox', '#unread', 't1', '#38b0d2ff', '#e558c4df',
         '#all', '\\Draft', '\\Flagged', '#sent',
         '#spam', '#trash'
     ]
-    assert res.json['info'] == dict(expect, **{
+    assert res['info'] == dict(expect, **{
         '#inbox': tag(':inbox', pinned=1, unread=1),
         '#unread': tag(':unread', unread=4),
         't1': tag('t1', unread=1),
@@ -200,13 +200,13 @@ def test_tags(gm_client, login, some, load_file):
     res = web.search({'q': ':threads'})
     res = web.post_json('/thrs/link', {'uids': res['uids']}).json
     assert res == {'uids': ['1', '2', '5', '6']}
-    res = web.get('/tags', status=200)
-    assert res.json['ids'] == [
+    res = web.get('/index-data', status=200).json['tags']
+    assert res['ids'] == [
         '#inbox', '#unread', 't1', '#38b0d2ff', '#e558c4df',
         '#all', '\\Draft', '\\Flagged', '#sent',
         '#spam', '#trash'
     ]
-    assert res.json['info'] == dict(expect, **{
+    assert res['info'] == dict(expect, **{
         '#inbox': tag(':inbox', pinned=1, unread=4),
         '#unread': tag(':unread', unread=4),
         't1': tag('t1', unread=4),
@@ -1658,18 +1658,16 @@ def test_privacy(gm_client, login, load_email):
     assert src in body
 
 
-def test_sieve_filters(gm_client, login, some, msgs):
+def test_sieve_scripts(gm_client, login, some, msgs):
     web = login()
     gm_client.add_emails([
         {'from': 'me@t.com', 'to': 'a@t.com', 'labels': '\\Sent'},
         {'from': 'me@t.com', 'to': 'b@t.com', 'labels': '\\Sent'},
     ])
 
-    res = web.get('/filters').json
-    assert res == {
-        'auto': local.sieve_auto(),
-        'manual': ''
-    }
+    res = web.get('/index-data').json['filters']
+    assert res == local.sieve_scripts()
+    assert res == {'auto': some, 'manual': some}
 
     data = {
         'name': 'manual',

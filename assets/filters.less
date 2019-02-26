@@ -10,10 +10,18 @@
     display: flex;
   }
 }
+.filters__name {
+  max-width: 10em;
+
+  .picker__input {
+    border-bottom: none;
+  }
+}
 .filters__body {
   flex: auto;
   width: 100%;
   height: 200px;
+  border-top: 1px solid @--color--grey;
 }
 .filters__bottom {
   flex: none;
@@ -43,7 +51,6 @@
   position: absolute;
   top: 0;
   right: -0.2em;
-  z-index: 20;
   color: @--color--orange;
   .icon--remove;
 }

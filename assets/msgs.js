@@ -46,7 +46,7 @@ let Loader = Vue.extend({
       });
     },
     search: function(preload = undefined) {
-      window.app.refreshTags();
+      window.app.refreshData();
       return this.call('post', '/search', { q: this.query, preload: preload });
     },
     mount: function() {

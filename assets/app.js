@@ -60,14 +60,16 @@ Vue.component('app', {
     }
   },
   methods: {
-    refreshTags: function() {
-      call('get', '/tags').then(res => {
+    refreshData: function() {
+      call('get', '/index-data').then(res => {
         if (res.errors) {
           return;
         }
-        this.tags = Object.assign({}, res.info);
-        this.tagIds = res.ids;
-        this.tagIdsEdit = res.ids_edit;
+        window.data = res;
+        let tags = res.tags;
+        this.tags = Object.assign({}, tags.info);
+        this.tagIds = tags.ids;
+        this.tagIdsEdit = tags.ids_edit;
       });
     },
     setOpt: function(name, value) {

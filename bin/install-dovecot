@@ -97,6 +97,8 @@ plugin {
     fts_autoindex = yes
     fts_autoindex_exclude = INBOX
     fts_autoindex_exclude2 = mlr/Sys
+
+    #sieve_extensions = +vnd.dovecot.debug
 }
 
 mail_attribute_dict = file:%h/dovecot-attributes

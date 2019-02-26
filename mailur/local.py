@@ -303,24 +303,36 @@ def tags_info(con=None):
 def sieve_run(query, script, box=SRC):
     _, addrs_to = data_addresses.get()
     values = {
-        'my_recipients': json.dumps(addrs_to.keys())
+        'my_recipients': json.dumps(addrs_to.keys() or '')
     }
     script = script % values
     with client(box, master='SIEVE', readonly=False) as con:
         return con.sieve(query, script)
 
 
-def sieve_auto():
-    main = data_filters.key('auto') or textwrap.dedent('''
+def sieve_scripts(name=None):
+    auto = textwrap.dedent('''
     # it runs every time when new message appears in your mailbox
     # use %(my_recipients)s to get all your previous recipients
-    require ["imap4flags"];
+    require ["imap4flags", "variables"];
 
-    if address :is "from" %(my_recipients)s {
+    if allof(
+        not string :is "" %(my_recipients)s,
+        address :is "from" %(my_recipients)s
+    ) {
         addflag "#personal";
     }
     ''').strip()
-    return main
+
+    manual = textwrap.dedent('''
+    # this script you run manually
+    require ["imap4flags"];
+    ''').strip()
+
+    data = data_filters.get()
+    data['manual'] = data.get('manual', manual)
+    data['auto'] = data.get('auto', auto)
+    return data[name] if name else data
 
 
 @metadata('uidpairs', lambda: {})
@@ -542,9 +554,7 @@ def parse(criteria=None, con=None, **opts):
     uidnext = con.uidnext
     log.info('## new: uidnext: %s', uidnext)
 
-    _, addrs_to = data_addresses.get()
-    if addrs_to:
-        sieve_run('UID %s' % ','.join(uids), sieve_auto())
+    sieve_run('UID %s' % ','.join(uids), sieve_scripts('auto'))
 
     log.info('## criteria: %r; %s uids', criteria, len(uids))
     count = con.select(ALL)[0].decode()
