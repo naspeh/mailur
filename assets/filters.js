@@ -13,7 +13,8 @@ Vue.component('filters', {
     return {
       filters: window.data.filters,
       name: name,
-      body: window.data.filters[name]
+      body: window.data.filters[name],
+      running: false
     };
   },
   created: function() {
@@ -35,6 +36,7 @@ Vue.component('filters', {
       window.localStorage.setItem(this.storageKey(), this.body);
     },
     run: function() {
+      this.running = true;
       let data = {
         name: this.name,
         body: this.body,
@@ -42,10 +44,12 @@ Vue.component('filters', {
         action: 'run'
       };
       this.call('post', '/filters', data).then(() => {
+        this.running = false;
         this.refresh();
       });
     },
     save: function() {
+      this.running = true;
       let data = {
         name: this.name,
         body: this.body,
@@ -53,6 +57,7 @@ Vue.component('filters', {
         action: 'save'
       };
       this.call('post', '/filters', data).then(res => {
+        this.running = false;
         window.localStorage.removeItem(this.storageKey());
         this.filters = res;
         this.update(this.name);

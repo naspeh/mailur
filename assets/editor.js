@@ -98,6 +98,7 @@ Vue.component('editor', {
       return values;
     },
     save: function(refresh = false) {
+      this.saving = true;
       let data = new FormData();
       let values = this.values();
       for (let i in values) {
@@ -107,7 +108,6 @@ Vue.component('editor', {
         data.append('files', file, file.name);
       }
       data.append('draft_id', this.msg.draft_id);
-      this.saving = true;
       return this.call('post', '/editor', data, {}).then(res => {
         this.saving = false;
         this.uid = res.uid;

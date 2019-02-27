@@ -47,12 +47,18 @@ let TagsSelect = {
   },
   methods: {
     tagName: function(id) {
+      if (!this.info[id]) {
+        return id;
+      }
       return this.trancated ? this.info[id].short_name : this.info[id].name;
     },
     update: function(val) {
       this.openInMain(this.info[val]);
     },
     filter: function(val, filter) {
+      if (!this.info[val]) {
+        return false;
+      }
       return contains(this.info[val].name, filter);
     }
   }
