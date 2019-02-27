@@ -42,7 +42,7 @@
       <template v-for="from in msg.from_list">
       <div
         v-if="from.hash"
-        @click.stop.prevent="openInMain(from.query)"
+        @click.stop.prevent="query(from.query)"
         :class="`msg-line__from__pic pic-${from.hash}`"
         :title="from.title"
       ></div>
@@ -87,7 +87,7 @@
     <!-- <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a> -->
     <!-- <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a> -->
     <!-- <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a> -->
-    <a v-if="!thread" :href="`#${msg.query_thread}`" class="icon--ok">Full thread</a>
+    <a v-if="!thread" @click.prevent="query(msg.query_thread)" :href="`#${msg.query_thread}`" class="icon--ok">Full thread</a>
     <a :href="`#${msg.query_msgid}`" class="icon--ok">Related replies</a>
     <a :href="msg.url_raw" class="icon--ok" target="_blank">Original message</a>
   </div>
@@ -100,7 +100,7 @@
     <div class="msg__details__info">
       <div class="msg__details__subj">
         <span class="msg__details__label">Subject:</span>
-        <a :href="`#${msg.query_subject}`" @click.prevent="openInMain(msg.query_subject)" class="msg__details__value">
+        <a :href="`#${msg.query_subject}`" @click.prevent="query(msg.query_subject)" class="msg__details__value">
           {{msg.subject}}
         </a>
       </div>
@@ -108,7 +108,7 @@
         <span class="msg__details__label">From:</span>
         <span class="msg__details__value">
           <b>{{msg.from.name}}</b>
-          <a :href="`#${msg.from.query}`" @click.prevent="openInMain(msg.from.query)">
+          <a :href="`#${msg.from.query}`" @click.prevent="query(msg.from.query)">
             {{msg.from.addr}}
           </a>
         </span>
@@ -118,7 +118,7 @@
           <span class="msg__details__label">{{field[0].toUpperCase()}}{{field.slice(1)}}:</span>
           <span v-for="addr of msg[field]" class="msg__details__value">
             <b>{{addr.name}}</b>
-            <a :href="`#${addr.query}`" @click.prevent="openInMain(addr.query)">
+            <a :href="`#${addr.query}`" @click.prevent="query(addr.query)">
               {{addr.addr}}
             </a>
           </span>
@@ -126,7 +126,7 @@
       </template>
       <div class="msg__details__msgid">
         <span class="msg__details__label">Message-ID:</span>
-        <a :href="`#${msg.query_msgid}`" @click.prevent="openInMain(msg.query_msgid)" class="msg__details__value">
+        <a :href="`#${msg.query_msgid}`" @click.prevent="query(msg.query_msgid)" class="msg__details__value">
           {{msg.msgid}}
         </a>
       </div>
