@@ -3,12 +3,12 @@ import email
 import re
 import time
 
-from mailur import local
+from mailur import conf, local
 from mailur.message import addresses
 from mailur.web import parse_query, wrap_addresses
 
 
-def test_login_and_themes(web, some, login):
+def test_login_and_themes(web, some, login, patch):
     res = web.get('/login', status=200)
     assert '/assets/theme-base.css' in res, res.text
     assert '/assets/login.js' in res, res.txt
@@ -21,7 +21,8 @@ def test_login_and_themes(web, some, login):
     assert '"current_theme":"solarized"' in res, res.text
 
     params = {'username': login.user1, 'password': 'user', 'timezone': 'UTC'}
-    res = web.post_json('/login', params, status=200)
+    with patch.dict(conf, {'USER': None}):
+        res = web.post_json('/login', params, status=200)
     assert web.cookies == {'session': some}
     assert login.user1 not in some
     res = web.get('/', status=200)

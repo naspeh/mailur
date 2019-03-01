@@ -79,7 +79,12 @@ def jsonify(fn):
     @ft.wraps(fn)
     def inner(*a, **kw):
         response.content_type = 'application/json'
-        data = fn(*a, **kw)
+        try:
+            data = fn(*a, **kw)
+        except Exception as e:
+            log.exception(e)
+            response.status = 500
+            data = {'errors': [str(e)]}
         return json.dumps(data or {}, indent=2, ensure_ascii=False)
     return inner
 
@@ -91,10 +96,6 @@ def endpoint(callback):
     def inner(*args, **kwargs):
         try:
             return callback(*args, **kwargs)
-        except Exception as e:
-            log.exception(e)
-            response.status = 500
-            return {'errors': [str(e)]}
         finally:
             imap.clean_pool()
     return inner
@@ -128,7 +129,7 @@ def login_html(theme=None):
 
 
 @app.post('/login', skip=[auth])
-@endpoint
+@jsonify
 def login():
     schema = {
         'type': 'object',
