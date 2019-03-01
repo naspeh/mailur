@@ -24,7 +24,8 @@ Vue.component('editor', {
       txt: this.msg.txt,
       allFrom: window.data.addrs_from,
       allTo: window.data.addrs_to,
-      addrCurrent: ''
+      addrCurrent: '',
+      previewUrl: 'mid:' + this.msg.draft_id
     };
   },
   created: function() {
@@ -112,7 +113,7 @@ Vue.component('editor', {
         this.saving = false;
         this.uid = res.uid;
         if (this.uid) {
-          if (window.app.main.query == this.msg.query_thread) {
+          if (window.app.main.query == this.previewUrl) {
             let main = window.app.main.view;
             main.openMsg(this.uid, true);
           }
@@ -138,7 +139,7 @@ Vue.component('editor', {
       );
     },
     previewInMain: function() {
-      window.app.main.open(this.msg.query_thread);
+      window.app.main.open(this.previewUrl);
     },
     send: function() {
       this.preview();
