@@ -43,10 +43,12 @@ Vue.component('filters', {
         query: this.query,
         action: 'run'
       };
-      this.call('post', '/filters', data).then(() => {
-        this.running = false;
-        this.refresh();
-      });
+      this.call('post', '/filters', data)
+        .then(() => {
+          this.running = false;
+          this.refresh();
+        })
+        .catch(() => (this.running = false));
     },
     save: function() {
       this.running = true;

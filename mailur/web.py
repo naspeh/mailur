@@ -9,7 +9,7 @@ import urllib.parse
 import urllib.request
 from multiprocessing.pool import ThreadPool
 
-from bottle import Bottle, abort, request, response, static_file, template
+from bottle import Bottle, HTTPError, abort, request, response, template
 from itsdangerous import BadData, BadSignature, URLSafeSerializer
 from pytz import common_timezones, timezone, utc
 
@@ -81,6 +81,9 @@ def jsonify(fn):
         response.content_type = 'application/json'
         try:
             data = fn(*a, **kw)
+        except HTTPError as e:
+            response.status = e.status_code
+            data = {'errors': [e.body]}
         except Exception as e:
             log.exception(e)
             response.status = 500
@@ -246,7 +249,7 @@ def filters():
         try:
             local.sieve_run(query, data['body'])
         except imap.Error as e:
-            raise imap.Error(e.args[0].decode())
+            abort(400, e.args[0].decode())
         local.sync_flags_to_all()
 
     schema = {
@@ -563,6 +566,7 @@ def proxy():
 @app.get('/assets/<path:path>', skip=[auth])
 def serve_assets(path):
     """"Real serving is done by nginx, this is just stub"""
+    from bottle import static_file
     return static_file(path, root=assets)
 
 

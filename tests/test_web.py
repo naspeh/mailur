@@ -1697,12 +1697,12 @@ def test_sieve_scripts(gm_client, login, some, msgs):
         assert res == {'errors': [some], 'schema': some}
 
     params = dict(data, body='addflag "#1";')
-    res = web.post_json('/filters', params, status=500).json
+    res = web.post_json('/filters', params, status=400).json
     assert res == {'errors': [some]}
     assert some.value.startswith('script: line 1')
 
     params = dict(data, body='addflag "#1";', action='save')
-    res = web.post_json('/filters', params, status=500).json
+    res = web.post_json('/filters', params, status=400).json
     assert res == {'errors': [some]}
     assert some.value.startswith('script: line 1')
 
