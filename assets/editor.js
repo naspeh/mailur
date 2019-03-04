@@ -25,6 +25,7 @@ Vue.component('editor', {
       allFrom: window.data.addrs_from,
       allTo: window.data.addrs_to,
       addrCurrent: '',
+      editFields: ['from', 'to', 'subject', 'txt'],
       previewUrl: 'mid:' + this.msg.draft_id
     };
   },
@@ -35,10 +36,30 @@ Vue.component('editor', {
       Object.assign(this, data);
     }
   },
+  computed: {
+    values: function() {
+      let values = {};
+      for (let i of this.editFields) {
+        values[i] = this[i];
+      }
+      values.time = new Date().getTime();
+      return values;
+    },
+    changed: function() {
+      for (let i of this.editFields) {
+        if (this[i] != this.msg[i]) {
+          return true;
+        }
+      }
+      return false;
+    }
+  },
   methods: {
     autosave: function() {
-      let data = this.values();
-      window.localStorage.setItem(this.msg.draft_id, JSON.stringify(data));
+      window.localStorage.setItem(
+        this.msg.draft_id,
+        JSON.stringify(this.values)
+      );
       setTimeout(() => this.saving || this.save(), 3000);
     },
     update: function(val, el) {
@@ -90,18 +111,14 @@ Vue.component('editor', {
         this.query(this.msg.query_thread)
       );
     },
-    values: function() {
-      let values = {};
-      for (let i of ['from', 'to', 'subject', 'txt']) {
-        values[i] = this[i];
-      }
-      values.time = new Date().getTime();
-      return values;
-    },
     save: function(refresh = false) {
+      if (!this.changed) {
+        return;
+      }
+
       this.saving = true;
       let data = new FormData();
-      let values = this.values();
+      let values = this.values;
       for (let i in values) {
         data.append(i, values[i]);
       }
@@ -109,18 +126,30 @@ Vue.component('editor', {
         data.append('files', file, file.name);
       }
       data.append('draft_id', this.msg.draft_id);
-      return this.call('post', '/editor', data, {}).then(res => {
-        this.saving = false;
-        this.uid = res.uid;
-        if (this.uid) {
-          if (window.app.main.query == this.previewUrl) {
-            let main = window.app.main.view;
-            main.openMsg(this.uid, true);
+      return this.call('post', '/editor', data, {})
+        .then(res => {
+          this.saving = false;
+          this.uid = res.uid;
+          if (this.uid) {
+            if (window.app.main.query == this.previewUrl) {
+              let main = window.app.main.view;
+              main.openMsg(this.uid, true);
+            }
           }
-        }
-        refresh && this.refresh();
-        return res;
-      });
+          if (refresh) {
+            this.refresh();
+          } else {
+            for (let i of ['from', 'to', 'subject', 'txt']) {
+              this.msg[i] = this[i];
+            }
+          }
+          return res;
+        })
+        .catch(() => {
+          this.countdown = null;
+          this.saving = false;
+          refresh && this.refresh();
+        });
     },
     slide: function(e, idx) {
       e.preventDefault();
@@ -151,7 +180,9 @@ Vue.component('editor', {
         this.countdown = this.countdown - 1;
         setTimeout(() => this.sending(url_send), 1000);
       } else if (this.countdown == 0) {
-        this.call('get', url_send).then(res => this.query(res.query));
+        this.call('get', url_send)
+          .then(res => this.query(res.query))
+          .catch(() => (this.countdown = null));
       } else {
         this.countdown = null;
       }
