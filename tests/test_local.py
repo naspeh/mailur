@@ -367,10 +367,11 @@ def test_thrid_header(gm_client, msgs):
     ] * 2
 
 
-def test_sieve_personal(gm_client, msgs, some):
+def test_sieve_run(gm_client, msgs, some):
     gm_client.add_emails([
         {'from': 'me@t.com', 'to': 'a@t.com', 'labels': '\\Sent'},
         {'from': 'me@t.com', 'to': 'b@t.com', 'labels': '\\Sent'},
+        {'from': 'o_O <spam@t.com>', 'to': 'me@t.com', 'labels': '\\Junk'},
     ])
 
     assert local.data_addresses.get() == [
@@ -384,15 +385,16 @@ def test_sieve_personal(gm_client, msgs, some):
         {'from': 'b@t.com', 'labels': '\\Inbox'},
         {'from': 'c@t.com', 'labels': '\\Inbox'},
         {'from': 'd@t.com', 'labels': '\\Inbox'},
+        {'from': 'spam@t.com', 'labels': '\\Inbox'},
     ])
 
     assert [m['flags'] for m in msgs(local.SRC)] == [
-        '#sent', '#sent',
+        '#sent', '#sent', '#spam',
         '#sent #personal', '#inbox #personal', '#inbox #personal',
-        '#inbox', '#inbox'
+        '#inbox', '#inbox', '#spam #inbox'
     ]
     assert [m['flags'] for m in msgs()] == [
-        '#sent', '#sent',
+        '#sent', '#sent', '#spam',
         '#sent #personal', '#personal #inbox', '#personal #inbox',
-        '#inbox', '#inbox'
+        '#inbox', '#inbox', '#spam #inbox'
     ]

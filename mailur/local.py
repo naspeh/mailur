@@ -304,22 +304,35 @@ def tags_info(con=None):
     return tags
 
 
-def sieve_run(query, script, box=SRC):
+@using()
+def sieve_run(query, script, box=SRC, con=None):
+    msgs = data_msgs.get()
     _, addrs_to = data_addresses.get()
+    uids = con.search('keyword #spam')
+    spamers = (msgs[uid].get('from', {}).get('addr') for uid in uids)
+    spamers = [a for a in spamers if a]
     values = {
-        'my_recipients': json.dumps(addrs_to.keys() or '')
+        'spamers': json.dumps(spamers or ''),
+        'my_recipients': json.dumps(addrs_to.keys() or ''),
     }
-    script = script % values
-    with client(box, master='SIEVE', readonly=False) as con:
-        return con.sieve(query, script)
+    with client(box, master='SIEVE', readonly=False) as c:
+        script = script % values
+        return c.sieve(query, script)
 
 
 def sieve_scripts(name=None):
     auto = textwrap.dedent('''
     # it runs every time when new message appears in your mailbox
-    # use %(my_recipients)s to get all your previous recipients
+    # - use %(my_recipients)s to get all your previous recipients
+    # - use %(spamers)s to get all addresses from #spam
     require ["imap4flags", "variables"];
 
+    if allof(
+        not string :is "" %(spamers)s,
+        address :is "from" %(spamers)s
+    ) {
+        addflag "#spam";
+    }
     if allof(
         not string :is "" %(my_recipients)s,
         address :is "from" %(my_recipients)s
