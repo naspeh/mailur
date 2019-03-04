@@ -1,0 +1,17 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+. bin/activate
+
+names=${user}
+
+for user in $names; do
+    home=/home/vmail/$user
+    if [ -d $home/mailboxes/INBOX/dbox-Mails/ ]; then
+        rm -rf $home/mlr/mailboxes/dbox-Mails
+        mv $home/mailboxes/INBOX/dbox-Mails/ $home/mlr/mailboxes/
+        rm -rf $home/mailboxes
+    fi
+done
+
+bin/install-dovecot

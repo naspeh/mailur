@@ -150,10 +150,10 @@ def gm_fake():
             return responces.pop()
         return 'OK', [
             b'(\\HasNoChildren \\All) "/" mlr/All',
-            b'(\\HasNoChildren) "/" INBOX',
-            b'(\\HasNoChildren \\Junk) "/" INBOX',
-            b'(\\HasNoChildren \\Trash) "/" INBOX',
-            b'(\\HasNoChildren \\Draft) "/" INBOX',
+            b'(\\HasNoChildren) "/" mlr',
+            b'(\\HasNoChildren \\Junk) "/" mlr',
+            b'(\\HasNoChildren \\Trash) "/" mlr',
+            b'(\\HasNoChildren \\Draft) "/" mlr',
         ]
 
     con = local.connect(*local.master_login(username=test2))
@@ -335,7 +335,7 @@ def web():
 
 @pytest.fixture
 def login(web):
-    def inner(username=test1, password='user', tz='Asia/Singapore'):
+    def inner(username=test1, password='demo', tz='Asia/Singapore'):
         params = {'username': username, 'password': password, 'timezone': tz}
         web.post_json('/login', params, status=200)
         return web

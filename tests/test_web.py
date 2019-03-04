@@ -20,7 +20,7 @@ def test_login_and_themes(web, some, login, patch):
     assert '/assets/theme-solarized.css' in res, res.text
     assert '"current_theme":"solarized"' in res, res.text
 
-    params = {'username': login.user1, 'password': 'user', 'timezone': 'UTC'}
+    params = {'username': login.user1, 'password': 'demo', 'timezone': 'UTC'}
     with patch.dict(conf, {'USER': None}):
         res = web.post_json('/login', params, status=200)
     assert web.cookies == {'session': some}
@@ -245,7 +245,7 @@ def test_expunge_tag(gm_client, login, some, msgs):
         {'labels': '\\Inbox \\Junk'},
         {'labels': '\\Inbox', 'refs': '<101@mlr>'},
     ])
-    existing = sorted(msgs('INBOX'), key=lambda i: int(i['uid']))
+    existing = sorted(msgs(local.SRC), key=lambda i: int(i['uid']))
 
     # mix original and parsed uids
     local.parse('all')
@@ -1573,7 +1573,7 @@ def test_nginx(web, login, patch):
 
     res = web.get('/nginx', status=200, headers={
         'Auth-User': login.user1,
-        'Auth-Pass': 'user',
+        'Auth-Pass': 'demo',
         'Auth-Protocol': 'imap'
     })
     assert dict(res.headers) == {
@@ -1586,7 +1586,7 @@ def test_nginx(web, login, patch):
 
     res = web.get('/nginx', status=200, headers={
         'Auth-User': login.user1,
-        'Auth-Pass': 'user',
+        'Auth-Pass': 'demo',
         'Auth-Protocol': 'smtp'
     })
     assert dict(res.headers) == {
@@ -1618,13 +1618,13 @@ def test_nginx(web, login, patch):
     with patch.dict('mailur.web.conf', {'IMAP_OFF': [login.user1]}):
         res = web.get('/nginx', status=200, headers={
             'Auth-User': login.user1,
-            'Auth-Pass': 'user',
+            'Auth-Pass': 'demo',
             'Auth-Protocol': 'imap'
         })
         assert dict(res.headers) == disabled
         res = web.get('/nginx', status=200, headers={
             'Auth-User': login.user1,
-            'Auth-Pass': 'user',
+            'Auth-Pass': 'demo',
             'Auth-Protocol': 'smtp'
         })
         assert dict(res.headers) == disabled

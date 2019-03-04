@@ -15,13 +15,13 @@ def test_client(some, patch, call):
         )
 
         con.select_tag('\\Junk')
-        assert m.call_args == call(some, b'INBOX', True)
+        assert m.call_args == call(some, b'mlr', True)
 
         con.select_tag('\\Trash')
-        assert m.call_args == call(some, b'INBOX', True)
+        assert m.call_args == call(some, b'mlr', True)
 
         con.select_tag('\\Draft')
-        assert m.call_args == call(some, b'INBOX', True)
+        assert m.call_args == call(some, b'mlr', True)
 
     with patch('mailur.imap.fn_time') as m:
         con.list()
@@ -135,7 +135,7 @@ def test_origin_msg(gm_client, latest, login):
     assert latest(local.SRC)['flags'] == '\\Draft'
 
     gm_client.add_emails([{}], tag='\\Inbox', fetch=False, parse=False)
-    gmail.fetch(tag='\\Chats', box='INBOX')
+    gmail.fetch(tag='\\Chats', box='mlr')
     assert latest(local.SRC)['flags'] == '#chats'
 
 

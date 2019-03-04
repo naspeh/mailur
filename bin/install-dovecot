@@ -57,11 +57,6 @@ userdb {
     default_fields = uid=vmail gid=vmail home=/home/vmail/%u
 }
 
-namespace main {
-    inbox = yes
-    prefix =
-    separator = /
-}
 namespace mlr {
     prefix = mlr/
     separator = /
@@ -72,8 +67,7 @@ namespace mlr {
         auto = create
     }
     mailbox All {
-        auto = subscribe
-        special_use = \All
+        auto = create
     }
     mailbox Sys {
         auto = create
@@ -83,8 +77,33 @@ namespace mlr {
         autoexpunge = 30d
     }
 }
+namespace {
+    inbox = yes
+    prefix =
+    separator = /
+    location = virtual:%h
+    mailbox {
+        auto = create
+    }
+    mailbox Trash {
+        auto = subscribe
+        special_use = \Trash
+    }
+    mailbox Spam {
+        auto = subscribe
+        special_use = \Junk
+    }
+    mailbox Pinned {
+        auto = subscribe
+        special_use = \Flagged
+    }
+    mailbox All {
+        auto = subscribe
+        special_use = \All
+    }
+}
 
-mail_plugins = \$mail_plugins acl notify mail_log replication fts fts_lucene
+mail_plugins = \$mail_plugins acl notify mail_log replication fts fts_lucene virtual
 plugin {
     acl = vfile:/etc/dovecot/acl
     acl_globals_only = yes
@@ -95,7 +114,7 @@ plugin {
     fts = lucene
     fts_lucene = whitespace_chars=@.
     fts_autoindex = yes
-    fts_autoindex_exclude = INBOX
+    fts_autoindex_exclude = mlr
     fts_autoindex_exclude2 = mlr/Sys
 
     #sieve_extensions = +vnd.dovecot.debug
@@ -124,7 +143,7 @@ service indexer-worker {
     vsz_limit = 2G
 }
 
-replication_dsync_parameters = -d -n main -n mlr
+replication_dsync_parameters = -d -n mlr
 service replicator {
     process_min_avail = 1
     unix_listener replicator-doveadm {
@@ -155,11 +174,10 @@ root:{plain}$secret
 sieve:{plain}$secret
 EOF
 cat <<"EOF" > /etc/dovecot/acl
-* owner lrst
+* owner lrws
 mlr/* owner lr
-INBOX owner lrstpi
 * user=root lrwstipe
-* user=sieve lrws
+* user=sieve lrwsp
 EOF
 
 bin/install-users

@@ -4,8 +4,8 @@ set -exuo pipefail
 . bin/activate
 
 home=${home:-"/home/vmail"}
-pass=${pass-\{plain\}user}
-names=${user-"user"}
+pass=${pass-\{plain\}demo}
+names=${user-"demo"}
 fields=${fields:-}
 append=${append:-}
 
@@ -18,3 +18,9 @@ if [ -n "$pass" ]; then
         echo "$user:$pass::::$home/$user::$fields" >> $users
     done
 fi
+
+# virtual mailboxes
+for user in $names; do
+    home=$home/$user bin/install-vmail
+done
+chown -R vmail:vmail $home

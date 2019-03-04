@@ -386,6 +386,11 @@ def test_sieve_personal(gm_client, msgs, some):
         {'from': 'd@t.com', 'labels': '\\Inbox'},
     ])
 
+    assert [m['flags'] for m in msgs(local.SRC)] == [
+        '#sent', '#sent',
+        '#sent #personal', '#inbox #personal', '#inbox #personal',
+        '#inbox', '#inbox'
+    ]
     assert [m['flags'] for m in msgs()] == [
         '#sent', '#sent',
         '#sent #personal', '#personal #inbox', '#personal #inbox',

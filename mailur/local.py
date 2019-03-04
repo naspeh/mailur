@@ -9,7 +9,7 @@ from gevent import joinall, socket, spawn
 
 from . import cache, conf, fn_time, html, imap, json, log, message, user_lock
 
-SRC = 'INBOX'
+SRC = 'mlr'
 ALL = 'mlr/All'
 SYS = 'mlr/Sys'
 DEL = 'mlr/Del'
