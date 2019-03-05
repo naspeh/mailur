@@ -56,6 +56,10 @@ Vue.component('editor', {
   },
   methods: {
     autosave: function() {
+      if (!this.changed) {
+        return;
+      }
+
       window.localStorage.setItem(
         this.msg.draft_id,
         JSON.stringify(this.values)
@@ -112,10 +116,6 @@ Vue.component('editor', {
       );
     },
     save: function(refresh = false) {
-      if (!this.changed) {
-        return;
-      }
-
       this.saving = true;
       let data = new FormData();
       let values = this.values;
