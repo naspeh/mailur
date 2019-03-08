@@ -17,7 +17,7 @@ yum install -y dovecot dovecot-pigeonhole
 
 id -u vmail || (
 groupadd -g 5000 vmail
-useradd -m -d /home/vmail -s /bin/false -u 5000 -g vmail vmail
+useradd -m -d /home/vmail -s /bin/nologin -u 5000 -g vmail vmail
 )
 
 [ -d '/etc/dovecot.bak' ] || (
@@ -35,9 +35,8 @@ verbose_ssl=yes
 ssl = no
 ssl_client_ca_file = /etc/pki/tls/cert.pem
 
-# TODO: remove after migration to new metadata storage
-# should be big enough to save all message-ids as metadata
-imap_max_line_length = 10M
+# for query like "UID 1,2,...,150000" should be big enough
+imap_max_line_length = 1M
 
 mail_location = sdbox:~
 
@@ -180,7 +179,7 @@ mlr/* owner lr
 * user=sieve lrwsp
 EOF
 
-bin/install-users
+names="$user" bin/install-users
 
 systemctl enable dovecot
 systemctl restart dovecot

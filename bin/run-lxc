@@ -26,7 +26,6 @@ EOF
 
 lxc-start -n $name
 
-# install ssh and authorized keys for easy access
 cat <<EOF | lxc-attach --clear-env -n $name
 set -exuo pipefail
 

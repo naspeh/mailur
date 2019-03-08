@@ -5,7 +5,7 @@ set -exuo pipefail
 
 home=${home:-"/home/vmail"}
 pass=${pass-\{plain\}demo}
-names=${user-"demo"}
+names=${names-"demo"}
 fields=${fields:-}
 append=${append:-}
 

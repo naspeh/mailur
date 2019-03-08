@@ -16,18 +16,20 @@ This version is already in use. It has minimal feature set I need on daily basis
 
 ### Related links
 - [public demo][demo] (credentials: demo/demo)
+- [installation][install]
 
 ![Screenshots](https://pusto.org/mailur/screenshots.gif)
 
 [Mailur]: https://pusto.org/mailur/
 [demo]: http://demo.pusto.org
+[install]: https://pusto.org/mailur/installation/
 [vimeo]: https://vimeo.com/259140545
 [mlr-dovecot]: /mailur/dovecot/
 [Markdown]: https://daringfireball.net/projects/markdown/syntax
 
 ### Updates
 - `[Nowadays]` Stay tuned...
-- `[Mar 2019]` [Dovecot as main storage][mlr-dovecot]
+- `[Mar 2019]` [Dovecot as main storage.][mlr-dovecot]
 - `[Nov 2015]` [`code`][v02code] [The alpha version.][v02post] Postgres based. We used it over 2 years on daily basis.
 - `[Apr 2014]` [`code`][v01code] [The first prototype.][v01post]
 

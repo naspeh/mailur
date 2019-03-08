@@ -54,16 +54,16 @@ def test_fn_pack_uids():
 
 
 def test_literal_size_limit(gm_client, raises):
+    # for query like "UID 1,2,...,150000" should be big enough
     gm_client.add_emails([{} for i in range(0, 20)], parse=False)
     c = local.client(local.SRC)
     all_uids = c.search('ALL')
 
-    uids = ','.join(all_uids)
-    uid = ',1%.127i' % 1 * 8
-    uids += (uid * 1024 * 9)
+    uids = ','.join(str(i) for i in range(1, 150000))
     assert all_uids == c.search('UID %s' % uids)
 
-    uids += (uid * 1024)
+    uid = ',%i' % (10 ** 6)
+    uids += (uid * 20000)
     with raises(imap.Error) as e:
         c.search('UID %s' % uids)
     assert 'Too long argument' in str(e)

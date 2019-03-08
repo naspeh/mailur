@@ -1,6 +1,33 @@
 #!/bin/bash
+# Pre-requirements:
+# - server with CentOS 7
+# - code at "/opt/mailur"
+#
+# Details: https://pusto.org/mailur/installation/
+#
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
+
+[ -f bin/env ] || cat <<EOF > bin/env
+#!/bin/sh
+# used for creation of virtual mailboxes
+# use a space separator for multiple users
+user=demo
+
+# comment next line if you modify "/etc/dovecot/passwd.users"
+pass={plain}demo
+
+# used by "bin/deploy" for nginx and certbot
+domain=example.com
+
+secret=$(python -c 'import uuid; print(uuid.uuid4().hex)')
+
+export MLR_SECRET=\$secret
+export MLR_MASTER=root:\$secret
+export MLR_SIEVE=sieve:\$secret
+export MLR_IMAP_OFF=''
+EOF
+
 . bin/activate
 
 localectl set-locale LANG=en_US.utf8
