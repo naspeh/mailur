@@ -654,6 +654,11 @@ def update_threads(uids, thrids=None, thrs=None, con=None):
             uids = sorted(uids, key=lambda i: msgs[i]['arrived'])
             thrid = uids[-1]
 
+        previous_thrids = set(thrids[i] for i in uids if thrids.get(i))
+        previous_uids = (thrs[uid] for uid in previous_thrids if thrs.get(uid))
+        previous_uids = sum(previous_uids, [])
+        uids = set(previous_uids).union(uids)
+        uids = sorted(uids, key=lambda i: msgs[i]['arrived'])
         for uid in uids:
             thrids[uid] = thrid
             if uid == thrid:
