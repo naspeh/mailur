@@ -953,7 +953,10 @@ def test_drafts_part1(gm_client, login, patch, some):
         c.get.return_value = ('test', 'test')
         with patch('mailur.web.smtplib.SMTP'):
             res = web.get(res['edit']['url_send'], status=400).json
-    assert res == {'errors': ['"From" and "To" shouldn\'t be empty']}
+    assert res == {'schema': some, 'errors': [
+        "['properties', 'from', 'format']: '' is not a 'email'",
+        "['properties', 'to', 'format']: '' is not a 'email'"
+    ]}
 
 
 def test_drafts_part2(gm_client, login, msgs, latest, patch, some):

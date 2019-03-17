@@ -13,7 +13,7 @@ def test_batched_uids(gm_client):
 
     # with one message
     msg = message.binary('42')
-    msg.add_header('Message-Id', message.gen_msgid('test'))
+    msg.add_header('Message-Id', message.gen_msgid())
     con.append(local.SRC, None, None, msg.as_bytes())
     con.select(local.SRC, readonly=True)
     assert [b'1 (UID 1 FLAGS (\\Recent))'] == (

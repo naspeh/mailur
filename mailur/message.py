@@ -13,7 +13,7 @@ from email.utils import formatdate, getaddresses, parsedate_to_datetime
 
 import chardet
 
-from . import html, log
+from . import conf, html, log
 
 aliases = {
     # Seems Google used gb2312 in some subjects, so there is another symbol
@@ -458,8 +458,8 @@ def new_draft(draft, related, msgid=None):
     return msg
 
 
-def gen_msgid(label):
-    return '<%s@mailur.%s>' % (uuid.uuid4().hex, label)
+def gen_msgid():
+    return '<%s@%s>' % (uuid.uuid4().hex, conf['DOMAIN'])
 
 
 def gen_draftid():

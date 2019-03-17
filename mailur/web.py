@@ -464,16 +464,24 @@ def reply(uid=None):
 def send(draft_id):
     from . import gmail
 
-    # TODO: send emails over gmail for now
-    msgid = message.gen_msgid('sent')
     draft, related = compose(draft_id)
-    msg = message.new_draft(draft, related, msgid)
-
-    try:
-        params = message.sending(msg)
-    except ValueError as e:
+    schema = {
+        'type': 'object',
+        'properties': {
+            'from': {'type': 'string', 'format': 'email'},
+            'to': {'type': 'string', 'format': 'email'},
+        },
+        'required': ['from', 'to']
+    }
+    errs, data = validate(draft, schema)
+    if errs:
         response.status = 400
-        return {'errors': [str(e)]}
+        return {'errors': errs, 'schema': schema}
+
+    # TODO: send emails over gmail for now
+    msgid = message.gen_msgid()
+    msg = message.new_draft(draft, related, msgid)
+    params = message.sending(msg)
 
     login, pwd = gmail.data_credentials.get()
     con = smtplib.SMTP('smtp.gmail.com', 587)
