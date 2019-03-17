@@ -13,8 +13,7 @@ from bottle import Bottle, HTTPError, abort, request, response, template
 from itsdangerous import BadData, BadSignature, URLSafeSerializer
 from pytz import common_timezones, timezone, utc
 
-from . import LockError, conf, html, imap, json, local, log, message, user_lock
-from .schema import validate
+from . import conf, html, imap, json, local, lock, log, message, schema
 
 root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
@@ -84,6 +83,9 @@ def jsonify(fn):
         except HTTPError as e:
             response.status = e.status_code
             data = {'errors': [e.body]}
+        except schema.Error as e:
+            response.status = 400
+            data = {'errors': e.errors, 'schema': e.schema}
         except Exception as e:
             log.exception(e)
             response.status = 500
@@ -134,7 +136,7 @@ def login_html(theme=None):
 @app.post('/login', skip=[auth])
 @jsonify
 def login():
-    schema = {
+    data = schema.validate(request.json, {
         'type': 'object',
         'properties': {
             'username': {'type': 'string'},
@@ -143,11 +145,7 @@ def login():
             'theme': {'type': 'string', 'default': 'base'}
         },
         'required': ['username', 'password', 'timezone']
-    }
-    errs, data = validate(request.json, schema)
-    if errs:
-        response.status = 400
-        return {'errors': errs, 'schema': schema}
+    })
 
     try:
         local.connect(data['username'], data['password'])
@@ -199,7 +197,7 @@ def nginx():
 @app.post('/tag')
 @endpoint
 def tag():
-    schema = {
+    data = schema.validate(request.json, {
         'type': 'object',
         'properties': {
             'name': {
@@ -208,11 +206,7 @@ def tag():
             },
         },
         'required': ['name']
-    }
-    errs, data = validate(request.json, schema)
-    if errs:
-        response.status = 400
-        return {'errors': errs, 'schema': schema}
+    })
     tag = local.get_tag(data['name'])
     return wrap_tags({tag['id']: tag})['info'][tag['id']]
 
@@ -220,7 +214,7 @@ def tag():
 @app.post('/tag/expunge')
 @endpoint
 def expunge_tag():
-    schema = {
+    data = schema.validate(request.json, {
         'type': 'object',
         'properties': {
             'name': {
@@ -229,11 +223,7 @@ def expunge_tag():
             },
         },
         'required': ['name']
-    }
-    errs, data = validate(request.json, schema)
-    if errs:
-        response.status = 400
-        return {'errors': errs, 'schema': schema}
+    })
     local.msgs_expunge(data['name'])
 
 
@@ -252,7 +242,7 @@ def filters():
             abort(400, e.args[0].decode())
         local.sync_flags_to_all()
 
-    schema = {
+    data = schema.validate(request.json, {
         'type': 'object',
         'properties': {
             'action': {'type': 'string', 'enum': ['save', 'run']},
@@ -261,12 +251,7 @@ def filters():
             'query': {'type': 'string'},
         },
         'required': ['action', 'name', 'body', 'query']
-    }
-    errs, data = validate(request.json, schema)
-    if errs:
-        response.status = 400
-        return {'errors': errs, 'schema': schema}
-
+    })
     if data['action'] == 'save':
         run()
         local.data_filters({data['name']: data['body']})
@@ -370,7 +355,7 @@ def thrs_unlink():
 @app.post('/msgs/flag')
 @endpoint
 def msgs_flag():
-    schema = {
+    data = schema.validate(request.json, {
         'type': 'object',
         'properties': {
             'uids': {'type': 'array'},
@@ -378,11 +363,7 @@ def msgs_flag():
             'new': {'type': 'array', 'default': []}
         },
         'required': ['uids']
-    }
-    errs, data = validate(request.json, schema)
-    if errs:
-        response.status = 400
-        return {'errors': errs, 'schema': schema}
+    })
     local.msgs_flag(**data)
 
 
@@ -390,7 +371,7 @@ def msgs_flag():
 @endpoint
 def editor():
     draft_id = request.forms['draft_id']
-    with user_lock('editor:%s' % draft_id, wait=5):
+    with lock.user_scope('editor:%s' % draft_id, wait=5):
         if request.forms.get('delete'):
             local.data_drafts({draft_id: None})
             uids = local.data_msgids.key(draft_id)
@@ -465,18 +446,14 @@ def send(draft_id):
     from . import gmail
 
     draft, related = compose(draft_id)
-    schema = {
+    schema.validate(draft, {
         'type': 'object',
         'properties': {
             'from': {'type': 'string', 'format': 'email'},
             'to': {'type': 'string', 'format': 'email'},
         },
         'required': ['from', 'to']
-    }
-    errs, data = validate(draft, schema)
-    if errs:
-        response.status = 400
-        return {'errors': errs, 'schema': schema}
+    })
 
     # TODO: send emails over gmail for now
     msgid = message.gen_msgid()
@@ -492,7 +469,7 @@ def send(draft_id):
     try:
         gmail.fetch_folder()
         local.parse()
-    except LockError as e:
+    except lock.Error as e:
         log.warn(e)
         time.sleep(5)
 

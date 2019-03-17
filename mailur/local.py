@@ -7,7 +7,7 @@ import textwrap
 
 from gevent import joinall, socket, spawn
 
-from . import cache, conf, fn_time, html, imap, json, log, message, user_lock
+from . import cache, conf, fn_time, html, imap, json, lock, log, message
 
 SRC = 'mlr'
 ALL = 'mlr/All'
@@ -85,7 +85,7 @@ def metadata(name, default):
     cache_key = 'metadata:%s' % name
 
     @using(SYS, name='_con')
-    @user_lock(name)
+    @lock.user_scope(name)
     def inner(*a, **kw):
         con = kw.pop('_con')
         val = inner.fn(*a, **kw)
@@ -133,7 +133,7 @@ def metadata(name, default):
 
 
 def metakey(metavalue, name, default=None):
-    @user_lock('%s:%s' % (metavalue.__name__, name))
+    @lock.user_scope('%s:%s' % (metavalue.__name__, name))
     def inner(*a, **kw):
         val = inner.fn(*a, **kw)
         metavalue({name: val})
@@ -418,7 +418,7 @@ def clean_msgs(uids):
 @fn_time
 @using(parent=True)
 @using(SYS, name=None, parent=True)
-@user_lock('update_metadata')
+@lock.user_scope('update_metadata')
 def update_metadata(uids=None, clean=False, con=None):
     if clean:
         clean_msgs(uids)
@@ -503,7 +503,7 @@ def pair_parsed_uids(uids, msgs=None):
 @fn_time
 @using(parent=True)
 @using(SYS, name=None, parent=True)
-@user_lock('link_threads')
+@lock.user_scope('link_threads')
 def link_threads(uids, unlink=False, con=None):
     thrids, thrs = data_threads.get()
     all_uids = set(sum((thrs[thrids[uid]] for uid in uids), []))
@@ -544,7 +544,7 @@ def parse_msgs(uids, con=None):
 
 
 @fn_time
-@user_lock('parse')
+@lock.user_scope('parse')
 @using(None)
 def parse(criteria=None, con=None, **opts):
     uidnext = 1
@@ -604,7 +604,7 @@ def data_threads(thrids, thrs):
 
 @using()
 @using(SYS, name=None, parent=True)
-@user_lock('update_threads')
+@lock.user_scope('update_threads')
 def update_threads(uids, thrids=None, thrs=None, con=None):
     if thrids is None:
         thrids, thrs = data_threads.get()

@@ -5,7 +5,7 @@ import re
 
 from gevent import socket, ssl
 
-from . import fn_time, imap, imap_utf7, local, log, user_lock
+from . import fn_time, imap, imap_utf7, local, lock, log
 
 MAP_FLAGS = {
     '\\Answered': '\\Answered',
@@ -191,7 +191,7 @@ def fetch_uids(uids, tag, box, con=None):
 
 
 @fn_time
-@user_lock('gmail-fetch')
+@lock.user_scope('gmail-fetch')
 def fetch_folder(tag='\\All', *, box=None, **opts):
     uidvalidity, uidnext = data_uidnext.key(tag, (None, None))
     log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)

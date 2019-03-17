@@ -27,7 +27,7 @@ import time
 from docopt import docopt
 from gevent import joinall, sleep, spawn
 
-from . import LockError, conf, gmail, imap, local, log
+from . import conf, gmail, imap, local, lock, log
 
 root = pathlib.Path(__file__).resolve().parent.parent
 
@@ -106,7 +106,7 @@ def sync(timeout=1200):
             try:
                 gmail.fetch()
                 local.parse()
-            except LockError as e:
+            except lock.Error as e:
                 log.warn(e)
 
         try:

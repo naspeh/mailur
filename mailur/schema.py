@@ -19,9 +19,18 @@ def fill_defaults(validator_class):
 Draft4WithDefaults = fill_defaults(Draft4Validator)
 
 
+class Error(Exception):
+    def __init__(self, errors, schema):
+        self.schema = schema
+        self.errors = errors
+        super().__init__(errors, schema)
+
+
 def validate(value, schema):
     """Collect all errors during validation"""
     validator = Draft4WithDefaults(schema, format_checker=FormatChecker())
     errs = sorted(validator.iter_errors(value), key=lambda e: e.path)
     errs = ['%s: %s' % (list(e.schema_path), e.message) for e in errs]
-    return errs, value
+    if errs:
+        raise Error(errs, schema)
+    return value
