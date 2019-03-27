@@ -78,12 +78,9 @@ namespace mlr {
 }
 namespace {
     inbox = yes
-    prefix =
+    prefix = tags/
     separator = /
-    location = virtual:%h
-    mailbox {
-        auto = create
-    }
+    location = virtual:%h/tags
     mailbox Trash {
         auto = subscribe
         special_use = \Trash

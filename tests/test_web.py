@@ -1174,11 +1174,11 @@ To: =?utf-8?b?0JHQtdGC0LA=?= <b@t.com>,\r
  =?utf-8?b?b29vb29vb29vb29vb29vb29vbmc=?= <c@t.com>\r
 '''), body
 
-    msgid = '2@mailur.sent'
-    gm_client.add_emails([{'mid': msgid, 'labels': '\\Sent'}], fetch=False)
-    with patch('mailur.message.gen_msgid') as gen_msgid:
-        gen_msgid.return_value = msgid
-        res = web.get('/send/%s' % draft_id, status=200).json
+    gm_client.add_emails(
+        [{'draft_id': draft_id, 'labels': '\\Sent'}],
+        fetch=False
+    )
+    res = web.get('/send/%s' % draft_id, status=200).json
     assert res == {'query': 'thread:7'}
 
     with patch('mailur.local.new_msg') as m:
@@ -1262,11 +1262,11 @@ def test_drafts_sending(gm_client, login, sendmail, patch, some, latest):
     }
     assert local.data_drafts.get() == {draft_id: some}
 
-    msgid = '1@mailur.sent'
-    gm_client.add_emails([{'mid': msgid, 'labels': '\\Sent'}], fetch=False)
-    with patch('mailur.message.gen_msgid') as gen_msgid:
-        gen_msgid.return_value = msgid
-        res = web.get(url_send, status=200).json
+    gm_client.add_emails(
+        [{'draft_id': draft_id, 'labels': '\\Sent'}],
+        fetch=False
+    )
+    res = web.get(url_send, status=200).json
     assert res == {'query': 'thread:3'}
     assert sendmail.call_args[0][:2] == (['a@t.com'], ['b@t.com', 'c@t.com'])
     body = sendmail.call_args[0][2].decode()
@@ -1276,7 +1276,7 @@ def test_drafts_sending(gm_client, login, sendmail, patch, some, latest):
         'To: B <b@t.com>,C <c@t.com>\r',
         some,
         'X-Draft-ID: %s' % draft_id,
-        'Message-ID: 1@mailur.sent',
+        some,
         some,
         'References: <101@mlr>',
         '',

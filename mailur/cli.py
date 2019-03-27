@@ -89,13 +89,15 @@ def process(args):
         raise SystemExit('Target not defined:\n%s' % args)
 
 
-def retry(fn):
+def run_forever(fn):
+    # but if it always raises exception, run only 3 times
+
     @ft.wraps(fn)
     def inner(*a, **kw):
         count = 3
         while count:
             try:
-                return fn(*a, **kw)
+                fn(*a, **kw)
             except Exception as e:
                 log.exception(e)
                 sleep(10)
@@ -112,12 +114,12 @@ def sync(timeout=1200):
         except lock.Error as e:
             log.warn(e)
 
-    @retry
+    @run_forever
     def idle_remote(params):
         with remote.client(**params) as c:
             c.idle(sync_remote, timeout=timeout)
 
-    @retry
+    @run_forever
     def sync_flags():
         imap.clean_pool()
         local.sync_flags_to_all()

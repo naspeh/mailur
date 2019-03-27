@@ -120,6 +120,19 @@ def test_cli_idle2(gm_client, msgs, login, patch):
     assert len(msgs(local.SRC)) == 4
     assert len(msgs()) == 4
 
+    gm_client.list = []
+    xlist = [('OK', [b'(\\HasNoChildren) "/" INBOX'])] * 10
+    with patch.object(gm_client, 'list', xlist):
+        spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
+        sleep(2)
+
+        gm_client.add_emails([{'flags': '#inbox'}], fetch=False, parse=False)
+        gm_client.fetch = [gm_client.fetch[0]]
+        sleep(2)
+        assert len(msgs(local.SRC)) == 5
+        assert len(msgs()) == 5
+        assert len(msgs('INBOX')) == 1
+
 
 def test_cli_all_flags(gm_client, msgs, login):
     gm_client.add_emails([{}] * 5)

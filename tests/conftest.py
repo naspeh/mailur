@@ -34,7 +34,7 @@ def init(request):
 
     users_str = ' '.join(sum(users, []))
     subprocess.call('''
-    path=/tmp/vmail
+    path=/home/vmail/test
     rm -rf $path
     mkdir -p $path
     chown vmail:vmail $path
@@ -163,11 +163,10 @@ def gm_fake():
         if responces:
             return responces.pop()
         return 'OK', [
-            b'(\\HasNoChildren \\All) "/" mlr/All',
-            b'(\\HasNoChildren) "/" mlr',
-            b'(\\HasNoChildren \\Junk) "/" mlr',
-            b'(\\HasNoChildren \\Trash) "/" mlr',
-            b'(\\HasNoChildren \\Draft) "/" mlr',
+            b'(\\HasNoChildren \\All) "/" mlr',
+            b'(\\HasNoChildren \\Junk) "/" mlr/All',
+            b'(\\HasNoChildren \\Trash) "/" mlr/All',
+            b'(\\HasNoChildren \\Draft) "/" mlr/All',
         ]
 
     con = local.connect(*local.master_login(username=test2))
@@ -212,6 +211,10 @@ def gm_client():
                 mid = '<%s@mlr>' % uid
             msg.add_header('Message-ID', mid)
 
+            draft_id = item.get('draft_id')
+            if draft_id:
+                msg.add_header('X-Draft-ID', '<%s>' % draft_id)
+
             in_reply_to = item.get('in_reply_to')
             if in_reply_to:
                 msg.add_header('In-Reply-To', in_reply_to)
@@ -227,14 +230,16 @@ def gm_client():
 
             msg = msg.as_bytes()
 
+        folder = local.SRC if tag == '\\All' else local.ALL
+        res = con_gmail.append(folder, item.get('flags'), None, msg)
+        if res[0] != 'OK':
+            raise Exception(res)
+
         arrived = dt.datetime.fromtimestamp(date)
         arrived = arrived.strftime('%d-%b-%Y %H:%M:%S %z').encode()
         flags = item.get('flags', '').encode()
         labels = item.get('labels', '').encode()
-        folder = local.ALL if tag == '\\All' else local.SRC
-        res = con_gmail.append(folder, None, None, msg)
-        if res[0] != 'OK':
-            raise Exception(res)
+
         gm_client.fetch[1][1].append(
             (b'1 (X-GM-MSGID %d UID %d )' % (gid, uid))
         )

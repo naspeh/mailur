@@ -7,7 +7,7 @@ if [ -z "${home:-}" ]; then
     home=$(doveadm user -u $user -f home)
 fi
 
-path=$home
+path=$home/tags
 mkdir -p $path/{INBOX,All,Pinned,Trash,Spam}
 cat <<"EOF" > $path/INBOX/dovecot-virtual
 mlr

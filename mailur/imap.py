@@ -72,8 +72,9 @@ def clean_pool(user=None):
     for key in list(pool.keys()):
         if key[0] != user:
             continue
-        con = pool.pop(key)
-        con.logout()
+        con = pool.pop(key, None)
+        if con:
+            con.logout()
 
 
 def cmd_locked(func):

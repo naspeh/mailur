@@ -313,6 +313,9 @@ def parsed(raw, uid, time, flags):
     msg.add_header('Subject', meta['subject'])
     msg.add_header('Date', orig['Date'])
 
+    if orig['X-Draft-ID']:
+        msg.add_header('X-Draft-ID', orig['X-Draft-ID'])
+
     for n, v in headers.items():
         msg.add_header(n, v)
 

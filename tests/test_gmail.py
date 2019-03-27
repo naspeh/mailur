@@ -6,7 +6,7 @@ from mailur import local, remote
 def test_client(some, patch, call):
     with patch('mailur.imap.select') as m:
         con = remote.client(tag='\\All')
-        assert m.call_args == call(some, b'mlr/All', True)
+        assert m.call_args == call(some, b'mlr', True)
 
         assert set(con.__dict__.keys()) == set(
             '_con parent logout list select select_tag status search '
@@ -15,13 +15,13 @@ def test_client(some, patch, call):
         )
 
         con.select_tag('\\Junk')
-        assert m.call_args == call(some, b'mlr', True)
+        assert m.call_args == call(some, b'mlr/All', True)
 
         con.select_tag('\\Trash')
-        assert m.call_args == call(some, b'mlr', True)
+        assert m.call_args == call(some, b'mlr/All', True)
 
         con.select_tag('\\Draft')
-        assert m.call_args == call(some, b'mlr', True)
+        assert m.call_args == call(some, b'mlr/All', True)
 
     with patch('mailur.imap.fn_time') as m:
         con.list()
@@ -59,7 +59,7 @@ def test_account(gm_client):
     gm_client.list = [('OK', [
         b'(\\HasNoChildren) "/" INBOX',
     ])]
-    assert remote.get_folders() == [{'box': 'INBOX'}]
+    assert remote.get_folders() == [{'box': 'INBOX', 'tag': '\\Inbox'}]
 
 
 def test_fetch_and_parse(gm_client, some, raises):

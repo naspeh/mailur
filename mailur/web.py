@@ -460,7 +460,7 @@ def send(draft_id):
         log.warn(e)
         time.sleep(5)
 
-    uids = local.search_msgs('HEADER Message-ID %s KEYWORD #sent' % msgid)
+    uids = local.search_msgs('HEADER X-Draft-ID %s KEYWORD #sent' % draft_id)
     if uids:
         local.data_drafts({draft_id: None})
         local.del_msg(draft['uid'])

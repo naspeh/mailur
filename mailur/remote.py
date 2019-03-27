@@ -75,6 +75,12 @@ def client(tag=None, box=None):
 
 @local.using(local.SRC)
 def fetch_imap(uids, box, tag=None, con=None):
+    map_tags = {
+        '\\Inbox': '#inbox',
+        '\\Junk': '#spam',
+        '\\Trash': '#trash',
+        '\\Sent': '#sent',
+    }
     exists = {}
     res = con.fetch('1:*', 'BODY.PEEK[HEADER.FIELDS (X-SHA256)]')
     for i in range(0, len(res), 2):
@@ -87,7 +93,7 @@ def fetch_imap(uids, box, tag=None, con=None):
 
     def msgs(con):
         account = data_account.get()
-        res = con.fetch(uids, '(INTERNALDATE FLAGS BODY.PEEK[])')
+        res = con.fetch(uids, '(UID INTERNALDATE FLAGS BODY.PEEK[])')
         for i in range(0, len(res), 2):
             line, raw = res[i]
             hash = hashlib.sha256(raw).hexdigest()
@@ -104,6 +110,10 @@ def fetch_imap(uids, box, tag=None, con=None):
                 line.decode()
             ).groupdict()
 
+            flags = parts['flags']
+            if tag and tag in map_tags:
+                flags = ' '.join([flags, map_tags[tag]])
+
             headers = [
                 'X-SHA256: <%s>' % hash,
                 'X-Remote-Host: <%s>' % account['imap_host'],
@@ -115,9 +125,9 @@ def fetch_imap(uids, box, tag=None, con=None):
             headers = '\r\n'.join(headers)
 
             raw = headers.encode() + raw
-            yield parts['time'], parts['flags'], raw
+            yield parts['time'], flags, raw
 
-    with client(box=box) as c:
+    with client(box=box, tag=tag) as c:
         msgs = list(msgs(c))
     if not msgs:
         return None
@@ -312,7 +322,7 @@ def get_folders():
             if c.select_tag('\\All', exc=False):
                 items = [{'tag': '\\All'}]
             else:
-                items = [{'box': 'INBOX'}]
+                items = [{'box': 'INBOX', 'tag': '\\Inbox'}]
                 if c.select_tag('\\Sent', exc=False):
                     items.append({'tag': '\\Sent'})
         return items
