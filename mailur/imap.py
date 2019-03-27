@@ -398,7 +398,7 @@ def select(con, box, readonly=True):
 
 
 @command(lock=False)
-def select_tag(con, tag, readonly=True):
+def select_tag(con, tag, readonly=True, exc=True):
     if isinstance(tag, str):
         tag = tag.encode()
     folder = None
@@ -409,7 +409,9 @@ def select_tag(con, tag, readonly=True):
         folder = f.rsplit(b' "/" ', 1)[1]
         break
     if folder is None:
-        raise ValueError('No folder with tag: %s\n%s' % (tag, folders))
+        if exc:
+            raise Error('No folder with tag: %s\n%s' % (tag, folders))
+        return None
     return select(con, folder, readonly)
 
 

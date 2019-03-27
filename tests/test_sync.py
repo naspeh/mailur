@@ -1,6 +1,6 @@
 from gevent import sleep, spawn
 
-from mailur import cli, local
+from mailur import cli, local, remote
 
 
 def test_local(gm_client, msgs):
@@ -80,10 +80,8 @@ def test_local(gm_client, msgs):
 
 
 def test_cli_idle(gm_client, msgs, login, patch):
-    with patch('mailur.gmail.data_credentials') as m:
-        m.get.return_value = login.user2, 'user'
-        spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
-        sleep(2)
+    spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
+    sleep(2)
 
     gm_client.add_emails([{}] * 4, fetch=False, parse=False)
     sleep(2)
@@ -102,6 +100,25 @@ def test_cli_idle(gm_client, msgs, login, patch):
     sleep(2)
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1'] * 5
     assert [i['flags'] for i in msgs()] == ['#1'] * 5
+
+
+def test_cli_idle2(gm_client, msgs, login, patch):
+    remote.data_account({
+        'username': 'test@test.com',
+        'password': 'test',
+        'imap_host': 'imap.test.com',
+        'smtp_host': 'smtp.test.com'
+    })
+    assert remote.get_folders() == [{'tag': '\\All'}]
+
+    spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
+    sleep(2)
+
+    gm_client.add_emails([{}] * 4, fetch=False, parse=False)
+    gm_client.fetch = [gm_client.fetch[0]]
+    sleep(2)
+    assert len(msgs(local.SRC)) == 4
+    assert len(msgs()) == 4
 
 
 def test_cli_all_flags(gm_client, msgs, login):

@@ -1,8 +1,8 @@
 """Mailur CLI
 
 Usage:
-  mlr gmail <login> set <username> <password>
-  mlr gmail <login> [--tag=<tag> --box=<box> --parse] [options]
+  mlr remote <login> set <username> <password> --imap=<host> --smtp=<host>
+  mlr remote <login> [--tag=<tag> --box=<box> --parse] [options]
   mlr parse <login> [<criteria>] [options]
   mlr metadata <login> [<uids>]
   mlr sync <login> [--timeout=<timeout>]
@@ -27,7 +27,7 @@ import time
 from docopt import docopt
 from gevent import joinall, sleep, spawn
 
-from . import conf, gmail, imap, local, lock, log
+from . import conf, imap, local, lock, log, remote
 
 root = pathlib.Path(__file__).resolve().parent.parent
 
@@ -48,14 +48,19 @@ def process(args):
         'batch': int(args.get('-b')),
         'threads': int(args.get('-t')),
     }
-    if args['gmail'] and args['set']:
-        gmail.data_credentials(args['<username>'], args['<password>'])
-    elif args['gmail']:
+    if args['remote'] and args['set']:
+        remote.data_account({
+            'username': args['<username>'],
+            'password': args['<password>'],
+            'imap_host': args['--imap'],
+            'smtp_host': args['--smtp'],
+        })
+    elif args['remote']:
         select_opts = dict(tag=args['--tag'], box=args['--box'])
         fetch_opts = dict(opts, **select_opts)
         fetch_opts = {k: v for k, v in fetch_opts.items() if v}
 
-        gmail.fetch(**fetch_opts)
+        remote.fetch(**fetch_opts)
         if args['--parse']:
             local.parse(**opts)
     elif args['parse']:
@@ -90,7 +95,7 @@ def retry(fn):
         count = 3
         while count:
             try:
-                fn(*a, **kw)
+                return fn(*a, **kw)
             except Exception as e:
                 log.exception(e)
                 sleep(10)
@@ -99,34 +104,30 @@ def retry(fn):
 
 
 def sync(timeout=1200):
-    @retry
-    def remote():
-        def handler(res=None):
-            imap.clean_pool()
-            try:
-                gmail.fetch()
-                local.parse()
-            except lock.Error as e:
-                log.warn(e)
-
+    def sync_remote(res=None):
+        imap.clean_pool()
         try:
-            gmail.data_credentials.get()
-        except ValueError as e:
-            log.info('## %s' % e)
-            return
-
-        handler()
-        with gmail.client(tag='\\All') as con:
-            con.idle(handler, timeout=timeout)
+            remote.fetch()
+            local.parse()
+        except lock.Error as e:
+            log.warn(e)
 
     @retry
-    def flags():
+    def idle_remote(params):
+        with remote.client(**params) as c:
+            c.idle(sync_remote, timeout=timeout)
+
+    @retry
+    def sync_flags():
         imap.clean_pool()
         local.sync_flags_to_all()
         local.sync_flags(timeout=timeout)
 
     try:
-        jobs = [spawn(remote), spawn(flags)]
+        sync_remote()
+        jobs = [spawn(sync_flags)]
+        for params in remote.get_folders():
+            jobs.append(spawn(idle_remote, params))
         joinall(jobs, raise_error=True)
     except KeyboardInterrupt:
         time.sleep(1)

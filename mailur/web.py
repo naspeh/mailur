@@ -443,7 +443,7 @@ def reply(uid=None):
 @app.get('/send/<draft_id>', name='send')
 @jsonify
 def send(draft_id):
-    from . import gmail
+    from . import remote
 
     draft, related = compose(draft_id)
     schema.validate(draft, {
@@ -455,19 +455,18 @@ def send(draft_id):
         'required': ['from', 'to']
     })
 
-    # TODO: send emails over gmail for now
     msgid = message.gen_msgid()
     msg = message.new_draft(draft, related, msgid)
     params = message.sending(msg)
 
-    login, pwd = gmail.data_credentials.get()
-    con = smtplib.SMTP('smtp.gmail.com', 587)
+    account = remote.data_account.get()
+    con = smtplib.SMTP(account['smtp_host'], account['smtp_port'])
     con.ehlo()
     con.starttls()
-    con.login(login, pwd)
+    con.login(account['username'], account['password'])
     con.sendmail(*params)
     try:
-        gmail.fetch_folder()
+        remote.fetch()
         local.parse()
     except lock.Error as e:
         log.warn(e)

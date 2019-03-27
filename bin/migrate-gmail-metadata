@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+import os
+
+from mailur import conf, imap, local, remote
+
+
+for user in os.environ['user'].split():
+    conf['USER'] = user
+    settings = local.data_settings.get()
+    if 'gmail/credentials' not in settings:
+        continue
+
+    username, password = settings['gmail/credentials']
+    remote.data_account({
+        'username': username,
+        'password': password,
+        'imap_host': 'imap.gmail.com',
+        'smtp_host': 'smtp.gmail.com',
+    })
+
+    uidnext = {}
+    for tag, val in settings['gmail/uidnext'].items():
+        key = ('imap.gmail.com', username, tag)
+        uidnext[':'.join(key)] = val
+    local.data_settings({'remote/uidnext': uidnext})

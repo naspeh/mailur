@@ -14,7 +14,7 @@ def test_general(gm_client, login, msgs, patch, call):
     assert [i['uid'] for i in msgs(local.SRC)] == []
     assert [i['uid'] for i in msgs()] == []
 
-    cli.main('gmail %s --parse' % login.user1)
+    cli.main('remote %s --parse' % login.user1)
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['1', '2']
 
@@ -24,33 +24,34 @@ def test_general(gm_client, login, msgs, patch, call):
 
     cli.main('metadata %s' % login.user1)
 
-    with patch('mailur.cli.gmail.fetch_folder') as m:
-        cli.main('gmail %s' % login.user1)
+    with patch('mailur.cli.remote.fetch_folder') as m:
+        cli.main('remote %s' % login.user1)
+        opts = {'batch': 1000, 'threads': 2}
         assert m.call_args_list == [
-            call(batch=1000, threads=2),
-            call('\\Junk', batch=1000, threads=2),
-            call('\\Trash', batch=1000, threads=2),
+            call(tag='\\All', **opts),
+            call(tag='\\Junk', **opts),
+            call(tag='\\Trash', **opts),
         ]
 
         m.reset_mock()
-        cli.main('gmail %s --tag=\\All' % login.user1)
-        assert m.call_args_list == [call(batch=1000, tag='\\All', threads=2)]
+        cli.main('remote %s --tag=\\All' % login.user1)
+        assert m.call_args_list == [call(tag='\\All', **opts)]
 
         m.reset_mock()
-        cli.main('gmail %s --box=All' % login.user1)
-        assert m.call_args_list == [call(batch=1000, box='All', threads=2)]
+        cli.main('remote %s --box=All' % login.user1)
+        assert m.call_args_list == [call(box='All', **opts)]
 
 
 def test_fetch_and_parse(gm_client, login, msgs, patch, raises):
     stdout = check_output('mlr parse %s' % login.user1, shell=True)
     assert b'## all parsed already' in stdout
 
-    cli.main('gmail %s' % login.user1)
+    cli.main('remote %s' % login.user1)
     assert len(msgs(local.SRC)) == 0
     assert len(msgs()) == 0
 
     gm_client.add_emails([{}], fetch=False, parse=False)
-    cli.main('gmail %s' % login.user1)
+    cli.main('remote %s' % login.user1)
     assert len(msgs(local.SRC)) == 1
     assert len(msgs()) == 0
 
@@ -59,7 +60,7 @@ def test_fetch_and_parse(gm_client, login, msgs, patch, raises):
     assert len(msgs()) == 1
 
     gm_client.add_emails([{}], fetch=False, parse=False)
-    cli.main('gmail %s --parse' % login.user1)
+    cli.main('remote %s --parse' % login.user1)
     assert len(msgs(local.SRC)) == 2
     assert len(msgs()) == 2
 
@@ -69,8 +70,8 @@ def test_fetch_and_parse(gm_client, login, msgs, patch, raises):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['3', '4']
 
-    with patch('mailur.gmail.fetch') as m, raises(SystemExit):
+    with patch('mailur.remote.fetch') as m, raises(SystemExit):
         m.side_effect = SystemExit
-        cli.main('gmail %s --parse' % login.user1)
+        cli.main('remote %s --parse' % login.user1)
     assert len(msgs(local.SRC)) == 2
     assert len(msgs()) == 2

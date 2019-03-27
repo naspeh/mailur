@@ -57,7 +57,7 @@ def init(request):
 
 @pytest.fixture(autouse=True)
 def setup(new_users, gm_client, patch):
-    from mailur import imap, local
+    from mailur import imap, local, remote
 
     global con_local, con_gmail
 
@@ -65,6 +65,13 @@ def setup(new_users, gm_client, patch):
     with patch.dict('mailur.conf', conf):
         con_local = local.client(None)
         con_gmail = local.connect(*local.master_login(username=test2))
+
+        remote.data_account({
+            'username': 'test',
+            'password': 'test',
+            'imap_host': 'imap.gmail.com',
+            'smtp_host': 'smtp.gmail.com',
+        })
 
         yield
 
@@ -167,9 +174,9 @@ def gm_fake():
 
 @pytest.fixture
 def gm_client():
-    from mailur import local, gmail, message
+    from mailur import local, remote, message
 
-    gmail.SKIP_DRAFTS = False
+    remote.SKIP_DRAFTS = False
 
     def add_email(item, tag):
         gm_client.uid += 1
@@ -242,7 +249,7 @@ def gm_client():
         for item in items:
             add_email(item, tag)
         if fetch:
-            gmail.fetch_folder(tag)
+            remote.fetch_folder(tag=tag)
         if parse:
             local.parse()
 
@@ -250,7 +257,7 @@ def gm_client():
     gm_client.uid = 100
     gm_client.time = time.time() - 36000
 
-    with mock.patch('mailur.gmail.connect', gm_fake):
+    with mock.patch('mailur.remote.connect', gm_fake):
         yield gm_client
 
 

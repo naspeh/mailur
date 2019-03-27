@@ -949,10 +949,8 @@ def test_drafts_part1(gm_client, login, patch, some):
         'url_send': '/send/<103@mlr>',
     }
 
-    with patch('mailur.gmail.data_credentials') as c:
-        c.get.return_value = ('test', 'test')
-        with patch('mailur.web.smtplib.SMTP'):
-            res = web.get(res['edit']['url_send'], status=400).json
+    with patch('mailur.web.smtplib.SMTP'):
+        res = web.get(res['edit']['url_send'], status=400).json
     assert res == {'schema': some, 'errors': [
         "['properties', 'from', 'format']: '' is not a 'email'",
         "['properties', 'to', 'format']: '' is not a 'email'"
@@ -1161,14 +1159,12 @@ def test_drafts_part2(gm_client, login, msgs, latest, patch, some):
         },
     }
 
-    with patch('mailur.gmail.data_credentials') as c:
-        c.get.return_value = ('test', 'test')
-        msgid = '1@mailur.sent'
-        with patch('mailur.message.gen_msgid') as gen_msgid:
-            gen_msgid.return_value = msgid
-            with patch('mailur.web.smtplib.SMTP.sendmail') as m:
-                with patch('mailur.web.smtplib.SMTP.login'):
-                    res = web.get('/send/%s' % draft_id, status=200).json
+    msgid = '1@mailur.sent'
+    with patch('mailur.message.gen_msgid') as gen_msgid:
+        gen_msgid.return_value = msgid
+        with patch('mailur.web.smtplib.SMTP.sendmail') as m:
+            with patch('mailur.web.smtplib.SMTP.login'):
+                res = web.get('/send/%s' % draft_id, status=200).json
     assert res == {'query': ':threads mid:%s' % msgid}
     assert m.call_args[0][:2] == (['a@t.com'], ['b@t.com', 'c@t.com'])
     body = m.call_args[0][2].decode()
@@ -1181,15 +1177,13 @@ To: =?utf-8?b?0JHQtdGC0LA=?= <b@t.com>,\r
  =?utf-8?b?b29vb29vb29vb29vb29vb29vbmc=?= <c@t.com>\r
 '''), body
 
-    with patch('mailur.gmail.data_credentials') as c:
-        c.get.return_value = ('test', 'test')
-        msgid = '2@mailur.sent'
-        gm_client.add_emails([{'mid': msgid, 'labels': '\\Sent'}])
-        with patch('mailur.message.gen_msgid') as gen_msgid:
-            gen_msgid.return_value = msgid
-            with patch('mailur.web.smtplib.SMTP.sendmail') as m:
-                with patch('mailur.web.smtplib.SMTP.login'):
-                    res = web.get('/send/%s' % draft_id, status=200).json
+    msgid = '2@mailur.sent'
+    gm_client.add_emails([{'mid': msgid, 'labels': '\\Sent'}], fetch=False)
+    with patch('mailur.message.gen_msgid') as gen_msgid:
+        gen_msgid.return_value = msgid
+        with patch('mailur.web.smtplib.SMTP.sendmail') as m:
+            with patch('mailur.web.smtplib.SMTP.login'):
+                res = web.get('/send/%s' % draft_id, status=200).json
     assert res == {'query': 'thread:7'}
 
     with patch('mailur.local.new_msg') as m:
@@ -1273,15 +1267,13 @@ def test_drafts_sending(gm_client, login, patch, some, latest):
     }
     assert local.data_drafts.get() == {draft_id: some}
 
-    with patch('mailur.gmail.data_credentials') as c:
-        c.get.return_value = ('test', 'test')
-        msgid = '1@mailur.sent'
-        gm_client.add_emails([{'mid': msgid, 'labels': '\\Sent'}])
-        with patch('mailur.message.gen_msgid') as gen_msgid:
-            gen_msgid.return_value = msgid
-            with patch('mailur.web.smtplib.SMTP.sendmail') as m:
-                with patch('mailur.web.smtplib.SMTP.login'):
-                    res = web.get(url_send, status=200).json
+    msgid = '1@mailur.sent'
+    gm_client.add_emails([{'mid': msgid, 'labels': '\\Sent'}], fetch=False)
+    with patch('mailur.message.gen_msgid') as gen_msgid:
+        gen_msgid.return_value = msgid
+        with patch('mailur.web.smtplib.SMTP.sendmail') as m:
+            with patch('mailur.web.smtplib.SMTP.login'):
+                res = web.get(url_send, status=200).json
     assert res == {'query': 'thread:3'}
     assert m.call_args[0][:2] == (['a@t.com'], ['b@t.com', 'c@t.com'])
     body = m.call_args[0][2].decode()
@@ -1338,10 +1330,8 @@ def test_drafts_autocomplete(gm_client, login, patch, latest):
     m = latest(local.SRC)
     assert m['uid'] == '2'
     assert m['body']['To'] == '"B" <b@t.com>,'
-    with patch('mailur.gmail.data_credentials') as c:
-        c.get.return_value = ('test', 'test')
-        with patch('mailur.web.smtplib.SMTP'):
-            res = web.get(url_send, status=200).json
+    with patch('mailur.web.smtplib.SMTP'):
+        res = web.get(url_send, status=200).json
 
 
 def test_addresses(some):

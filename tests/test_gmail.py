@@ -1,11 +1,11 @@
 import re
 
-from mailur import gmail, local
+from mailur import local, remote
 
 
 def test_client(some, patch, call):
     with patch('mailur.imap.select') as m:
-        con = gmail.client()
+        con = remote.client(tag='\\All')
         assert m.call_args == call(some, b'mlr/All', True)
 
         assert set(con.__dict__.keys()) == set(
@@ -28,23 +28,49 @@ def test_client(some, patch, call):
         assert m.called
 
 
-def test_credentials():
-    name, pwd = 'test', 'test'
-    gmail.data_credentials(name, pwd)
-    assert gmail.data_credentials.get() == [name, pwd]
+def test_account(gm_client):
+    params = {
+        'username': 'test',
+        'password': 'test',
+        'imap_host': 'imap.gmail.com',
+        'smtp_host': 'smtp.gmail.com'
+    }
+    remote.data_account(params.copy())
+    assert remote.data_account.get() == dict(
+        params, gmail=True, smtp_port=587, imap_port=993,
+    )
 
-    name, pwd = 'test@test.com', 'test'
-    gmail.data_credentials(name, pwd)
-    assert gmail.data_credentials.get() == [name, pwd]
+    params = {
+        'username': 'test@test.com',
+        'password': 'test',
+        'imap_host': 'imap.test.com',
+        'smtp_host': 'smtp.test.com'
+    }
+    remote.data_account(params.copy())
+    assert remote.data_account.get() == dict(
+        params, smtp_port=587, imap_port=993,
+    )
+
+    gm_client.list = [('OK', [
+        b'(\\HasNoChildren \\All) "/" mlr/All',
+    ])]
+    assert remote.get_folders() == [{'tag': '\\All'}]
+
+    gm_client.list = [('OK', [
+        b'(\\HasNoChildren) "/" INBOX',
+    ])]
+    assert remote.get_folders() == [{'box': 'INBOX'}]
 
 
 def test_fetch_and_parse(gm_client, some, raises):
     lm = local.client()
-    gmail.fetch_folder()
+    remote.fetch()
     local.parse()
 
     def gm_uidnext():
-        res = gmail.data_uidnext.key('\\All')
+        account = remote.data_account.get()
+        key = ':'.join((account['imap_host'], account['username'], '\\All'))
+        res = remote.data_uidnext.key(key)
         assert res
         return res[1]
 
@@ -66,7 +92,7 @@ def test_fetch_and_parse(gm_client, some, raises):
     assert lm.select(local.SRC) == [b'3']
     assert lm.select(local.ALL) == [b'3']
 
-    gmail.fetch_folder()
+    remote.fetch()
     local.parse('all')
     assert gm_uidnext() == 4
     assert mlr_uidnext() == 4
@@ -135,7 +161,7 @@ def test_origin_msg(gm_client, latest, login):
     assert latest(local.SRC)['flags'] == '\\Draft'
 
     gm_client.add_emails([{}], tag='\\Inbox', fetch=False, parse=False)
-    gmail.fetch(tag='\\Chats', box='mlr')
+    remote.fetch(tag='\\Chats', box='mlr')
     assert latest(local.SRC)['flags'] == '#chats'
 
 
