@@ -2,10 +2,11 @@ import email
 import hashlib
 import imaplib
 import re
+import smtplib
 
 from gevent import socket, ssl
 
-from . import fn_time, imap, imap_utf7, local, lock, log, schema
+from . import fn_time, imap, imap_utf7, local, lock, log, message, schema
 
 SKIP_DRAFTS = True
 
@@ -315,3 +316,17 @@ def get_folders():
                 if c.select_tag('\\Sent', exc=False):
                     items.append({'tag': '\\Sent'})
         return items
+
+
+def send(msg):
+    params = message.sending(msg)
+
+    account = data_account.get()
+    con = smtplib.SMTP(account['smtp_host'], account['smtp_port'])
+    con.ehlo()
+    con.starttls()
+    con.login(account['username'], account['password'])
+    con.sendmail(*params)
+
+    fetch()
+    local.parse()

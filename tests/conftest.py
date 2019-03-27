@@ -56,7 +56,7 @@ def init(request):
 
 
 @pytest.fixture(autouse=True)
-def setup(new_users, gm_client, patch):
+def setup(new_users, gm_client, sendmail, patch):
     from mailur import imap, local, remote
 
     global con_local, con_gmail
@@ -79,6 +79,13 @@ def setup(new_users, gm_client, patch):
         con_gmail.logout()
         imap.clean_pool(test1)
         imap.clean_pool(test2)
+
+
+@pytest.fixture
+def sendmail(patch):
+    with patch('mailur.remote.smtplib.SMTP.sendmail') as m:
+        with patch('mailur.remote.smtplib.SMTP.login'):
+            yield m
 
 
 @pytest.fixture

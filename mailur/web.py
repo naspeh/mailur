@@ -3,7 +3,6 @@ import datetime as dt
 import functools as ft
 import pathlib
 import re
-import smtplib
 import time
 import urllib.parse
 import urllib.request
@@ -13,7 +12,7 @@ from bottle import Bottle, HTTPError, abort, request, response, template
 from itsdangerous import BadData, BadSignature, URLSafeSerializer
 from pytz import common_timezones, timezone, utc
 
-from . import conf, html, imap, json, local, lock, log, message, schema
+from . import conf, html, imap, json, local, lock, log, message, remote, schema
 
 root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
@@ -443,8 +442,6 @@ def reply(uid=None):
 @app.get('/send/<draft_id>', name='send')
 @jsonify
 def send(draft_id):
-    from . import remote
-
     draft, related = compose(draft_id)
     schema.validate(draft, {
         'type': 'object',
@@ -457,17 +454,8 @@ def send(draft_id):
 
     msgid = message.gen_msgid()
     msg = message.new_draft(draft, related, msgid)
-    params = message.sending(msg)
-
-    account = remote.data_account.get()
-    con = smtplib.SMTP(account['smtp_host'], account['smtp_port'])
-    con.ehlo()
-    con.starttls()
-    con.login(account['username'], account['password'])
-    con.sendmail(*params)
     try:
-        remote.fetch()
-        local.parse()
+        remote.send(msg)
     except lock.Error as e:
         log.warn(e)
         time.sleep(5)
