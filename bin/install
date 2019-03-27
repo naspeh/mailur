@@ -20,8 +20,12 @@ pass={plain}demo
 # used by "bin/deploy" for nginx and certbot
 domain=example.com
 
+# used as password for dovecot master users
+# used as "doveadm_password"
 secret=$(python -c 'import uuid; print(uuid.uuid4().hex)')
 
+# used by cli/web application
+export MLR_DOMAIN=\$domain
 export MLR_SECRET=\$secret
 export MLR_MASTER=root:\$secret
 export MLR_SIEVE=sieve:\$secret
