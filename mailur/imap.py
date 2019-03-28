@@ -37,9 +37,10 @@ def using(client, box, readonly=True, name='con', reuse=True, parent=False):
             if not con.parent and box:
                 try:
                     con.select(box, readonly)
-                except con.abort:
+                except con.abort as e:
                     # probably connection is already expired
                     # try to create new one
+                    log.error(e)
                     pool[key] = client(None)
                     con = pool[key]
                     con.parent = parent_orig
@@ -272,7 +273,7 @@ def sieve(con, criteria, script):
         con.send(script)
         con.send(criteria + CRLF)
         typ, data = complete()
-        log.debug('## %s; %s', typ, data[0].decode())
+        log.debug('%s; %s', typ, data[0].decode())
         err = con.untagged_responses.pop('FILTER', None)
         if err:
             err = err[0][1]
@@ -311,7 +312,7 @@ def _multiappend(con, box, msgs):
             con.send(msg)
         con.send(CRLF)
         res = check(complete())
-        log.debug('## %s', res[0].decode())
+        log.debug('%s', res[0].decode())
         uids = con.untagged_responses.pop('APPENDUID')
         uids = uids[0].decode().split(' ', 1)[-1]
         return uids
@@ -326,7 +327,7 @@ def multiappend(con, box, msgs, *, batch=None, threads=10):
         def multiappend_inner(num, few):
             with con.new() as c:
                 res = multiappend(c, box, few)
-                log.debug('## #%s multiappend %s messages', num, len(few))
+                log.debug('#%s multiappend %s messages', num, len(few))
                 return res
 
         pool = Pool(threads)
@@ -361,7 +362,7 @@ def idle(con, handler, code='EXISTS', timeout=None):
     def inner():
         res = con._get_response()
         if res:
-            log.debug('## received: %r', res.decode())
+            log.debug('received: %r', res.decode())
         bad = con.tagged_commands[tag]
         if bad:
             raise Error(bad)
@@ -371,7 +372,7 @@ def idle(con, handler, code='EXISTS', timeout=None):
         return dat
 
     match()
-    log.info('## start idling %s...' % con)
+    log.info('start idling %s...' % con)
     with _cmd(con, 'IDLE') as (tag, start, complete):
         start(CRLF)
         while 1:
@@ -381,7 +382,7 @@ def idle(con, handler, code='EXISTS', timeout=None):
                 if res:
                     handler(res)
             except Timeout:
-                log.debug('## timeout reached: %ss', timeout)
+                log.debug('timeout reached: %ss', timeout)
                 return
 
 
@@ -390,8 +391,8 @@ def logout(con, timeout=1):
     with Timeout(timeout):
         try:
             return con.logout()
-        except con.abort:
-            pass
+        except con.abort as e:
+            log.error(e)
 
 
 @command(name='list')

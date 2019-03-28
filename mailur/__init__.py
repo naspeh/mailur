@@ -36,7 +36,8 @@ logging.config.dictConfig({
     'formatters': {'f': {
         'datefmt': '%Y-%m-%d %H:%M:%S%Z',
         'format': (
-            '[%(asctime)s][%(process)s][%(user)s][%(levelname).3s] %(message)s'
+            '[%(asctime)s][%(levelname).3s]'
+            '[%(process)s][%(user)s][%(funcName)s] %(message)s'
         ),
     }},
     'handlers': {'h': {
@@ -88,7 +89,7 @@ def fn_time(func, desc=None):
             yield
         finally:
             d = desc if desc else fn_desc(func, *a, **kw)
-            log.debug('## %s: done for %.2fs', d, time.time() - start)
+            log.debug('%s: done for %.2fs', d, time.time() - start)
 
     def inner_fn(*a, **kw):
         with timing(*a, **kw):

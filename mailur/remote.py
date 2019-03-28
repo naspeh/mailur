@@ -182,7 +182,7 @@ def fetch_gmail(uids, box, tag, con=None):
                 continue
             new_uids.append(parts['uid'])
         if not new_uids:
-            log.debug('## %s are alredy imported' % uids)
+            log.debug('%s are alredy imported' % uids)
             return
         fields = (
             '('
@@ -280,17 +280,17 @@ def fetch_folder(box=None, tag=None, **opts):
     uidnext_key = account['imap_host'], account['username'], tag or box
     uidnext_key = ':'.join(uidnext_key)
     uidvalidity, uidnext = data_uidnext.key(uidnext_key, (None, None))
-    log.info('## saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
+    log.info('saved: uidvalidity=%s uidnext=%s', uidvalidity, uidnext)
     con = client(tag=tag, box=box)
     folder = {'uidnext': con.uidnext, 'uidval': con.uidvalidity}
-    log.info('## remote: uidvalidity=%(uidval)s uidnext=%(uidnext)s', folder)
+    log.info('remote: uidvalidity=%(uidval)s uidnext=%(uidnext)s', folder)
     if folder['uidval'] != uidvalidity:
         uidvalidity = folder['uidval']
         uidnext = 1
     uids = con.search('UID %s:*' % uidnext)
     uids = [i for i in uids if int(i) >= uidnext]
     uidnext = folder['uidnext']
-    log.info('## box(%s): %s new uids', con.box, len(uids))
+    log.info('box(%s): %s new uids', con.box, len(uids))
     con.logout()
     if len(uids):
         uids = imap.Uids(uids, **opts)
@@ -312,7 +312,7 @@ def fetch(**kw):
 def get_folders():
     account = data_account.get()
     if not account:
-        log.info('## no remote account')
+        log.info('no remote account')
         return []
 
     if account.get('gmail'):

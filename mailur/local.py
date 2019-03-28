@@ -655,7 +655,7 @@ def update_threads(uids, thrids=None, thrs=None, con=None):
                 del thrs[uid]
 
     data_threads(thrids, thrs)
-    log.info('## updated %s threads', len(updated))
+    log.info('updated %s threads', len(updated))
 
 
 @fn_time
@@ -778,14 +778,14 @@ def sync_flags(con=None, timeout=None):
                 key = ('-FLAGS.SILENT', ' '.join(val))
                 actions.setdefault(key, [])
                 actions[key].append(uid)
-        log.debug('## sync: MODSEQ=%s %s', modseq_, actions)
+        log.debug('sync: MODSEQ=%s %s', modseq_, actions)
         for action, uids in actions.items():
             con_all.store(uids, *action)
 
     res = con.status(SRC, '(UIDVALIDITY HIGHESTMODSEQ)')
     pair = re.search(r'UIDVALIDITY (\d+) HIGHESTMODSEQ (\d+)', res[0].decode())
     uidval, modseq = pair.groups()
-    log.info('## %s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, uidval, modseq)
+    log.info('%s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, uidval, modseq)
     modseq = [modseq]
     con.select(SRC)
     con.idle(handler, 'FETCH', timeout=timeout)
@@ -833,7 +833,7 @@ def fetch_msg(uid, draft=False, con=None):
 @using()
 def search_msgs(query, sort='(REVERSE ARRIVAL)', con=None):
     uids = con.sort(sort, query)
-    log.debug('## query: %r; messages: %s', query, len(uids))
+    log.debug('query: %r; messages: %s', query, len(uids))
     return uids
 
 
@@ -889,7 +889,7 @@ def search_thrs(query, con=None):
         thrids, thrs = data_threads.get()
         uids = set(thrids[uid] for uid in uids)
         uids = sorted(uids, key=lambda uid: msgs[uid]['arrived'], reverse=True)
-    log.debug('## query: %r; threads: %s', query, len(uids))
+    log.debug('query: %r; threads: %s', query, len(uids))
     return uids
 
 

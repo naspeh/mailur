@@ -106,7 +106,7 @@ def parse_mime(orig, uid):
             # if decoded without errors add to potential charsets list
             charsets.append(charset)
         if not txt:
-            log.info('## UID=%s %s', uid, err)
+            log.info('UID=%s %s', uid, err)
             errors.append(err)
             txt = raw.decode(charset, 'replace')
         return txt
@@ -289,7 +289,7 @@ def parsed(raw, uid, time, flags):
 
     mid = orig['message-id']
     if mid is None:
-        log.info('## UID=%s has no "Message-ID" header', uid)
+        log.info('UID=%s has no "Message-ID" header', uid)
         mid = '<mailur@noid>'
     else:
         mid = normalize_msgid(mid)
@@ -303,7 +303,7 @@ def parsed(raw, uid, time, flags):
         date = date and int(parsedate_to_datetime(date).timestamp())
     except Exception as e:
         meta['errors'].append('error on date: val=%r err=%r' % (date, e))
-        log.error('## UID=%s can\'t parse date: val=%r err=%r', uid, date, e)
+        log.error('UID=%s can\'t parse date: val=%r err=%r', uid, date, e)
         date = None
     meta['date'] = date or meta['arrived']
 

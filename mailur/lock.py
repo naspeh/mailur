@@ -50,7 +50,7 @@ def global_scope(target, timeout=180, wait=3, force=False):
 
     if locked:
         msg = (
-            '## %r is locked (for %.2f minutes). Remove file %r to run'
+            '%r is locked (for %.2f minutes). Remove file %r to run'
             % (target, locked / 60, path)
         )
         raise Error(msg)
