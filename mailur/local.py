@@ -517,6 +517,7 @@ def link_threads(uids, unlink=False, con=None):
         links.append(sorted(link))
 
     data_links(links)
+    clean_threads(all_uids)
     update_threads(all_uids)
     return sorted(all_uids)
 
@@ -631,16 +632,6 @@ def update_threads(uids, thrids=None, thrs=None, con=None):
         all_links.append(uids)
         linked_uids.update(uids)
 
-    if thrids:
-        # clean exiting mapping
-        cleaned = set()
-        for uid in all_uids:
-            thrs.pop(uid, None)
-            thrid = thrids.pop(uid, None)
-            if thrid == uid:
-                cleaned.add(uid)
-        log.info('## cleaned %s threads', len(cleaned))
-
     updated = set()
     for uids in orig_thrs:
         uids_set = set(uids)
@@ -648,17 +639,13 @@ def update_threads(uids, thrids=None, thrs=None, con=None):
             uids = (list(l) for l in all_links if uids_set.intersection(l))
             uids = sum(uids, [])
             uids = uids + [uid for uid in uids_set if uid not in uids]
-        if len(uids) == 1:
-            thrid = uids[0]
-        else:
-            uids = sorted(uids, key=lambda i: msgs[i]['arrived'])
-            thrid = uids[-1]
 
         previous_thrids = set(thrids[i] for i in uids if thrids.get(i))
         previous_uids = (thrs[uid] for uid in previous_thrids if thrs.get(uid))
         previous_uids = sum(previous_uids, [])
         uids = set(previous_uids).union(uids)
         uids = sorted(uids, key=lambda i: msgs[i]['arrived'])
+        thrid = uids[-1]
         for uid in uids:
             thrids[uid] = thrid
             if uid == thrid:

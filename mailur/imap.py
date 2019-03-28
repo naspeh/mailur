@@ -35,7 +35,15 @@ def using(client, box, readonly=True, name='con', reuse=True, parent=False):
             con = pool[key]
             parent_orig = con.parent
             if not con.parent and box:
-                con.select(box, readonly)
+                try:
+                    con.select(box, readonly)
+                except con.abort:
+                    # probably connection is already expired
+                    # try to create new one
+                    pool[key] = client(None)
+                    con = pool[key]
+                    con.parent = parent_orig
+                    con.select(box, readonly)
                 if parent:
                     con.parent = parent
             if name:
@@ -380,7 +388,10 @@ def idle(con, handler, code='EXISTS', timeout=None):
 @command()
 def logout(con, timeout=1):
     with Timeout(timeout):
-        return con.logout()
+        try:
+            return con.logout()
+        except con.abort:
+            pass
 
 
 @command(name='list')
