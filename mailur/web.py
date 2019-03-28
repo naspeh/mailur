@@ -796,23 +796,19 @@ def compose(draft_id):
     uids = local.data_msgids.key(draft_id)
     uid = uids[0] if uids else None
 
-    if uid:
-        saved_draft, related = draft_info(uid)
-        saved_draft.update(draft)
-        return saved_draft, related
-
     addrs, _ = local.data_addresses.get()
     addr = {}
     if addrs:
         addr = sorted(addrs.values(), key=lambda i: i['time'])[-1]
-    draft.update({
-        'uid': None,
+    defaults = {
+        'draft_id': draft_id,
+        'uid': uid,
         'from': addr.get('title', ''),
         'to': '',
         'subject': '',
         'txt': '',
         'files': [],
-    })
+    }
     parent = draft.get('parent')
     forward = parent and draft.get('forward')
     if parent:
@@ -830,9 +826,9 @@ def compose(draft_id):
         to = [a['title'] for a in to_all]
         if not to:
             to = [to_all[0]['title']]
-        draft.update({
+        defaults.update({
             'subject': subj,
-            'to': '' if forward else ','.join(to),
+            'to': '' if forward else ', '.join(to),
             'in-reply-to': meta['msgid'],
             'references': meta['msgid'],
         })
@@ -842,10 +838,32 @@ def compose(draft_id):
         for name, val in inner.items():
             if not name.lower().startswith('content-'):
                 del inner[name]
-        draft['txt'] = template(quote_tpl, type='Forwarded', msg=head)
-        draft['quoted'] = local.fetch_msg(parent)[-1]
-        draft['files'] = meta['files']
-    return draft, inner
+        defaults['txt'] = template(quote_tpl, type='Forwarded', msg=head)
+        defaults['quoted'] = local.fetch_msg(parent)[-1]
+        defaults['files'] = meta['files']
+
+    if uid:
+        flags, head, meta, txt = local.fetch_msg(uid, draft=True)
+        defaults.update({
+            i: head.get(i, '') for i in (
+                'from', 'to', 'cc', 'subject', 'in-reply-to', 'references'
+            )
+        })
+        defaults.update({
+            'time': meta['arrived'],
+            'files': meta['files'],
+            'txt': txt,
+            'flags': flags,
+        })
+        if meta['files']:
+            orig = local.raw_msg(meta['origin_uid'], local.SRC, parsed=True)
+            _, parts = message.parse_draft(orig)
+            if parts:
+                inner = message.new()
+                inner.make_mixed()
+                for p in parts:
+                    inner.attach(p)
+    return dict(defaults, **draft), inner
 
 
 def thread(q, opts, preload=None):
@@ -1128,34 +1146,3 @@ def fetch_avatars(hashes, size=20, default='identicon', b64=True):
     pool = ThreadPool(20)
     res = pool.map(_avatar, hashes)
     return [(i[0], base64.b64encode(i[1]) if b64 else i[1]) for i in res if i]
-
-
-def draft_info(uid):
-    flags, headers, meta, txt = local.fetch_msg(uid, draft=True)
-    orig = local.raw_msg(meta['origin_uid'], local.SRC, parsed=True)
-    related = quoted = None
-    _, parts = message.parse_draft(orig)
-    if parts:
-        related = message.new()
-        related.make_mixed()
-        for p in parts:
-            related.attach(p)
-        htm_, txt_ = message.parse_mime(related, uid)[:2]
-        if htm_:
-            quoted = html.clean(htm_)[0] if htm_ else html.from_text(txt_)
-
-    info = {
-        i: headers.get(i, '')
-        for i in ('from', 'to', 'cc', 'subject', 'in-reply-to', 'references')
-    }
-    info.update({
-        'uid': uid,
-        'txt': txt,
-        'quoted': quoted,
-        'flags': flags,
-        'draft_id': meta['draft_id'],
-        'origin_uid': meta['origin_uid'],
-        'files': meta['files'],
-        'time': meta['arrived'],
-    })
-    return info, related

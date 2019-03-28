@@ -726,7 +726,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
         'files': [],
         'from': '',
         'subject': 'Re: Subj 101',
-        'to': '"The One" <one@t.com>,two@t.com,three@t.com',
+        'to': '"The One" <one@t.com>, two@t.com, three@t.com',
         'txt': '',
         'in-reply-to': '<101@mlr>',
         'references': '<101@mlr>',
@@ -781,7 +781,7 @@ def test_drafts_part0(gm_client, login, latest, load_email, some):
     assert res['uids'] == ['1', '2']
     draft = res['edit']
     assert draft['from'] == '"The Two" <two@t.com>'
-    assert draft['to'] == '"The One" <one@t.com>,three@t.com'
+    assert draft['to'] == '"The One" <one@t.com>, three@t.com'
 
     gm_client.add_emails([{'refs': '<101@mlr>', 'date': time.time() + 1}])
     res = web.search({'q': query_edit})
@@ -937,8 +937,6 @@ def test_drafts_part1(gm_client, login, patch, some):
         'flags': '\\Draft \\Recent',
         'from': '',
         'in-reply-to': '',
-        'origin_uid': '3',
-        'quoted': None,
         'references': '<101@mlr>',
         'subject': 'Subj 103',
         'time': some,
