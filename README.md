@@ -1,12 +1,12 @@
 ## [Mailur] is a lightweight webmail inspired by Gmail
 
-### Features
+## Features
 - multiple tags for messages (no folders)
-- manually linking threads
-- Sieve scripts for email filtering
-- composing messages with [Markdown][]
+- [manually linking threads](https://pusto.org/mailur/features/#link-threads)
+- [Sieve scripts for email filtering](https://pusto.org/mailur/features/#sieve-scripts)
+- [composing messages with Markdown](https://pusto.org/mailur/features/#markdown)
+- [independent split pane](https://pusto.org/mailur/features/#the-split-pane)
 - easy to switch from threads view to messages view
-- independent split pane
 - slim and compact interface with few basic themes
 - ...
 
@@ -18,17 +18,19 @@ This version is already in use. It has minimal feature set I need on daily basis
 - [public demo][demo] (credentials: demo/demo)
 - [installation][install]
 
-![Screenshots](https://pusto.org/mailur/screenshots.gif)
+![Screenshots](https://pusto.org/mailur/features/the-split-pane.gif)
 
 [Mailur]: https://pusto.org/mailur/
 [demo]: http://demo.pusto.org
 [install]: https://pusto.org/mailur/installation/
 [vimeo]: https://vimeo.com/259140545
-[mlr-dovecot]: /mailur/dovecot/
+[mlr-dovecot]: https://pusto.org/mailur/dovecot/
+[mlr-features]: https://pusto.org/mailur/features/
 [Markdown]: https://daringfireball.net/projects/markdown/syntax
 
 ### Updates
 - `[Nowadays]` Stay tuned...
+- `[Mar 2019]` [Feature overview.][mlr-features]
 - `[Mar 2019]` [Dovecot as main storage.][mlr-dovecot]
 - `[Nov 2015]` [`code`][v02code] [The alpha version.][v02post] Postgres based. We used it over 2 years on daily basis.
 - `[Apr 2014]` [`code`][v01code] [The first prototype.][v01post]

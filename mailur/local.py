@@ -342,7 +342,7 @@ def sieve_scripts(name=None):
     ''').strip()
 
     manual = textwrap.dedent('''
-    # this script you run manually
+    # you run this script manually
     require ["imap4flags"];
     ''').strip()
 
