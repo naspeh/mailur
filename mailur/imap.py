@@ -174,6 +174,14 @@ class Ctx:
         return self._con.is_readonly
 
     @property
+    def abort(self):
+        return self._con.abort
+
+    @property
+    def error(self):
+        return self._con.error
+
+    @property
     def flags(self):
         return self._con.flags
 

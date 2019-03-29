@@ -46,7 +46,8 @@ def init(request):
     for i in range(5):
         try:
             username, pwd = local.master_login(username=users[0][0])
-            local.connect(username, pwd)
+            con = local.connect(username, pwd)
+            con.select(local.SRC)
             return
         except Exception as e:
             err = e
