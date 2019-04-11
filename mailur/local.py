@@ -461,7 +461,7 @@ def update_metadata(uids=None, clean=False, con=None):
         pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
         uid, flags = re.search(pattern, res[i][0].decode()).groups()
         info = json.loads(res[i][1])
-        keys = ('arrived', 'draft_id', 'msgid', 'origin_uid', 'from')
+        keys = ('arrived', 'draft_id', 'msgid', 'origin_uid', 'from', 'parent')
         small_info = {k: v for k, v in info.items() if k in keys}
         msgs[uid] = small_info
         uidpairs[info['origin_uid']] = uid

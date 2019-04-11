@@ -313,10 +313,9 @@ def parsed(raw, uid, time, flags):
     msg.add_header('Subject', meta['subject'])
     msg.add_header('Date', orig['Date'])
 
-    if orig['X-Draft-ID']:
-        msg.add_header('X-Draft-ID', orig['X-Draft-ID'])
-
     for n, v in headers.items():
+        if n in msg:
+            continue
         msg.add_header(n, v)
 
     is_draft = '\\Draft' in flags
@@ -325,6 +324,8 @@ def parsed(raw, uid, time, flags):
         msg.add_header('X-Draft-ID', draft_id)
         meta['draft_id'] = draft_id
         txt = parse_draft(orig)[0]
+    elif orig['X-Draft-ID']:
+        msg.add_header('X-Draft-ID', orig['X-Draft-ID'])
 
     thrid = None
     if not is_draft:
@@ -345,6 +346,7 @@ def parsed(raw, uid, time, flags):
         refs.insert(0, thrid)
 
     if refs:
+        msg.add_header('In-Reply-To', refs[-1])
         msg.add_header('References', ' '.join(refs))
 
     msg.make_mixed()

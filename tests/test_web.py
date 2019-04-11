@@ -936,7 +936,7 @@ def test_drafts_part1(gm_client, login, patch, some):
         'files': [],
         'flags': '\\Draft \\Recent',
         'from': '',
-        'in-reply-to': '',
+        'in-reply-to': '<101@mlr>',
         'references': '<101@mlr>',
         'subject': 'Subj 103',
         'time': some,
@@ -1259,6 +1259,19 @@ def test_drafts_sending(gm_client, login, sendmail, patch, some, latest):
         'time': some,
     }
     assert local.data_drafts.get() == {draft_id: some}
+    assert m['body_full'].as_string().split('\n')[:11] == [
+        'X-UID: <2>',
+        'Message-ID: %s' % draft_id,
+        'Subject: Re: Subj 101',
+        some,
+        'From: a@t.com',
+        'To: b@t.com',
+        'X-Draft-ID: %s' % draft_id,
+        'In-Reply-To: <101@mlr>',
+        'References: <101@mlr>',
+        some,
+        ''
+    ]
 
     gm_client.add_emails(
         [{'draft_id': draft_id, 'labels': '\\Sent'}],
@@ -1276,6 +1289,7 @@ def test_drafts_sending(gm_client, login, sendmail, patch, some, latest):
         'X-Draft-ID: %s' % draft_id,
         some,
         some,
+        'In-Reply-To: <101@mlr>',
         'References: <101@mlr>',
         '',
         some,

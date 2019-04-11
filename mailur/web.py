@@ -826,11 +826,13 @@ def compose(draft_id):
         to = [a['title'] for a in to_all]
         if not to:
             to = [to_all[0]['title']]
+        msgs = local.data_msgs.get()
+        refs = [i for i in [msgs[parent].get('parent'), meta['msgid']] if i]
         defaults.update({
             'subject': subj,
             'to': '' if forward else ', '.join(to),
             'in-reply-to': meta['msgid'],
-            'references': meta['msgid'],
+            'references': ' '.join(refs),
         })
     inner = None
     if forward:
