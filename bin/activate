@@ -8,6 +8,9 @@ fi
 
 PATH=./node_modules/.bin:$PATH
 
+# Fix $PATH if no /usr/sbin in it
+echo :$PATH: | grep :/usr/sbin: | export PATH=/usr/sbin:$PATH
+
 cd /opt/mailur
 envfile=${envfile-bin/env}
 [ -n "$envfile" ] && [ -f $envfile ] && . $envfile
