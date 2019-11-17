@@ -34,8 +34,9 @@ EOF
 
 . bin/activate
 
-localectl set-locale LANG=en_US.utf8
-timedatectl set-timezone UTC
+# TODO: doesn't work inside podman container
+#localectl set-locale LANG=en_US.utf8
+#timedatectl set-timezone UTC
 
 bin/install-dovecot
 
@@ -43,7 +44,7 @@ yum install -y epel-release
 yum install -y python36 python36-devel gcc
 env=${env:-/opt/mailur/env}
 pip=$env/bin/pip
-python36 -m venv $env
+python3 -m venv $env
 
 $pip install -U -e .[all]
 
