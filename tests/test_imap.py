@@ -66,7 +66,7 @@ def test_literal_size_limit(gm_client, raises):
     uids += (uid * 20000)
     with raises(imap.Error) as e:
         c.search('UID %s' % uids)
-    assert 'Too long argument' in str(e)
+    assert 'Too long argument' in str(e.value)
 
 
 def test_multiappend(patch, msgs):
@@ -146,7 +146,7 @@ def test_sieve(gm_client, msgs, raises, some):
         addflag "#1";
     }
     ''')
-    assert res == [some, some]
+    assert res == [some]
     assert [m['flags'] for m in msgs()] == ['#subj #1', '#subj #2']
 
     res = con.sieve('ALL', '''
