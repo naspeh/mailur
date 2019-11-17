@@ -56,30 +56,35 @@ def init(request):
     raise err
 
 
+@pytest.fixture
+def patch_conf(patch):
+    conf = {'USER': test1, 'USE_PROXY': True}
+    with patch.dict('mailur.conf', conf):
+        yield
+
+
 @pytest.fixture(autouse=True)
-def setup(new_users, gm_client, sendmail, patch):
+def setup(new_users, gm_client, sendmail, patch_conf):
     from mailur import imap, local, remote
 
     global con_local, con_gmail
 
-    conf = {'USER': test1}
-    with patch.dict('mailur.conf', conf):
-        con_local = local.client(None)
-        con_gmail = local.connect(*local.master_login(username=test2))
+    con_local = local.client(None)
+    con_gmail = local.connect(*local.master_login(username=test2))
 
-        remote.data_account({
-            'username': 'test',
-            'password': 'test',
-            'imap_host': 'imap.gmail.com',
-            'smtp_host': 'smtp.gmail.com',
-        })
+    remote.data_account({
+        'username': 'test',
+        'password': 'test',
+        'imap_host': 'imap.gmail.com',
+        'smtp_host': 'smtp.gmail.com',
+    })
 
-        yield
+    yield
 
-        con_local.logout()
-        con_gmail.logout()
-        imap.clean_pool(test1)
-        imap.clean_pool(test2)
+    con_local.logout()
+    con_gmail.logout()
+    imap.clean_pool(test1)
+    imap.clean_pool(test2)
 
 
 @pytest.fixture

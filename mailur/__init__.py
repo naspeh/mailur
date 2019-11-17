@@ -19,6 +19,7 @@ conf = {
     'SIEVE': os.environ.get('MLR_SIEVE', 'sieve:root').split(':'),
     'USER': os.environ.get('MLR_USER'),
     'DOMAIN': os.environ.get('MLR_DOMAIN', 'localhost'),
+    'USE_PROXY': os.environ.get('MLR_USE_PROXY', False),
 }
 
 

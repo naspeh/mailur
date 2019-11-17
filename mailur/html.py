@@ -8,6 +8,8 @@ from pygments import highlight
 from pygments.formatters import html
 from pygments.lexers import get_lexer_by_name
 
+from . import conf
+
 
 class HighlightRenderer(mistune.Renderer):
     def block_code(self, code, lang):
@@ -74,17 +76,22 @@ def fix_privacy(htm, only_proxy=False):
     if not htm.strip():
         return htm
 
+    use_proxy = conf['USE_PROXY']
+    if only_proxy and not use_proxy:
+        return htm
+
     htm = fromstring(htm)
     for img in htm.xpath('//img[@src]'):
         src = img.attrib['src']
         if re.match('^(https?://|//).*', src):
             if src.startswith('//'):
                 src = 'https:' + src
-            proxy_url = '/proxy?url=' + src
+            if use_proxy:
+                src = '/proxy?url=' + src
             if only_proxy:
-                img.attrib['src'] = proxy_url
+                img.attrib['src'] = src
             else:
-                img.attrib['data-src'] = proxy_url
+                img.attrib['data-src'] = src
                 del img.attrib['src']
 
     if not only_proxy:
