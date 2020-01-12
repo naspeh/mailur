@@ -40,7 +40,7 @@ yum install -y python36 git aha moreutils
 
 python3.6 -m venv $env
 . bin/activate
-pip install -e .[ci]
+python3.6 -m pip install -e .[ci]
 
 cat <<EOF2 > /etc/systemd/system/mailur-ci.service
 [Unit]

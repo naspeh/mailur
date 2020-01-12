@@ -81,7 +81,7 @@ def process(args):
     elif args['web']:
         web()
     elif args['test']:
-        run('pytest -q -n2 --cov=mailur --cov-report=term-missing')
+        run('pytest -q --cov=mailur --cov-report=term-missing')
     elif args['lint']:
         ci = args['--ci'] and 1 or ''
         run('ci=%s bin/run-lint' % ci)
