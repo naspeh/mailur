@@ -239,6 +239,17 @@ def test_tags(gm_client, login, some, load_file):
     assert res.json == tag('#d44f332a', name='нью')
 
 
+def test_tags_not_fully_synced(gm_client, login, patch):
+    with patch('mailur.local.update_metadata'):
+        gm_client.add_emails([
+            {'labels': '\\Inbox \\Junk'},
+            {'labels': '\\Inbox'},
+        ])
+
+    web = login()
+    web.get('/index-data', status=200).json['tags']
+
+
 def test_expunge_tag(gm_client, login, some, msgs):
     gm_client.add_emails([
         {'labels': '\\Junk \\Trash'},

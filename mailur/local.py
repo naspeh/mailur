@@ -290,7 +290,10 @@ def tags_info(con=None):
             continue
         unread = set()
         for uid in uids:
-            thr = thrs[thrids[uid]]
+            thrid = thrids.get(uid)
+            if not thrid:
+                continue
+            thr = thrs[thrid]
             unread.update(unread_uids.intersection(thr))
         tags[tag].update(unread=len(unread), pinned=1)
     tags = {t: dict(get_tag(t), **v) for t, v in tags.items()}
