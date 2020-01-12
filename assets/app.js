@@ -12,6 +12,7 @@ import tpl from './app.html';
 Vue.component('app', {
   template: tpl,
   data: function() {
+    let splitIsPossible = window.innerWidth > 1200;
     return {
       tags: window.data.tags.info,
       tagIds: window.data.tags.ids,
@@ -21,14 +22,14 @@ Vue.component('app', {
       tagCount: 5,
       opts: {
         bigger: false,
-        fixPrivacy: true,
+        fixPrivacy: false,
         query: null,
-        split: false,
-        splitQuery: null,
+        split: splitIsPossible,
+        splitQuery: ':threads tag:#inbox',
         filters: false
       },
       optsKey: `${window.data.user}:opts`,
-      splitIsPossible: window.innerWidth > 1200
+      splitIsPossible: splitIsPossible
     };
   },
   created: function() {
