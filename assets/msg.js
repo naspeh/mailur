@@ -17,8 +17,8 @@ Vue.component('msg', {
   },
   data: function() {
     return {
-      query: this.$parent.open,
-      open: this.$parent.openMsg,
+      open: this.$parent.open,
+      openMsg: this.$parent.openMsg,
       details: this.$parent.details,
       call: this.$parent.call
     };
@@ -62,7 +62,7 @@ Vue.component('msg', {
     reply: function(msg, forward = null) {
       let end = forward ? '?forward=1' : '';
       this.call('get', msg.url_reply + end).then(res =>
-        this.query(res.query_edit)
+        this.open(res.query_edit)
       );
     },
     makeRicher: function() {

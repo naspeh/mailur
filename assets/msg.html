@@ -1,5 +1,5 @@
 <div :class="{msg: 1, 'msg--unread': msg.is_unread, 'msg--pinned': msg.is_pinned, 'msg--richer': msg.richer && 1, 'msg--picked': picked, 'msg--detailed': detailed, 'msg--opened': opened, 'msg--edited': edit}">
-  <a class="msg-line" @click.prevent="open(msg.uid)" :href="`#${msg.query_thread}`">
+  <a class="msg-line" @click.prevent="openMsg(msg.uid)" :href="`#${msg.query_thread}`">
     <div
       class="msg-line__pick"
       @click.stop.prevent="pick(msg.uid)"
@@ -25,7 +25,7 @@
     <div
       v-if="msg.is_draft"
       class="icon--draft"
-      @click.stop.prevent="query(msg.query_edit)"
+      @click.stop.prevent="open(msg.query_edit)"
       title="Edit draft"
     />
     <div
@@ -42,7 +42,7 @@
       <template v-for="from in msg.from_list">
       <div
         v-if="from.hash"
-        @click.stop.prevent="query(from.query)"
+        @click.stop.prevent="open(from.query)"
         :class="`msg-line__from__pic pic-${from.hash}`"
         :title="from.title"
       ></div>
@@ -64,7 +64,7 @@
       <div class="msg-line__text" :title="msg.preview" v-html="msg.preview" />
     </div>
     <div class="msg-line__end">
-      <tags :opts="msg.tags" :open="query" :trancated="true" class="msg-line__tags" />
+      <tags :opts="msg.tags" :open="open" :trancated="true" class="msg-line__tags" />
       <div
         v-if="msg.files.length"
         class="icon--attachment"
@@ -87,7 +87,7 @@
     <!-- <a href="#" class="icon--reply-all" title="Reply to all">Reply to all</a> -->
     <!-- <a href="#" class="icon--whitelist" title="Add address to Whitelist">Whitelist</a> -->
     <!-- <a href="#" class="icon--blacklist" title="Add address to Blacklist">Blacklist</a> -->
-    <a v-if="!thread" @click.prevent="query(msg.query_thread)" :href="`#${msg.query_thread}`" class="icon--ok">Full thread</a>
+    <a v-if="!thread" @click.prevent="open(msg.query_thread)" :href="`#${msg.query_thread}`" class="icon--ok">Full thread</a>
     <a :href="`#${msg.query_msgid}`" class="icon--ok">Related replies</a>
     <a :href="msg.url_raw" class="icon--ok" target="_blank">Original message</a>
   </div>
@@ -100,7 +100,7 @@
     <div class="msg__details__info">
       <div class="msg__details__subj">
         <span class="msg__details__label">Subject:</span>
-        <a :href="`#${msg.query_subject}`" @click.prevent="query(msg.query_subject)" class="msg__details__value">
+        <a :href="`#${msg.query_subject}`" @click.prevent="open(msg.query_subject)" class="msg__details__value">
           {{msg.subject}}
         </a>
       </div>
@@ -108,7 +108,7 @@
         <span class="msg__details__label">From:</span>
         <span class="msg__details__value">
           <b>{{msg.from.name}}</b>
-          <a :href="`#${msg.from.query}`" @click.prevent="query(msg.from.query)">
+          <a :href="`#${msg.from.query}`" @click.prevent="open(msg.from.query)">
             {{msg.from.addr}}
           </a>
         </span>
@@ -118,7 +118,7 @@
           <span class="msg__details__label">{{field[0].toUpperCase()}}{{field.slice(1)}}:</span>
           <span v-for="addr of msg[field]" class="msg__details__value">
             <b>{{addr.name}}</b>
-            <a :href="`#${addr.query}`" @click.prevent="query(addr.query)">
+            <a :href="`#${addr.query}`" @click.prevent="open(addr.query)">
               {{addr.addr}}
             </a>
           </span>
@@ -126,7 +126,7 @@
       </template>
       <div class="msg__details__msgid">
         <span class="msg__details__label">Message-ID:</span>
-        <a :href="`#${msg.query_msgid}`" @click.prevent="query(msg.query_msgid)" class="msg__details__value">
+        <a :href="`#${msg.query_msgid}`" @click.prevent="open(msg.query_msgid)" class="msg__details__value">
           {{msg.msgid}}
         </a>
       </div>
