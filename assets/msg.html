@@ -64,7 +64,7 @@
       <div class="msg-line__text" :title="msg.preview" v-html="msg.preview" />
     </div>
     <div class="msg-line__end">
-      <tags :opts="msg.tags" :trancated="true" class="msg-line__tags" />
+      <tags :opts="msg.tags" :open="query" :trancated="true" class="msg-line__tags" />
       <div
         v-if="msg.files.length"
         class="icon--attachment"

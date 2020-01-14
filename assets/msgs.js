@@ -62,6 +62,9 @@ let Loader = Vue.extend({
       }
       this.error = null;
       this.loading = true;
+    },
+    openInSplit: function() {
+      window.app.openInSplit(this.query);
     }
   }
 });
@@ -359,9 +362,6 @@ let Thread = Vue.extend({
       } else if (!force) {
         this.opened.splice(idx, 1);
       }
-    },
-    openInSplit: function() {
-      window.app.openInSplit(this.query);
     },
     editTags: function(opts, picked = null) {
       let preload = this.hidden.length > 0 ? this.preload : null;

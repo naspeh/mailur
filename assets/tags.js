@@ -9,6 +9,7 @@ let Tags = {
     trancated: { type: Boolean, default: false },
     unread: { type: Boolean, default: false },
     edit: { type: Function },
+    open: { type: Function },
     name: { type: String, default: 'tags' }
   },
   computed: {

@@ -8,16 +8,20 @@ Vue.component('msg', {
     msg: { type: Object, required: true },
     body: { type: String },
     edit: { type: Object },
-    call: { type: Function, required: true },
-    query: { type: Function, required: true },
     thread: { type: Boolean, default: false },
     opened: { type: Boolean, default: false },
-    open: { type: Function, required: true },
     detailed: { type: Boolean, default: false },
-    details: { type: Function, required: true },
     picked: { type: Boolean, default: false },
     pick: { type: Function },
     editTags: { type: Function, required: true }
+  },
+  data: function() {
+    return {
+      query: this.$parent.open,
+      open: this.$parent.openMsg,
+      details: this.$parent.details,
+      call: this.$parent.call
+    };
   },
   methods: {
     openInMain: function(q) {

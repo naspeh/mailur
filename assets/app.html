@@ -8,7 +8,7 @@
   <div class="header">
     <div class="header__tags">
       <tags-select v-if="tagIds.length > tagCount" :opts="tagIds" />
-      <tags :opts="tagIds.slice(0, tagCount)" :trancated="true" :unread="true" class="tags--quick"/>
+      <tags :opts="tagIds.slice(0, tagCount)" :open="openInMain" :trancated="true" :unread="true" class="tags--quick"/>
     </div>
     <div class="header__actions">
       <a @click.prevent="compose" href="#" class="icon--draft" title="Compose new message"></a>

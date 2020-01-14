@@ -35,7 +35,7 @@
       <tags-edit :origin="allTags" :edit="editTags" />
     </div>
     <div class="msgs__tags">
-      <tags :opts="allTags" :edit="editTags" :trancated="true" />
+      <tags :opts="allTags" :open="open" :edit="editTags" :trancated="true" />
     </div>
     <picker
       v-if="loaded.length"
@@ -59,6 +59,11 @@
         >Select <b>{{opt}}</b></div>
       </template>
     </picker>
+    <div
+      @click="openInSplit"
+      class="icon--open-in-split"
+      title="Open in split pane"
+    />
   </div>
   <div class="msgs__body">
     <div v-if="error" class="msgs__error">{{error}}</div>
@@ -83,14 +88,10 @@
       :thread="threads"
       :body="bodies[uid]"
       :opened="uid == opened"
-      :open="openMsg"
-      :details="details"
       :detailed="uid == detailed"
       :pick="pick"
       :picked="picked.indexOf(uid) != -1"
       :editTags="editTags"
-      :call="call"
-      :query="open"
     />
     <a @click.prevent="loadMore()" href="#" v-if="hidden.length">Load more...</a>
   </div>
@@ -112,7 +113,7 @@
       <tags-edit :origin="tags" :edit="editTags" />
     </div>
     <div v-if="uids.length" class="msgs__tags">
-      <tags :opts="tags" :edit="editTags" :trancated="true" />
+      <tags :opts="tags" :open="open" :edit="editTags" :trancated="true" />
     </div>
     <picker
       v-if="uids.length"
@@ -160,14 +161,10 @@
         :key="uid"
         :msg="msgs[uid]"
         :editTags="editTags"
-        :details="details"
         :detailed="detailed.indexOf(uid) != -1"
         :body="bodies[uid]"
-        :open="openMsg"
         :opened="opened.indexOf(uid) != -1"
         :class="{'msg--same-subj': same_subject.indexOf(uid) != -1}"
-        :call="call"
-        :query="open"
         :edit="edit && edit.uid == uid ? edit : null"
       />
       <editor
