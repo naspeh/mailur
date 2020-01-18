@@ -517,6 +517,14 @@ def avatars():
     ) for h, i in fetch_avatars(hashes, size, default))
 
 
+@app.get('/avatar/<hash>.jpg')
+def avatar(hash):
+    size = request.query.get('size', 20)
+    default = request.query.get('default', 'identicon')
+    gravatar_url = get_gravatar_url(hash, size, default)
+    return proxy_by_nginx(gravatar_url)
+
+
 @app.get('/refresh/metadata')
 def refresh_metadata():
     local.update_metadata('1:*')
@@ -529,10 +537,7 @@ def proxy():
     if not url:
         return abort(400)
 
-    # further serve by nginx
-    url = '/.proxy?url=%s' % url
-    response.set_header('X-Accel-Redirect', url)
-    return ''
+    return proxy_by_nginx(url)
 
 
 @app.get('/assets/<path:path>', skip=[auth])
@@ -1127,14 +1132,24 @@ def humanize_dt(val, tz=utc, secs=False):
     return val.strftime(fmt)
 
 
+def proxy_by_nginx(url):
+    url = '/.proxy?url=%s' % url
+    response.set_header('X-Accel-Redirect', url)
+    return ''
+
+
+def get_gravatar_url(hash, size=20, default='identicon'):
+    return (
+        'https://www.gravatar.com/avatar/{hash}?d={default}&s={size}'
+        .format(hash=hash, size=size, default=default)
+    )
+
+
 def fetch_avatars(hashes, size=20, default='identicon', b64=True):
     def _avatar(hash):
         if hash in cache:
             return cache[hash]
-        res = urllib.request.urlopen(
-            'https://www.gravatar.com/avatar/{hash}?d={default}&s={size}'
-            .format(hash=hash, size=size, default=default)
-        )
+        res = urllib.request.urlopen(get_gravatar_url(hash, size, default))
         result = hash, res.read() if res.status == 200 else None
         cache[hash] = result
         return result
