@@ -859,6 +859,8 @@ def msgs_body(uids, fix_privacy=False, con=None):
     res = con.fetch(uids, '(UID BINARY.PEEK[2.1])')
     for i in range(0, len(res), 2):
         uid = res[i][0].decode().split()[2]
+        if uid not in msgs:
+            continue
         draft_id = msgs[uid].get('draft_id')
         if draft_id:
             draft = drafts[draft_id]
@@ -890,7 +892,7 @@ def search_thrs(query, con=None):
     if uids:
         msgs = data_msgs.get()
         thrids, thrs = data_threads.get()
-        uids = set(thrids[uid] for uid in uids)
+        uids = set(thrids[uid] for uid in uids if uid in thrids)
         uids = sorted(uids, key=lambda uid: msgs[uid]['arrived'], reverse=True)
     log.debug('query: %r; threads: %s', query, len(uids))
     return uids

@@ -239,17 +239,6 @@ def test_tags(gm_client, login, some, load_file):
     assert res.json == tag('#d44f332a', name='нью')
 
 
-def test_tags_not_fully_synced(gm_client, login, patch):
-    with patch('mailur.local.update_metadata'):
-        gm_client.add_emails([
-            {'labels': '\\Inbox \\Junk'},
-            {'labels': '\\Inbox'},
-        ])
-
-    web = login()
-    web.get('/index-data', status=200).json['tags']
-
-
 def test_expunge_tag(gm_client, login, some, msgs):
     gm_client.add_emails([
         {'labels': '\\Junk \\Trash'},
@@ -309,6 +298,26 @@ def test_expunge_tag(gm_client, login, some, msgs):
     deleted = sorted(msgs('mlr/Del'), key=lambda i: int(i['uid']))
     assert existing[0]['body'].as_bytes() == deleted[0]['body'].as_bytes()
     assert existing[1]['body'].as_bytes() == deleted[1]['body'].as_bytes()
+
+
+def test_not_fully_synced(gm_client, login, patch, some):
+    # metadata is not updated, so we are like in the middle of sync
+    with patch('mailur.local.update_metadata'):
+        gm_client.add_emails([
+            {'labels': '\\Inbox \\Junk'},
+            {'labels': '\\Inbox'},
+        ])
+
+    web = login()
+    web.get('/index-data', status=200).json['tags']
+    res = web.search({'q': ':threads'})
+    assert res == {
+        'msgs': {},
+        'msgs_info': '/thrs/info',
+        'uids': [],
+        'threads': True,
+    }
+    web.post_json('/msgs/body', {'uids': ['2']}, status=200)
 
 
 def test_general(gm_client, load_email, latest, login, some):
