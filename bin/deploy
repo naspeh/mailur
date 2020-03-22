@@ -127,6 +127,7 @@ server {
     location / {
         proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Host \$host;
         proxy_pass http://localhost:5000/;
     }
     location /assets {
@@ -166,7 +167,6 @@ gzip_buffers 16 8k;
 gzip_http_version 1.1;
 gzip_types text/plain text/css application/json application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript;
 
-proxy_set_header Host \$host;
 proxy_set_header Accept-Encoding "";
 proxy_buffering on;
 proxy_ignore_client_abort off;

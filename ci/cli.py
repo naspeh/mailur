@@ -139,7 +139,7 @@ def notify(payload):
     msg.set_type('text/html')
     msg.set_payload(payload)
 
-    con = smtplib.SMTP('smtp.gmail.com', 587)
+    con = smtplib.SMTP(conf.smtp_host, conf.smtp_port)
     con.ehlo()
     con.starttls()
     con.login(conf.smtp_user, conf.smtp_pass)

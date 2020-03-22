@@ -316,7 +316,7 @@ def sieve_run(query, script, box=SRC, con=None):
     spamers = [a for a in spamers if a]
     values = {
         'spamers': json.dumps(spamers or ''),
-        'my_recipients': json.dumps(addrs_to.keys() or ''),
+        'my_recipients': json.dumps(list(addrs_to.keys()) or ''),
     }
     with client(box, master='SIEVE', readonly=False) as c:
         script = script % values
