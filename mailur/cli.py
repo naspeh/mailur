@@ -27,7 +27,7 @@ import time
 from docopt import docopt
 from gevent import joinall, sleep, spawn
 
-from . import conf, imap, local, lock, log, remote
+from . import conf, local, lock, log, remote
 
 root = pathlib.Path(__file__).resolve().parent.parent
 
@@ -107,7 +107,6 @@ def run_forever(fn):
 
 def sync(timeout=1200):
     def sync_remote(res=None):
-        imap.clean_pool()
         try:
             remote.fetch()
             local.parse()
@@ -117,11 +116,10 @@ def sync(timeout=1200):
     @run_forever
     def idle_remote(params):
         with remote.client(**params) as c:
-            c.idle(sync_remote, timeout=timeout)
+            c.idle({'EXISTS': sync_remote}, timeout=timeout)
 
     @run_forever
     def sync_flags():
-        imap.clean_pool()
         local.sync_flags_to_all()
         local.sync_flags(timeout=timeout)
 

@@ -363,32 +363,32 @@ def sort(con, fields, *criteria, charset='UTF-8'):
 
 
 @command()
-def idle(con, handler, code='EXISTS', timeout=None):
+def idle(con, handlers, timeout=None):
     def match():
-        return con._untagged_response('OK', [None], code)
+        for code, handler in handlers.items():
+            typ, dat = con._untagged_response('OK', [None], code)
+            if not dat[-1]:
+                continue
+            handler(dat)
 
-    def inner():
-        res = con._get_response()
+    def inner(tag):
+        with Timeout(timeout):
+            res = con._get_response()
         if res:
             log.debug('received: %r', res.decode())
         bad = con.tagged_commands[tag]
         if bad:
             raise Error(bad)
-        typ, dat = match()
-        if not dat[-1]:
-            return
-        return dat
+        match()
 
     match()
     log.info('start idling %s...' % con)
     with _cmd(con, 'IDLE') as (tag, start, complete):
+        clean_pool()
         start(CRLF)
         while 1:
             try:
-                with Timeout(timeout):
-                    res = inner()
-                if res:
-                    handler(res)
+                inner(tag)
             except Timeout:
                 log.debug('timeout reached: %ss', timeout)
                 return

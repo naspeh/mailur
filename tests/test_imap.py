@@ -101,12 +101,16 @@ def test_multiappend(patch, msgs):
 
 
 def test_idle():
-    def handler():
+    def handler(res):
+        if handler.first:
+            handler.first = False
+            return
         raise ValueError
 
+    handler.first = True
     con = local.client()
     # just check if timeout works
-    assert not con.idle(handler, timeout=1)
+    assert not con.idle({'EXISTS': handler}, timeout=1)
 
 
 def test_sieve(gm_client, msgs, raises, some):

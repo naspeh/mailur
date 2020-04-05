@@ -791,7 +791,7 @@ def sync_flags(con=None, timeout=None):
     log.info('%s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, uidval, modseq)
     modseq = [modseq]
     con.select(SRC)
-    con.idle(handler, 'FETCH', timeout=timeout)
+    con.idle({'FETCH': handler}, timeout=timeout)
 
 
 @fn_time
