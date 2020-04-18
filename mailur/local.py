@@ -28,6 +28,7 @@ class Local(imaplib.IMAP4, imap.Conn):
 def connect(username, password):
     con = Local(username)
     imap.login(con, username, password)
+    imap.enable(con, 'CONDSTORE')
 
     # For searching with non ascii symbols (Dovecot understands this)
     con._encoding = 'utf-8'
@@ -179,6 +180,11 @@ setting = ft.partial(metakey, data_settings)
 
 @setting('uidnext')
 def data_uidnext(value):
+    return value
+
+
+@setting('modseq')
+def data_modseq(value):
     return value
 
 
@@ -740,20 +746,21 @@ def sync_flags_to_src(con_src=None, con_all=None):
 
 
 @fn_time
-@using(None, reuse=False)
-def sync_flags(con=None, timeout=None):
+@using(SRC, reuse=False)
+def sync_flags(con=None, post_handler=None, timeout=None):
     @using(SRC, name='con_src', reuse=False)
     @using(ALL, name='con_all', readonly=False, reuse=False)
     def handler(res, con_src=None, con_all=None):
-        modseq0 = modseq[0]
-        modseq_ = re.search(r'MODSEQ \((\d+)\)', res[0].decode()).group(1)
-        if int(modseq_) < int(modseq0):
+        cur_modseq = con.highestmodseq
+        new_modseq = re.search(r'MODSEQ \((\d+)\)', res[0].decode()).group(1)
+        new_modseq = int(new_modseq)
+        if new_modseq < cur_modseq:
             return
-        modseq[0] = modseq_
-        res = con_src.fetch('1:*', '(UID FLAGS) (CHANGEDSINCE %s)' % modseq0)
+        res = con_src.fetch('1:*', '(UID FLAGS) (CHANGEDSINCE %s)' % cur_modseq)
+        cur_modseq = new_modseq
         src_flags = {}
         for line in res:
-            val = re.search(r'UID (\d+) FLAGS \(([^)]*)\)', line.decode())
+            val = re.search(r'UID (\d+) FLAGS \(([^)]*)\) MODSEQ \(\d+\)', line.decode())
             if not val:
                 continue
             uid, flags = val.groups()
@@ -781,15 +788,13 @@ def sync_flags(con=None, timeout=None):
                 key = ('-FLAGS.SILENT', ' '.join(val))
                 actions.setdefault(key, [])
                 actions[key].append(uid)
-        log.debug('sync: MODSEQ=%s %s', modseq_, actions)
+        log.debug('sync: MODSEQ=%s %s', cur_modseq, actions)
         for action, uids in actions.items():
             con_all.store(uids, *action)
+        if post_handler:
+            post_handler(res)
 
-    res = con.status(SRC, '(UIDVALIDITY HIGHESTMODSEQ)')
-    pair = re.search(r'UIDVALIDITY (\d+) HIGHESTMODSEQ (\d+)', res[0].decode())
-    uidval, modseq = pair.groups()
-    log.info('%s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, uidval, modseq)
-    modseq = [modseq]
+    log.info('%s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, con.uidvalidity, con.highestmodseq)
     con.select(SRC)
     con.idle({'FETCH': handler}, timeout=timeout)
 

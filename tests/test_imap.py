@@ -24,10 +24,10 @@ def test_batched_uids(gm_client):
     )
 
     con.select(local.SRC, readonly=False)
-    assert [b'1 (UID 1 FLAGS (\\Recent #1))'] == (
+    assert [b'1 (UID 1 MODSEQ (3) FLAGS (\\Recent #1))'] == (
         con.store([str(i) for i in range(1, 100, 2)], '+FLAGS', '#1')
     )
-    assert [b'1 (UID 1 FLAGS (\\Recent #1 #2))'] == (
+    assert [b'1 (UID 1 MODSEQ (4) FLAGS (\\Recent #1 #2))'] == (
         con.store([str(i) for i in range(1, bsize, 2)], '+FLAGS', '#2')
     )
 

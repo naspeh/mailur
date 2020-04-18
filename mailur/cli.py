@@ -27,7 +27,7 @@ import time
 from docopt import docopt
 from gevent import joinall, sleep, spawn
 
-from . import conf, local, lock, log, remote
+from . import conf, local, log, remote
 
 root = pathlib.Path(__file__).resolve().parent.parent
 
@@ -66,7 +66,9 @@ def process(args):
     elif args['parse']:
         local.parse(args.get('<criteria>'), **opts)
     elif args['sync']:
-        sync(int(args['--timeout']))
+        timeout = args.get('--timeout')
+        params = [int(timeout)] if timeout else []
+        sync(*params)
     elif args['sync-flags']:
         if args['--reverse']:
             local.sync_flags_to_src()
@@ -106,25 +108,25 @@ def run_forever(fn):
 
 
 def sync(timeout=1200):
-    def sync_remote(res=None):
-        try:
-            remote.fetch()
-            local.parse()
-        except lock.Error as e:
-            log.warn(e)
-
     @run_forever
     def idle_remote(params):
         with remote.client(**params) as c:
-            c.idle({'EXISTS': sync_remote}, timeout=timeout)
+            handlers = {
+                'EXISTS': lambda res: remote.sync(),
+                'FETCH': lambda res: remote.sync(only_flags=True),
+            }
+            c.idle(handlers, timeout=timeout)
 
     @run_forever
     def sync_flags():
         local.sync_flags_to_all()
-        local.sync_flags(timeout=timeout)
+        local.sync_flags(
+            post_handler=lambda res: remote.sync(only_flags=True),
+            timeout=timeout
+        )
 
     try:
-        sync_remote()
+        remote.sync()
         jobs = [spawn(sync_flags)]
         for params in remote.get_folders():
             jobs.append(spawn(idle_remote, params))

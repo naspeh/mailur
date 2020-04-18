@@ -159,6 +159,9 @@ def gm_fake():
     from mailur import local
 
     def uid(name, *a, **kw):
+        func = getattr(gm_client, 'fake_%s' % name.lower(), None)
+        if func:
+            return func(con, *a, **kw)
         responces = getattr(gm_client, name.lower(), None)
         if responces:
             return responces.pop()

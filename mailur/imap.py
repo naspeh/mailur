@@ -193,6 +193,10 @@ class Ctx:
     def uidvalidity(self):
         return self._con.uidvalidity
 
+    @property
+    def highestmodseq(self):
+        return self._con.highestmodseq
+
     def __enter__(self):
         return self
 
@@ -394,6 +398,11 @@ def idle(con, handlers, timeout=None):
                 return
 
 
+@command(lock=False)
+def enable(con, capability):
+    return check(con.enable(capability))
+
+
 @command()
 def logout(con, timeout=1):
     with Timeout(timeout):
@@ -415,11 +424,12 @@ def select(con, box, readonly=True):
     con.flags = con.untagged_responses['FLAGS'][0].decode()[1:-1].split()
     con.uidnext = int(con.untagged_responses['UIDNEXT'][0].decode())
     con.uidvalidity = con.untagged_responses['UIDVALIDITY'][0].decode()
+    con.highestmodseq = int(con.untagged_responses['HIGHESTMODSEQ'][0].decode())
     return res
 
 
-@command(lock=False)
-def select_tag(con, tag, readonly=True, exc=True):
+@ft.lru_cache(None)
+def find_folder(con, tag):
     if isinstance(tag, str):
         tag = tag.encode()
     folder = None
@@ -429,6 +439,12 @@ def select_tag(con, tag, readonly=True, exc=True):
             continue
         folder = f.rsplit(b' "/" ', 1)[1]
         break
+    return folder
+
+
+@command(lock=False)
+def select_tag(con, tag, readonly=True, exc=True):
+    folder = find_folder(con, tag)
     if folder is None:
         if exc:
             raise Error('No folder with tag: %s\n%s' % (tag, folders))
