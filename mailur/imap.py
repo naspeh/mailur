@@ -424,7 +424,8 @@ def select(con, box, readonly=True):
     con.flags = con.untagged_responses['FLAGS'][0].decode()[1:-1].split()
     con.uidnext = int(con.untagged_responses['UIDNEXT'][0].decode())
     con.uidvalidity = con.untagged_responses['UIDVALIDITY'][0].decode()
-    con.highestmodseq = int(con.untagged_responses['HIGHESTMODSEQ'][0].decode())
+    highestmodseq = int(con.untagged_responses['HIGHESTMODSEQ'][0].decode())
+    con.highestmodseq = highestmodseq
     return res
 
 
@@ -439,12 +440,12 @@ def find_folder(con, tag):
             continue
         folder = f.rsplit(b' "/" ', 1)[1]
         break
-    return folder
+    return folder, folders
 
 
 @command(lock=False)
 def select_tag(con, tag, readonly=True, exc=True):
-    folder = find_folder(con, tag)
+    folder, folders = find_folder(con, tag)
     if folder is None:
         if exc:
             raise Error('No folder with tag: %s\n%s' % (tag, folders))

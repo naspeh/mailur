@@ -756,11 +756,15 @@ def sync_flags(con=None, post_handler=None, timeout=None):
         new_modseq = int(new_modseq)
         if new_modseq < cur_modseq:
             return
-        res = con_src.fetch('1:*', '(UID FLAGS) (CHANGEDSINCE %s)' % cur_modseq)
+        fields = '(UID FLAGS) (CHANGEDSINCE %s)' % cur_modseq
+        res = con_src.fetch('1:*', fields)
         cur_modseq = new_modseq
         src_flags = {}
         for line in res:
-            val = re.search(r'UID (\d+) FLAGS \(([^)]*)\) MODSEQ \(\d+\)', line.decode())
+            val = re.search(
+                r'UID (\d+) FLAGS \(([^)]*)\) MODSEQ \(\d+\)',
+                line.decode()
+            )
             if not val:
                 continue
             uid, flags = val.groups()
@@ -794,7 +798,10 @@ def sync_flags(con=None, post_handler=None, timeout=None):
         if post_handler:
             post_handler(res)
 
-    log.info('%s UIDVALIDITY=%s HIGHESTMODSEQ=%s', con, con.uidvalidity, con.highestmodseq)
+    log.info(
+        '%s UIDVALIDITY=%s HIGHESTMODSEQ=%s',
+        con, con.uidvalidity, con.highestmodseq
+    )
     con.select(SRC)
     con.idle({'FETCH': handler}, timeout=timeout)
 

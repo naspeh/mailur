@@ -80,10 +80,10 @@ def test_local(gm_client, msgs):
 
 
 def test_cli_idle_gmail(gm_client, msgs, login, patch):
-    number = [0]
+    actions = []
 
     def fetch(con, uids, fields):
-        number[0] += 1
+        responces = getattr(gm_client, 'fetch', None)
         if 'CHANGEDSINCE' in fields:
             index = fields.split()[-1]
             if index == '5)':
@@ -92,9 +92,32 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
                     b'FLAGS (\\Seen) UID 104 MODSEQ (427368))'
                 ])
             return ('OK', [])
-        responces = getattr(gm_client, 'fetch', None)
-        if responces:
+        elif responces:
             return responces.pop()
+        elif 'X-GM-LABELS' in fields:
+            if con.current_box != local.SRC:
+                return ('OK', [
+                    b'1 (X-GM-MSGID 10100 X-GM-LABELS () '
+                    b'FLAGS (\\Seen) UID 101 MODSEQ (427368))'
+                ])
+            return ('OK', [
+                (
+                    b'2 (X-GM-MSGID 10200 X-GM-LABELS () '
+                    b'FLAGS (\\Seen) UID 102 MODSEQ (427368))'
+                ),
+                (
+                    b'3 (X-GM-MSGID 10300 X-GM-LABELS () '
+                    b'FLAGS (\\Seen) UID 103 MODSEQ (427368))'
+                ),
+                (
+                    b'4 (X-GM-MSGID 10400 X-GM-LABELS () '
+                    b'FLAGS (\\Seen) UID 104 MODSEQ (427368))'
+                ),
+                (
+                    b'6 (X-GM-MSGID 10600 X-GM-LABELS (\\Draft) '
+                    b'FLAGS (\\Seen) UID 106 MODSEQ (427368))'
+                ),
+            ])
         return con._uid('FETCH', uids, fields)
 
     def search(con, charset, *criteria):
@@ -105,6 +128,7 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
 
     def store(con, uids, cmd, flags):
         if 'X-GM-LABELS' in cmd:
+            actions.append((uids, cmd, sorted(flags.split())))
             return ('OK', [])
         return con._uid('STORE', uids, cmd, flags)
 
@@ -113,17 +137,17 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
     gm_client.fake_store = store
 
     spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
-    sleep(2)
+    sleep(5)
 
     gm_client.add_emails([{}] * 4, fetch=False, parse=False)
-    sleep(2)
+    sleep(3)
     assert len(msgs(local.SRC)) == 4
     assert len(msgs()) == 4
 
     local.parse('all')
 
     gm_client.add_emails([{}], fetch=False, parse=False)
-    sleep(2)
+    sleep(3)
     assert len(msgs(local.SRC)) == 5
     assert len(msgs()) == 5
     expected_flags = ['', '', '', '\\Flagged \\Seen #inbox', '']
@@ -132,10 +156,23 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
 
     con_src = local.client(local.SRC, readonly=False)
     con_src.store('1:*', '+FLAGS', '#1')
-    sleep(2)
+    sleep(3)
     expected_flags = [(f + ' #1').strip() for f in expected_flags]
     assert [i['flags'] for i in msgs(local.SRC)] == expected_flags
     assert [i['flags'] for i in msgs()] == expected_flags
+
+    assert actions == [
+        ('101', '-X-GM-LABELS', ['\\Junk']),
+        ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
+        ('101', '-X-GM-LABELS', ['\\Trash']),
+        ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
+        ('104', '+X-GM-LABELS', ['\\Inbox', '\\Starred']),
+        ('104', '+X-GM-LABELS', ['\\Inbox', '\\Starred']),
+        ('101', '-X-GM-LABELS', ['\\Junk']),
+        ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
+        ('101', '-X-GM-LABELS', ['\\Trash']),
+        ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
+    ]
 
 
 def test_cli_idle_general_imap(gm_client, msgs, login, patch):

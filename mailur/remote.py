@@ -352,10 +352,10 @@ def get_folders():
         return items
 
 
+@lock.user_scope('remote-sync')
 @local.using(local.SRC, reuse=False)
 def sync_gmail(con=None):
     uids_by_msgid = uids_by_msgid_gmail(con)
-    msgids_by_uid = {v: k for k, v in uids_by_msgid.items()}
     flags_by_uid_remote = {}
     flags_by_uid_local = {}
     modseqs = {}
@@ -366,7 +366,8 @@ def sync_gmail(con=None):
         '#inbox': '\\Inbox',
         '\\Flagged': '\\Starred',
     }
-    folders = {'\\Trash', '\\Junk'}
+    folders = {'#trash', '#spam'}
+    flags_in_sync = {'#trash', '#spam', '#inbox', '\\Flagged', '\\Seen'}
 
     def find_uid_remote(gm, msgid):
         uid = None
@@ -379,35 +380,91 @@ def sync_gmail(con=None):
                 break
         return uid, tag
 
-    def sync_msg_to_remote(gm, msgid, flags):
-        uid, tag = find_uid_remote(gm, msgid)
-        if not uid:
-            return
+    def gen_gmail_actions(actions, uid, flags, mark):
+        flags = sorted(flags)
+        labels = {label_by_flag[f] for f in flags if f in label_by_flag}
+        key = ('%sX-GM-LABELS' % mark, ' '.join(labels))
+        actions.setdefault(key, [])
+        actions[key].append(uid)
+        if '\\Seen' in flags:
+            key = ('%sFLAGS.SILENT' % mark, '\\Seen')
+            actions.setdefault(key, [])
+            actions[key].append(uid)
+
+    def sync_gmail_folder(gm, tag, flags_by_uid_local):
+        actions = {}
+        res = gm.fetch('1:*', '(UID X-GM-MSGID X-GM-LABELS FLAGS)')
+        for line in res:
+            parts = re.search(
+                r'('
+                r'UID (?P<uid>\d+)'
+                r' ?|'
+                r'FLAGS \((?P<flags>[^)]*)\)'
+                r' ?|'
+                r'X-GM-LABELS \((?P<labels>.*)\)'
+                r' ?|'
+                r'X-GM-MSGID (?P<msgid>\d+)'
+                r' ?){4}',
+                line.decode()
+            ).groupdict()
+            uid = parts['uid']
+            local_uid = uids_by_msgid.get(parts['msgid'])
+            if not local_uid:
+                # skip, probably draft
+                continue
+            if local_uid not in flags_by_uid_local:
+                continue
+            flags_remote = flags_by_gmail(tag, parts['flags'], parts['labels'])
+            flags_remote = set(flags_remote.split()) & flags_in_sync
+            flags_local = flags_by_uid_local[local_uid]
+            flags_to_add = flags_local - flags_remote
+            if flags_to_add:
+                gen_gmail_actions(actions, uid, flags_to_add, '+')
+            flags_to_del = flags_remote - flags_local
+            if flags_to_del:
+                gen_gmail_actions(actions, uid, flags_to_del, '-')
+                folder_tags = {label_by_flag[f] for f in folders}
+                if flags_to_del.intersection(folders) and tag in folder_tags:
+                    # move to \\All first, by adding \\Inbox
+                    gen_gmail_actions(actions, uid, {'#inbox'}, '+')
 
         gm.select(gm.box, readonly=False)
-        labels = {label_by_flag[f] for f in flags if f in label_by_flag}
-        labels_removed = set(label_by_flag.values()) - labels
-        if labels_removed.intersection(folders) and tag in folders:
-            # move to \\All first
-            gm.store([uid], '+X-GM-LABELS', '\\Inbox')
-            uid, tag = find_uid_remote(gm, msgid)
+        for action, uids, in actions.items():
+            gm.store(uids, *action)
 
-        if labels:
-            gm.store([uid], '+X-GM-LABELS', ' '.join(labels))
-        if labels_removed:
-            gm.store([uid], '-X-GM-LABELS', ' '.join(labels_removed))
+    def gen_local_actions(actions, uid, flags, mark):
+        flags = sorted(flags)
+        key = ('%sFLAGS.SILENT' % mark, ' '.join(flags))
+        actions.setdefault(key, [])
+        actions[key].append(uid)
 
-        mark = '+' if '\\Seen' in flags else '-'
-        gm.store([uid], mark + 'FLAGS.SILENT', '\\Seen')
+    @local.using(local.SRC, name='con_src', readonly=False, reuse=False)
+    @local.using(local.ALL, name='con_all', readonly=False, reuse=False)
+    def sync_local(flags_by_uid_remote, con_src=None, con_all=None):
+        actions = {}
+        res = con_src.fetch(flags_by_uid_remote.keys(), '(UID FLAGS)')
+        for line in res:
+            pattern = r'UID (\d+) FLAGS \(([^)]*)\)'
+            uid, flags_local = re.search(pattern, line.decode()).groups()
+            flags_local = set(flags_local.split()) & flags_in_sync
+            flags_remote = flags_by_uid_remote[uid]
+            flags_to_add = flags_remote - flags_local
+            if flags_to_add:
+                gen_local_actions(actions, uid, flags_to_add, '+')
+            flags_to_del = flags_local - flags_remote
+            if flags_to_del:
+                gen_local_actions(actions, uid, flags_to_del, '-')
+        for action, uids in actions.items():
+            con_src.store(uids, *action)
+
+            parsed_uids = local.pair_origin_uids(uids)
+            con_all.store(parsed_uids, *action)
 
     def get_remote_flags_for_sync(box=None, tag=None):
         modseq_key = box_key(box, tag)
-        modseq_gmail = data_modseq.key(modseq_key, None)
+        modseq_gmail = data_modseq.key(modseq_key, 1)
         with client(tag, box=box) as gm:
             modseqs[modseq_key] = gm.highestmodseq
-            if not modseq_gmail:
-                return
-
             fields = (
                 '(UID X-GM-MSGID X-GM-LABELS FLAGS) (CHANGEDSINCE %s)'
                 % modseq_gmail
@@ -437,11 +494,8 @@ def sync_gmail(con=None):
 
     def get_local_flags_for_sync():
         modseq_key = box_key(tag='\\Local')
-        modseq_local = data_modseq.key(modseq_key, None)
+        modseq_local = data_modseq.key(modseq_key, 1)
         modseqs[modseq_key] = con.highestmodseq
-        if not modseq_local:
-            return
-
         res = con.fetch('1:*', '(UID FLAGS) (CHANGEDSINCE %s)' % modseq_local)
         for line in res:
             val = re.search(
@@ -451,36 +505,24 @@ def sync_gmail(con=None):
             if not val:
                 continue
             uid, flags = val.groups()
-            flags_by_uid_local[uid] = set(flags.split())
+            flags_by_uid_local[uid] = set(flags.split()) & flags_in_sync
 
     def sync_flags(flags_by_uid_local, flags_by_uid_remote):
         if not flags_by_uid_local and not flags_by_uid_remote:
             return
 
-        both_changes = set(flags_by_uid_local) & set(flags_by_uid_remote)
-        local_changes = set(flags_by_uid_local) - set(flags_by_uid_remote)
-        remote_changes = set(flags_by_uid_remote) - set(flags_by_uid_local)
+        local_changes = set(flags_by_uid_local)
+        if local_changes:
+            log.info('Sync flags to gmail: %s', local_changes)
+            for params in get_folders():
+                tag = params['tag']
+                with client(**params, writable=True) as gm:
+                    sync_gmail_folder(gm, tag, flags_by_uid_local)
 
-        uids_to_remote = both_changes | local_changes
-        if uids_to_remote:
-            log.info('Sync flags to gmail: %s', uids_to_remote)
-            with client(writable=True) as gm:
-                for uid in uids_to_remote:
-                    sync_msg_to_remote(
-                        gm, msgids_by_uid[uid], flags_by_uid_local[uid]
-                    )
-
+        remote_changes = set(flags_by_uid_remote) - local_changes
         if remote_changes:
-            flags_synced = {'#trash', '#spam', '#inbox', '\\Flagged', '\\Seen'}
             log.info('Sync flags from gmail: %s', remote_changes)
-            for uid in remote_changes:
-                parsed_uids = local.pair_origin_uids([uid])
-                flags = flags_by_uid_remote[uid]
-                if flags:
-                    local.msgs_flag(parsed_uids, [], flags)
-                flags_removed = flags_synced - flags
-                if flags_removed:
-                    local.msgs_flag(parsed_uids, flags_removed, [])
+            sync_local({k: flags_by_uid_remote[k] for k in remote_changes})
 
     for params in get_folders():
         get_remote_flags_for_sync(**params)
@@ -504,7 +546,10 @@ def sync(only_flags=False):
 
     account = data_account.get()
     if account.get('gmail'):
-        return sync_gmail()
+        try:
+            return sync_gmail()
+        except lock.Error as e:
+            log.warn(e)
 
 
 def send(msg):
