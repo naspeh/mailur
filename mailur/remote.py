@@ -464,6 +464,10 @@ def sync_gmail(con=None):
         modseq_key = box_key(box, tag)
         modseq_gmail = data_modseq.key(modseq_key, 1)
         with client(tag, box=box) as gm:
+            if modseq_gmail >= gm.highestmodseq:
+                log.info('Nothing to sync on gmail: modseq=%s' % modseq_gmail)
+                return
+
             modseqs[modseq_key] = gm.highestmodseq
             fields = (
                 '(UID X-GM-MSGID X-GM-LABELS FLAGS) (CHANGEDSINCE %s)'
@@ -495,6 +499,10 @@ def sync_gmail(con=None):
     def get_local_flags_for_sync():
         modseq_key = box_key(tag='\\Local')
         modseq_local = data_modseq.key(modseq_key, 1)
+        if modseq_local >= con.highestmodseq:
+            log.info('Nothing to sync on local: modseq=%s' % modseq_local)
+            return
+
         modseqs[modseq_key] = con.highestmodseq
         res = con.fetch('1:*', '(UID FLAGS) (CHANGEDSINCE %s)' % modseq_local)
         for line in res:
@@ -531,9 +539,10 @@ def sync_gmail(con=None):
 
     sync_flags(flags_by_uid_local, flags_by_uid_remote)
 
-    log.info('modseqs: %s', modseqs)
-    for key, value in modseqs.items():
-        data_modseq(key, value)
+    if modseqs:
+        log.info('modseqs: %s', modseqs)
+        for key, value in modseqs.items():
+            data_modseq(key, value)
 
 
 def sync(only_flags=False):
