@@ -367,6 +367,7 @@ def sync_gmail(con=None):
         '\\Flagged': '\\Starred',
     }
     folders = {'#trash', '#spam'}
+    folder_gmail_tags = {label_by_flag[f] for f in folders}
     flags_in_sync = {'#trash', '#spam', '#inbox', '\\Flagged', '\\Seen'}
 
     def find_uid_remote(gm, msgid):
@@ -381,6 +382,8 @@ def sync_gmail(con=None):
         return uid, tag
 
     def gen_gmail_actions(actions, uid, flags, mark):
+        if not flags:
+            return
         flags = sorted(flags)
         labels = {label_by_flag[f] for f in flags if f in label_by_flag}
         key = ('%sX-GM-LABELS' % mark, ' '.join(labels))
@@ -419,12 +422,16 @@ def sync_gmail(con=None):
             flags_local = flags_by_uid_local[local_uid]
             flags_to_add = flags_local - flags_remote
             if flags_to_add:
+                inbox = {'#inbox'}
+                if flags_local & folders and flags_to_add & inbox:
+                    # remove \\Inbox first
+                    gen_gmail_actions(actions, uid, flags_local & inbox, '-')
+                    flags_to_add = flags_to_add - inbox
                 gen_gmail_actions(actions, uid, flags_to_add, '+')
             flags_to_del = flags_remote - flags_local
             if flags_to_del:
                 gen_gmail_actions(actions, uid, flags_to_del, '-')
-                folder_tags = {label_by_flag[f] for f in folders}
-                if flags_to_del.intersection(folders) and tag in folder_tags:
+                if flags_to_del & folders and tag in folder_gmail_tags:
                     # move to \\All first, by adding \\Inbox
                     gen_gmail_actions(actions, uid, {'#inbox'}, '+')
 
@@ -433,6 +440,8 @@ def sync_gmail(con=None):
             gm.store(uids, *action)
 
     def gen_local_actions(actions, uid, flags, mark):
+        if not flags:
+            return
         flags = sorted(flags)
         key = ('%sFLAGS.SILENT' % mark, ' '.join(flags))
         actions.setdefault(key, [])

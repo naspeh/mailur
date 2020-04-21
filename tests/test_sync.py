@@ -174,6 +174,21 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
         ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
     ]
 
+    actions.clear()
+    con_src = local.client(local.SRC, readonly=False)
+    con_src.store('2', '+FLAGS', '#inbox')
+    sleep(3)
+    con_src.store('2', '+FLAGS', '#trash')
+    sleep(3)
+    expected_flags[1] = '#inbox #1 #trash'
+    assert [i['flags'] for i in msgs(local.SRC)] == expected_flags
+    assert [i['flags'] for i in msgs()] == expected_flags
+    assert actions == [
+        ('102', '+X-GM-LABELS', ['\\Inbox']),
+        ('102', '-X-GM-LABELS', ['\\Inbox']),
+        ('102', '+X-GM-LABELS', ['\\Trash']),
+    ]
+
 
 def test_cli_idle_general_imap(gm_client, msgs, login, patch):
     remote.data_account({
