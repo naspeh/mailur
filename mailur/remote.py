@@ -6,7 +6,7 @@ import smtplib
 
 from gevent import socket, ssl
 
-from . import fn_time, imap, imap_utf7, local, lock, log, message, schema
+from . import conf, fn_time, imap, imap_utf7, local, lock, log, message, schema
 
 SKIP_DRAFTS = True
 
@@ -563,7 +563,7 @@ def sync(only_flags=False):
             log.warn(e)
 
     account = data_account.get()
-    if account.get('gmail'):
+    if account.get('gmail') and conf['GMAIL_TWO_WAY_SYNC']:
         try:
             return sync_gmail()
         except lock.Error as e:

@@ -13,13 +13,14 @@ json = ujson
 conf = {
     'DEBUG': os.environ.get('MLR_DEBUG', True),
     'DEBUG_IMAP': os.environ.get('MLR_DEBUG_IMAP', 0),
-    'IMAP_OFF': os.environ.get('MLR_IMAP_OFF', '').split(),
     'SECRET': os.environ.get('MLR_SECRET', uuid.uuid4().hex),
     'MASTER': os.environ.get('MLR_MASTER', 'root:root').split(':'),
     'SIEVE': os.environ.get('MLR_SIEVE', 'sieve:root').split(':'),
     'USER': os.environ.get('MLR_USER'),
     'DOMAIN': os.environ.get('MLR_DOMAIN', 'localhost'),
     'USE_PROXY': os.environ.get('MLR_USE_PROXY', False),
+    'IMAP_OFF': os.environ.get('MLR_IMAP_OFF', '').split(),
+    'GMAIL_TWO_WAY_SYNC': os.environ.get('MLR_GMAIL_TWO_WAY_SYNC', False),
 }
 
 
