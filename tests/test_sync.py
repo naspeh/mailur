@@ -1,6 +1,8 @@
+from unittest.mock import patch
+
 from gevent import sleep, spawn
 
-from mailur import cli, local, remote
+from mailur import cli, conf, local, remote
 
 
 def test_local(gm_client, msgs):
@@ -79,6 +81,7 @@ def test_local(gm_client, msgs):
     ]
 
 
+@patch.dict(conf, {'GMAIL_TWO_WAY_SYNC': '1'})
 def test_cli_idle_gmail(gm_client, msgs, login, patch):
     actions = []
 

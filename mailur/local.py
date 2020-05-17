@@ -521,7 +521,7 @@ def link_threads(uids, unlink=False, con=None):
     links = data_links.get()
 
     link = set(msgs[uid]['msgid'] for uid in all_uids)
-    links = [l for l in links if not link.intersection(l)]
+    links = [i for i in links if not link.intersection(i)]
     if not unlink:
         links.append(sorted(link))
 
@@ -645,7 +645,7 @@ def update_threads(uids, thrids=None, thrs=None, con=None):
     for uids in orig_thrs:
         uids_set = set(uids)
         if uids_set.intersection(linked_uids):
-            uids = (list(l) for l in all_links if uids_set.intersection(l))
+            uids = (list(i) for i in all_links if uids_set.intersection(i))
             uids = sum(uids, [])
             uids = uids + [uid for uid in uids_set if uid not in uids]
 
