@@ -390,11 +390,12 @@ def test_sieve_run(gm_client, msgs, some):
 
     assert [m['flags'] for m in msgs(local.SRC)] == [
         '#sent', '#sent', '#spam',
-        '#sent #personal', '#inbox #personal', '#inbox #personal',
+        '#sent', '#inbox', '#inbox',
         '#inbox', '#inbox', '#spam #inbox'
     ]
+    local.sync_flags_to_all()
     assert [m['flags'] for m in msgs()] == [
         '#sent', '#sent', '#spam',
-        '#sent #personal', '#personal #inbox', '#personal #inbox',
+        '#sent', '#inbox', '#inbox',
         '#inbox', '#inbox', '#spam #inbox'
     ]

@@ -995,7 +995,7 @@ def test_drafts_part2(gm_client, login, sendmail, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '2']
     assert [i['uid'] for i in msgs()] == ['3', '4']
     m = latest(parsed=True)
-    assert m['flags'] == '\\Seen \\Draft test #personal'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['draft_id'] == some
     draft_id = some.value
     assert re.match(r'\<[^\>]+\>', draft_id)
@@ -1013,7 +1013,7 @@ def test_drafts_part2(gm_client, login, sendmail, msgs, latest, patch, some):
         '<101@mlr>': ['3'],
         m['meta']['msgid']: ['4']
     }
-    assert m['flags'] == '\\Seen \\Draft test #personal'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == []
     assert m['meta']['draft_id'] == draft_id
     assert m['body_full']['x-draft-id'] == draft_id
@@ -1070,7 +1070,7 @@ def test_drafts_part2(gm_client, login, sendmail, msgs, latest, patch, some):
         '<101@mlr>': ['3'],
         m['meta']['msgid']: ['5']
     }
-    assert m['flags'] == '\\Seen \\Draft test #personal'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
@@ -1112,7 +1112,7 @@ def test_drafts_part2(gm_client, login, sendmail, msgs, latest, patch, some):
     assert [i['uid'] for i in msgs(local.SRC)] == ['1', '4']
     assert [i['uid'] for i in msgs()] == ['3', '6']
     m = latest(parsed=1, policy=email.policy.default)
-    assert m['flags'] == '\\Seen \\Draft test #personal'
+    assert m['flags'] == '\\Seen \\Draft test'
     assert m['meta']['files'] == [
         {
             'filename': 'test.rst',
@@ -1769,9 +1769,5 @@ def test_sieve_scripts(gm_client, login, some, msgs):
     })
     res = web.post_json('/filters', params).json
     assert res == {}
-    assert [m['flags'] for m in msgs(local.SRC)] == [
-        '#sent #1 #personal', '#sent #personal #4'
-    ]
-    assert [m['flags'] for m in msgs()] == [
-        '#sent #1 #personal', '#sent #personal #4'
-    ]
+    assert [m['flags'] for m in msgs(local.SRC)] == ['#sent #1', '#sent #4']
+    assert [m['flags'] for m in msgs()] == ['#sent #1', '#sent #4']

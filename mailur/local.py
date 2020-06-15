@@ -318,7 +318,7 @@ def sieve_run(query, script, box=SRC, con=None):
     msgs = data_msgs.get()
     _, addrs_to = data_addresses.get()
     uids = con.search('keyword #spam')
-    spamers = (msgs[uid].get('from', {}).get('addr') for uid in uids)
+    spamers = (msgs.get(uid, {}).get('from', {}).get('addr') for uid in uids)
     spamers = [a for a in spamers if a]
     values = {
         'spamers': json.dumps(spamers or ''),
@@ -341,12 +341,6 @@ def sieve_scripts(name=None):
         address :is "from" %(spamers)s
     ) {
         addflag "#spam";
-    }
-    if allof(
-        not string :is "" %(my_recipients)s,
-        address :is "from" %(my_recipients)s
-    ) {
-        addflag "#personal";
     }
     ''').strip()
 
@@ -581,8 +575,6 @@ def parse(criteria=None, con=None, **opts):
     uidnext = con.uidnext
     log.info('## new: uidnext: %s', uidnext)
 
-    sieve_run('UID %s' % ','.join(uids), sieve_scripts('auto'))
-
     log.info('## criteria: %r; %s uids', criteria, len(uids))
     count = con.select(ALL)[0].decode()
     if count != '0':
@@ -605,6 +597,8 @@ def parse(criteria=None, con=None, **opts):
 
     data_uidnext(uidnext)
     update_metadata(puids)
+
+    sieve_run('UID %s' % uids.str, sieve_scripts('auto'))
 
 
 @metadata('threads', lambda: [{}, {}])
