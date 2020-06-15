@@ -14,7 +14,7 @@ class Error(Exception):
 
 
 @contextmanager
-def global_scope(target, timeout=180, wait=3, force=False):
+def global_scope(target, timeout=180, wait=5, force=False):
     path = '/tmp/%s' % (hashlib.md5(target.encode()).hexdigest())
 
     def is_locked():
@@ -46,7 +46,7 @@ def global_scope(target, timeout=180, wait=3, force=False):
         locked = is_locked()
         if not locked:
             break
-        sleep(1)
+        sleep(0.5 * i)
 
     if locked:
         msg = (

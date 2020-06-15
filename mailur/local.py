@@ -421,7 +421,7 @@ def clean_msgs(uids):
 @fn_time
 @using(parent=True)
 @using(SYS, name=None, parent=True)
-@lock.user_scope('update_metadata')
+@lock.user_scope('update_metadata', wait=10)
 def update_metadata(uids=None, clean=False, con=None):
     if clean:
         clean_msgs(uids)
