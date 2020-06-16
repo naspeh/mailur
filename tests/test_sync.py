@@ -91,7 +91,8 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
             index = fields.split()[-1]
             if index == '5)':
                 return ('OK', [
-                    b'4 (X-GM-MSGID 10400 X-GM-LABELS ("\\Inbox" "\\Starred") '
+                    b'4 (X-GM-MSGID 10400 '
+                    b'X-GM-LABELS ("\\Inbox" "\\Starred" "mlr/thrid/777") '
                     b'FLAGS (\\Seen) UID 104 MODSEQ (427368))'
                 ])
             return ('OK', [])
@@ -165,13 +166,13 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
     assert [i['flags'] for i in msgs()] == expected_flags
 
     assert actions == [
-        ('101', '-X-GM-LABELS', ['\\Junk']),
+        ('101', '-X-GM-LABELS', ['\\Spam']),
         ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
         ('101', '-X-GM-LABELS', ['\\Trash']),
         ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
         ('104', '+X-GM-LABELS', ['\\Inbox', '\\Starred']),
         ('104', '+X-GM-LABELS', ['\\Inbox', '\\Starred']),
-        ('101', '-X-GM-LABELS', ['\\Junk']),
+        ('101', '-X-GM-LABELS', ['\\Spam']),
         ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All
         ('101', '-X-GM-LABELS', ['\\Trash']),
         ('101', '+X-GM-LABELS', ['\\Inbox']),  # move to \\All

@@ -9,6 +9,7 @@ from gevent import socket, ssl
 from . import conf, fn_time, imap, imap_utf7, local, lock, log, message, schema
 
 SKIP_DRAFTS = True
+thrid_re = re.compile(r'(^| )mlr/thrid/\d+')
 
 
 @local.setting('remote/account')
@@ -277,10 +278,9 @@ def fetch_gmail(uids, box, tag, con=None):
                 'X-GM-THRID: <%s>' % parts['thrid'],
                 'X-GM-Login: <%s>' % login,
             ]
-            thrid_re = r'(^| )mlr/thrid/\d+'
-            thrid = re.search(thrid_re, flags)
+            thrid = thrid_re.search(flags)
             if thrid:
-                flags = re.sub(thrid_re, '', flags)
+                flags = thrid_re.sub('', flags)
                 thrid = thrid.group().strip()
                 headers.append('X-Thread-ID: <%s@mailur.link>' % thrid)
 
@@ -362,12 +362,12 @@ def sync_gmail(con=None):
 
     label_by_flag = {
         '#trash': '\\Trash',
-        '#spam': '\\Junk',
+        '#spam': '\\Spam',
         '#inbox': '\\Inbox',
         '\\Flagged': '\\Starred',
     }
     folders = {'#trash', '#spam'}
-    folder_gmail_tags = {label_by_flag[f] for f in folders}
+    folder_gmail_tags = {'\\Trash', '\\Junk'}
     flags_in_sync = {'#trash', '#spam', '#inbox', '\\Flagged', '\\Seen'}
 
     def find_uid_remote(gm, msgid):
@@ -503,7 +503,7 @@ def sync_gmail(con=None):
                 if not uid:
                     # probably draft
                     continue
-                flags_by_uid_remote[uid] = set(flags.split())
+                flags_by_uid_remote[uid] = set(flags.split()) & flags_in_sync
 
     def get_local_flags_for_sync():
         modseq_key = box_key(tag='\\Local')
