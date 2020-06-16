@@ -9,8 +9,8 @@ import urllib.request
 from multiprocessing.pool import ThreadPool
 
 from bottle import Bottle, HTTPError, abort, request, response, template
+from dateutil import tz, zoneinfo
 from itsdangerous import BadData, BadSignature, URLSafeSerializer
-from pytz import common_timezones, timezone, utc
 
 from . import conf, html, imap, json, local, lock, log, message, remote, schema
 
@@ -18,6 +18,7 @@ root = pathlib.Path(__file__).parent.parent
 assets = (root / 'assets/dist').resolve()
 app = Bottle()
 app.catchall = not conf['DEBUG']
+all_timezones = list(zoneinfo.get_zonefile_instance().zones)
 
 
 def session(callback):
@@ -128,7 +129,7 @@ def login_html(theme=None):
     theme = request.query.get('theme') or request.session.get('theme')
     return render_tpl(theme, 'login', {
         'themes': themes(),
-        'timezones': list(common_timezones),
+        'timezones': list(all_timezones),
     })
 
 
@@ -140,7 +141,7 @@ def login():
         'properties': {
             'username': {'type': 'string'},
             'password': {'type': 'string'},
-            'timezone': {'type': 'string', 'enum': common_timezones},
+            'timezone': {'type': 'string', 'enum': all_timezones},
             'theme': {'type': 'string', 'default': 'base'}
         },
         'required': ['username', 'password', 'timezone']
@@ -1004,7 +1005,7 @@ def wrap_msgs(items, hide_tags=None):
     )
     linked_uids = sum(linked_uids, [])
 
-    tz = request.session['timezone']
+    timezone = request.session['timezone']
     msgs = {}
     for uid, txt, flags, addrs in items:
         if isinstance(txt, bytes):
@@ -1054,8 +1055,8 @@ def wrap_msgs(items, hide_tags=None):
             'query_subject': base_q + query_header('subj', info['subject']),
             'query_msgid': base_q + 'ref:%s' % info['msgid'],
             'url_raw': app.get_url('raw', uid=info['origin_uid']),
-            'time_human': humanize_dt(info['arrived'], tz=tz),
-            'time_title': format_dt(info['arrived'], tz=tz),
+            'time_human': humanize_dt(info['arrived'], timezone),
+            'time_title': format_dt(info['arrived'], timezone),
         })
         styles, ext_images = info.get('styles'), info.get('ext_images')
         if styles or ext_images:
@@ -1104,25 +1105,23 @@ def wrap_addresses(addrs, field='from', max=None, base_q=''):
     return addrs_few
 
 
-def localize_dt(val, tz=utc):
+def localize_dt(val, timezone=tz.UTC):
+    if isinstance(timezone, str):
+        timezone = tz.gettz(timezone)
     if isinstance(val, (float, int)):
-        val = dt.datetime.fromtimestamp(val)
-    if not val.tzinfo:
-        val = utc.localize(val)
-    if isinstance(tz, str):
-        tz = timezone(tz)
-    if tz != utc:
-        val = val.astimezone(tz)
+        val = dt.datetime.fromtimestamp(val, tz=timezone)
+    if timezone != tz.UTC:
+        val = val.astimezone(timezone)
     return val
 
 
-def format_dt(value, tz=utc, fmt='%a, %d %b, %Y at %H:%M'):
-    return localize_dt(value, tz).strftime(fmt)
+def format_dt(value, timezone=tz.UTC, fmt='%a, %d %b, %Y at %H:%M'):
+    return localize_dt(value, timezone).strftime(fmt)
 
 
-def humanize_dt(val, tz=utc, secs=False):
-    val = localize_dt(val, tz)
-    now = localize_dt(dt.datetime.utcnow(), tz)
+def humanize_dt(val, timezone=tz.UTC, secs=False):
+    val = localize_dt(val, timezone)
+    now = dt.datetime.now(tz=tz.UTC)
     if (now - val).total_seconds() < 12 * 60 * 60:
         fmt = '%H:%M' + (':%S' if secs else '')
     elif now.year == val.year:
