@@ -30,11 +30,13 @@ This version is already in use. It has minimal feature set I need on daily basis
 
 ### Updates
 - `[Nowadays]` Stay tuned...
+- `[May 2020]` Two-way syncing for five Gmail flags and labels (details here [#13])
 - `[Mar 2019]` [Feature overview.][mlr-features]
 - `[Mar 2019]` [Dovecot as main storage.][mlr-dovecot]
 - `[Nov 2015]` [`code`][v02code] [The alpha version.][v02post] Postgres based. We used it over 2 years on daily basis.
 - `[Apr 2014]` [`code`][v01code] [The first prototype.][v01post]
 
+[#13]: https://github.com/naspeh/mailur/issues/13
 [v02code]: https://github.com/naskoro/mailur-pg
 [v02post]: https://pusto.org/mailur/alpha/
 [v01code]: https://github.com/naskoro/mailur-pg/tree/prototype
