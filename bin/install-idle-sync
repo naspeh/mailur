@@ -11,7 +11,7 @@ Description=mailur-$user
 Wants=network.target
 After=network.target
 [Service]
-ExecStart=/bin/sh -c '. bin/activate && exec mlr sync $user --timeout=$timeout'
+ExecStart=/bin/sh -c '. bin/activate && exec mlr $user sync --timeout=$timeout'
 WorkingDirectory=/opt/mailur
 Restart=always
 RestartSec=10

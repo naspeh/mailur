@@ -1,30 +1,9 @@
-"""Mailur CLI
-
-Usage:
-  mlr remote <login> set <username> <password> --imap=<host> --smtp=<host>
-  mlr remote <login> [--tag=<tag> --box=<box> --parse] [options]
-  mlr parse <login> [<criteria>] [options]
-  mlr metadata <login> [<uids>]
-  mlr sync <login> [--timeout=<timeout>]
-  mlr sync-flags <login> [--reverse]
-  mlr clean-flags <login> <flag>...
-  mlr icons
-  mlr web
-  mlr lint [--ci]
-  mlr test
-  mlr -h | --help
-  mlr --version
-
-Options:
-  -b <batch>    Batch size [default: 1000].
-  -t <threads>  Amount of threads for thread pool [default: 2].
-"""
+import argparse
 import functools as ft
 import pathlib
 import sys
 import time
 
-from docopt import docopt
 from gevent import joinall, sleep, spawn
 
 from . import conf, local, log, remote
@@ -35,60 +14,101 @@ root = pathlib.Path(__file__).resolve().parent.parent
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
-    args = docopt(__doc__, args, version='Mailur 0.3')
+    if isinstance(args, str):
+        args = args.split()
+
     try:
+        parser = build_parser(args)
+        args = parser.parse_args(args)
+        if not hasattr(args, 'cmd'):
+            parser.print_usage()
+            exit(2)
         process(args)
     except KeyboardInterrupt:
         raise SystemExit('^C')
 
 
+def build_parser(args):
+    parser = argparse.ArgumentParser('Mailur CLI')
+    parser.add_argument('login', help='local user')
+    cmds = parser.add_subparsers(title='commands')
+
+    def cmd(name, **kw):
+        p = cmds.add_parser(name, **kw)
+        p.set_defaults(cmd=name)
+        p.arg = lambda *a, **kw: p.add_argument(*a, **kw) and p
+        p.exe = lambda f: p.set_defaults(exe=f) or p
+        return p
+
+    cmd('remote-setup-imap')\
+        .arg('username')\
+        .arg('password')\
+        .arg('--imap', required=True)\
+        .arg('--smtp', required=True)
+
+    cmd('remote-setup-gmail')\
+        .arg('username')\
+        .arg('password')\
+        .arg('--imap', default='imap.gmail.com')\
+        .arg('--smtp', default='smtp.gmail.com')
+
+    cmd('remote')\
+        .arg('--tag')\
+        .arg('--box')\
+        .arg('--parse', action='store_true')\
+        .arg('--batch', type=int, default=1000, help='batch size')\
+        .arg('--threads', type=int, default=2, help='thread pool size')
+
+    cmd('parse')\
+        .arg('criteria', nargs='?')\
+        .arg('--batch', type=int, default=1000, help='batch size')\
+        .arg('--threads', type=int, default=2, help='thread pool size')
+
+    cmd('metadata')\
+        .arg('uids', nargs='?')\
+        .exe(lambda args: local.update_metadata(args.uids))
+
+    cmd('sync')\
+        .arg('--timeout', type=int, default=1200, help='timeout in seconds')\
+        .exe(lambda args: sync(args.timeout))
+
+    cmd('sync-flags')\
+        .arg('--reverse', action='store_true')\
+        .exe(lambda args: (
+            local.sync_flags_to_src()
+            if args.reverse
+            else local.sync_flags_to_all()
+        ))
+
+    cmd('clean-flags')\
+        .arg('flag', nargs='+')\
+        .exe(lambda args: local.clean_flags(args.flag))
+    return parser
+
+
 def process(args):
-    conf['USER'] = args['<login>']
-    opts = {
-        'batch': int(args.get('-b')),
-        'threads': int(args.get('-t')),
-    }
-    if args['remote'] and args['set']:
+    conf['USER'] = args.login
+    if hasattr(args, 'exe'):
+        args.exe(args)
+    elif args.cmd in ('remote-setup-imap', 'remote-setup-gmail'):
         remote.data_account({
-            'username': args['<username>'],
-            'password': args['<password>'],
-            'imap_host': args['--imap'],
-            'smtp_host': args['--smtp'],
+            'username': args.username,
+            'password': args.password,
+            'imap_host': args.imap,
+            'smtp_host': args.smtp,
         })
-    elif args['remote']:
-        select_opts = dict(tag=args['--tag'], box=args['--box'])
+    elif args.cmd == 'remote':
+        opts = dict(threads=args.threads, batch=args.batch)
+        select_opts = dict(tag=args.tag, box=args.box)
         fetch_opts = dict(opts, **select_opts)
         fetch_opts = {k: v for k, v in fetch_opts.items() if v}
 
         remote.fetch(**fetch_opts)
-        if args['--parse']:
+        if args.parse:
             local.parse(**opts)
-    elif args['parse']:
-        local.parse(args.get('<criteria>'), **opts)
-    elif args['sync']:
-        timeout = args.get('--timeout')
-        params = [int(timeout)] if timeout else []
-        sync(*params)
-    elif args['sync-flags']:
-        if args['--reverse']:
-            local.sync_flags_to_src()
-        else:
-            local.sync_flags_to_all()
-    elif args['clean-flags']:
-        local.clean_flags(args['<flag>'])
-    elif args['metadata']:
-        local.update_metadata(args.get('<uids>'))
-    elif args['icons']:
-        icons()
-    elif args['web']:
-        web()
-    elif args['test']:
-        run('pytest -q --cov=mailur --cov-report=term-missing')
-    elif args['lint']:
-        ci = args['--ci'] and 1 or ''
-        run('ci=%s bin/run-lint' % ci)
-    else:
-        raise SystemExit('Target not defined:\n%s' % args)
+    elif args.cmd == 'parse':
+        opts = dict(threads=args.threads, batch=args.batch)
+        local.parse(args.criteria, **opts)
 
 
 def run_forever(fn):
@@ -133,63 +153,6 @@ def sync(timeout=1200):
         joinall(jobs, raise_error=True)
     except KeyboardInterrupt:
         time.sleep(1)
-
-
-def web():
-    from gevent.subprocess import run
-    from gevent.pool import Pool
-
-    def api():
-        run('bin/run-web', shell=True)
-
-    def webpack():
-        run('command -v yarn && yarn run dev || npm run dev', shell=True)
-
-    try:
-        pool = Pool()
-        pool.spawn(api)
-        pool.spawn(webpack)
-        pool.join()
-    except KeyboardInterrupt:
-        time.sleep(1)
-
-
-def run(cmd):
-    from sys import exit
-    from subprocess import call
-
-    check = 'command -v pytest'
-    if call(check, cwd=root, shell=True):
-        raise SystemExit(
-            'Test dependencies must be installed.\n'
-            '$ pip install -e .[test]'
-        )
-
-    cmd = 'sh -xc %r' % cmd
-    exit(call(cmd, cwd=root, shell=True))
-
-
-def icons():
-    import json
-    import bottle
-
-    font = root / 'assets/font'
-    sel = (font / 'selection.json').read_text()
-    sel = json.loads(sel)
-    sel_pretty = json.dumps(sel, indent=2, ensure_ascii=False, sort_keys=True)
-    (font / 'selection.json').write_text(sel_pretty)
-    icons = [
-        (i['properties']['name'], '\\%s' % hex(i['properties']['code'])[2:])
-        for i in sel['icons']
-    ]
-    tpl = str((font / 'icons.less.tpl').resolve())
-    txt = bottle.template(
-        tpl, icons=icons,
-        template_settings={'syntax': '{% %} % {{ }}'}
-    )
-    f = font / 'icons.less'
-    f.write_text(txt)
-    print('%s updated' % f)
 
 
 if __name__ == '__main__':

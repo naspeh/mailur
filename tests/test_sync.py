@@ -140,7 +140,7 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
     gm_client.fake_search = search
     gm_client.fake_store = store
 
-    spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
+    spawn(lambda: cli.main('%s sync --timeout=300' % login.user1))
     sleep(5)
 
     gm_client.add_emails([{}] * 4, fetch=False, parse=False)
@@ -203,7 +203,7 @@ def test_cli_idle_general_imap(gm_client, msgs, login, patch):
     })
     assert remote.get_folders() == [{'tag': '\\All'}]
 
-    spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
+    spawn(lambda: cli.main('%s sync --timeout=300' % login.user1))
     sleep(2)
 
     gm_client.add_emails([{}] * 4, fetch=False, parse=False)
@@ -215,7 +215,7 @@ def test_cli_idle_general_imap(gm_client, msgs, login, patch):
     gm_client.list = []
     xlist = [('OK', [b'(\\HasNoChildren) "/" INBOX'])] * 10
     with patch.object(gm_client, 'list', xlist):
-        spawn(lambda: cli.main('sync %s --timeout=300' % login.user1))
+        spawn(lambda: cli.main('%s sync --timeout=300' % login.user1))
         sleep(2)
 
         gm_client.add_emails([{'flags': '#inbox'}], fetch=False, parse=False)
@@ -236,13 +236,13 @@ def test_cli_all_flags(gm_client, msgs, login):
 
     con_src.store('1:*', '+FLAGS', '#1')
     con_all.store('1:*', '+FLAGS', '#2')
-    cli.main('sync-flags %s' % login.user1)
+    cli.main('%s sync-flags' % login.user1)
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1'] * 5
     assert [i['flags'] for i in msgs()] == ['#1'] * 5
 
     con_src.store('1:*', '+FLAGS', '#2')
     con_all.store('1:*', '+FLAGS', '#3')
-    cli.main('sync-flags %s --reverse' % login.user1)
+    cli.main('%s sync-flags --reverse' % login.user1)
     assert [i['flags'] for i in msgs(local.SRC)] == ['#1 #3'] * 5
     assert [i['flags'] for i in msgs()] == ['#1 #3'] * 5
 
@@ -264,10 +264,10 @@ def test_clean_flags(gm_client, msgs, login):
     assert [i['flags'] for i in msgs(local.SRC)] == ['#tag1', '#tag2 #tag3']
     assert [i['flags'] for i in msgs()] == ['#tag1 #tag3', '#tag2']
 
-    cli.main('clean-flags %s #tag1' % login.user1)
+    cli.main('%s clean-flags #tag1' % login.user1)
     assert [i['flags'] for i in msgs(local.SRC)] == ['', '#tag2 #tag3']
     assert [i['flags'] for i in msgs()] == ['#tag3', '#tag2']
 
-    cli.main('clean-flags %s #tag2 #tag3' % login.user1)
+    cli.main('%s clean-flags #tag2 #tag3' % login.user1)
     assert [i['flags'] for i in msgs(local.SRC)] == ['', '']
     assert [i['flags'] for i in msgs()] == ['', '']

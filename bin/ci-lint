@@ -23,5 +23,5 @@ set -exuo pipefail
 cd /opt/mailur
 
 . bin/activate
-mlr lint --ci
+bin/manage.py lint --ci
 EOF
