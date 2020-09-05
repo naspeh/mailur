@@ -402,7 +402,9 @@ def clean_msgs(uids):
     msgids = data_msgids.get()
 
     for uid in uids:
-        msg = msgs.pop(uid)
+        msg = msgs.pop(uid, None)
+        if not msg:
+            continue
         uidpairs.pop(msg['origin_uid'], None)
         mid = msg['msgid']
         ids = msgids[mid]
@@ -416,6 +418,24 @@ def clean_msgs(uids):
     data_uidpairs(uidpairs)
     data_msgids(msgids)
     log.info('## cleaned %s messages' % len(uids))
+
+
+@fn_time
+@using()
+def clean_duplicate_msgs(con=None):
+    pids = con.search('ALL')
+    pid_by_oids = data_uidpairs.get()
+    legal_pids = set(pid_by_oids.values())
+    duplicates = [pid for pid in pids if pid not in legal_pids]
+    if sorted(pids) == sorted(legal_pids):
+        log.info('No duplicates in parsed messages')
+    else:
+        log.warning(
+            'Probably %s duplicates in parsed messages',
+            len(duplicates)
+        )
+        log.warning('Clean parsed messages: %s', duplicates)
+        clean_parsed_msgs(duplicates)
 
 
 @fn_time
@@ -548,6 +568,16 @@ def parse_msgs(uids, con=None):
 
 
 @fn_time
+@using(ALL, readonly=False)
+def clean_parsed_msgs(uids, con=None):
+    uids = imap.Uids(uids)
+    log.info('## deleting %s from %r', uids, ALL)
+    con.store(uids, '+FLAGS.SILENT', '\\Deleted')
+    con.expunge()
+    update_metadata(uids.val, clean=True)
+
+
+@fn_time
 @lock.user_scope('parse')
 @using(None)
 def parse(criteria=None, con=None, **opts):
@@ -584,11 +614,7 @@ def parse(criteria=None, con=None, **opts):
             puids = pair_origin_uids(uids)
         if puids:
             con.select(ALL, readonly=False)
-            puids = imap.Uids(puids)
-            log.info('## deleting %s from %r', puids, ALL)
-            con.store(puids, '+FLAGS.SILENT', '\\Deleted')
-            con.expunge()
-            update_metadata(puids.val, clean=True)
+            clean_parsed_msgs(puids, con=con)
 
     uids = imap.Uids(uids, **opts)
     puids = ','.join(uids.call_async(parse_msgs, uids))

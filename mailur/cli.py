@@ -66,7 +66,7 @@ def build_parser(args):
 
     cmd('metadata')\
         .arg('uids', nargs='?')\
-        .exe(lambda args: local.update_metadata(args.uids))
+        .arg('--fix-duplicates', action='store_true')
 
     cmd('sync')\
         .arg('--timeout', type=int, default=1200, help='timeout in seconds')\
@@ -109,6 +109,10 @@ def process(args):
     elif args.cmd == 'parse':
         opts = dict(threads=args.threads, batch=args.batch)
         local.parse(args.criteria, **opts)
+    elif args.cmd == 'metadata':
+        if args.fix_duplicates:
+            local.clean_duplicate_msgs()
+        local.update_metadata(args.uids)
 
 
 def run_forever(fn):

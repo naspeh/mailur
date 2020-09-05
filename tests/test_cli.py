@@ -20,6 +20,29 @@ def test_general(gm_client, login, msgs, patch, call):
         assert m.update_metadata.called
 
     cli.main('%s metadata' % login.user1)
+    with local.client() as con:
+        con.copy(['1', '2'], local.ALL)
+        puids = con.search('ALL')
+        con.select(local.SRC)
+        ouids = con.search('ALL')
+        assert len(puids) == (2 * len(ouids))
+
+        cli.main('%s metadata' % login.user1)
+        con.select(local.ALL)
+        all_puids = con.search('ALL')
+        assert len(all_puids) == 4
+        local.link_threads(ouids)
+        cli.main('%s metadata --fix-duplicates' % login.user1)
+        cli.main('%s metadata' % login.user1)
+
+        con.select(local.ALL)
+        puids = con.search('ALL')
+        con.select(local.SRC)
+        ouids = con.search('ALL')
+        assert len(puids) == len(ouids)
+        puids_from_msgs = sorted(local.data_msgs.get())
+        puids_from_pairs = sorted(local.data_uidpairs.get().values())
+        assert puids_from_msgs == puids_from_pairs
 
     with patch('mailur.cli.remote.fetch_folder') as m:
         cli.main('%s remote' % login.user1)
