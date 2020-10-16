@@ -38,9 +38,10 @@ EOF
 #localectl set-locale LANG=en_US.utf8
 #timedatectl set-timezone UTC
 
+yum install -y epel-release
+
 bin/install-dovecot
 
-yum install -y epel-release
 yum install -y python36 python36-devel gcc
 env=${env:-/opt/mailur/env}
 pip=$env/bin/pip

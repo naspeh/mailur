@@ -40,8 +40,8 @@ def main(args=None):
 
 
 def web():
-    from gevent.subprocess import run
     from gevent.pool import Pool
+    from gevent.subprocess import run
 
     def api():
         run('bin/run-web', shell=True)
@@ -59,8 +59,8 @@ def web():
 
 
 def run(cmd):
-    from sys import exit
     from subprocess import call
+    from sys import exit
 
     check = 'command -v pytest'
     if call(check, cwd=root, shell=True):
@@ -75,6 +75,7 @@ def run(cmd):
 
 def icons():
     import json
+
     import bottle
 
     font = root / 'assets/font'

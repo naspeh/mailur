@@ -2,31 +2,22 @@
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
 
-VERSION_ID=20.04
+VERSION_ID=$(lsb_release -sr)
 echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
 curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
 sudo apt-get -y update
-sudo apt-get -y upgrade 
 sudo apt-get -y install podman
 
-ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
-touch ~/.ssh/authorized_keys
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+sudo podman rm -f mlr 2>/dev/null || true
 
-cat << EOF | podman run -v .:/opt/mailur -v /root:/root --name mlr -i centos:7
-yum install -y openssh-server
-yum install -y epel-release
-EOF
+sudo podman run -v .:/opt/mailur --name mlr -d centos:7 /sbin/init
 
-podman commit mlr mlr
-podman rm mlr
-
-podman run -v .:/opt/mailur -v /root:/root --name mlr -p 2200:22 -d mlr /sbin/init
-sleep 3
-cat << EOF | ssh -p 2200 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no localhost
+cat << EOF | sudo podman exec -i -w /opt/mailur mlr /bin/bash
 set -exuo pipefail
 
-cd /opt/mailur
 bin/install
 bin/install-test
 EOF
+
+mkdir -p podman
+sudo podman export mlr > podman/mlr.tar

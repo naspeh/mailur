@@ -189,7 +189,7 @@ def gm_fake():
 
 @pytest.fixture
 def gm_client():
-    from mailur import local, remote, message
+    from mailur import local, message, remote
 
     remote.SKIP_DRAFTS = False
 
@@ -335,6 +335,7 @@ def latest():
 @pytest.fixture
 def web():
     from webtest import TestApp
+
     from mailur.web import app, assets, themes
 
     app.catchall = False
