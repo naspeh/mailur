@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Installation inside podman container for Ubuntu.
+# Used for Github Actions.
+#
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -exuo pipefail
 
@@ -18,6 +22,3 @@ set -exuo pipefail
 bin/install
 bin/install-test
 EOF
-
-mkdir -p podman
-sudo podman export mlr > podman/mlr.tar

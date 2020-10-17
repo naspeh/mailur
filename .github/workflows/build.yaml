@@ -17,4 +17,7 @@ jobs:
           key: ${{ runner.os }}-podman-${{ steps.timestamp.outputs.value }}
 
       - name: install
-        run: bin/ci-install
+        run: |
+          bin/install-on-ubuntu
+          mkdir -p podman
+          sudo podman export mlr > podman/mlr.tar
