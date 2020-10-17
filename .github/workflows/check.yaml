@@ -85,7 +85,8 @@ jobs:
           set -exuo pipefail
 
           bin/install
-          bin/install-test
+          . bin/activate
+          pip install -e .[test]
           EOF
 
       - name: test
