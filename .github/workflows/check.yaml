@@ -1,6 +1,28 @@
 name: check code
 on: [push]
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Timestamp
+        id: timestamp
+        run: |
+          echo "::set-output name=value::$(/bin/date -u '+%Y%m%dT%T')"
+        shell: bash
+      # For clean mlr image, only store cache from this step, don't use it
+      - uses: actions/cache@v2
+        with:
+          path: podman
+          key: ${{ runner.os }}-podman-${{ steps.timestamp.outputs.value }}
+
+      - name: Install
+        run: |
+          bin/install-on-ubuntu
+          mkdir -p podman
+          sudo podman export mlr > podman/mlr.tar
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -24,9 +46,10 @@ jobs:
             bin/install-on-ubuntu
             mkdir -p podman
             sudo podman export mlr > podman/mlr.tar
+            sudo podman commit mlr mlr
+          else
+            sudo podman import podman/mlr.tar localhost/mlr
           fi
-          sudo podman import podman/mlr.tar localhost/mlr
-
 
       - name: prepare mlr container
         run: |
@@ -38,7 +61,7 @@ jobs:
           python3 -m venv env
 
           . bin/activate
-          pip install -e .[test]
+          bin/install-test
           npm i
           EOF
 
@@ -50,6 +73,7 @@ jobs:
           . bin/activate
           bin/manage.py lint --ci
           EOF
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -73,9 +97,10 @@ jobs:
             bin/install-on-ubuntu
             mkdir -p podman
             sudo podman export mlr > podman/mlr.tar
+            sudo podman commit mlr mlr
+          else
+            sudo podman import podman/mlr.tar localhost/mlr
           fi
-          sudo podman import podman/mlr.tar localhost/mlr
-
 
       - name: prepare mlr container
         run: |
@@ -85,8 +110,7 @@ jobs:
           set -exuo pipefail
 
           bin/install
-          . bin/activate
-          pip install -e .[test]
+          bin/install-test
           EOF
 
       - name: test

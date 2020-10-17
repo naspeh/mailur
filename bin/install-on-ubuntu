@@ -20,6 +20,5 @@ cat << EOF | sudo podman exec -i -w /opt/mailur mlr /bin/bash
 set -exuo pipefail
 
 bin/install
-. bin/activate
-pip install -e .[test]
+bin/install-test
 EOF

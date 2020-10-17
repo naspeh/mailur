@@ -1,0 +1,9 @@
+#!/bin/bash
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -exuo pipefail
+. bin/activate
+
+yum install -y git
+
+cd /opt/mailur
+pip install -e .[test]
