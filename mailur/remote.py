@@ -12,7 +12,7 @@ SKIP_DRAFTS = True
 thrid_re = re.compile(r'(^| )mlr/thrid/\d+')
 
 
-@local.setting('remote/account')
+@local.setting('remote/account', default=ValueError('No remote account'))
 def data_account(value):
     schema.validate(value, {
         'type': 'object',

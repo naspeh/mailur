@@ -32,6 +32,7 @@ def test_uidpairs(gm_client, msgs, patch, call):
     local.data_uidpairs.get()
     local.data_threads.get()
     local.data_msgids.get()
+    settings = local.data_settings.get()
     with patch('imaplib.IMAP4.uid') as m:
         m.return_value = 'OK', []
         local.update_metadata('4')
@@ -41,6 +42,7 @@ def test_uidpairs(gm_client, msgs, patch, call):
             call('FETCH', '1:*', '(UID BODY[HEADER.FIELDS (Subject)])'),
             call('THREAD', 'REFS UTF-8 INTHREAD REFS UID 4'),
         ]
+    local.data_settings(settings)
 
     patched = {'wraps': local.update_metadata}
     with patch('mailur.local.update_metadata', **patched) as m:

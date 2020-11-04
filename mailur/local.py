@@ -222,7 +222,6 @@ def data_tags(update=None):
     return tags
 
 
-@using(SYS, name=None, parent=True)
 def get_tag(name, *, tags=None):
     def query(tag):
         if tag in special or tag.startswith('\\'):
@@ -266,7 +265,6 @@ def get_tag(name, *, tags=None):
 
 @fn_time
 @using()
-@using(SYS, name=None, parent=True)
 def tags_info(con=None):
     def query(tag):
         if tag.startswith('\\'):
@@ -302,9 +300,9 @@ def tags_info(con=None):
             thr = thrs[thrid]
             unread.update(unread_uids.intersection(thr))
         tags[tag].update(unread=len(unread), pinned=1)
-    tags = {t: dict(get_tag(t), **v) for t, v in tags.items()}
+    tags = {t: dict(get_tag(t, tags=tags_info), **v) for t, v in tags.items()}
     tags.update({
-        t: dict(get_tag(t), **tags.get(t, {'unread': 0}))
+        t: dict(get_tag(t, tags=tags_info), **tags.get(t, {'unread': 0}))
         for t in (
             '\\Flagged', '\\Draft', '#inbox', '#all', '#unread', '#sent',
             '#spam', '#trash'
@@ -439,8 +437,7 @@ def clean_duplicate_msgs(con=None):
 
 
 @fn_time
-@using(parent=True)
-@using(SYS, name=None, parent=True)
+@using()
 @lock.user_scope('update_metadata', wait=10)
 def update_metadata(uids=None, clean=False, con=None):
     if clean:
@@ -524,8 +521,7 @@ def pair_parsed_uids(uids, msgs=None):
 
 
 @fn_time
-@using(parent=True)
-@using(SYS, name=None, parent=True)
+@using()
 @lock.user_scope('link_threads')
 def link_threads(uids, unlink=False, con=None):
     thrids, thrs = data_threads.get()
@@ -633,7 +629,6 @@ def data_threads(thrids, thrs):
 
 
 @using()
-@using(SYS, name=None, parent=True)
 @lock.user_scope('update_threads')
 def update_threads(uids, thrids=None, thrs=None, con=None):
     if thrids is None:
@@ -730,7 +725,6 @@ def clean_flags(flags, con_all=None, con_src=None):
 @fn_time
 @using(SRC, name='con_src')
 @using(ALL, name='con_all', readonly=False)
-@using(SYS, name=None, parent=True)
 def sync_flags_to_all(con_src=None, con_all=None):
     skip_flags = set(['#err'])
     for flag in con_src.flags:
@@ -908,7 +902,6 @@ def msgs_body(uids, fix_privacy=False, con=None):
 
 @fn_time
 @using()
-@using(SYS, name=None, parent=True)
 def search_thrs(query, con=None):
     q = [query] if isinstance(query, str) else query.copy()
     if len(q) > 1:
@@ -932,7 +925,6 @@ def search_thrs(query, con=None):
 
 @fn_time
 @using()
-@using(SYS, name=None, parent=True)
 def thrs_info(uids, tags=None, con=None):
     special_tag = None
     if not tags:

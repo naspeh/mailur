@@ -96,7 +96,6 @@ def jsonify(fn):
 
 def endpoint(callback):
     @jsonify
-    @local.using(local.SYS, name=None, parent=True)
     @ft.wraps(callback)
     def inner(*args, **kwargs):
         try:

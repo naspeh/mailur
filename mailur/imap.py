@@ -21,7 +21,7 @@ class Error(Exception):
         return '%s.%s: %s' % (__name__, self.__class__.__name__, self.args)
 
 
-def using(client, box, readonly=True, name='con', reuse=True, parent=False):
+def using(client, box, readonly=True, name='con', reuse=True):
     @contextmanager
     def use_or_create(kw):
         if kw.get(name):
@@ -33,8 +33,7 @@ def using(client, box, readonly=True, name='con', reuse=True, parent=False):
             if key not in pool:
                 pool[key] = client(None)
             con = pool[key]
-            parent_orig = con.parent
-            if not con.parent and box:
+            if box:
                 try:
                     con.select(box, readonly)
                 except con.abort as e:
@@ -43,15 +42,10 @@ def using(client, box, readonly=True, name='con', reuse=True, parent=False):
                     log.error(e)
                     pool[key] = client(None)
                     con = pool[key]
-                    con.parent = parent_orig
                     con.select(box, readonly)
-                if parent:
-                    con.parent = parent
             if name:
                 kw[name] = con
             yield
-            if con.parent:
-                con.parent = parent_orig
             return
 
         with client(box, readonly=readonly) as con:
@@ -153,7 +147,6 @@ class Conn:
 class Ctx:
     def __init__(self, con):
         self._con = con
-        self.parent = False
 
     def __repr__(self):
         return str(self)
