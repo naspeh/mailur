@@ -48,7 +48,7 @@ pip=$env/bin/pip
 python3 -m venv $env
 
 $pip install -U pip wheel
-$pip install -U -e .[all]
+$pip install -U -e .
 
 yum install -y npm
 npm i

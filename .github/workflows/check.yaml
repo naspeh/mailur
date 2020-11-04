@@ -47,6 +47,7 @@ jobs:
             mkdir -p podman
             sudo podman export mlr > podman/mlr.tar
             sudo podman commit mlr mlr
+            sudo podman rm -f mlr
           else
             sudo podman import podman/mlr.tar localhost/mlr
           fi
