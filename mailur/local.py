@@ -603,6 +603,7 @@ def parse(criteria=None, con=None, **opts):
 
     log.info('## criteria: %r; %s uids', criteria, len(uids))
     count = con.select(ALL)[0].decode()
+    parsed_uidnext = con.uidnext
     if count != '0':
         if criteria.lower() == 'all':
             puids = con.search('all')
@@ -613,12 +614,11 @@ def parse(criteria=None, con=None, **opts):
             clean_parsed_msgs(puids, con=con)
 
     uids = imap.Uids(uids, **opts)
-    puids = ','.join(uids.call_async(parse_msgs, uids))
-    if criteria.lower() == 'all' or count == '0':
-        puids = '1:*'
+    puids = list(uids.call_async(parse_msgs, uids))
+    log.info('## parsed %s messages', len(puids))
 
     data_uidnext(uidnext)
-    update_metadata(puids)
+    update_metadata('%s:*' % parsed_uidnext)
 
     sieve_run('UID %s' % uids.str, sieve_scripts('auto'))
 

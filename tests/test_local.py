@@ -48,12 +48,12 @@ def test_uidpairs(gm_client, msgs, patch, call):
     with patch('mailur.local.update_metadata', **patched) as m:
         local.parse('uid 1')
         assert m.called
-        assert m.call_args == call('6')
+        assert m.call_args == call('6:*')
 
         m.reset_mock()
         local.parse('all')
         assert m.called
-        assert m.call_args == call('1:*')
+        assert m.call_args == call('7:*')
 
         m.reset_mock()
         local.parse()
@@ -62,7 +62,7 @@ def test_uidpairs(gm_client, msgs, patch, call):
         m.reset_mock()
         gm_client.add_emails([{}])
         assert m.called
-        assert m.call_args == call('9')
+        assert m.call_args == call('9:*')
 
 
 def test_data_threads(gm_client):
