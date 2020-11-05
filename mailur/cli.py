@@ -62,11 +62,11 @@ def build_parser(args):
     cmd('parse')\
         .arg('criteria', nargs='?')\
         .arg('--batch', type=int, default=1000, help='batch size')\
-        .arg('--threads', type=int, default=2, help='thread pool size')
+        .arg('--threads', type=int, default=2, help='thread pool size')\
+        .arg('--fix-duplicates', action='store_true')
 
     cmd('metadata')\
-        .arg('uids', nargs='?')\
-        .arg('--fix-duplicates', action='store_true')
+        .arg('uids', nargs='?')
 
     cmd('sync')\
         .arg('--timeout', type=int, default=1200, help='timeout in seconds')\
@@ -108,10 +108,10 @@ def process(args):
             local.parse(**opts)
     elif args.cmd == 'parse':
         opts = dict(threads=args.threads, batch=args.batch)
-        local.parse(args.criteria, **opts)
-    elif args.cmd == 'metadata':
         if args.fix_duplicates:
             local.clean_duplicate_msgs()
+        local.parse(args.criteria, **opts)
+    elif args.cmd == 'metadata':
         local.update_metadata(args.uids)
 
 

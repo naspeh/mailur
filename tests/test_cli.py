@@ -32,7 +32,7 @@ def test_general(gm_client, login, msgs, patch, call):
         all_puids = con.search('ALL')
         assert len(all_puids) == 4
         local.link_threads(ouids)
-        cli.main('%s metadata --fix-duplicates' % login.user1)
+        cli.main('%s parse --fix-duplicates' % login.user1)
         cli.main('%s metadata' % login.user1)
 
         con.select(local.ALL)
