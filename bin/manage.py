@@ -21,7 +21,11 @@ def main(args=None):
     cmd('icons').exe(lambda a: icons())
     cmd('web').exe(lambda a: web())
     cmd('test')\
-        .exe(lambda a: run('pytest -q --cov=mailur --cov-report=term-missing'))
+        .exe(lambda a: run('''
+            pytest="pytest -q --cov=mailur"
+            $pytest -n2 -m "not no_parallel"
+            $pytest --cov-append --cov-report=term-missing -m "no_parallel"
+        '''))
     cmd('lint')\
         .exe(lambda a: run('ci=%s bin/run-lint' % (1 if a.ci else '')))\
         .arg('--ci', action='store_true')
@@ -69,7 +73,7 @@ def run(cmd):
             '$ pip install -e .[test]'
         )
 
-    cmd = 'sh -xc %r' % cmd
+    cmd = 'cat <<"EOF" | sh -ex\n%s\nEOF' % cmd
     exit(call(cmd, cwd=root, shell=True))
 
 

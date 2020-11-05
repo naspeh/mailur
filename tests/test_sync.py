@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from gevent import sleep, spawn
+from pytest import mark
 
 from mailur import cli, conf, local, remote
 
@@ -81,6 +82,7 @@ def test_local(gm_client, msgs):
     ]
 
 
+@mark.no_parallel
 @patch.dict(conf, {'GMAIL_TWO_WAY_SYNC': '1'})
 def test_cli_idle_gmail(gm_client, msgs, login, patch):
     actions = []
@@ -194,6 +196,7 @@ def test_cli_idle_gmail(gm_client, msgs, login, patch):
     ]
 
 
+@mark.no_parallel
 def test_cli_idle_general_imap(gm_client, msgs, login, patch):
     remote.data_account({
         'username': 'test@test.com',
