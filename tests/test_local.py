@@ -65,6 +65,24 @@ def test_uidpairs(gm_client, msgs, patch, call):
         assert m.call_args == call('9:*')
 
 
+def test_update_metadata(gm_client, msgs, patch, call):
+    gm_client.add_emails([{}, {}])
+    assert ['1', '2'] == [i['uid'] for i in msgs(local.SRC)]
+    local.link_threads(['1', '2'])
+    thrids, thrs = local.data_threads.get()
+    assert {'1': '2', '2': '2'} == thrids
+
+    # emulate that metadata wasn't updated when messages were re-parsed
+    with patch.object(local, 'update_metadata') as m:
+        local.parse('1:*')
+        m.assert_called_with('3:*')
+
+    # refresh metadata
+    local.update_metadata('1:*')
+    thrids, thrs = local.data_threads.get()
+    assert {'3': '4', '4': '4'} == thrids
+
+
 def test_data_threads(gm_client):
     gm_client.add_emails([{'subj': 'new subj'}])
     assert local.data_threads.get()[1] == {'1': ['1']}

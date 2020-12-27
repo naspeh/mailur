@@ -444,7 +444,6 @@ def diagnose(con_all=None, con_src=None):
     print(f'pids={len(pids)} oids={len(oids)}')
     pid_by_oids = data_uidpairs.get()
 
-
     legal_pids = set(pid_by_oids.values())
     duplicates = [pid for pid in pids if pid not in legal_pids]
     if sorted(pids) == sorted(legal_pids):
@@ -514,12 +513,13 @@ def update_metadata(uids=None, clean=False, con=None):
         addrs_from, addrs_to = {}, {}
         uidpairs = {}
         msgids = {}
+        thrids, thrs = {}, {}
     else:
         msgs = data_msgs.get()
         addrs_from, addrs_to = data_addresses.get()
         uidpairs = data_uidpairs.get()
         msgids = data_msgids.get()
-        thrids, thrs = data_threads.get()
+        thrids, thrs = None, None
 
         if uids is None:
             if uidpairs:
@@ -567,7 +567,7 @@ def update_metadata(uids=None, clean=False, con=None):
     data_uidpairs(uidpairs)
     data_msgids(msgids)
     data_addresses(addrs_from, addrs_to)
-    update_threads(uids)
+    update_threads(uids, thrids, thrs)
     return msgs
 
 
