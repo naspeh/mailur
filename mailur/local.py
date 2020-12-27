@@ -436,6 +436,69 @@ def clean_duplicate_msgs(con=None):
         clean_parsed_msgs(duplicates)
 
 
+@using(name='con_all')
+@using(SRC, name='con_src')
+def diagnose(con_all=None, con_src=None):
+    pids = set(con_all.search('ALL'))
+    oids = set(con_src.search('ALL'))
+    print(f'pids={len(pids)} oids={len(oids)}')
+    pid_by_oids = data_uidpairs.get()
+
+
+    legal_pids = set(pid_by_oids.values())
+    duplicates = [pid for pid in pids if pid not in legal_pids]
+    if sorted(pids) == sorted(legal_pids):
+        print('OK: parsed uids in metadata')
+    else:
+        print(
+            f'ERR: probably {len(duplicates)} duplicates in parsed messages: '
+            f'{duplicates}'
+        )
+
+    legal_oids = set(pid_by_oids)
+    if sorted(oids) == sorted(legal_oids):
+        print('OK: original uids in metadata')
+    else:
+        print(
+            f'Original uids in metadata is not the same as in mailbox:\n'
+            f'  legal_oids.difference(oids)={legal_oids.difference(oids)}\n'
+            f'  oids.difference(legal_oids)={oids.difference(legal_oids)}'
+        )
+
+    msgs = data_msgs.get()
+    msgs_pids = set(msgs)
+    if msgs_pids == pids:
+        print('OK: data_msgs')
+    else:
+        print(
+            f'ERR: data_msgs\n'
+            f'  pids.difference(msgs_pids)={pids.difference(msgs_pids)}\n'
+            f'  msgs_pids.difference(pids)={msgs_pids.difference(pids)}'
+        )
+
+    msgids = data_msgids.get()
+    msgids_pids = set(sum((i for i in msgids.values()), []))
+    if msgids_pids == pids:
+        print('OK: data_msgids')
+    else:
+        print(
+            f'ERR: data_msgids\n'
+            f'  pids.difference(msgids_pids)={pids.difference(msgids_pids)}\n'
+            f'  msgids_pids.difference(pids)={msgids_pids.difference(pids)}'
+        )
+
+    thrids, thrs = data_threads.get()
+    thrids_pids = set(thrids)
+    if thrids_pids == pids:
+        print('OK: data_threads.thrids')
+    else:
+        print(
+            f'ERR: data_threads.thrids\n'
+            f'  pids.difference(thrids_pids)={pids.difference(thrids_pids)}\n'
+            f'  thrids_pids.difference(pids)={thrids_pids.difference(pids)}'
+        )
+
+
 @fn_time
 @using()
 @lock.user_scope('update_metadata', wait=10)

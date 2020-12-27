@@ -83,6 +83,9 @@ def build_parser(args):
     cmd('clean-flags')\
         .arg('flag', nargs='+')\
         .exe(lambda args: local.clean_flags(args.flag))
+
+    cmd('diagnose')\
+        .exe(lambda args: local.diagnose())
     return parser
 
 
