@@ -14,11 +14,12 @@ sudo apt-get -y install podman
 
 sudo podman rm -f mlr 2>/dev/null || true
 
-sudo podman run -v .:/opt/mailur --name mlr -d centos:7 /sbin/init
+sudo podman run -v .:/opt/mailur --name mlr -d centos:8 /sbin/init
 
 cat << EOF | sudo podman exec -i -w /opt/mailur mlr /bin/bash
 set -exuo pipefail
 
+systemctl disable dnf-makecache.timer
 bin/install
 bin/install-test
 EOF

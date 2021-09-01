@@ -22,7 +22,7 @@ domain=example.com
 
 # used as password for dovecot master users
 # used as "doveadm_password"
-secret=$(python -c 'import uuid; print(uuid.uuid4().hex)')
+secret="$(cat /proc/sys/kernel/random/uuid)"
 
 # used by cli/web application
 export MLR_DOMAIN=\$domain

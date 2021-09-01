@@ -13,17 +13,26 @@ exit 1
 )
 
 cat <<"EOF" > /etc/yum.repos.d/nginx.repo
-[nginx]
-name=nginx repo
-baseurl=https://nginx.org/packages/mainline/centos/7/$basearch/
-gpgcheck=0
+[nginx-stable]
+name=nginx stable repo
+baseurl=http://nginx.org/packages/centos/$releasever/$basearch/
+gpgcheck=1
 enabled=1
+gpgkey=https://nginx.org/keys/nginx_signing.key
+module_hotfixes=true
+
+[nginx-mainline]
+name=nginx mainline repo
+baseurl=http://nginx.org/packages/mainline/centos/$releasever/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=https://nginx.org/keys/nginx_signing.key
+module_hotfixes=true
 EOF
 
 yum install -y nginx certbot
 
 
-grep -rq '/var/tmp' /etc/nginx/ || (
 cat <<EOF > /etc/nginx/nginx.conf
 events {
     worker_connections 768;
@@ -45,7 +54,6 @@ http {
     }
 }
 EOF
-)
 
 systemctl enable nginx
 systemctl restart nginx
@@ -75,7 +83,7 @@ http {
 
 mail {
     server_name $domain;
-    auth_http   localhost:5000/nginx;
+    auth_http   0.0.0.0:5000/nginx;
 
     error_log /var/log/nginx/mail.log;
 
