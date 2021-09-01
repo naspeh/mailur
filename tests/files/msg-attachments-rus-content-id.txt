@@ -1,0 +1,40 @@
+MIME-Version: 1.0
+Date: Wed, 1 Sep 2021 16:33:12 +0300
+References: <b555134777dc43959442d9f7833cb64e@mail.pusto.org>
+	<e7c76c22e9d14eeab5db68e53533f563@mail.pusto.org>
+In-Reply-To: <e7c76c22e9d14eeab5db68e53533f563@mail.pusto.org>
+Message-ID: <CAPoAYQXwYJjQM0EjWsKyhap1==3wWzmqmG4xXLeYzieGvW2b=A@mail.gmail.com>
+Subject: Re: Fw: test
+From: Grisha Kostyuk <naspeh@gmail.com>
+To: "Grisha Kostyuk (naspeh)" <naspeh@gmail.com>
+Content-Type: multipart/mixed; boundary="000000000000a6506305caef1b38"
+
+--000000000000a6506305caef1b38
+Content-Type: multipart/alternative; boundary="000000000000a6506005caef1b36"
+
+--000000000000a6506005caef1b36
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: base64
+
+0YLQtdGB0YINCg0KPg0K
+--000000000000a6506005caef1b36
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div>=D1=82=D0=B5=D1=81=D1=82</div><div class=3D"gmail_quo=
+te"><blockquote class=3D"gmail_quote" style=3D"margin:0px 0px 0px 0.8ex;bor=
+der-left:1px solid rgb(204,204,204);padding-left:1ex">
+</blockquote></div></div>
+
+--000000000000a6506005caef1b36--
+--000000000000a6506305caef1b38
+Content-Type: image/png; name="=?UTF-8?B?0YfQtdGA0L3QsNGPINGC0L7Rh9C60LAucG5n?="
+Content-Disposition: attachment; filename="=?UTF-8?B?0YfQtdGA0L3QsNGPINGC0L7Rh9C60LAucG4=?=
+	=?UTF-8?B?Zw==?="
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_kt1jhzmc0
+Content-ID: <черная точка.png>
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YA
+AAAASUVORK5CYII=
+--000000000000a6506305caef1b38--

@@ -158,7 +158,7 @@ def parse_mime(orig, uid):
 
         content_id = part.get('Content-ID')
         if content_id:
-            item['content-id'] = content_id
+            item['content-id'] = decode_header(content_id, label)
         if ctype.startswith('image/'):
             item['image'] = True
         return item

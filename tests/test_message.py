@@ -569,3 +569,15 @@ def test_parts(gm_client, latest, load_email):
     }]
     src = 'src="/raw/%s/2/50.png"' % m['meta']['origin_uid']
     assert src in m['body']
+
+
+def test_non_latin_in_content_id(load_email):
+    m = load_email('msg-attachments-rus-content-id.txt', 'utf-8', parsed=True)
+    assert m['meta']['files'] == [{
+        'content-id': '<черная точка.png>',
+        'filename': 'черная-точка.png',
+        'image': True,
+        'path': '2',
+        'size': 68,
+        'url': '/raw/1/2/черная-точка.png'
+    }]
