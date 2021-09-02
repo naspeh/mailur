@@ -6,21 +6,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Timestamp
-        id: timestamp
+      - name: hash for podman image
+        id: podman_image_hash
         run: |
-          echo "::set-output name=value::$(/bin/date -u '+%Y%m%dT%T')"
+          echo "::set-output name=value::$(/bin/find bin .github -type f -exec md5sum {} \; | sort -k 2 | md5sum)"
         shell: bash
-      - name: Hash for local bin directory
-        id: bin_hash
-        run: |
-          echo "::set-output name=value::$(/bin/find bin -type f -exec md5sum {} \; | sort -k 2 | md5sum)"
-        shell: bash
-      # For clean mlr image, only store cache from this step, don't use it
       - uses: actions/cache@v2
         with:
           path: podman
-          key: ${{ runner.os }}-podman-${{ steps.bin_hash.outputs.value }}
+          key: ${{ runner.os }}-podman-${{ steps.podman_image_hash.outputs.value }}
 
       - name: Install
         run: |
@@ -32,49 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      - name: timestamp
-        id: timestamp
-        run: |
-          echo "::set-output name=value::$(/bin/date -u '+%Y%m%dT%T')"
-        shell: bash
-      - name: Hash for local bin directory
-        id: bin_hash
-        run: |
-          echo "::set-output name=value::$(/bin/find bin -type f -exec md5sum {} \; | sort -k 2 | md5sum)"
-        shell: bash
-      - uses: actions/cache@v2
-        with:
-          path: podman
-          key: ${{ runner.os }}-podman-${{ steps.bin_hash.outputs.value }}
-          restore-keys: |
-            ${{ runner.os }}-podman-${{ steps.bin_hash.outputs.value }}
-
-      - name: prepare mlr image
-        run: |
-          set -exuo pipefail
-          if [ ! -f podman/mlr.tar ]; then
-            bin/install-on-ubuntu
-            mkdir -p podman
-            sudo podman export mlr > podman/mlr.tar
-            sudo podman commit mlr mlr
-            sudo podman rm -f mlr
-          else
-            sudo podman import podman/mlr.tar localhost/mlr
-          fi
-
-      - name: prepare mlr container
-        run: |
-          sudo podman run -v .:/opt/mailur --name mlr -d mlr /sbin/init
-
-          cat << EOF | sudo podman exec -i -w /opt/mailur mlr /bin/bash
-          set -exuo pipefail
-
-          systemctl disable dnf-makecache.timer
-
-          bin/install
-          bin/install-test
-          EOF
+      - uses: ./.github/actions/podman-mlr
 
       - name: lint
         run: |
@@ -89,49 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      - name: timestamp
-        id: timestamp
-        run: |
-          echo "::set-output name=value::$(/bin/date -u '+%Y%m%dT%T')"
-        shell: bash
-      - name: Hash for local bin directory
-        id: bin_hash
-        run: |
-          echo "::set-output name=value::$(/bin/find bin -type f -exec md5sum {} \; | sort -k 2 | md5sum)"
-        shell: bash
-      - uses: actions/cache@v2
-        with:
-          path: podman
-          key: ${{ runner.os }}-podman-${{ steps.bin_hash.outputs.value }}
-          restore-keys: |
-            ${{ runner.os }}-podman-${{ steps.bin_hash.outputs.value }}
-
-      - name: prepare mlr image
-        run: |
-          set -exuo pipefail
-          if [ ! -f podman/mlr.tar ]; then
-            bin/install-on-ubuntu
-            mkdir -p podman
-            sudo podman export mlr > podman/mlr.tar
-            sudo podman commit mlr mlr
-            sudo podman rm -f mlr
-          else
-            sudo podman import podman/mlr.tar localhost/mlr
-          fi
-
-      - name: prepare mlr container
-        run: |
-          sudo podman run -v .:/opt/mailur --name mlr -d mlr /sbin/init
-
-          cat << EOF | sudo podman exec -i -w /opt/mailur mlr /bin/bash
-          set -exuo pipefail
-
-          systemctl disable dnf-makecache.timer
-
-          bin/install
-          bin/install-test
-          EOF
+      - uses: ./.github/actions/podman-mlr
 
       - name: test
         run: |
