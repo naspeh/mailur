@@ -417,8 +417,8 @@ def select(con, box, readonly=True):
     con.flags = con.untagged_responses['FLAGS'][0].decode()[1:-1].split()
     con.uidnext = int(con.untagged_responses['UIDNEXT'][0].decode())
     con.uidvalidity = con.untagged_responses['UIDVALIDITY'][0].decode()
-    highestmodseq = int(con.untagged_responses['HIGHESTMODSEQ'][0].decode())
-    con.highestmodseq = highestmodseq
+    highestmodseq = con.untagged_responses.get('HIGHESTMODSEQ', con.uidnext)
+    con.highestmodseq = highestmodseq and int(highestmodseq[0].decode())
     return res
 
 

@@ -44,7 +44,9 @@ def build_parser(args):
         .arg('username')\
         .arg('password')\
         .arg('--imap', required=True)\
-        .arg('--smtp', required=True)
+        .arg('--imap-port')\
+        .arg('--smtp', required=True)\
+        .arg('--smtp-port')
 
     cmd('remote-setup-gmail')\
         .arg('username')\
@@ -98,7 +100,9 @@ def process(args):
             'username': args.username,
             'password': args.password,
             'imap_host': args.imap,
+            'imap_port': int(args.imap_port),
             'smtp_host': args.smtp,
+            'smtp_port': int(args.smtp_port),
         })
     elif args.cmd == 'remote':
         opts = dict(threads=args.threads, batch=args.batch)

@@ -69,7 +69,7 @@ class Remote(imaplib.IMAP4, imap.Conn):
         return ssl_context.wrap_socket(sock, server_hostname=self.host)
 
     def open(self, host='', port=imaplib.IMAP4_SSL_PORT):
-        super().open(host, port=imaplib.IMAP4_SSL_PORT)
+        super().open(host, port=port)
 
     def login(self):
         return super().login(self.username, self.password)
