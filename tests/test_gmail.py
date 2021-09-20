@@ -37,7 +37,7 @@ def test_account(gm_client):
     }
     remote.data_account(params.copy())
     assert remote.data_account.get() == dict(
-        params, gmail=True, smtp_port=587, imap_port=993,
+        params, gmail=True, smtp_port=465, imap_port=993,
     )
 
     params = {
@@ -48,7 +48,7 @@ def test_account(gm_client):
     }
     remote.data_account(params.copy())
     assert remote.data_account.get() == dict(
-        params, smtp_port=587, imap_port=993,
+        params, smtp_port=465, imap_port=993,
     )
 
     gm_client.list = [('OK', [

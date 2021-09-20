@@ -100,9 +100,9 @@ def process(args):
             'username': args.username,
             'password': args.password,
             'imap_host': args.imap,
-            'imap_port': int(args.imap_port),
+            'imap_port': int(getattr(args, 'imap_port', 993)),
             'smtp_host': args.smtp,
-            'smtp_port': int(args.smtp_port),
+            'smtp_port': int(getattr(args, 'smtp_port', 465)),
         })
     elif args.cmd == 'remote':
         opts = dict(threads=args.threads, batch=args.batch)

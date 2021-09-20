@@ -22,7 +22,7 @@ def data_account(value):
             'imap_host': {'type': 'string'},
             'imap_port': {'type': 'integer', 'default': 993},
             'smtp_host': {'type': 'string'},
-            'smtp_port': {'type': 'integer', 'default': 587},
+            'smtp_port': {'type': 'integer', 'default': 465},
         },
         'required': ['username', 'password', 'imap_host', 'smtp_host']
     })
@@ -574,9 +574,11 @@ def send(msg):
     params = message.sending(msg)
 
     account = data_account.get()
-    con = smtplib.SMTP(account['smtp_host'], account['smtp_port'])
+    log.info('Connecting to %(smtp_host)s:%(smtp_port)s', account)
+    con = smtplib.SMTP_SSL(account['smtp_host'], account['smtp_port'])
+    if conf['DEBUG_SMTP']:
+        con.set_debuglevel(conf['DEBUG_SMTP'])
     con.ehlo()
-    con.starttls()
     con.login(account['username'], account['password'])
     con.sendmail(*params)
 

@@ -13,6 +13,7 @@ json = ujson
 conf = {
     'DEBUG': os.environ.get('MLR_DEBUG', True),
     'DEBUG_IMAP': int(os.environ.get('MLR_DEBUG_IMAP', 0)),
+    'DEBUG_SMTP': int(os.environ.get('MLR_DEBUG_SMTP', 0)),
     'SECRET': os.environ.get('MLR_SECRET', uuid.uuid4().hex),
     'MASTER': os.environ.get('MLR_MASTER', 'root:root').split(':'),
     'SIEVE': os.environ.get('MLR_SIEVE', 'sieve:root').split(':'),
