@@ -197,10 +197,10 @@ class Ctx:
         self.logout()
 
 
-def client(connect, *, writable=False, dovecot=False, debug=None):
+def client(connect, *, writable=False, dovecot=False):
     def start():
         con = connect()
-        con.debug = conf['DEBUG_IMAP'] if debug is None else debug
+        con.debug = conf['DEBUG_IMAP']
         con.lock = RLock()
         con.new = new
         return con
