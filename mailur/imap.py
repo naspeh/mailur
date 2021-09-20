@@ -428,10 +428,15 @@ def find_folder(con, tag):
         tag = tag.encode()
     folder = None
     folders = xlist(con)
+    folder_re = re.compile(br'\((?P<tags>[\S ]*)\) [\S]+ (?P<name>.+)')
     for f in folders:
-        if not re.search(br'^\([^)]*?%s' % re.escape(tag), f):
+        folder_match = re.search(folder_re, f)
+        if not folder_match:
             continue
-        folder = f.rsplit(b' "/" ', 1)[1]
+        folder_dict = folder_match.groupdict()
+        if tag not in folder_dict['tags'].split():
+            continue
+        folder = folder_dict['name']
         break
     return folder, folders
 

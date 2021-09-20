@@ -162,3 +162,23 @@ def test_sieve(gm_client, msgs, raises, some):
     ''')
     assert res == [some, some]
     assert [m['flags'] for m in msgs()] == ['#subj #1 #ab', '#subj #2 #ab']
+
+
+def test_select_tag(patch, raises):
+    con = local.client(readonly=False)
+
+    con.select_tag('\\All')
+    assert con.box == 'tags/All'
+
+    # delimiter "."
+    con = local.client(readonly=False)
+    with patch('mailur.imap.xlist') as m:
+        m.return_value = [b'* LIST (\\HasNoChildren \\Trash) "." Trash']
+
+        with raises(imap.Error) as e:
+            con.select_tag('\\All')
+        assert 'No folder with tag: \\All' in str(e.value)
+
+        with patch('mailur.imap.select') as m:
+            con.select_tag('\\Trash')
+            m.assert_called_once_with(con._con, b'Trash', True)
