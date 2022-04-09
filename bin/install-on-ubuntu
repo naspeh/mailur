@@ -14,7 +14,7 @@ sudo apt-get -y install podman
 
 sudo podman rm -f mlr 2>/dev/null || true
 
-sudo podman run -v .:/opt/mailur --name mlr -d centos:8 /sbin/init
+sudo podman run -v .:/opt/mailur --name mlr -d centos:stream8 /sbin/init
 
 cat << EOF | sudo podman exec -i -w /opt/mailur mlr /bin/bash
 set -exuo pipefail
