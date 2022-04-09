@@ -618,7 +618,11 @@ def parse_msgs(uids, con=None):
             pattern = r'UID (\d+) INTERNALDATE ("[^"]+") FLAGS \(([^)]*)\)'
             uid, time, flags = re.search(pattern, line.decode()).groups()
             flags = flags.split()
-            msg_obj, marks = message.parsed(body, uid, time, flags)
+            try:
+                msg_obj, marks = message.parsed(body, uid, time, flags)
+            except Exception:
+                log.exception('UID=%s can\'t parse msg: body=%r', uid, body)
+                raise
             flags += marks
             msg = msg_obj.as_bytes()
             yield time, ' '.join(flags), msg

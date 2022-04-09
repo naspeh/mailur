@@ -235,7 +235,8 @@ def normalize_msgid(mid):
 
 
 def preview(htm, files):
-    preview = htm and html.to_line(htm, 200)
+    htm = htm.strip()
+    preview = html.to_line(htm, 200) if htm else ''
     if len(preview) < 200 and files:
         preview += (' ' if preview else '') + (
             '[%s]' % ', '.join(f['filename'] for f in files)
