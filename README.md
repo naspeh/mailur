@@ -29,7 +29,7 @@ This version is already in use. It has minimal feature set I need on daily basis
 [Markdown]: https://daringfireball.net/projects/markdown/syntax
 
 ### Updates
-- `[Nowadays]` Stay tuned...
+- `[Nowadays]` On pause...
 - `[May 2020]` Two-way syncing for five Gmail flags and labels (details here [#13])
 - `[Mar 2019]` [Feature overview.][mlr-features]
 - `[Mar 2019]` [Dovecot as main storage.][mlr-dovecot]
